@@ -69,42 +69,22 @@ Namespace WC3.Protocol
     End Class
 
     Public NotInheritable Class GameActionJar
-        Inherits BaseJar(Of GameAction)
+        Inherits BaseConversionJar(Of GameAction, KeyValuePair(Of GameActionId, Object))
 
-        Private Shared ReadOnly SubJar As New KeyPrefixedJar(Of GameActionId)(
+        Private Shared ReadOnly DataJar As New KeyPrefixedJar(Of GameActionId)(
             keyJar:=New EnumByteJar(Of GameActionId)(),
             valueJars:=GameActions.AllDefinitions.ToDictionary(
                 keySelector:=Function(e) e.Id,
                 elementSelector:=Function(e) e.Jar))
 
-        <ContractVerification(False)>
-        Public Overrides Function Pack(ByVal value As GameAction) As IEnumerable(Of Byte)
-            Return SubJar.Pack(value)
+        Public Overrides Function SubJar() As IJar(Of KeyValuePair(Of GameActionId, Object))
+            Return DataJar
         End Function
-
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of GameAction)
-            Dim parsed = SubJar.Parse(data)
-            Return parsed.WithValue(CType(parsed.Value, GameAction))
+        Public Overrides Function PackRaw(ByVal value As GameAction) As KeyValuePair(Of GameActionId, Object)
+            Return value
         End Function
-
-        <ContractVerification(False)>
-        Public Overrides Function Describe(ByVal value As GameAction) As String
-            Return SubJar.Describe(value)
-        End Function
-        Public Overrides Function Parse(ByVal text As String) As GameAction
-            Return SubJar.Parse(text)
-        End Function
-
-        Public Overrides Function MakeControl() As IValueEditor(Of GameAction)
-            Dim subControl = SubJar.MakeControl()
-            Return New DelegatedValueEditor(Of GameAction)(
-                Control:=subControl.Control,
-                eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
-                getter:=Function() subControl.Value,
-                setter:=Sub(value) subControl.Value = value,
-                disposer:=Sub() subControl.Dispose())
+        Public Overrides Function ParseRaw(ByVal value As KeyValuePair(Of GameActionId, Object)) As GameAction
+            Return value
         End Function
     End Class
 End Namespace

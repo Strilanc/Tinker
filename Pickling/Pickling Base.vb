@@ -179,6 +179,57 @@
         End Function
     End Class
 
+    <ContractClass(GetType(BaseConversionJarContractClass(Of ,)))>
+    Public MustInherit Class BaseConversionJar(Of TExposed, TUsed)
+        Inherits BaseJar(Of TExposed)
+
+        MustOverride Function SubJar() As IJar(Of TUsed)
+        MustOverride Function ParseRaw(ByVal value As TUsed) As TExposed
+        MustOverride Function PackRaw(ByVal value As TExposed) As TUsed
+
+        Public NotOverridable Overrides Function Pack(ByVal value As TExposed) As IEnumerable(Of Byte)
+            Return SubJar.Pack(PackRaw(value))
+        End Function
+        Public NotOverridable Overloads Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of TExposed)
+            Dim parsed = SubJar.Parse(data)
+            Return parsed.WithValue(ParseRaw(parsed.Value))
+        End Function
+        Public NotOverridable Overloads Overrides Function Parse(ByVal text As String) As TExposed
+            Return ParseRaw(SubJar.Parse(text))
+        End Function
+        Public NotOverridable Overrides Function Describe(ByVal value As TExposed) As String
+            Return SubJar.Describe(PackRaw(value))
+        End Function
+        Public NotOverridable Overrides Function MakeControl() As IValueEditor(Of TExposed)
+            Dim control = SubJar.MakeControl()
+            Return New DelegatedValueEditor(Of TExposed)(
+                control:=control.Control,
+                getter:=Function() ParseRaw(control.Value),
+                setter:=Sub(value) control.Value = PackRaw(value),
+                eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
+                disposer:=Sub() control.Dispose())
+        End Function
+    End Class
+    <ContractClassFor(GetType(BaseConversionJar(Of ,)))>
+    Public MustInherit Class BaseConversionJarContractClass(Of TExposed, TUsed)
+        Inherits BaseConversionJar(Of TExposed, TUsed)
+
+        Public Overrides Function PackRaw(ByVal value As TExposed) As TUsed
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of TUsed)() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Overrides Function ParseRaw(ByVal value As TUsed) As TExposed
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of TExposed)() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Overrides Function SubJar() As IJar(Of TUsed)
+            Contract.Ensures(Contract.Result(Of IJar(Of TUsed))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+    End Class
+
     Public NotInheritable Class DelegatedValueEditor(Of T)
         Inherits DisposableWithTask
         Implements IValueEditor(Of T)

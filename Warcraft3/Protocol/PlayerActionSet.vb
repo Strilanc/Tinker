@@ -73,50 +73,23 @@ Namespace WC3.Protocol
         End Function
     End Class
     Public Class PlayerActionSetJar
-        Inherits BaseJar(Of PlayerActionSet)
+        Inherits BaseConversionJar(Of PlayerActionSet, NamedValueMap)
 
         Private Shared ReadOnly DataJar As New TupleJar(
                 New PlayerIdJar().Named("source"),
                 New GameActionJar().Repeated.DataSizePrefixed(prefixSize:=2).Named("actions"))
 
-        <ContractVerification(False)>
-        Public Overrides Function Pack(ByVal value As PlayerActionSet) As IEnumerable(Of Byte)
-            Return DataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                                            {"source", value.Id},
-                                            {"actions", value.Actions}}))
+        Public Overrides Function SubJar() As IJar(Of NamedValueMap)
+            Return DataJar
         End Function
-
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of PlayerActionSet)
-            Dim parsed = DataJar.Parse(data)
-            Dim value = New PlayerActionSet(parsed.Value.ItemAs(Of PlayerId)("source"),
-                                            parsed.Value.ItemAs(Of IReadableList(Of GameAction))("actions"))
-            Return value.ParsedWithDataCount(parsed.UsedDataCount)
+        Public Overrides Function PackRaw(ByVal value As PlayerActionSet) As NamedValueMap
+            Return New Dictionary(Of InvariantString, Object) From {
+                    {"source", value.Id},
+                    {"actions", value.Actions}}
         End Function
-
-        <ContractVerification(False)>
-        Public Overrides Function Describe(ByVal value As PlayerActionSet) As String
-            Return DataJar.Describe(New Dictionary(Of InvariantString, Object) From {
-                                            {"source", value.Id},
-                                            {"actions", value.Actions}})
-        End Function
-        <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal text As String) As PlayerActionSet
-            Dim parsed = DataJar.Parse(text)
-            Return New PlayerActionSet(parsed.ItemAs(Of PlayerId)("source"),
-                                       parsed.ItemAs(Of IReadableList(Of GameAction))("actions"))
-        End Function
-
-        Public Overrides Function MakeControl() As IValueEditor(Of PlayerActionSet)
-            Dim subControl = DataJar.MakeControl()
-            Return New DelegatedValueEditor(Of PlayerActionSet)(
-                Control:=subControl.Control,
-                eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
-                getter:=Function() New PlayerActionSet(subControl.Value.ItemAs(Of PlayerId)("source"),
-                                                       subControl.Value.ItemAs(Of IReadableList(Of GameAction))("actions")),
-                setter:=Sub(value) subControl.Value = New Dictionary(Of InvariantString, Object) From {
-                            {"source", value.Id},
-                            {"actions", value.Actions}},
-                disposer:=Sub() subControl.Dispose())
+        Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As PlayerActionSet
+            Return New PlayerActionSet(value.ItemAs(Of PlayerId)("source"),
+                                       value.ItemAs(Of IReadableList(Of GameAction))("actions"))
         End Function
     End Class
 End Namespace

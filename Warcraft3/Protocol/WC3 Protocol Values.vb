@@ -115,7 +115,7 @@ Namespace WC3.Protocol
         End Operator
     End Class
     Public NotInheritable Class KnockDataJar
-        Inherits BaseJar(Of KnockData)
+        Inherits BaseConversionJar(Of KnockData, NamedValueMap)
 
         Private Shared ReadOnly DataJar As New TupleJar(
                 New UInt32Jar().Named("game id"),
@@ -127,9 +127,10 @@ Namespace WC3.Protocol
                 New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data"),
                 New Bnet.Protocol.IPEndPointJar().Named("internal address"))
 
-        Private Shared Function PackRaw(ByVal value As KnockData) As NamedValueMap
-            Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
+        Public Overrides Function SubJar() As Pickling.IJar(Of NamedValueMap)
+            Return DataJar
+        End Function
+        Public Overrides Function PackRaw(ByVal value As KnockData) As NamedValueMap
             Return New Dictionary(Of InvariantString, Object) From {
                     {"game id", value.GameId},
                     {"entry key", value.EntryKey},
@@ -140,9 +141,7 @@ Namespace WC3.Protocol
                     {"peer data", value.PeerData},
                     {"internal address", value.InternalEndPoint}}
         End Function
-        Private Shared Function ParseRaw(ByVal value As NamedValueMap) As KnockData
-            Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of KnockData)() IsNot Nothing)
+        Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As KnockData
             Return New KnockData(GameId:=value.ItemAs(Of UInt32)("game id"),
                                  EntryKey:=value.ItemAs(Of UInt32)("entry key"),
                                  Unknown:=value.ItemAs(Of Byte)("unknown value"),
@@ -151,20 +150,6 @@ Namespace WC3.Protocol
                                  Name:=value.ItemAs(Of String)("name"),
                                  PeerData:=value.ItemAs(Of IReadableList(Of Byte))("peer data"),
                                  InternalEndPoint:=value.ItemAs(Of Net.IPEndPoint)("internal address"))
-        End Function
-
-        Public Overrides Function Pack(ByVal value As KnockData) As IEnumerable(Of Byte)
-            Return DataJar.Pack(PackRaw(value))
-        End Function
-        Public Overloads Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of KnockData)
-            Dim parsed = DataJar.Parse(data)
-            Return parsed.WithValue(ParseRaw(parsed.Value))
-        End Function
-        Public Overrides Function Describe(ByVal value As KnockData) As String
-            Return DataJar.Describe(PackRaw(value))
-        End Function
-        Public Overloads Overrides Function Parse(ByVal text As String) As KnockData
-            Return ParseRaw(DataJar.Parse(text))
         End Function
     End Class
 End Namespace
