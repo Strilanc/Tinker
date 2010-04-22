@@ -46,9 +46,9 @@ Friend Module SharedTestObjects
             usedSlotCount:=0,
             baseage:=5.Seconds,
             clock:=New ManualClock())
-    Friend ReadOnly TestSettings As New GameSettings(
-            Map:=TestMap,
-            GameDescription:=TestDesc,
+    Friend ReadOnly TestSettings As GameSettings = GameSettings.FromArgument(
+            map:=TestMap,
+            gameDescription:=TestDesc,
             argument:=TestArgument)
     Friend ReadOnly TestPlayer As Player = Player.MakeFake(
         id:=New PlayerId(1),

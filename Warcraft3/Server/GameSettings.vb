@@ -44,16 +44,16 @@
         Private ReadOnly _initialInstanceCount As Integer
         Private ReadOnly _isAutoStarted As Boolean
         Private ReadOnly _adminPassword As String
-        Private ReadOnly _teamSizes As IReadableList(Of Integer) = New Integer() {}.AsReadableList
+        Private ReadOnly _teamSizes As IReadableList(Of Integer)
         Private ReadOnly _reservations As IReadableList(Of InvariantString)
-        Private ReadOnly _observerReservations As IReadableList(Of InvariantString) = New InvariantString() {}.AsReadableList
+        Private ReadOnly _observerReservations As IReadableList(Of InvariantString)
         Private ReadOnly _observerCount As Integer
         Private ReadOnly _usePermanent As Boolean
         Private ReadOnly _defaultSlotLockState As Slot.LockState
         Private ReadOnly _autoElevateUserName As InvariantString?
         Private ReadOnly _shouldGrabMap As Boolean
         Private ReadOnly _useLoadInGame As Boolean
-        Private ReadOnly _mapMode As String = ""
+        Private ReadOnly _mapMode As String
         Private ReadOnly _useMultiObs As Boolean
         Private ReadOnly _greeting As String
         Private ReadOnly _isPrivate As Boolean
@@ -67,84 +67,190 @@
             Contract.Invariant(_mapMode IsNot Nothing)
             Contract.Invariant(_teamSizes IsNot Nothing)
             Contract.Invariant(_reservations IsNot Nothing)
-            Contract.Invariant(_mapMode IsNot Nothing)
             Contract.Invariant(_greeting IsNot Nothing)
             Contract.Invariant(_observerReservations IsNot Nothing)
             Contract.Invariant(_observerCount >= 0)
             Contract.Invariant(_initialInstanceCount >= 0)
         End Sub
 
-        Public Sub New(ByVal map As Map,
-                       ByVal gameDescription As LocalGameDescription,
-                       ByVal argument As Commands.CommandArgument,
-                       Optional ByVal isAdminGame As Boolean = False,
-                       Optional ByVal adminPassword As String = Nothing)
+        <CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId:="Multi")>
+        Public Sub New(ByVal gameDescription As LocalGameDescription,
+                       ByVal map As Map,
+                       ByVal isAdminGame As Boolean,
+                       ByVal allowDownloads As Boolean,
+                       ByVal allowUpload As Boolean,
+                       ByVal initialInstanceCount As Integer,
+                       ByVal isAutoStarted As Boolean,
+                       ByVal adminPassword As String,
+                       ByVal teamSizes As IReadableList(Of Integer),
+                       ByVal reservations As IReadableList(Of InvariantString),
+                       ByVal observerReservations As IReadableList(Of InvariantString),
+                       ByVal observerCount As Integer,
+                       ByVal usePermanent As Boolean,
+                       ByVal defaultSlotLockState As Slot.LockState,
+                       ByVal autoElevateUserName As InvariantString?,
+                       ByVal shouldGrabMap As Boolean,
+                       ByVal useLoadInGame As Boolean,
+                       ByVal mapMode As String,
+                       ByVal useMultiObs As Boolean,
+                       ByVal greeting As String,
+                       ByVal isPrivate As Boolean,
+                       ByVal shouldRecordReplay As Boolean,
+                       Optional ByVal replayDefaultFileName As String = Nothing)
+            Contract.Requires(map IsNot Nothing)
+            Contract.Requires(gameDescription IsNot Nothing)
+            Contract.Requires(adminPassword IsNot Nothing)
+            Contract.Requires(mapMode IsNot Nothing)
+            Contract.Requires(teamSizes IsNot Nothing)
+            Contract.Requires(reservations IsNot Nothing)
+            Contract.Requires(greeting IsNot Nothing)
+            Contract.Requires(observerReservations IsNot Nothing)
+            Contract.Requires(observerCount >= 0)
+            Contract.Requires(initialInstanceCount >= 0)
+            Me._gameDescription = gameDescription
+            Me._map = map
+            Me._isAdminGame = isAdminGame
+            Me._allowDownloads = allowDownloads
+            Me._allowUpload = allowUpload
+            Me._initialInstanceCount = initialInstanceCount
+            Me._isAutoStarted = isAutoStarted
+            Me._adminPassword = adminPassword
+            Me._teamSizes = teamSizes
+            Me._reservations = reservations
+            Me._observerReservations = observerReservations
+            Me._observerCount = observerCount
+            Me._usePermanent = usePermanent
+            Me._defaultSlotLockState = defaultSlotLockState
+            Me._autoElevateUserName = autoElevateUserName
+            Me._shouldGrabMap = shouldGrabMap
+            Me._useLoadInGame = useLoadInGame
+            Me._mapMode = mapMode
+            Me._useMultiObs = useMultiObs
+            Me._greeting = greeting
+            Me._isPrivate = isPrivate
+            Me._shouldRecordReplay = shouldRecordReplay
+            Me._replayDefaultFileName = replayDefaultFileName
+        End Sub
+        <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", justification:="INCORRECT WARNING")>
+        Public Shared Function FromArgument(ByVal map As Map,
+                                            ByVal gameDescription As LocalGameDescription,
+                                            ByVal argument As Commands.CommandArgument,
+                                            Optional ByVal isAdminGame As Boolean = False,
+                                            Optional ByVal adminPassword As String = Nothing) As GameSettings
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
-            Me._map = map
-            Me._gameDescription = gameDescription
-            Me._allowDownloads = Not argument.HasOptionalSwitch("NoDL")
-            Me._allowUpload = Not argument.HasOptionalSwitch("NoUL")
-            Me._isAutoStarted = argument.HasOptionalSwitch("AutoStart") OrElse argument.HasOptionalSwitch("as")
-            Me._defaultSlotLockState = Slot.LockState.Unlocked
-            Me._adminPassword = If(adminPassword, New Random().Next(0, 1000).ToString("000", CultureInfo.InvariantCulture))
-            Me._isAdminGame = isAdminGame
-            Me._shouldGrabMap = argument.HasOptionalSwitch("grab")
-            Me._mapMode = If(argument.TryGetOptionalNamedValue("Mode"), "")
-            Me._useLoadInGame = argument.HasOptionalSwitch("LoadInGame") OrElse argument.HasOptionalSwitch("lig")
-            Me._usePermanent = argument.HasOptionalSwitch("Permanent") OrElse argument.HasOptionalSwitch("Perm")
+            Contract.Ensures(Contract.Result(Of GameSettings)() IsNot Nothing)
+            Return New GameSettings(map:=map,
+                                    gameDescription:=gameDescription,
+                                    AllowDownloads:=Not argument.HasOptionalSwitch("NoDL"),
+                                    AllowUpload:=Not argument.HasOptionalSwitch("NoUL"),
+                                    IsAutoStarted:=argument.HasOptionalSwitch("AutoStart") OrElse argument.HasOptionalSwitch("as"),
+                                    DefaultSlotLockState:=Slot.LockState.Unlocked,
+                                    adminPassword:=If(adminPassword, New Random().Next(0, 1000).ToString("000", CultureInfo.InvariantCulture)),
+                                    isAdminGame:=isAdminGame,
+                                    ShouldGrabMap:=argument.HasOptionalSwitch("grab"),
+                                    MapMode:=If(argument.TryGetOptionalNamedValue("Mode"), ""),
+                                    UseLoadInGame:=argument.HasOptionalSwitch("LoadInGame") OrElse argument.HasOptionalSwitch("lig"),
+                                    UsePermanent:=argument.HasOptionalSwitch("Permanent") OrElse argument.HasOptionalSwitch("Perm"),
+                                    Greeting:=ExtractGreet(argument),
+                                    IsPrivate:=argument.HasOptionalSwitch("p") OrElse argument.HasOptionalSwitch("private"),
+                                    replayDefaultFileName:=argument.TryGetOptionalNamedValue("replay"),
+                                    ShouldRecordReplay:=argument.HasOptionalSwitch("replay") OrElse argument.HasOptionalNamedValue("replay"),
+                                    TeamSizes:=ExtractTeamSizes(argument),
+                                    ObserverCount:=ExtractObserverCount(argument),
+                                    ObserverReservations:=ExtractObserverReservations(argument),
+                                    UseMultiObs:=argument.HasOptionalSwitch("MultiObs"),
+                                    Reservations:=ExtractReservations(argument, gameDescription),
+                                    InitialInstanceCount:=ExtractInitialInstanceCount(argument),
+                                    AutoElevateUserName:=ExtractAutoElevateUserName(gameDescription, argument))
+        End Function
+
+        Private Shared Function ExtractGreet(ByVal argument As Commands.CommandArgument) As String
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             If argument.HasOptionalNamedValue("Greet") Then
-                Me._greeting = argument.OptionalNamedValue("Greet").Replace("\n", Environment.NewLine).Replace("\N", Environment.NewLine)
+                Return argument.OptionalNamedValue("Greet").Replace("\n", Environment.NewLine).Replace("\N", Environment.NewLine)
             Else
-                Me._greeting = My.Settings.DefaultGameGreet
+                Return My.Settings.DefaultGameGreet.AssumeNotNull
             End If
-            Dim teamString = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
-            Me._isPrivate = argument.HasOptionalSwitch("p") OrElse argument.HasOptionalSwitch("private")
-            Me._replayDefaultFileName = argument.TryGetOptionalNamedValue("replay")
-            Me._shouldRecordReplay = argument.HasOptionalSwitch("replay") OrElse argument.HasOptionalNamedValue("replay")
-            If teamString IsNot Nothing Then
-                Me._teamSizes = TeamVersusStringToTeamSizes(teamString).AsReadableList
+        End Function
+        Private Shared Function ExtractTeamSizes(ByVal argument As Commands.CommandArgument) As IReadableList(Of Integer)
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Integer))() IsNot Nothing)
+            Dim teamArg = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
+            If teamArg IsNot Nothing Then
+                Return TeamVersusStringToTeamSizes(teamArg).AsReadableList
+            Else
+                Return New Integer() {}.AsReadableList
             End If
-            'Observers
+        End Function
+        Private Shared Function ExtractObserverCount(ByVal argument As Commands.CommandArgument) As Integer
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Integer)() >= 0)
             If argument.HasOptionalNamedValue("obs") Then
-                Dim obsArg = argument.OptionalNamedValue("obs")
-                If Integer.TryParse(obsArg, _observerCount) Then
-                    If _observerCount <= 0 Then Throw New ArgumentOutOfRangeException("argument", "Observer count must be positive.")
-                Else
-                    _observerReservations = (From name In argument.OptionalNamedValue("obs").Split(" "c)
-                                             Select New InvariantString(name)
-                                            ).ToReadableList
+                Dim result As Integer
+                If Integer.TryParse(argument.OptionalNamedValue("obs"), NumberStyles.None, CultureInfo.InvariantCulture, result) Then
+                    If result <= 0 Then Throw New ArgumentOutOfRangeException("argument", "Observer count must be positive.")
                 End If
+                Return result
+            Else
+                Return 0
             End If
-            Me._useMultiObs = argument.HasOptionalSwitch("MultiObs")
-            'Reservations
-            Dim reserverations = New List(Of InvariantString)
+        End Function
+        Private Shared Function ExtractObserverReservations(ByVal argument As Commands.CommandArgument) As IReadableList(Of InvariantString)
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of InvariantString))() IsNot Nothing)
+            If argument.HasOptionalNamedValue("obs") AndAlso Not Integer.TryParse(argument.OptionalNamedValue("obs"), NumberStyles.None, CultureInfo.InvariantCulture, 0) Then
+                Return (From name In argument.OptionalNamedValue("obs").Split(" "c)
+                        Select New InvariantString(name)
+                        ).ToReadableList
+            Else
+                Return New InvariantString() {}.AsReadableList
+            End If
+        End Function
+        Private Shared Function ExtractReservations(ByVal argument As Commands.CommandArgument,
+                                                    ByVal gameDescription As GameDescription) As IReadableList(Of InvariantString)
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Requires(gameDescription IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of InvariantString))() IsNot Nothing)
+            Dim result = New List(Of InvariantString)
             If argument.HasOptionalSwitch("Reserve") OrElse argument.HasOptionalSwitch("r") Then
-                reserverations.Add(gameDescription.GameStats.HostName)
+                result.Add(gameDescription.GameStats.HostName)
             End If
             For Each username In Concat(If(argument.TryGetOptionalNamedValue("Reserve"), "").Split(" "c),
                                         If(argument.TryGetOptionalNamedValue("r"), "").Split(" "c))
-                If username <> "" Then reserverations.Add(username)
+                If username <> "" Then result.Add(username)
             Next username
-            _reservations = reserverations.AsReadableList
-            'Instance count
-            If argument.TryGetOptionalNamedValue("Inst") Is Nothing Then
-                Me._initialInstanceCount = 1
-            Else
-                If Not Integer.TryParse(argument.TryGetOptionalNamedValue("Inst"), Me._initialInstanceCount) OrElse Me._initialInstanceCount < 0 Then
+            Return result.AsReadableList
+        End Function
+        Private Shared Function ExtractInitialInstanceCount(ByVal argument As Commands.CommandArgument) As Integer
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+            If argument.HasOptionalNamedValue("Inst") Then
+                Dim result As Integer
+                If Not Integer.TryParse(argument.OptionalNamedValue("Inst"), NumberStyles.None, CultureInfo.InvariantCulture, result) OrElse result < 0 Then
                     Throw New ArgumentException("Invalid number of instances.")
                 End If
+                Return result
+            Else
+                Return 1
             End If
-            'Admin name
+        End Function
+        Private Shared Function ExtractAutoElevateUserName(ByVal gameDescription As GameDescription,
+                                                           ByVal argument As Commands.CommandArgument) As InvariantString
+            Contract.Requires(gameDescription IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
             If argument.HasOptionalSwitch("Admin") OrElse argument.HasOptionalSwitch("a") Then
-                Me._autoElevateUserName = gameDescription.GameStats.HostName
+                Return gameDescription.GameStats.HostName
             ElseIf argument.HasOptionalNamedValue("Admin") Then
-                Me._autoElevateUserName = argument.OptionalNamedValue("Admin")
+                Return argument.OptionalNamedValue("Admin")
             ElseIf argument.HasOptionalNamedValue("a") Then
-                Me._autoElevateUserName = argument.OptionalNamedValue("a")
+                Return argument.OptionalNamedValue("a")
+            Else
+                Return Nothing
             End If
-        End Sub
+        End Function
 
 #Region "Properties"
         Public ReadOnly Property IsPrivate As Boolean

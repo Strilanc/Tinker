@@ -54,7 +54,7 @@ Public Class GameServerTest
     Public Sub AddGameSetTest()
         Dim clock = New ManualClock()
         Using server = New WC3.GameServer(clock:=clock)
-            Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
+            Dim result = server.QueueAddGameSet(TestSettings)
             WaitUntilTaskSucceeds(result)
         End Using
     End Sub
@@ -63,8 +63,8 @@ Public Class GameServerTest
     Public Sub DuplicateGameTest()
         Dim clock = New ManualClock()
         Using server = New WC3.GameServer(clock:=clock)
-            server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
-            Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
+            server.QueueAddGameSet(TestSettings)
+            Dim result = server.QueueAddGameSet(TestSettings)
             WaitUntilTaskFails(result)
         End Using
     End Sub
@@ -73,7 +73,7 @@ Public Class GameServerTest
     Public Sub EnterGameTest()
         Dim clock = New ManualClock()
         Using server = New WC3.GameServer(clock:=clock)
-            server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
+            server.QueueAddGameSet(TestSettings)
             'Prep data
             Dim testStream = New TestStream()
             testStream.EnqueueRead({WC3.Protocol.Packets.PacketPrefix, WC3.Protocol.PacketId.Knock})

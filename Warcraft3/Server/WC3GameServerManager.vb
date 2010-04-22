@@ -229,7 +229,7 @@ Namespace WC3
                                             UsedSlotCount:=0,
                                             clock:=New SystemClock())
 
-            Dim gameSettings = New WC3.GameSettings(map, gameDescription, argument)
+            Dim gameSettings = WC3.GameSettings.FromArgument(map, gameDescription, argument)
 
             Return _gameServer.QueueAddGameSet(gameSettings)
         End Function
@@ -293,11 +293,11 @@ Namespace WC3
                                           usedSlotCount:=0,
                                           hostPort:=_portHandle.Port,
                                           clock:=New SystemClock())
-            Dim gameSettings = New WC3.GameSettings(map,
-                                                    gameDescription,
-                                                    New Commands.CommandArgument("-permanent -noul -i=0"),
-                                                    isAdminGame:=True,
-                                                    adminPassword:=password)
+            Dim gameSettings = WC3.GameSettings.FromArgument(map,
+                                                             gameDescription,
+                                                             New Commands.CommandArgument("-permanent -noul -i=0"),
+                                                             isAdminGame:=True,
+                                                             adminPassword:=password)
 
             Return _gameServer.QueueAddGameSet(gameSettings)
         End Function
