@@ -47,14 +47,15 @@ Namespace WC3.Protocol
             End Select
         End Function
         <Pure()>
-        Public Function MakeGreet(ByVal remoteEndPoint As Net.IPEndPoint,
+        Public Function MakeGreet(ByVal remoteExternalEndPoint As Net.IPEndPoint,
                                   ByVal assignedId As PlayerId) As Packet
-            Contract.Requires(remoteEndPoint IsNot Nothing)
+            Contract.Requires(remoteExternalEndPoint IsNot Nothing)
+            Contract.Requires(remoteExternalEndPoint.Address IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(ServerPackets.Greet, New Dictionary(Of InvariantString, Object) From {
                     {"slot data", New Byte() {}.AsReadableList},
                     {"assigned id", assignedId},
-                    {"external address", remoteEndPoint}})
+                    {"external address", remoteExternalEndPoint}})
         End Function
         <Pure()>
         Public Function MakeReject(ByVal reason As RejectReason) As Packet
@@ -80,8 +81,9 @@ Namespace WC3.Protocol
                                               ByVal peerKey As UInt32,
                                               ByVal peerData As IReadableList(Of Byte),
                                               ByVal listenAddress As Net.IPEndPoint) As Packet
-            Contract.Requires(listenAddress IsNot Nothing)
             Contract.Requires(peerData IsNot Nothing)
+            Contract.Requires(listenAddress IsNot Nothing)
+            Contract.Requires(listenAddress.Address IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(ServerPackets.OtherPlayerJoined, New Dictionary(Of InvariantString, Object) From {
                     {"peer key", peerKey},

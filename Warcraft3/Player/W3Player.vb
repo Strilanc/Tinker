@@ -20,8 +20,7 @@ Namespace WC3
         Private ReadOnly _name As InvariantString
         Private ReadOnly _peerKey As UInt32
         Private ReadOnly _peerData As IReadableList(Of Byte)
-        Private ReadOnly _listenPort As UShort
-        Private ReadOnly _remoteEndPoint As Net.IPEndPoint
+        Private ReadOnly _listenEndPoint As Net.IPEndPoint
 
         Private ReadOnly _isFake As Boolean
         Private ReadOnly _logger As Logger
@@ -56,8 +55,8 @@ Namespace WC3
             Contract.Invariant(_peerData IsNot Nothing)
             Contract.Invariant(_tickQueue IsNot Nothing)
             Contract.Invariant(_packetHandler IsNot Nothing)
-            Contract.Invariant(_remoteEndPoint IsNot Nothing)
-            Contract.Invariant(_remoteEndPoint.Address IsNot Nothing)
+            Contract.Invariant(_listenEndPoint IsNot Nothing)
+            Contract.Invariant(_listenEndPoint.Address IsNot Nothing)
             Contract.Invariant(_taskTestCanHost IsNot Nothing)
 
             Contract.Invariant(_socket Is Nothing = IsFake)
@@ -73,9 +72,8 @@ Namespace WC3
                        ByVal logger As Logger,
                        ByVal peerKey As UInt32,
                        ByVal peerData As IReadableList(Of Byte),
-                       ByVal listenPort As UInt16,
                        ByVal packetHandler As Protocol.W3PacketHandler,
-                       ByVal remoteEndPoint As Net.IPEndPoint,
+                       ByVal listenEndPoint As Net.IPEndPoint,
                        ByVal taskTestCanHost As Task,
                        Optional ByVal pinger As Pinger = Nothing,
                        Optional ByVal socket As W3Socket = Nothing,
@@ -84,8 +82,8 @@ Namespace WC3
                        Optional ByVal inQueue As CallQueue = Nothing,
                        Optional ByVal outQueue As CallQueue = Nothing)
             Contract.Requires(peerData IsNot Nothing)
-            Contract.Requires(remoteEndPoint IsNot Nothing)
-            Contract.Requires(remoteEndPoint.Address IsNot Nothing)
+            Contract.Requires(listenEndPoint IsNot Nothing)
+            Contract.Requires(listenEndPoint.Address IsNot Nothing)
             Contract.Requires(taskTestCanHost IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             If name.Length > Protocol.Packets.MaxPlayerNameLength Then Throw New ArgumentException("Player name must be less than 16 characters long.")
@@ -99,9 +97,8 @@ Namespace WC3
             Me._socket = socket
             Me._peerKey = peerKey
             Me._peerData = peerData
-            Me._listenPort = listenPort
             Me._packetHandler = packetHandler
-            Me._remoteEndPoint = remoteEndPoint
+            Me._listenEndPoint = listenEndPoint
             Me._taskTestCanHost = taskTestCanHost
             Me._downloadManager = downloadManager
             Me._inQueue = If(inQueue, New TaskedCallQueue)
@@ -125,9 +122,8 @@ Namespace WC3
                                     logger:=logger,
                                     PeerKey:=0,
                                     PeerData:=New Byte() {0}.AsReadableList,
-                                    ListenPort:=0,
                                     PacketHandler:=New Protocol.W3PacketHandler(name, logger),
-                                    RemoteEndPoint:=New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0),
+                                    listenEndPoint:=New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0),
                                     taskTestCanHost:=hostFail.Task)
             Return player
         End Function
@@ -146,7 +142,8 @@ Namespace WC3
 
             logger = If(logger, New Logger)
             socket.Logger = logger
-            Dim taskTestCanHost = AsyncTcpConnect(socket.RemoteEndPoint.Address, knockData.ListenPort)
+            Dim listenEndPoint = New Net.IPEndPoint(socket.RemoteEndPoint.Address, knockData.ListenPort)
+            Dim taskTestCanHost = AsyncTcpConnect(listenEndPoint.Address, CUShort(listenEndPoint.Port))
             taskTestCanHost.ContinueWithAction(Sub(value) value.Close()).IgnoreExceptions()
             Dim pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
 
@@ -156,9 +153,8 @@ Namespace WC3
                                     logger:=logger,
                                     PeerKey:=knockData.PeerKey,
                                     PeerData:=knockData.PeerData,
-                                    ListenPort:=knockData.ListenPort,
                                     PacketHandler:=New Protocol.W3PacketHandler(knockData.Name, logger),
-                                    RemoteEndPoint:=socket.RemoteEndPoint,
+                                    listenEndPoint:=listenEndPoint,
                                     taskTestCanHost:=taskTestCanHost,
                                     pinger:=pinger,
                                     socket:=socket,
@@ -230,16 +226,11 @@ Namespace WC3
                 Return _peerData
             End Get
         End Property
-        Public ReadOnly Property ListenPort As UShort
-            Get
-                Return _listenPort
-            End Get
-        End Property
-        Public ReadOnly Property RemoteEndPoint As Net.IPEndPoint
+        Public ReadOnly Property ListenEndPoint As Net.IPEndPoint
             Get
                 Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Address IsNot Nothing)
-                Return _remoteEndPoint
+                Return _listenEndPoint
             End Get
         End Property
 
@@ -354,7 +345,7 @@ Namespace WC3
         <ContractVerification(False)>
         Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements Download.IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
-            Return Protocol.MakeOtherPlayerJoined(Name, Id, PeerKey, PeerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
+            Return Protocol.MakeOtherPlayerJoined(Name, Id, PeerKey, PeerData, ListenEndPoint)
         End Function
 
         Private Sub OnReceivePeerConnectionInfo(ByVal flags As UInt16)

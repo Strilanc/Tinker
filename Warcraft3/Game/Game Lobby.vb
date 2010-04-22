@@ -272,7 +272,7 @@
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
             'Greet
-            newPlayer.QueueSendPacket(Protocol.MakeGreet(newPlayer.RemoteEndPoint, newPlayer.Id))
+            newPlayer.QueueSendPacket(Protocol.MakeGreet(socket.RemoteEndPoint, newPlayer.Id))
             newPlayer.QueueSendPacket(Protocol.MakeHostMapInfo(_settings.Map))
             For Each visibleOtherPlayer In From p In _kernel.Players
                                            Where p IsNot newPlayer
