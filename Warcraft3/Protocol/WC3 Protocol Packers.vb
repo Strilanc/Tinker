@@ -53,7 +53,7 @@ Namespace WC3.Protocol
             Contract.Requires(remoteExternalEndPoint.Address IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(ServerPackets.Greet, New Dictionary(Of InvariantString, Object) From {
-                    {"slot data", New Byte() {}.AsReadableList},
+                    {"lobby state", [Default](Of Maybe(Of NamedValueMap))()},
                     {"assigned id", assignedId},
                     {"external address", remoteExternalEndPoint}})
         End Function

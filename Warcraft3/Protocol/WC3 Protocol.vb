@@ -210,6 +210,11 @@ Namespace WC3.Protocol
     <ContractVerification(False)>
     Public Module Packets
         Public Const PacketPrefix As Byte = &HF7
+        Public ReadOnly LobbyStateTupleJar As New TupleJar(
+                New SlotJar().RepeatedWithCountPrefix(prefixSize:=1).Named("slots"),
+                New UInt32Jar(showHex:=True).Named("random seed"),
+                New EnumByteJar(Of LobbyLayoutStyle)().Named("layout style"),
+                New ByteJar().Named("num player slots"))
 
         Public MustInherit Class Definition
             Private ReadOnly _id As PacketId
@@ -297,7 +302,7 @@ Namespace WC3.Protocol
             ''' This packet has two forms: one includes the data from the <see cref="LobbyState"/> packet, and the other doesn't.
             ''' </summary>
             Public Shared ReadOnly Greet As Definition(Of NamedValueMap) = Define(PacketId.Greet,
-                    New DataJar().DataSizePrefixed(prefixSize:=2).Named("slot data"),
+                    LobbyStateTupleJar.Optional.DataSizePrefixed(prefixSize:=2).Named("lobby state"),
                     New PlayerIdJar().Named("assigned id"),
                     New Bnet.Protocol.IPEndPointJar().Named("external address"))
             ''' <summary>
@@ -350,12 +355,7 @@ Namespace WC3.Protocol
                     New UInt32Jar().Named("free slots"))
             '''<summary>Broadcast by server to all clients when the lobby state changes.</summary>
             Public Shared ReadOnly LobbyState As Definition(Of NamedValueMap) = Define(PacketId.LobbyState,
-                    New TupleJar(
-                            New SlotJar().RepeatedWithCountPrefix(prefixSize:=1).Named("slots"),
-                            New UInt32Jar(showHex:=True).Named("random seed"),
-                            New EnumByteJar(Of LobbyLayoutStyle)().Named("layout style"),
-                            New ByteJar().Named("num player slots")
-                        ).DataSizePrefixed(prefixSize:=2))
+                    LobbyStateTupleJar.DataSizePrefixed(prefixSize:=2))
             '''<summary>Sent from server in ladder games before <see cref="StartCountdown"/>.</summary>
             Public Shared ReadOnly MeleePlayerInfo As Definition(Of IReadableList(Of NamedValueMap)) = Define(PacketId.MeleePlayerInfo,
                     New TupleJar(

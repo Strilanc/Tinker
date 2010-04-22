@@ -42,7 +42,7 @@ Public Class WC3ProtocolTest
                        2,
                        2, 0, &H17, &HE1, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"slot data", New Byte() {}.AsReadableList},
+                        {"lobby state", [Default](Of Maybe(Of NamedValueMap))()},
                         {"assigned id", New PlayerId(2)},
                         {"external address", New Net.IPEndPoint(Net.IPAddress.Loopback, 6113)}
                     })
