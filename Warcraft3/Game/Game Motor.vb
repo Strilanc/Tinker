@@ -156,7 +156,7 @@
                     Contract.Assume(p IsNot Nothing)
                     If Not _kernel.Players.Contains(p) Then
                         _laggingPlayers.Remove(p)
-                    ElseIf p.GetTockTime >= _gameTime OrElse p.isFake Then
+                    ElseIf p.TockTime >= _gameTime OrElse p.isFake Then
 
                         _laggingPlayers.Remove(p)
                         Dim p_ = p
@@ -172,7 +172,7 @@
             Else
                 _laggingPlayers = (From p In _kernel.Players
                                    Where Not p.isFake _
-                                   AndAlso p.GetTockTime < _gameTime - If(_asyncWaitTriggered, 0, _lagLimit.TotalMilliseconds)
+                                   AndAlso p.TockTime < _gameTime - If(_asyncWaitTriggered, 0, _lagLimit.TotalMilliseconds)
                                    ).ToList
                 _asyncWaitTriggered = False
                 If _laggingPlayers.Count > 0 Then

@@ -22,20 +22,20 @@ Public MustInherit Class PacketHandler(Of TKey)
         Me.sourceName = sourceName
     End Sub
 
-    Public Sub AddLogger(ByVal key As TKey,
-                         ByVal jar As ISimpleJar)
+    Public Function AddLogger(ByVal key As TKey,
+                              ByVal jar As ISimpleJar) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
-        Call [AddHandler](key, Function(data)
-                                   Dim pickle = jar.ParsePickle(data)
-                                   If pickle.Data.Count < data.Count Then Throw New PicklingException("Data left over after parsing.")
-                                   If pickle.Data.Count > data.Count Then Throw New PicklingException("Pickle contains more data than was parsed.")
-                                   logger.Log(Function() "Received {0} from {1}: {2}".Frmt(key, sourceName, pickle.Description), LogMessageType.DataParsed)
-                                   Dim result = New TaskCompletionSource(Of Boolean)()
-                                   result.SetResult(True)
-                                   Return result.Task
-                               End Function)
-    End Sub
+        Return [AddHandler](key, Function(data)
+                                     Dim pickle = jar.ParsePickle(data)
+                                     If pickle.Data.Count < data.Count Then Throw New PicklingException("Data left over after parsing.")
+                                     If pickle.Data.Count > data.Count Then Throw New PicklingException("Pickle contains more data than was parsed.")
+                                     logger.Log(Function() "Received {0} from {1}: {2}".Frmt(key, sourceName, pickle.Description), LogMessageType.DataParsed)
+                                     Dim result = New TaskCompletionSource(Of Boolean)()
+                                     result.SetResult(True)
+                                     Return result.Task
+                                 End Function)
+    End Function
 
     Public Function [AddHandler](ByVal key As TKey,
                                  ByVal handler As Func(Of IReadableList(Of Byte), Task)) As IDisposable

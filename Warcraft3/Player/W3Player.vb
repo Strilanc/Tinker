@@ -123,8 +123,9 @@ Namespace WC3
                                     PeerKey:=0,
                                     PeerData:=New Byte() {0}.AsReadableList,
                                     PacketHandler:=New Protocol.W3PacketHandler(name, logger),
-                                    listenEndPoint:=New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0),
+                                    ListenEndPoint:=New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0),
                                     taskTestCanHost:=hostFail.Task)
+            player._ready = True
             Return player
         End Function
 
@@ -203,7 +204,7 @@ Namespace WC3
         End Property
         Public ReadOnly Property IsReady As Boolean
             Get
-                Return IsFake OrElse _ready
+                Return _ready
             End Get
         End Property
         Public ReadOnly Property CanHost As HostTestResult
@@ -233,77 +234,27 @@ Namespace WC3
                 Return _listenEndPoint
             End Get
         End Property
-
-        Private Sub AddPacketLogger(ByVal packetDefinition As Protocol.Packets.Definition)
-            Contract.Requires(packetDefinition IsNot Nothing)
-            _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
-        End Sub
-        Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                           ByVal handler As Action(Of T)) As IDisposable
-            Contract.Requires(packetDefinition IsNot Nothing)
-            Contract.Requires(handler IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            AddPacketLogger(packetDefinition)
-            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) _inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data).Value)))
-        End Function
-
-        Private Function AddRemotePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                      ByVal handler As Func(Of T, Task)) As IDisposable
-            Contract.Requires(packetDefinition IsNot Nothing)
-            Contract.Requires(handler IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
-            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data).Value))
-        End Function
-        Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                    ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _
-                                                    Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
-            Return _inQueue.QueueFunc(Function() AddRemotePacketHandler(packetDefinition, handler))
-        End Function
-
-        Public Sub QueueStart()
-            _inQueue.QueueAction(Sub() BeginReading())
-        End Sub
-
-        Private Sub BeginReading()
-            AsyncProduceConsumeUntilError(
-                producer:=AddressOf _socket.AsyncReadPacket,
-                consumer:=Function(packetData) _packetHandler.HandlePacket(packetData),
-                errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
-                                                             reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
-                                                             reasonDescription:="Error receiving packet: {0}.".Frmt(exception.Summarize)))
-        End Sub
-
-        '''<summary>Disconnects this player and removes them from the system.</summary>
-        Private Sub Disconnect(ByVal expected As Boolean,
-                               ByVal reportedReason As Protocol.PlayerLeaveReason,
-                               ByVal reasonDescription As String)
-            Contract.Requires(reasonDescription IsNot Nothing)
-            If Not Me.IsFake Then
-                _socket.Disconnect(expected, reasonDescription)
-            End If
-            If _pinger IsNot Nothing Then _pinger.Dispose()
-            RaiseEvent Disconnected(Me, expected, reportedReason, reasonDescription)
-            Me.Dispose()
-        End Sub
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As Task Implements Download.IPlayerDownloadAspect.QueueDisconnect
-            Return _inQueue.QueueAction(Sub() Disconnect(expected, reportedReason, reasonDescription))
-        End Function
-
-        Private Sub SendPacket(ByVal pk As Protocol.Packet)
-            Contract.Requires(pk IsNot Nothing)
-            If Me.IsFake Then Return
-            _socket.SendPacket(pk)
-        End Sub
-        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket
-            Dim result = _inQueue.QueueAction(Sub() SendPacket(packet))
-            result.IgnoreExceptions()
-            Return result
-        End Function
-
-        Private Sub OnSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reasonDescription As String)
-            _inQueue.QueueAction(Sub() Disconnect(expected, Protocol.PlayerLeaveReason.Disconnect, reasonDescription))
-        End Sub
+        Public ReadOnly Property AdvertisedDownloadPercent() As Byte
+            Get
+                If _state <> PlayerState.Lobby Then Return 100
+                If IsFake OrElse _downloadManager Is Nothing Then Return 254 'Not a real player, show "|CF"
+                If _reportedDownloadPosition Is Nothing Then Return 255
+                Return CByte((_reportedDownloadPosition.Value * 100UL) \ _downloadManager.FileSize)
+            End Get
+        End Property
+        Public ReadOnly Property TockTime() As Integer
+            Get
+                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+                Return _totalTockTime
+            End Get
+        End Property
+        Public ReadOnly Property PeerConnectionCount() As Integer
+            Get
+                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+                Contract.Ensures(Contract.Result(Of Integer)() <= 12)
+                Return _numPeerConnections
+            End Get
+        End Property
 
         Public Function QueueGetLatency() As Task(Of Double)
             Contract.Ensures(Contract.Result(Of Task(Of Double))() IsNot Nothing)
@@ -323,130 +274,7 @@ Namespace WC3
                               _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc))
                    ).Unwrap.AssumeNotNull
         End Function
-        Public ReadOnly Property PeerConnectionCount() As Integer
-            Get
-                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
-                Contract.Ensures(Contract.Result(Of Integer)() <= 12)
-                Return _numPeerConnections
-            End Get
-        End Property
-
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
-            If finalizing Then Return Nothing
-            Return QueueDisconnect(expected:=True, reportedReason:=Protocol.PlayerLeaveReason.Disconnect, reasonDescription:="Disposed")
-        End Function
-
-        Private Sub OnReceivePong(ByVal salt As UInt32)
-            _outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
-        End Sub
-
-#Region "Lobby"
-        <Pure()>
-        <ContractVerification(False)>
-        Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements Download.IPlayerDownloadAspect.MakePacketOtherPlayerJoined
-            Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
-            Return Protocol.MakeOtherPlayerJoined(Name, Id, PeerKey, PeerData, ListenEndPoint)
-        End Function
-
-        Private Sub OnReceivePeerConnectionInfo(ByVal flags As UInt16)
-            _numPeerConnections = (From i In 12.Range Where flags.HasBitSet(i)).Count
-            Contract.Assume(_numPeerConnections <= 12)
-            RaiseEvent SuperficialStateUpdated(Me)
-        End Sub
-        Private Sub OnReceiveClientMapInfo(ByVal vals As NamedValueMap)
-            Contract.Requires(vals IsNot Nothing)
-            _reportedDownloadPosition = vals.ItemAs(Of UInt32)("total downloaded")
-            _outQueue.QueueAction(Sub() RaiseEvent StateUpdated(Me))
-        End Sub
-#End Region
-
-#Region "Load Screen"
-        Private Sub OnReceiveReady(ByVal value As EmptyJar.EmptyValue)
-            _ready = True
-            _logger.Log("{0} is ready".Frmt(Name), LogMessageType.Positive)
-        End Sub
-
-        Private Sub StartLoading()
-            _state = PlayerState.Loading
-            SendPacket(Protocol.MakeStartLoading())
-        End Sub
-        Public Function QueueStartLoading() As Task
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return _inQueue.QueueAction(AddressOf StartLoading)
-        End Function
-#End Region
-
-#Region "GamePlay"
-        Public Sub GamePlayStart()
-            _state = PlayerState.Playing
-        End Sub
-
-        Private Sub SendTick(ByVal record As TickRecord,
-                             ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet)))
-            Contract.Requires(actionStreaks IsNot Nothing)
-            Contract.Requires(record IsNot Nothing)
-            If IsFake Then Return
-            _tickQueue.Enqueue(record)
-            _maxTockTime += record.length
-            For Each preOverflowActionStreak In actionStreaks.SkipLast(1)
-                Contract.Assume(preOverflowActionStreak IsNot Nothing)
-                SendPacket(Protocol.MakeTickPreOverflow(preOverflowActionStreak))
-            Next preOverflowActionStreak
-            If actionStreaks.Any Then
-                SendPacket(Protocol.MakeTick(record.length, actionStreaks.Last.AssumeNotNull.Maybe))
-            Else
-                SendPacket(Protocol.MakeTick(record.length))
-            End If
-        End Sub
-        Public Function QueueSendTick(ByVal record As TickRecord,
-                                      ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet))) As Task
-            Contract.Requires(record IsNot Nothing)
-            Contract.Requires(actionStreaks IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return _inQueue.QueueAction(Sub() SendTick(record, actionStreaks))
-        End Function
-
-        Private Sub OnReceiveTock(ByVal vals As NamedValueMap)
-            Contract.Requires(vals IsNot Nothing)
-            If _tickQueue.Count <= 0 Then
-                _logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(Name), LogMessageType.Problem)
-                Disconnect(True, Protocol.PlayerLeaveReason.Disconnect, "overticked")
-                Return
-            End If
-
-            Dim record = _tickQueue.Dequeue()
-            Contract.Assume(record IsNot Nothing)
-            _totalTockTime += record.length
-            Contract.Assume(_totalTockTime >= 0)
-        End Sub
-
-        Public ReadOnly Property GetTockTime() As Integer
-            Get
-                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
-                Return _totalTockTime
-            End Get
-        End Property
-        Public Function QueueStartPlaying() As Task
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return _inQueue.QueueAction(AddressOf GamePlayStart)
-        End Function
-#End Region
-
-#Region "Part"
-        Private Sub OnReceiveLeaving(ByVal leaveType As Protocol.PlayerLeaveReason)
-            Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))
-        End Sub
-
-        Public ReadOnly Property AdvertisedDownloadPercent() As Byte
-            Get
-                If _state <> PlayerState.Lobby Then Return 100
-                If IsFake OrElse _downloadManager Is Nothing Then Return 254 'Not a real player, show "|CF"
-                If _reportedDownloadPosition Is Nothing Then Return 255
-                Return CByte((_reportedDownloadPosition.Value * 100UL) \ _downloadManager.FileSize)
-            End Get
-        End Property
-
-        Public Function Description() As Task(Of String)
+        Public Function AsyncDescription() As Task(Of String)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return QueueGetLatencyDescription.Select(
                 Function(latencyDesc)
@@ -481,6 +309,169 @@ Namespace WC3
                                   text
                 End Function).Unwrap.AssumeNotNull
         End Function
-#End Region
+
+        Private Function AddPacketLogger(ByVal packetDefinition As Protocol.Packets.Definition) As IDisposable
+            Contract.Requires(packetDefinition IsNot Nothing)
+            Return _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
+        End Function
+        Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                           ByVal handler As Action(Of T)) As IDisposable
+            Contract.Requires(packetDefinition IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Dim ld = AddPacketLogger(packetDefinition)
+            Dim hd = _packetHandler.AddHandler(packetDefinition.Id, Function(data) _inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data).Value)))
+            Return New DelegatedDisposable(Sub()
+                                               ld.Dispose()
+                                               hd.Dispose()
+                                           End Sub)
+        End Function
+        Private Function AddRemotePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                      ByVal handler As Func(Of T, Task)) As IDisposable
+            Contract.Requires(packetDefinition IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Dim ld = _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
+            Dim hd = _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data).Value))
+            Return New DelegatedDisposable(Sub()
+                                               ld.Dispose()
+                                               hd.Dispose()
+                                           End Sub)
+        End Function
+        Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                    ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _
+                                                    Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
+            Return _inQueue.QueueFunc(Function() AddRemotePacketHandler(packetDefinition, handler))
+        End Function
+
+        Private Sub OnReceivePong(ByVal salt As UInt32)
+            _outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
+        End Sub
+        Private Sub OnReceivePeerConnectionInfo(ByVal flags As UInt16)
+            _numPeerConnections = (From i In 12.Range Where flags.HasBitSet(i)).Count
+            Contract.Assume(_numPeerConnections <= 12)
+            RaiseEvent SuperficialStateUpdated(Me)
+        End Sub
+        Private Sub OnReceiveClientMapInfo(ByVal vals As NamedValueMap)
+            Contract.Requires(vals IsNot Nothing)
+            _reportedDownloadPosition = vals.ItemAs(Of UInt32)("total downloaded")
+            _outQueue.QueueAction(Sub() RaiseEvent StateUpdated(Me))
+        End Sub
+        Private Sub OnReceiveReady(ByVal value As EmptyJar.EmptyValue)
+            _ready = True
+            _logger.Log("{0} is ready".Frmt(Name), LogMessageType.Positive)
+        End Sub
+        Private Sub OnReceiveLeaving(ByVal leaveType As Protocol.PlayerLeaveReason)
+            Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))
+        End Sub
+        Private Sub OnReceiveTock(ByVal vals As NamedValueMap)
+            Contract.Requires(vals IsNot Nothing)
+            If _tickQueue.Count <= 0 Then
+                _logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(Name), LogMessageType.Problem)
+                Disconnect(True, Protocol.PlayerLeaveReason.Disconnect, "overticked")
+                Return
+            End If
+
+            Dim record = _tickQueue.Dequeue()
+            Contract.Assume(record IsNot Nothing)
+            _totalTockTime += record.length
+            Contract.Assume(_totalTockTime >= 0)
+        End Sub
+
+        Private Sub OnSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reasonDescription As String)
+            _inQueue.QueueAction(Sub() Disconnect(expected, Protocol.PlayerLeaveReason.Disconnect, reasonDescription))
+        End Sub
+
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+            If finalizing Then Return Nothing
+            Return QueueDisconnect(expected:=True, reportedReason:=Protocol.PlayerLeaveReason.Disconnect, reasonDescription:="Disposed")
+        End Function
+
+        <Pure()>
+        <ContractVerification(False)>
+        Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements Download.IPlayerDownloadAspect.MakePacketOtherPlayerJoined
+            Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
+            Return Protocol.MakeOtherPlayerJoined(Name, Id, PeerKey, PeerData, listenEndPoint)
+        End Function
+
+        Private Sub BeginReading()
+            AsyncProduceConsumeUntilError(
+                producer:=AddressOf _socket.AsyncReadPacket,
+                consumer:=Function(packetData) _packetHandler.HandlePacket(packetData),
+                errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
+                                                             reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
+                                                             reasonDescription:="Error receiving packet: {0}.".Frmt(exception.Summarize)))
+        End Sub
+        Public Sub QueueStart()
+            _inQueue.QueueAction(Sub() BeginReading())
+        End Sub
+
+        Private Sub Disconnect(ByVal expected As Boolean,
+                               ByVal reportedReason As Protocol.PlayerLeaveReason,
+                               ByVal reasonDescription As String)
+            Contract.Requires(reasonDescription IsNot Nothing)
+            If Not Me.IsFake Then
+                _socket.Disconnect(expected, reasonDescription)
+            End If
+            If _pinger IsNot Nothing Then _pinger.Dispose()
+            RaiseEvent Disconnected(Me, expected, reportedReason, reasonDescription)
+            Me.Dispose()
+        End Sub
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As Task Implements Download.IPlayerDownloadAspect.QueueDisconnect
+            Return _inQueue.QueueAction(Sub() Disconnect(expected, reportedReason, reasonDescription))
+        End Function
+
+        Private Sub SendPacket(ByVal pk As Protocol.Packet)
+            Contract.Requires(pk IsNot Nothing)
+            If Me.IsFake Then Return
+            _socket.SendPacket(pk)
+        End Sub
+        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket
+            Dim result = _inQueue.QueueAction(Sub() SendPacket(packet))
+            result.IgnoreExceptions()
+            Return result
+        End Function
+
+        Private Sub StartLoading()
+            _state = PlayerState.Loading
+            SendPacket(Protocol.MakeStartLoading())
+        End Sub
+        Public Function QueueStartLoading() As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Return _inQueue.QueueAction(AddressOf StartLoading)
+        End Function
+
+        Private Sub GamePlayStart()
+            _state = PlayerState.Playing
+        End Sub
+        Public Function QueueStartPlaying() As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Return _inQueue.QueueAction(AddressOf GamePlayStart)
+        End Function
+
+        Private Sub SendTick(ByVal record As TickRecord,
+                             ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet)))
+            Contract.Requires(actionStreaks IsNot Nothing)
+            Contract.Requires(record IsNot Nothing)
+            If IsFake Then Return
+            _tickQueue.Enqueue(record)
+            _maxTockTime += record.length
+            For Each preOverflowActionStreak In actionStreaks.SkipLast(1)
+                Contract.Assume(preOverflowActionStreak IsNot Nothing)
+                SendPacket(Protocol.MakeTickPreOverflow(preOverflowActionStreak))
+            Next preOverflowActionStreak
+            If actionStreaks.Any Then
+                SendPacket(Protocol.MakeTick(record.length, actionStreaks.Last.AssumeNotNull.Maybe))
+            Else
+                SendPacket(Protocol.MakeTick(record.length))
+            End If
+        End Sub
+        Public Function QueueSendTick(ByVal record As TickRecord,
+                                      ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet))) As Task
+            Contract.Requires(record IsNot Nothing)
+            Contract.Requires(actionStreaks IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Return _inQueue.QueueAction(Sub() SendTick(record, actionStreaks))
+        End Function
     End Class
 End Namespace

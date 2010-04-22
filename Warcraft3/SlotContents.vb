@@ -162,7 +162,7 @@
             Return New Player() {_player}
         End Function
         Public Overrides Function AsyncGenerateDescription() As Task(Of String)
-            Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.Id.Index).AsTask, _player.Description)
+            Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.Id.Index).AsTask, _player.AsyncDescription)
         End Function
         Public Overrides ReadOnly Property PlayerIndex() As PlayerId?
             Get
