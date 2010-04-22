@@ -194,6 +194,7 @@
     <Compile Include="Bnet\Product Credentials.vb" />
     <Compile Include="Bnet\Client Credentials.vb" />
     <Compile Include="Bot\Settings.vb" />
+    <Compile Include="GlobalSuppressions.vb" />
     <Compile Include="Interface\ExceptionForm.Designer.vb">
       <DependentUpon>ExceptionForm.vb</DependentUpon>
     </Compile>

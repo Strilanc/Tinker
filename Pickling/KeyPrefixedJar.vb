@@ -49,7 +49,7 @@ Namespace Pickling
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As KeyValuePair(Of TKey, Object)
             Dim divider = If(_useSingleLineDescription, ":", ",")
-            Dim p = text.IndexOf(divider)
+            Dim p = text.IndexOf(divider, StringComparison.Ordinal)
             If p < 0 Then Throw New PicklingException("Expected key{0}value style.".Frmt(divider))
             Dim key = _keyJar.Parse(text.Substring(0, p).TrimEnd)
             If Not _valueJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))

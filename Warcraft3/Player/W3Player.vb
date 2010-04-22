@@ -135,10 +135,10 @@ Namespace WC3
                                           ByVal clock As IClock,
                                           ByVal downloadManager As Download.Manager,
                                           Optional ByVal logger As Logger = Nothing) As Player
-            Contract.Assume(knockData IsNot Nothing)
-            Contract.Assume(socket IsNot Nothing)
-            Contract.Assume(clock IsNot Nothing)
-            Contract.Assume(downloadManager IsNot Nothing)
+            Contract.Requires(knockData IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(downloadManager IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             logger = If(logger, New Logger)

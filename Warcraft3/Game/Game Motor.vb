@@ -111,6 +111,7 @@
         End Sub
 
         Private Sub OnReceiveRequestDropLagger(ByVal sender As Player)
+            Contract.Requires(sender IsNot Nothing)
             For Each player In _laggingPlayers
                 Contract.Assume(player IsNot Nothing)
                 RaiseEvent RemovePlayer(Me, player, True, Protocol.PlayerLeaveReason.Disconnect, "Lagger dropped")
@@ -156,7 +157,7 @@
                     Contract.Assume(p IsNot Nothing)
                     If Not _kernel.Players.Contains(p) Then
                         _laggingPlayers.Remove(p)
-                    ElseIf p.TockTime >= _gameTime OrElse p.isFake Then
+                    ElseIf p.TockTime >= _gameTime OrElse p.IsFake Then
 
                         _laggingPlayers.Remove(p)
                         Dim p_ = p
@@ -171,7 +172,7 @@
                 Next p
             Else
                 _laggingPlayers = (From p In _kernel.Players
-                                   Where Not p.isFake _
+                                   Where Not p.IsFake _
                                    AndAlso p.TockTime < _gameTime - If(_asyncWaitTriggered, 0, _lagLimit.TotalMilliseconds)
                                    ).ToList
                 _asyncWaitTriggered = False
@@ -182,6 +183,7 @@
             End If
         End Sub
 
+        <CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", justification:="The analyzer doesn't see the maxDataSize parameter from within the lambda.")>
         Private Function SplitSequenceByDataSize(Of TValue)(ByVal sequence As IEnumerable(Of TValue),
                                                             ByVal measure As Func(Of TValue, Int32),
                                                             ByVal maxDataSize As Int32) As IReadableList(Of IReadableList(Of TValue))

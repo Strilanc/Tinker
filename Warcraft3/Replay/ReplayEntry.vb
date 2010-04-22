@@ -22,6 +22,7 @@ Namespace WC3.Replay
             Me._definition = definition
             Me._payload = payload
         End Sub
+        <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", justification:="Helps type inference.")>
         Public Shared Function FromDefinitionAndValue(Of TPayload)(ByVal definition As Format.Definition(Of TPayload),
                                                                    ByVal payload As TPayload) As ReplayEntry
             Contract.Requires(definition IsNot Nothing)

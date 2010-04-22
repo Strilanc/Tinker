@@ -597,16 +597,17 @@ Namespace WC3
                     Dim waterTintRGBA = stream.ReadExact(4)
                 End If
 
-                Dim slots = ReadMapInfoSlotsAndForces(stream, options)
+                Dim slots = ReadMapInfoLobbySlots(stream, options)
+                Dim teamedSlots = ReadMapInfoForces(stream, slots, options)
 
                 '... more data in the file but it isn't needed ...
 
-                Return New ReadMapInfoResult(mapName, CUShort(playableWidth), CUShort(playableHeight), options, slots)
+                Return New ReadMapInfoResult(mapName, CUShort(playableWidth), CUShort(playableHeight), options, teamedSlots)
             End Using
         End Function
         <ContractVerification(False)>
-        Private Shared Function ReadMapInfoSlotsAndForces(ByVal stream As IReadableStream,
-                                                          ByVal options As MapOptions) As IReadableList(Of Slot)
+        Private Shared Function ReadMapInfoLobbySlots(ByVal stream As IReadableStream,
+                                                      ByVal options As MapOptions) As IReadableList(Of Slot)
             Contract.Requires(stream IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count > 0)
@@ -626,15 +627,6 @@ Namespace WC3
                             Let allyPrioritiesLow = stream.ReadUInt32
                             Let allyPrioritiesHigh = stream.ReadUInt32
                             ).ToArray
-
-            'Read Forces
-            Dim forceCount = stream.ReadUInt32()
-            CheckIOData(forceCount > 0 AndAlso forceCount <= 12, "Invalid number of forces.")
-            Dim forceData = (From index In CByte(forceCount).Range
-                             Let flags = stream.ReadUInt32
-                             Let memberBitField = stream.ReadUInt32
-                             Let name = stream.ReadNullTerminatedString(maxLength:=256)
-                             ).ToArray
 
             'Determine Lobby Slots
             Dim lobbySlots = New List(Of Slot)()
@@ -671,8 +663,28 @@ Namespace WC3
                                     race:=race,
                                     team:=0))
             Next item
+
             Contract.Assert(lobbySlots.Count <= rawSlotCount)
-            CheckIOData(lobbySlots.Count > 0, "Map contains no player slots.")
+            CheckIOData(lobbySlots.Count > 0, "Map contains no lobby slots.")
+            Return lobbySlots.AsReadableList
+        End Function
+        <ContractVerification(False)>
+        Private Shared Function ReadMapInfoForces(ByVal stream As IReadableStream,
+                                                  ByVal lobbySlots As IReadableList(Of Slot),
+                                                  ByVal options As MapOptions) As IReadableList(Of Slot)
+            Contract.Requires(stream IsNot Nothing)
+            Contract.Requires(LobbySlots IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count = LobbySlots.Count)
+
+            'Read Forces
+            Dim forceCount = stream.ReadUInt32()
+            CheckIOData(forceCount > 0 AndAlso forceCount <= 12, "Invalid number of forces.")
+            Dim forceData = (From index In CByte(forceCount).Range
+                             Let flags = stream.ReadUInt32
+                             Let memberBitField = stream.ReadUInt32
+                             Let name = stream.ReadNullTerminatedString(maxLength:=256)
+                             ).ToArray
 
             'Assign Teams and Return
             If options.EnumUInt32Includes(MapOptions.Melee) Then
@@ -683,7 +695,7 @@ Namespace WC3
                                          race:=Protocol.Races.Random)
                         ).ToReadableList
             Else
-                Return (From slot In lobbySlots
+                Return (From slot In LobbySlots
                         Let team = (From force In forceData
                                     Where force.memberBitField.Bits(slot.Color)
                                     Select force.index

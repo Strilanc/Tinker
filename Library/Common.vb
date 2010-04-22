@@ -483,7 +483,7 @@ Public Module PoorlyCategorizedFunctions
 
         'parse numbers between 'v's
         Return (From e In value.ToUpperInvariant.Split("V"c)
-                Select CInt(Byte.Parse(e, NumberStyles.Integer))
+                Select CInt(Byte.Parse(e, NumberStyles.Integer, CultureInfo.InvariantCulture))
                 ).ToList
     End Function
 
