@@ -26,6 +26,7 @@
             Contract.Invariant(_settings IsNot Nothing)
         End Sub
 
+        <ContractVerification(False)>
         Public Sub New(ByVal startPlayerHoldPoint As HoldPoint(Of Player),
                        ByVal downloadManager As Download.Manager,
                        ByVal logger As Logger,
@@ -34,6 +35,7 @@
             Contract.Assume(startPlayerHoldPoint IsNot Nothing)
             Contract.Assume(downloadManager IsNot Nothing)
             Contract.Assume(logger IsNot Nothing)
+            Contract.Assume(settings IsNot Nothing)
             Me._startPlayerHoldPoint = startPlayerHoldPoint
             Me._downloadManager = downloadManager
             Me._slots = New SlotSet(InitCreateSlots(settings))

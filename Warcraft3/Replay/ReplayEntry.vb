@@ -81,6 +81,7 @@ Namespace WC3.Replay
         Public Overrides Function SubJar() As IJar(Of KeyValuePair(Of ReplayEntryId, Object))
             Return DataJar
         End Function
+        <ContractVerification(False)>
         Public Overrides Function PackRaw(ByVal value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
             Return value
         End Function

@@ -59,7 +59,7 @@ Namespace WC3
             Contract.Invariant(_listenEndPoint.Address IsNot Nothing)
             Contract.Invariant(_taskTestCanHost IsNot Nothing)
 
-            Contract.Invariant(_socket Is Nothing = IsFake)
+            'Contract.Invariant(_socket Is Nothing = IsFake)
             Contract.Invariant(_totalTockTime >= 0)
             Contract.Invariant(AdminAttemptCount >= 0)
             Contract.Invariant(_numPeerConnections >= 0)
@@ -81,6 +81,7 @@ Namespace WC3
                        Optional ByVal downloadManager As Download.Manager = Nothing,
                        Optional ByVal inQueue As CallQueue = Nothing,
                        Optional ByVal outQueue As CallQueue = Nothing)
+            Contract.Requires(packetHandler IsNot Nothing)
             Contract.Requires(peerData IsNot Nothing)
             Contract.Requires(listenEndPoint IsNot Nothing)
             Contract.Requires(listenEndPoint.Address IsNot Nothing)
@@ -107,6 +108,7 @@ Namespace WC3
             Me._taskTestCanHost.IgnoreExceptions()
         End Sub
 
+        <ContractVerification(False)>
         Public Shared Function MakeFake(ByVal id As PlayerId,
                                         ByVal name As InvariantString,
                                         Optional ByVal logger As Logger = Nothing) As Player
@@ -129,6 +131,7 @@ Namespace WC3
             Return player
         End Function
 
+        <ContractVerification(False)>
         Public Shared Function MakeRemote(ByVal id As PlayerId,
                                           ByVal knockData As Protocol.KnockData,
                                           ByVal socket As W3Socket,
@@ -395,6 +398,7 @@ Namespace WC3
         End Function
 
         Private Sub BeginReading()
+            If _socket Is Nothing Then Return
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf _socket.AsyncReadPacket,
                 consumer:=Function(packetData) _packetHandler.HandlePacket(packetData),
@@ -410,7 +414,7 @@ Namespace WC3
                                ByVal reportedReason As Protocol.PlayerLeaveReason,
                                ByVal reasonDescription As String)
             Contract.Requires(reasonDescription IsNot Nothing)
-            If Not Me.IsFake Then
+            If _socket IsNot Nothing Then
                 _socket.Disconnect(expected, reasonDescription)
             End If
             If _pinger IsNot Nothing Then _pinger.Dispose()
@@ -423,7 +427,7 @@ Namespace WC3
 
         Private Sub SendPacket(ByVal pk As Protocol.Packet)
             Contract.Requires(pk IsNot Nothing)
-            If Me.IsFake Then Return
+            If _socket Is Nothing Then Return
             _socket.SendPacket(pk)
         End Sub
         Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket

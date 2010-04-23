@@ -81,6 +81,7 @@ Namespace WC3.Protocol
         Public Overrides Function SubJar() As IJar(Of KeyValuePair(Of GameActionId, Object))
             Return DataJar
         End Function
+        <ContractVerification(False)>
         Public Overrides Function PackRaw(ByVal value As GameAction) As KeyValuePair(Of GameActionId, Object)
             Return value
         End Function

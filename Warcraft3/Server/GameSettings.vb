@@ -193,6 +193,7 @@
                 If Integer.TryParse(argument.OptionalNamedValue("obs"), NumberStyles.None, CultureInfo.InvariantCulture, result) Then
                     If result <= 0 Then Throw New ArgumentOutOfRangeException("argument", "Observer count must be positive.")
                 End If
+                Contract.Assume(result >= 0)
                 Return result
             Else
                 Return 0

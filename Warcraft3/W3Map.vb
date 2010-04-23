@@ -113,6 +113,7 @@ Namespace WC3
             End Using
         End Function
 
+        <ContractVerification(False)>
         Public Shared Function FromHostMapInfoPacket(ByVal data As IEnumerable(Of Byte)) As Map
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)

@@ -130,6 +130,7 @@ Namespace WC3.Protocol
         Public Overrides Function SubJar() As Pickling.IJar(Of NamedValueMap)
             Return DataJar
         End Function
+        <ContractVerification(False)>
         Public Overrides Function PackRaw(ByVal value As KnockData) As NamedValueMap
             Return New Dictionary(Of InvariantString, Object) From {
                     {"game id", value.GameId},
@@ -141,6 +142,7 @@ Namespace WC3.Protocol
                     {"peer data", value.PeerData},
                     {"internal address", value.InternalEndPoint}}
         End Function
+        <ContractVerification(False)>
         Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As KnockData
             Return New KnockData(GameId:=value.ItemAs(Of UInt32)("game id"),
                                  EntryKey:=value.ItemAs(Of UInt32)("entry key"),
