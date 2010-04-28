@@ -15,7 +15,7 @@ Public Module PoorlyCategorizedFunctions
 
         'Recurse on actual lines, if there are multiple
         If body.Contains(Environment.NewLine) Then
-            Return Concat(From line In Microsoft.VisualBasic.Split(body, Delimiter:=Environment.NewLine)
+            Return Concat(From line In body.Split({Environment.NewLine}, StringSplitOptions.None)
                           Select SplitText(line, maxLineLength))
         End If
 
