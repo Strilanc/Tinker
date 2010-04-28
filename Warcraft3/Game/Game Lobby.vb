@@ -5,7 +5,6 @@
         Private ReadOnly _downloadManager As Download.Manager
         Private ReadOnly _startPlayerHoldPoint As HoldPoint(Of Player)
         Private ReadOnly _freeIndexes As List(Of PlayerId)
-        Private ReadOnly _logger As Logger
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly _pidVisiblityMap As New Dictionary(Of PlayerId, PlayerId)()
         Private ReadOnly _settings As GameSettings
@@ -19,7 +18,6 @@
             Contract.Invariant(_downloadManager IsNot Nothing)
             Contract.Invariant(_startPlayerHoldPoint IsNot Nothing)
             Contract.Invariant(_freeIndexes IsNot Nothing)
-            Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_slots IsNot Nothing)
             Contract.Invariant(_kernel IsNot Nothing)
             Contract.Invariant(_pidVisiblityMap IsNot Nothing)
@@ -29,17 +27,14 @@
         <ContractVerification(False)>
         Public Sub New(ByVal startPlayerHoldPoint As HoldPoint(Of Player),
                        ByVal downloadManager As Download.Manager,
-                       ByVal logger As Logger,
                        ByVal kernel As GameKernel,
                        ByVal settings As GameSettings)
             Contract.Assume(startPlayerHoldPoint IsNot Nothing)
             Contract.Assume(downloadManager IsNot Nothing)
-            Contract.Assume(logger IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
             Me._startPlayerHoldPoint = startPlayerHoldPoint
             Me._downloadManager = downloadManager
             Me._slots = New SlotSet(InitCreateSlots(settings))
-            Me._logger = logger
             Me._kernel = kernel
             Me._settings = settings
             Dim pidCount = _slots.Count
@@ -123,11 +118,6 @@
                 _slots = value
             End Set
         End Property
-        Public ReadOnly Property Logger As Logger
-            Get
-                Return _logger
-            End Get
-        End Property
         Public ReadOnly Property FakeHostPlayer As Player
             Get
                 Return _fakeHostPlayer
@@ -195,7 +185,7 @@
             _freeIndexes.Remove(index)
 
             'Make player
-            Dim newPlayer = Player.MakeFake(index, name, Logger)
+            Dim newPlayer = Player.MakeFake(index, name, _kernel.Logger)
             If slot IsNot Nothing Then
                 _slots = _slots.WithSlotsReplaced(slot.Value.With(contents:=New SlotContentsPlayer(newPlayer)))
             End If
@@ -208,7 +198,7 @@
             Next player
 
             'Inform bot
-            Logger.Log("{0} has been placed in the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
+            _kernel.Logger.Log("{0} has been placed in the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
             'Update state
             RaiseEvent ChangedPublicState(Me)
@@ -270,7 +260,7 @@
             'Add
             _slots = _slots.WithSlotsReplaced(slot.With(contents:=slot.Contents.WithPlayer(newPlayer)))
             _kernel.Players.Add(newPlayer)
-            Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
+            _kernel.Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
             'Greet
             newPlayer.QueueSendPacket(Protocol.MakeGreet(socketRemoteEndPoint, newPlayer.Id))
@@ -310,7 +300,7 @@
             End If
 
             Dim space = AllocateSpaceForNewPlayer(knockData.Name)
-            Dim newPlayer = Player.MakeRemote(space.Item2, knockData, socket, _kernel.Clock, _downloadManager, Logger)
+            Dim newPlayer = Player.MakeRemote(space.Item2, knockData, socket, _kernel.Clock, _downloadManager, _kernel.Logger)
             Return AddPlayer(newPlayer, space.Item1, socket.RemoteEndPoint)
         End Function
 
@@ -741,7 +731,7 @@
                                Where p IsNot playerToAvoid
                 SendMessageTo(message, player.AssumeNotNull, display:=False)
             Next player
-            Logger.Log("{0}: {1}".Frmt(Application.ProductName, message), messageType)
+            _kernel.Logger.Log("{0}: {1}".Frmt(Application.ProductName, message), messageType)
         End Sub
 
         '''<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
@@ -767,7 +757,7 @@
             Next line
 
             If display Then
-                Logger.Log("(Private to {0}): {1}".Frmt(player.Name, message), LogMessageType.Typical)
+                _kernel.Logger.Log("(Private to {0}): {1}".Frmt(player.Name, message), LogMessageType.Typical)
             End If
         End Sub
     End Class

@@ -26,6 +26,7 @@ Namespace WC3
     Public NotInheritable Class GameKernel
         Inherits DisposableWithTask
 
+        Private ReadOnly _logger As Logger
         Private ReadOnly _clock As IClock
         Private ReadOnly _inQueue As CallQueue
         Private ReadOnly _outQueue As CallQueue
@@ -39,17 +40,21 @@ Namespace WC3
             Contract.Invariant(_inQueue IsNot Nothing)
             Contract.Invariant(_outQueue IsNot Nothing)
             Contract.Invariant(_players IsNot Nothing)
+            Contract.Invariant(_logger IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal clock As IClock,
                        ByVal inQueue As CallQueue,
-                       ByVal outQueue As CallQueue)
+                       ByVal outQueue As CallQueue,
+                       ByVal logger As Logger)
             Contract.Assume(clock IsNot Nothing)
             Contract.Assume(inQueue IsNot Nothing)
             Contract.Assume(outQueue IsNot Nothing)
+            Contract.Assume(logger IsNot Nothing)
             Me._clock = clock
             Me._inQueue = inQueue
             Me._outQueue = outQueue
+            Me._logger = logger
         End Sub
 
         Public ReadOnly Property InQueue As CallQueue
@@ -68,6 +73,11 @@ Namespace WC3
             Get
                 Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
                 Return _clock
+            End Get
+        End Property
+        Public ReadOnly Property Logger As Logger
+            Get
+                Return _logger
             End Get
         End Property
         Public ReadOnly Property Players As AsyncViewableCollection(Of Player)

@@ -99,7 +99,7 @@
             Dim name = allocId.ToString(CultureInfo.InvariantCulture)
             allocId += 1
 
-            Dim game = WC3.Game.FromSettings(_gameSettings, name, _clock)
+            Dim game = WC3.Game.FromSettings(_gameSettings, name, _clock, New Logger)
             _logger.Log("{0} opened.".Frmt(name), LogMessageType.Positive)
             _games.Add(game)
 

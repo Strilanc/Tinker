@@ -6,7 +6,6 @@
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly _startLock As New OnetimeLock
         Private ReadOnly _lobby As GameLobby
-        Private ReadOnly _logger As Logger
         Private ReadOnly _settings As GameSettings
 
         Private _loadInGameTickCount As Integer
@@ -18,7 +17,6 @@
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_settings IsNot Nothing)
-            Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_kernel IsNot Nothing)
             Contract.Invariant(_startLock IsNot Nothing)
             Contract.Invariant(_lobby IsNot Nothing)
@@ -29,15 +27,12 @@
 
         Public Sub New(ByVal kernel As GameKernel,
                        ByVal lobby As GameLobby,
-                       ByVal logger As Logger,
                        ByVal settings As GameSettings)
             Contract.Assume(kernel IsNot Nothing)
             Contract.Assume(lobby IsNot Nothing)
-            Contract.Assume(logger IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
             Me._kernel = kernel
             Me._lobby = lobby
-            Me._logger = logger
             Me._settings = settings
         End Sub
 
@@ -53,7 +48,7 @@
             Next player
 
             'Load
-            _logger.Log("Players Loading", LogMessageType.Positive)
+            _kernel.Logger.Log("Players Loading", LogMessageType.Positive)
 
             'Ready any lingering fake players
             For Each player In From p In _kernel.Players
@@ -99,7 +94,7 @@
             If (From p In _kernel.Players Where Not p.IsReady).Any Then Return False
 
             _kernel.State = GameState.Playing
-            _logger.Log("Launching", LogMessageType.Positive)
+            _kernel.Logger.Log("Launching", LogMessageType.Positive)
 
             'start gameplay
             If _loadInGameTicker IsNot Nothing Then

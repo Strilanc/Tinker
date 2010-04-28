@@ -14,7 +14,7 @@
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
 Namespace WC3
-    Partial Public NotInheritable Class Game
+    Public NotInheritable Class Game
         Inherits DisposableWithTask
 
         Public Shared ReadOnly GuestLobbyCommands As Commands.CommandSet(Of Game) = GameCommands.MakeGuestLobbyCommands()
@@ -29,11 +29,10 @@ Namespace WC3
         Private ReadOnly slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds, clock:=New SystemClock())
         Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds, clock:=New SystemClock())
         Private ReadOnly _name As InvariantString
-        Private ReadOnly _logger As Logger
         Private flagHasPlayerLeft As Boolean
         Private adminPlayer As Player
         Private ReadOnly _settings As GameSettings
-        Private ReadOnly _started As New OneTimeLock
+        Private ReadOnly _started As New OnetimeLock
 
         Public Event Updated(ByVal sender As Game, ByVal slots As SlotSet)
         Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivingGroup As Protocol.ChatGroup?)
@@ -47,7 +46,6 @@ Namespace WC3
         Public Event RecordGameStarted(ByVal sender As Game)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_kernel IsNot Nothing)
             Contract.Invariant(_started IsNot Nothing)
             Contract.Invariant(_settings IsNot Nothing)
@@ -63,17 +61,14 @@ Namespace WC3
                        ByVal lobby As GameLobby,
                        ByVal motor As GameMotor,
                        ByVal loadScreen As GameLoadScreen,
-                       ByVal logger As Logger,
                        ByVal kernel As GameKernel)
             Contract.Assume(settings IsNot Nothing)
             Contract.Assume(lobby IsNot Nothing)
             Contract.Assume(motor IsNot Nothing)
-            Contract.Assume(logger IsNot Nothing)
             Contract.Assume(kernel IsNot Nothing)
             Contract.Assume(loadScreen IsNot Nothing)
             Me._settings = settings
             Me._name = name
-            Me._logger = logger
             Me._lobby = lobby
             Me._motor = motor
             Me._kernel = kernel
@@ -83,16 +78,14 @@ Namespace WC3
         Public Shared Function FromSettings(ByVal settings As GameSettings,
                                             ByVal name As InvariantString,
                                             ByVal clock As IClock,
-                                            Optional ByVal logger As Logger = Nothing) As Game
+                                            ByVal logger As Logger) As Game
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(settings IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Game)() IsNot Nothing)
 
-            logger = If(logger, New Logger)
-
             Dim inQueue = New TaskedCallQueue
             Dim outQueue = New TaskedCallQueue
-            Dim kernel = New GameKernel(clock, inQueue, outQueue)
+            Dim kernel = New GameKernel(clock, inQueue, outQueue, logger)
             Dim startPlayerHoldPoint = New HoldPoint(Of Player)
             Dim downloadManager = New Download.Manager(clock:=clock,
                                                        Map:=settings.Map,
@@ -101,7 +94,6 @@ Namespace WC3
                                                        allowUploads:=settings.AllowUpload)
             Dim lobby = New GameLobby(startPlayerHoldPoint:=startPlayerHoldPoint,
                                       downloadManager:=downloadManager,
-                                      logger:=logger,
                                       kernel:=kernel,
                                       settings:=settings)
             Dim speedFactor = My.Settings.game_speed_factor
@@ -116,7 +108,6 @@ Namespace WC3
                                       lobby:=lobby)
             Dim loadScreen = New GameLoadScreen(kernel:=kernel,
                                                 lobby:=lobby,
-                                                logger:=logger,
                                                 settings:=settings)
 
             Return New Game(name:=name,
@@ -124,7 +115,6 @@ Namespace WC3
                             lobby:=lobby,
                             motor:=motor,
                             loadScreen:=loadScreen,
-                            logger:=logger,
                             kernel:=kernel)
         End Function
 
@@ -207,7 +197,7 @@ Namespace WC3
         Public ReadOnly Property Logger As Logger
             Get
                 Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
-                Return _logger
+                Return _kernel.Logger
             End Get
         End Property
         Public ReadOnly Property Name As InvariantString
@@ -408,13 +398,13 @@ Namespace WC3
             End Select
 
             'Clean game
-            If _kernel.State >= GameState.Loading AndAlso Not (From x In _kernel.Players Where Not x.isFake).Any Then
+            If _kernel.State >= GameState.Loading AndAlso Not (From x In _kernel.Players Where Not x.IsFake).Any Then
                 'the game has started and everyone has left, time to die
                 Me.Dispose()
             End If
 
             'Log
-            If player.isFake Then
+            If player.IsFake Then
                 Logger.Log("{0} has been removed from the game. ({1})".Frmt(player.Name, reasonDescription), LogMessageType.Negative)
             Else
                 flagHasPlayerLeft = True
@@ -514,7 +504,7 @@ Namespace WC3
             If Not Settings.IsAutoStarted Then Return False
             If _lobby.CountFreeSlots() > 0 Then Return False
             If _kernel.State >= GameState.PreCounting Then Return False
-            If (From player In _kernel.Players Where Not player.isFake AndAlso player.AdvertisedDownloadPercent <> 100).Any Then
+            If (From player In _kernel.Players Where Not player.IsFake AndAlso player.AdvertisedDownloadPercent <> 100).Any Then
                 Return False
             End If
             _kernel.State = GameState.PreCounting
@@ -536,7 +526,7 @@ Namespace WC3
         '''<summary>Starts the countdown to launch.</summary>
         Private Function TryStartCountdown() As Boolean
             If _kernel.State >= GameState.CountingDown Then Return False
-            If (From p In _kernel.Players Where Not p.isFake AndAlso p.AdvertisedDownloadPercent <> 100).Any Then
+            If (From p In _kernel.Players Where Not p.IsFake AndAlso p.AdvertisedDownloadPercent <> 100).Any Then
                 Return False
             End If
 
@@ -574,7 +564,7 @@ Namespace WC3
             If _kernel.State >= GameState.Loading Then Return
 
             'Remove fake players
-            For Each player In From p In _kernel.Players.Cache Where p.isFake
+            For Each player In From p In _kernel.Players.Cache Where p.IsFake
                 Contract.Assume(player IsNot Nothing)
                 Dim slot = _lobby.Slots.TryFindPlayerSlot(player)
                 If slot Is Nothing OrElse slot.Value.Contents.Moveable Then
@@ -604,8 +594,8 @@ Namespace WC3
             p.HasVotedToStart = val
             If Not val Then Return
 
-            Dim numPlayers = (From q In _kernel.Players Where Not q.isFake).Count
-            Dim numInFavor = (From q In _kernel.Players Where Not q.isFake AndAlso q.HasVotedToStart).Count
+            Dim numPlayers = (From q In _kernel.Players Where Not q.IsFake).Count
+            Dim numInFavor = (From q In _kernel.Players Where Not q.IsFake AndAlso q.HasVotedToStart).Count
             If numPlayers >= 2 AndAlso numInFavor * 3 >= numPlayers * 2 Then
                 TryStartCountdown()
             End If
