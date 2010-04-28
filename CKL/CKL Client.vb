@@ -32,51 +32,59 @@ Namespace CKL
         <ContractVerification(False)>
         Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
                                           ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
-            Dim requestPacket = Concat(clientSalt, serverSalt)
+            Contract.Requires(clientSalt IsNot Nothing)
+            Contract.Requires(serverSalt IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of ProductCredentialPair))() IsNot Nothing)
 
-            'Connect to CKL server and send request
-            Dim futureSocket = PacketSocket.AsyncConnect(_remoteHost, _remotePort, _clock, timeout:=10.Seconds)
-            Dim futureResponse = futureSocket.Select(
-                Function(socket)
-                    socket.WritePacket({CKL.Server.PacketPrefixValue, CKLPacketId.Keys}, requestPacket)
-                    Return socket.AsyncReadPacket()
-                End Function
-            ).Unwrap
-
+            'Connect to CKL server
+            Dim asyncSocket = PacketSocket.AsyncConnect(_remoteHost, _remotePort, _clock, timeout:=10.Seconds)
+            'Send request
+            asyncSocket.ContinueWithAction(Sub(socket) socket.WritePacket(preheader:={CKL.Server.PacketPrefixValue, CKLPacketId.Keys},
+                                                                          payload:=Concat(clientSalt, serverSalt)))
             'Process response
-            Dim futureKeys = futureResponse.Select(
-                Function(packetData)
-                    futureSocket.Result.QueueDisconnect(expected:=True, reason:="Received response")
+            Dim asyncResult = From socket In asyncSocket
+                              From packet In socket.AsyncReadPacket
+                              Select ParseResponse(packet)
+            'Finish
+            asyncResult.ContinueWith(Sub()
+                                         If asyncResult.Status = TaskStatus.RanToCompletion Then
+                                             _logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
+                                         End If
+                                         If asyncSocket.Status = TaskStatus.RanToCompletion Then
+                                             asyncSocket.Result.QueueDisconnect(expected:=True, reason:="Finished")
+                                         End If
+                                     End Sub)
+            Return asyncResult
+        End Function
 
-                    'Read header
-                    Contract.Assume(packetData.Count >= 4)
-                    Dim flag = packetData(0)
-                    Dim id = packetData(1)
-                    If flag <> CKL.Server.PacketPrefixValue Then
-                        Throw New IO.InvalidDataException("Incorrect header id in data returned from CKL server.")
+        Private Shared Function ParseResponse(ByVal packetData As IReadableList(Of Byte)) As ProductCredentialPair
+            Contract.Requires(packetData IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ProductCredentialPair)() IsNot Nothing)
+
+            'Read header
+            Contract.Assume(packetData.Count >= 4)
+            Dim flag = packetData(0)
+            Dim id = packetData(1)
+            If flag <> CKL.Server.PacketPrefixValue Then
+                Throw New IO.InvalidDataException("Incorrect header id in data returned from CKL server.")
+            End If
+
+            'Read body
+            Dim body = packetData.SubView(4)
+            Select Case DirectCast(id, CKLPacketId)
+                Case CKLPacketId.[Error]
+                    Throw New IO.IOException("CKL server returned an error: {0}.".Frmt(System.Text.UTF8Encoding.UTF8.GetString(body.ToArray)))
+                Case CKLPacketId.Keys
+                    Dim rocAuthentication = jar.Parse(body.SubView(0, body.Count \ 2)).Value
+                    Dim tftAuthentication = jar.Parse(body.SubView(body.Count \ 2)).Value
+                    If rocAuthentication.Product <> Bnet.ProductType.Warcraft3ROC _
+                                OrElse tftAuthentication.Product <> Bnet.ProductType.Warcraft3TFT Then
+                        Throw New IO.InvalidDataException("CKL server returned invalid credentials.")
                     End If
-
-                    'Read body
-                    Dim body = packetData.SubView(4)
-                    Select Case DirectCast(id, CKLPacketId)
-                        Case CKLPacketId.[Error]
-                            Throw New IO.IOException("CKL server returned an error: {0}.".Frmt(System.Text.UTF8Encoding.UTF8.GetString(body.ToArray)))
-                        Case CKLPacketId.Keys
-                            Dim rocAuthentication = jar.Parse(body.SubView(0, body.Count \ 2)).Value
-                            Dim tftAuthentication = jar.Parse(body.SubView(body.Count \ 2)).Value
-                            If rocAuthentication.Product <> Bnet.ProductType.Warcraft3ROC _
-                                        OrElse tftAuthentication.Product <> Bnet.ProductType.Warcraft3TFT Then
-                                Throw New IO.InvalidDataException("CKL server returned invalid credentials.")
-                            End If
-                            Return New ProductCredentialPair(rocAuthentication, tftAuthentication)
-                        Case Else
-                            Throw New IO.InvalidDataException("Incorrect packet id in data returned from CKL server.")
-                    End Select
-                End Function)
-
-            futureKeys.ContinueWithAction(Sub() _logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive))
-
-            Return futureKeys
+                    Return New ProductCredentialPair(rocAuthentication, tftAuthentication)
+                Case Else
+                    Throw New IO.InvalidDataException("Incorrect packet id in data returned from CKL server.")
+            End Select
         End Function
     End Class
 End Namespace
