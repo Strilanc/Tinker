@@ -139,4 +139,21 @@
         Call iterator(Nothing)
         Return result.Task.AssumeNotNull
     End Function
+
+    <Extension()>
+    Public Function AsAggregateAllOrNoneTask(Of T As IDisposable)(ByVal tasks As IEnumerable(Of Task(Of T))) As Task(Of IEnumerable(Of T))
+        Contract.Requires(tasks IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task(Of IEnumerable(Of T)))() IsNot Nothing)
+        Dim result = tasks.AsAggregateTask()
+        result.Catch(
+            Sub(exception)
+                For Each task In tasks
+                    If task.Status = TaskStatus.RanToCompletion Then
+                        task.Result.Dispose()
+                    End If
+                Next task
+            End Sub
+        )
+        Return result
+    End Function
 End Module

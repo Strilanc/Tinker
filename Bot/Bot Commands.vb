@@ -58,22 +58,7 @@ Namespace Bot
                 Next profileName
 
                 'Async wait for all to complete
-                Dim result = New TaskCompletionSource(Of String)()
-                asyncAddedManagers.AsAggregateTask.ContinueWithAction(
-                    Sub() result.SetResult("Connected")
-                ).Catch(
-                    Sub(exception)
-                        'Dispose all upon failure
-                        For Each asyncManager In asyncCreatedManagers
-                            If asyncManager.Status = TaskStatus.RanToCompletion Then
-                                asyncManager.Result.Dispose()
-                            End If
-                        Next asyncManager
-                        'Propagate
-                        result.SetException(exception.InnerExceptions)
-                    End Sub
-                )
-                Return result.Task.AssumeNotNull
+                Return asyncAddedManagers.AsAggregateAllOrNoneTask().ContinueWithFunc(Function() "Connected")
             End Function
         End Class
 
