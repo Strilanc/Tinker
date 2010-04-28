@@ -259,22 +259,21 @@
 
             Return Tuple.Create(slot, id)
         End Function
-        Private Function AddPlayer(ByVal knockData As Protocol.KnockData,
-                                   ByVal socket As W3Socket,
+        Private Function AddPlayer(ByVal newPlayer As Player,
                                    ByVal slot As Slot,
-                                   ByVal id As PlayerId) As Player
-            Contract.Requires(knockData IsNot Nothing)
-            Contract.Requires(socket IsNot Nothing)
+                                   ByVal socketRemoteEndPoint As Net.IPEndPoint) As Player
+            Contract.Requires(newPlayer IsNot Nothing)
+            Contract.Requires(socketRemoteEndPoint IsNot Nothing)
+            Contract.Requires(socketRemoteEndPoint.Address IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             'Add
-            Dim newPlayer = Player.MakeRemote(id, knockData, socket, _kernel.Clock, _downloadManager, Logger)
             _slots = _slots.WithSlotsReplaced(slot.With(contents:=slot.Contents.WithPlayer(newPlayer)))
             _kernel.Players.Add(newPlayer)
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
             'Greet
-            newPlayer.QueueSendPacket(Protocol.MakeGreet(socket.RemoteEndPoint, newPlayer.Id))
+            newPlayer.QueueSendPacket(Protocol.MakeGreet(socketRemoteEndPoint, newPlayer.Id))
             newPlayer.QueueSendPacket(Protocol.MakeHostMapInfo(_settings.Map))
             For Each visibleOtherPlayer In From p In _kernel.Players
                                            Where p IsNot newPlayer
@@ -293,7 +292,7 @@
             End If
 
             'Effects
-            RaiseEvent ChangedPublicState(Me)
+            _kernel.OutQueue.QueueAction(Sub() RaiseEvent ChangedPublicState(Me))
             _startPlayerHoldPoint.Hold(newPlayer).ContinueWithAction(Sub() newPlayer.QueueStart()).IgnoreExceptions()
 
             Return newPlayer
@@ -311,7 +310,8 @@
             End If
 
             Dim space = AllocateSpaceForNewPlayer(knockData.Name)
-            Return AddPlayer(knockData, socket, space.Item1, space.Item2)
+            Dim newPlayer = Player.MakeRemote(space.Item2, knockData, socket, _kernel.Clock, _downloadManager, Logger)
+            Return AddPlayer(newPlayer, space.Item1, socket.RemoteEndPoint)
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
