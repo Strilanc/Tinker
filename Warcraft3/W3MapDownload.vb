@@ -1,5 +1,6 @@
 ﻿Namespace WC3
     Public NotInheritable Class MapDownload
+        Inherits DisposableWithTask
         Public file As IO.Stream
         Private destinationPath As String
         Private downloadPath As String
@@ -75,6 +76,12 @@
             End If
 
             Return False
+        End Function
+
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+            If finalizing Then Return Nothing
+            If file IsNot Nothing Then file.Dispose()
+            Return Nothing
         End Function
     End Class
 End Namespace

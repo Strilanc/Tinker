@@ -9,6 +9,7 @@ Namespace WC3
     'verification disabled until this class can be looked at more closely
     <ContractVerification(False)>
     Public NotInheritable Class W3DummyPlayer
+        Inherits DisposableWithTask
         Private ReadOnly name As String
         Private ReadOnly listenPort As UShort
         Private ReadOnly inQueue As CallQueue
@@ -272,5 +273,11 @@ Namespace WC3
             End If
         End Sub
 #End Region
+
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+            If finalizing Then Return Nothing
+            If dl IsNot Nothing Then dl.Dispose()
+            Return Nothing
+        End Function
     End Class
 End Namespace

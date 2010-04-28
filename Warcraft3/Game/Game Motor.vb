@@ -110,6 +110,7 @@
             End If
         End Sub
 
+        <CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId:="sender")>
         Private Sub OnReceiveRequestDropLagger(ByVal sender As Player)
             Contract.Requires(sender IsNot Nothing)
             For Each player In _laggingPlayers
