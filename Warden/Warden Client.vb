@@ -9,39 +9,53 @@
         Private ReadOnly _socket As Task(Of Warden.Socket)
         Private ReadOnly _activated As New TaskCompletionSource(Of Boolean)()
         Private ReadOnly _clock As IClock
+        Private ReadOnly _logger As Logger
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_activated IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
+            Contract.Invariant(_logger IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal remoteHost As InvariantString,
-                       ByVal remotePort As UInt16,
-                       ByVal seed As UInt32,
-                       ByVal cookie As UInt32,
+        Public Sub New(ByVal socket As Task(Of Warden.Socket),
+                       ByVal activated As TaskCompletionSource(Of Boolean),
                        ByVal clock As IClock,
-                       Optional ByVal logger As Logger = Nothing)
-            Contract.Assume(clock IsNot Nothing)
-            logger = If(logger, New Logger)
+                       ByVal logger As Logger)
+            Contract.Requires(socket IsNot Nothing)
+            Contract.Requires(activated IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
+            Me._socket = socket
             Me._clock = clock
+            Me._activated = activated
+            Me._logger = logger
+        End Sub
+        Public Shared Function MakeMock(ByVal logger As Logger, ByVal clock As IClock) As Warden.Client
+            Contract.Requires(logger IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Warden.Client)() IsNot Nothing)
+            Dim failedSocket = New TaskCompletionSource(Of Warden.Socket)
+            Dim activated = New TaskCompletionSource(Of Boolean)()
+            failedSocket.SetException(New ArgumentException("No remote host specified for bnls server."))
+            failedSocket.Task.IgnoreExceptions()
+            activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem))
+            Return New Warden.Client(failedSocket.Task, activated, clock, logger)
+        End Function
+        Public Shared Function MakeConnect(ByVal remoteHost As InvariantString,
+                                           ByVal remotePort As UInt16,
+                                           ByVal seed As UInt32,
+                                           ByVal cookie As UInt32,
+                                           ByVal clock As IClock,
+                                           ByVal logger As Logger) As Warden.Client
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Warden.Client)() IsNot Nothing)
 
-            If remoteHost = "" Then
-                'Mock a socket connection failure
-                Dim failedSocketTask = New TaskCompletionSource(Of Warden.Socket)
-                failedSocketTask.SetException(New ArgumentException("No remote host specified for bnls server."))
-                _socket = failedSocketTask.Task.AssumeNotNull
-                _socket.IgnoreExceptions()
-                'Show an error message only when the owner actually tries to send data
-                Contract.Assume(_activated.Task IsNot Nothing)
-                _activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem))
-
-                Return
-            End If
             logger.Log("Connecting to bnls server at {0}:{1}...".Frmt(remoteHost, remotePort), LogMessageType.Positive)
 
             'Initiate connection
-            Me._socket = From tcpClient In AsyncTcpConnect(remoteHost, remotePort)
+            Dim socket = From tcpClient In AsyncTcpConnect(remoteHost, remotePort)
                          Select packetSocket = New PacketSocket(stream:=tcpClient.GetStream,
                                                                 localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                                                                 remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
@@ -50,19 +64,34 @@
                                                                 sizeHeaderLength:=2,
                                                                 logger:=logger,
                                                                 Name:="BNLS",
-                                                                clock:=_clock)
-                         Select New Warden.Socket(Socket:=packetSocket,
+                                                                clock:=clock)
+                         Select New Warden.Socket(socket:=packetSocket,
                                                   seed:=seed,
                                                   cookie:=cookie,
                                                   logger:=logger)
+            socket.Catch(
+                Sub(exception)
+                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, exception.Summarize), LogMessageType.Problem)
+                    exception.RaiseAsUnexpected("Connecting to bnls server.")
+                End Sub
+            )
 
-            'Register events (and setup unregister-on-dispose)
-            Dim receiveForward As Warden.Socket.ReceivedWardenDataEventHandler = Sub(sender, wardenData) RaiseEvent ReceivedWardenData(Me, wardenData)
-            Dim failForward As Warden.Socket.FailedEventHandler = Sub(sender, e) RaiseEvent Failed(Me, e)
-            Dim disconnectForward As Warden.Socket.DisconnectedEventHandler = Sub(sender, expected, reason) RaiseEvent Disconnected(Me, expected, reason)
+            Dim result = New Warden.Client(socket, New TaskCompletionSource(Of Boolean), clock, logger)
+            result.Start()
+            Return result
+        End Function
+        Private Sub Start()
+            Dim receiveForward As Warden.Socket.ReceivedWardenDataEventHandler =
+                    Sub(sender, wardenData) RaiseEvent ReceivedWardenData(Me, wardenData)
+            Dim failForward As Warden.Socket.FailedEventHandler =
+                    Sub(sender, e) RaiseEvent Failed(Me, e)
+            Dim disconnectForward As Warden.Socket.DisconnectedEventHandler =
+                    Sub(sender, expected, reason) RaiseEvent Disconnected(Me, expected, reason)
+
+            'Wire events
             _socket.ContinueWithAction(
                 Sub(wardenClient)
-                    logger.Log("Connected to bnls server.", LogMessageType.Positive)
+                    _logger.Log("Connected to bnls server.", LogMessageType.Positive)
 
                     AddHandler wardenClient.ReceivedWardenData, receiveForward
                     AddHandler wardenClient.Failed, failForward
@@ -74,12 +103,7 @@
                             RemoveHandler wardenClient.Disconnected, disconnectForward
                         End Sub)
                 End Sub
-            ).Catch(
-                Sub(exception)
-                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, exception.Summarize), LogMessageType.Problem)
-                    exception.RaiseAsUnexpected("Connecting to bnls server.")
-                End Sub
-            )
+            ).IgnoreExceptions()
         End Sub
 
         Public ReadOnly Property Activated As Task

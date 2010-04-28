@@ -670,12 +670,16 @@ Namespace Bnet
 
             'Attempt BNLS connection
             Dim seed = keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32
-            _wardenClient = New Warden.Client(remoteHost:=remoteHost,
-                                              remotePort:=remotePort,
-                                              seed:=seed,
-                                              cookie:=seed,
-                                              Logger:=Logger,
-                                              clock:=_clock)
+            If remoteHost = "" Then
+                _wardenClient = Warden.Client.MakeMock(_logger, _clock)
+            Else
+                _wardenClient = Warden.Client.MakeConnect(remoteHost:=remoteHost,
+                                                          remotePort:=remotePort,
+                                                          seed:=seed,
+                                                          cookie:=seed,
+                                                          logger:=Logger,
+                                                          clock:=_clock)
+            End If
         End Sub
 
         Private Sub ReceiveProgramAuthenticationFinish(ByVal value As IPickle(Of NamedValueMap))
