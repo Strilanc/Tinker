@@ -43,7 +43,7 @@ Namespace Bnet
         Private ReadOnly outQueue As CallQueue
         Private ReadOnly inQueue As CallQueue
 
-        Private ReadOnly _externalProvider As IProductInfoProvider
+        Private ReadOnly _productInfoProvider As IProductInfoProvider
         Private ReadOnly _clock As IClock
         Private ReadOnly _profile As Bot.ClientProfile
         Private ReadOnly _productAuthenticator As IProductAuthenticator
@@ -134,6 +134,7 @@ Namespace Bnet
 
         'connection
         Private _bnetRemoteHostName As String
+        Private _bnetRemoteHostPort As UInt16
         Private _userCredentials As ClientCredentials
         Private _clientCdKeySalt As UInt32
         Private _expectedServerPasswordProof As IReadableList(Of Byte)
@@ -158,7 +159,7 @@ Namespace Bnet
             Contract.Invariant(_productAuthenticator IsNot Nothing)
             Contract.Invariant(_futureLoggedIn IsNot Nothing)
             Contract.Invariant(_futureConnected IsNot Nothing)
-            Contract.Invariant(_externalProvider IsNot Nothing)
+            Contract.Invariant(_productInfoProvider IsNot Nothing)
             Contract.Invariant((_socket IsNot Nothing) = (_state > ClientState.InitiatingConnection))
             Contract.Invariant((_wardenClient IsNot Nothing) = (_state > ClientState.WaitingForProgramAuthenticationBegin))
             Contract.Invariant((_state <= ClientState.EnterUserCredentials) OrElse (_userCredentials IsNot Nothing))
@@ -166,12 +167,12 @@ Namespace Bnet
         End Sub
 
         Public Sub New(ByVal profile As Bot.ClientProfile,
-                       ByVal externalProvider As IProductInfoProvider,
+                       ByVal productInfoProvider As IProductInfoProvider,
                        ByVal productAuthenticator As IProductAuthenticator,
                        ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(profile IsNot Nothing)
-            Contract.Assume(externalProvider IsNot Nothing)
+            Contract.Assume(productInfoProvider IsNot Nothing)
             Contract.Assume(clock IsNot Nothing)
             Contract.Assume(productAuthenticator IsNot Nothing)
             Me._futureConnected.IgnoreExceptions()
@@ -180,7 +181,7 @@ Namespace Bnet
             'Pass values
             Me._clock = clock
             Me._profile = profile
-            Me._externalProvider = externalProvider
+            Me._productInfoProvider = productInfoProvider
             Me._logger = If(logger, New Logger)
             Me.outQueue = New TaskedCallQueue
             Me.inQueue = New TaskedCallQueue
@@ -341,27 +342,18 @@ Namespace Bnet
             outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, oldState, newState))
         End Sub
 
-        Private Function AsyncConnect(ByVal remoteHost As String) As Task
+        Private Function AsyncConnect(ByVal remoteHost As String,
+                                      ByVal remotePort As UInt16) As Task
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If Me._state <> ClientState.Disconnected Then Throw New InvalidOperationException("Must disconnect before connecting again.")
             ChangeState(ClientState.InitiatingConnection)
 
-            'Port
-            Dim port = BnetServerPort
-            If remoteHost.Contains(":"c) Then
-                Dim parts = remoteHost.Split(":"c)
-                If parts.Count <> 2 OrElse Not UShort.TryParse(parts.Last, NumberStyles.Integer, CultureInfo.InvariantCulture, port) Then
-                    Throw New ArgumentException(paramName:="remoteHost", Message:="Invalid hostname.")
-                End If
-                remoteHost = parts.First
-            End If
-
             'Connect
             Logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
             Dim futureSocket = From hostEntry In AsyncDnsLookup(remoteHost)
                                Select address = hostEntry.AddressList(New Random().Next(hostEntry.AddressList.Count))
-                               From tcpClient In AsyncTcpConnect(address, port)
+                               From tcpClient In AsyncTcpConnect(address, remotePort)
                                Let stream = New ThrottledWriteStream(subStream:=tcpClient.GetStream,
                                                                      initialSlack:=1000,
                                                                      costEstimator:=Function(data) 100 + data.Length,
@@ -380,16 +372,18 @@ Namespace Bnet
             Dim result = futureSocket.QueueContinueWithFunc(inQueue,
                 Function(socket)
                     _bnetRemoteHostName = remoteHost
+                    _bnetRemoteHostPort = remotePort
                     ChangeState(ClientState.FinishedInitiatingConnection)
                     Return AsyncConnect(socket)
                 End Function).Unwrap
             result.QueueCatch(inQueue, Sub(exception) Disconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(exception.Summarize)))
             Return result
         End Function
-        Public Function QueueConnect(ByVal remoteHost As String) As Task
+        Public Function QueueConnect(ByVal remoteHost As String,
+                                     ByVal remotePort As UInt16) As Task
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncConnect(remoteHost)).Unwrap
+            Return inQueue.QueueFunc(Function() AsyncConnect(remoteHost, remotePort)).Unwrap
         End Function
 
         Private Function AsyncConnect(ByVal socket As PacketSocket,
@@ -419,7 +413,7 @@ Namespace Bnet
 
             'Introductions
             socket.SubStream.Write({1}, 0, 1) 'protocol version
-            SendPacket(Protocol.MakeAuthenticationBegin(_externalProvider.MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
+            SendPacket(Protocol.MakeAuthenticationBegin(_productInfoProvider.MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
 
             BeginHandlingPackets()
             Return Me._futureConnected.Task
@@ -464,11 +458,12 @@ Namespace Bnet
         End Function
 
         Public Function QueueConnectAndLogOn(ByVal remoteHost As String,
+                                             ByVal port As UInt16,
                                              ByVal credentials As ClientCredentials) As Task
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return QueueConnect(remoteHost).ContinueWithFunc(Function() QueueLogOn(credentials)).Unwrap
+            Return QueueConnect(remoteHost, port).ContinueWithFunc(Function() QueueLogOn(credentials)).Unwrap
         End Function
 
         Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
@@ -498,7 +493,7 @@ Namespace Bnet
                 _clock.AsyncWait(5.Seconds).ContinueWithAction(
                     Sub()
                         Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
-                        QueueConnectAndLogOn(_bnetRemoteHostName, Me._userCredentials.Regenerate())
+                        QueueConnectAndLogOn(_bnetRemoteHostName, _bnetRemoteHostPort, Me._userCredentials.Regenerate())
                     End Sub
                 )
             End If
@@ -642,7 +637,7 @@ Namespace Bnet
             If _state <> ClientState.EnterCDKeys Then Throw New InvalidStateException("Incorrect state for entering cd keys.")
             Dim revisionCheckResponse As UInt32
             Try
-                revisionCheckResponse = _externalProvider.GenerateRevisionCheck(
+                revisionCheckResponse = _productInfoProvider.GenerateRevisionCheck(
                     folder:=My.Settings.war3path,
                     challengeSeed:=revisionCheckSeed,
                     challengeInstructions:=revisionCheckInstructions)
@@ -653,12 +648,12 @@ Namespace Bnet
                 Throw New OperationCanceledException("Failed to compute revision check.", ex)
             End Try
             SendPacket(Protocol.MakeAuthenticationFinish(
-                       version:=_externalProvider.ExeVersion,
+                       version:=_productInfoProvider.ExeVersion,
                        revisionCheckResponse:=revisionCheckResponse,
                        clientCDKeySalt:=clientCdKeySalt,
                        cdKeyOwner:=My.Settings.cdKeyOwner,
-                       exeInformation:="war3.exe {0} {1}".Frmt(_externalProvider.LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
-                                                               _externalProvider.FileSize),
+                       exeInformation:="war3.exe {0} {1}".Frmt(_productInfoProvider.LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
+                                                               _productInfoProvider.FileSize),
                        productAuthentication:=keys))
 
             ChangeState(ClientState.WaitingForProgramAuthenticationFinish)

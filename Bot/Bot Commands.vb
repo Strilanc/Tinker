@@ -48,6 +48,7 @@ Namespace Bot
                     Dim asyncConnected = (From client In asyncAdd.ContinueWithFunc(Function() asyncManager.Result.Client)
                                           Select client.QueueConnectAndLogOn(
                                                            remoteHost:=client.Profile.server.Split(" "c).First,
+                                                           port:=Bnet.Client.BnetServerPort,
                                                            credentials:=New Bnet.ClientCredentials(client.Profile.userName, client.Profile.password))
                                                        ).Unwrap.AssumeNotNull
 

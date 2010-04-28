@@ -453,7 +453,16 @@ Namespace Bnet
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim remoteHost = argument.RawValue(0)
-                Return target.QueueConnect(remoteHost).ContinueWithFunc(Function() "Established connection to {0}".Frmt(remoteHost))
+                Dim port = Bnet.Client.BnetServerPort
+                If remoteHost.Contains(":"c) Then
+                    Dim parts = remoteHost.Split(":"c)
+                    If parts.Count <> 2 OrElse Not UShort.TryParse(parts.Last, NumberStyles.Integer, CultureInfo.InvariantCulture, port) Then
+                        Throw New ArgumentException("Invalid hostname.")
+                    End If
+                    remoteHost = parts.First
+                End If
+
+                Return target.QueueConnect(remoteHost, port).ContinueWithFunc(Function() "Established connection to {0}".Frmt(remoteHost))
             End Function
         End Class
     End Class
