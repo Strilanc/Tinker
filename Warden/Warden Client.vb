@@ -8,39 +8,33 @@
 
         Private ReadOnly _socket As Task(Of Warden.Socket)
         Private ReadOnly _activated As New TaskCompletionSource(Of Boolean)()
-        Private ReadOnly _clock As IClock
         Private ReadOnly _logger As Logger
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_activated IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
-            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal socket As Task(Of Warden.Socket),
                        ByVal activated As TaskCompletionSource(Of Boolean),
-                       ByVal clock As IClock,
                        ByVal logger As Logger)
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(activated IsNot Nothing)
-            Contract.Requires(clock IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             Me._socket = socket
-            Me._clock = clock
             Me._activated = activated
             Me._logger = logger
         End Sub
-        Public Shared Function MakeMock(ByVal logger As Logger, ByVal clock As IClock) As Warden.Client
+        Public Shared Function MakeMock(ByVal logger As Logger) As Warden.Client
             Contract.Requires(logger IsNot Nothing)
-            Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Warden.Client)() IsNot Nothing)
             Dim failedSocket = New TaskCompletionSource(Of Warden.Socket)
             Dim activated = New TaskCompletionSource(Of Boolean)()
             failedSocket.SetException(New ArgumentException("No remote host specified for bnls server."))
             failedSocket.Task.IgnoreExceptions()
             activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem))
-            Return New Warden.Client(failedSocket.Task, activated, clock, logger)
+            Return New Warden.Client(failedSocket.Task, activated, logger)
         End Function
         Public Shared Function MakeConnect(ByVal remoteHost As InvariantString,
                                            ByVal remotePort As UInt16,
@@ -76,7 +70,7 @@
                 End Sub
             )
 
-            Dim result = New Warden.Client(socket, New TaskCompletionSource(Of Boolean), clock, logger)
+            Dim result = New Warden.Client(socket, New TaskCompletionSource(Of Boolean), logger)
             result.Start()
             Return result
         End Function
