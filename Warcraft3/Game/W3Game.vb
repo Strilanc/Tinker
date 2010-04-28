@@ -127,22 +127,33 @@ Namespace WC3
                             logger:=logger,
                             kernel:=kernel)
         End Function
+
         Public Sub Start()
             If Not _started.TryAcquire Then Throw New InvalidOperationException("Already started.")
             If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
 
+            InitLobby()
+            InitLoadScreen()
+            InitMotor()
+
+            AddHandler _kernel.ChangedState, Sub(sender, oldState, newState) _kernel.OutQueue.QueueAction(
+                                                 Sub() RaiseEvent ChangedState(Me, oldState, newState))
+            _kernel.InQueue.QueueAction(Sub() _lobby.TryRestoreFakeHost())
+        End Sub
+        Private Sub InitLobby()
             _lobby.DownloadManager.Start(
                     startPlayerHoldPoint:=StartPlayerHoldPoint,
-                    mapPieceSender:=Sub(receiver, position) _kernel.InQueue.QueueAction(Sub() _lobby.SendMapPiece(receiver, position)))
-            _kernel.InQueue.QueueAction(Sub() _lobby.TryRestoreFakeHost())
-            _motor.Init()
+                    mapPieceSender:=Sub(receiver, position) _kernel.InQueue.QueueAction(
+                                        Sub() _lobby.SendMapPiece(receiver, position)))
 
             _lobby.StartPlayerHoldPoint.IncludeActionHandler(
                 Sub(newPlayer)
-                    AddHandler newPlayer.Disconnected, Sub(player, expected, reportedReason, reasonDescription) _kernel.InQueue.QueueAction(Sub() RemovePlayer(player, expected, reportedReason, reasonDescription))
+                    AddHandler newPlayer.Disconnected, Sub(player, expected, reportedReason, reasonDescription) _kernel.InQueue.QueueAction(
+                                                           Sub() RemovePlayer(player, expected, reportedReason, reasonDescription))
                     AddHandler newPlayer.SuperficialStateUpdated, Sub() QueueThrowUpdated()
                     AddHandler newPlayer.StateUpdated, Sub() _kernel.InQueue.QueueAction(AddressOf _lobby.ThrowChangedPublicState)
-                    newPlayer.QueueAddPacketHandler(Protocol.ClientPackets.NonGameAction, Function(vals) _kernel.InQueue.QueueAction(Sub() ReceiveNonGameAction(newPlayer, vals)))
+                    newPlayer.QueueAddPacketHandler(Protocol.ClientPackets.NonGameAction,
+                                                    Function(vals) _kernel.InQueue.QueueAction(Sub() ReceiveNonGameAction(newPlayer, vals)))
 
                     If Settings.Greeting <> "" Then
                         _lobby.SendMessageTo(message:=Settings.Greeting, player:=newPlayer, display:=False)
@@ -155,14 +166,16 @@ Namespace WC3
 
             AddHandler _lobby.ChangedPublicState, Sub(sender)
                                                       ThrowUpdated()
-                                                      slotStateUpdateThrottle.SetActionToRun(Sub() _kernel.InQueue.QueueAction(
-                                                                                                 Sub() SendLobbyState(New ModInt32(Environment.TickCount).UnsignedValue)))
+                                                      slotStateUpdateThrottle.SetActionToRun(
+                                                          Sub() _kernel.InQueue.QueueAction(
+                                                              Sub() SendLobbyState(New ModInt32(Environment.TickCount).UnsignedValue)))
                                                   End Sub
-            AddHandler _lobby.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
-            AddHandler _motor.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
-            AddHandler _motor.Tick, Sub(sender, timeSpan, actualActions, visibleActions) _kernel.OutQueue.QueueAction(Sub() RaiseEvent Tick(Me, timeSpan, actualActions, visibleActions))
-            AddHandler _motor.ReceivedPlayerActions, Sub(sender, player, actions) _kernel.OutQueue.QueueAction(Sub() RaiseEvent ReceivedPlayerActions(Me, player, actions))
-            AddHandler _kernel.ChangedState, Sub(sender, oldState, newState) _kernel.OutQueue.QueueAction(Sub() RaiseEvent ChangedState(Me, oldState, newState))
+
+            AddHandler _lobby.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription)
+                                                RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
+                                            End Sub
+        End Sub
+        Private Sub InitLoadScreen()
             AddHandler _loadScreen.RecordGameStarted, Sub(sender) _kernel.OutQueue.QueueAction(Sub() RaiseEvent RecordGameStarted(Me))
             AddHandler _loadScreen.EmptyTick, Sub(sender) _kernel.OutQueue.QueueAction(
                 Sub() RaiseEvent Tick(sender:=Me,
@@ -170,6 +183,12 @@ Namespace WC3
                                       actualActionStreaks:=New IReadableList(Of Protocol.SpecificPlayerActionSet)() {}.AsReadableList,
                                       visibleActionStreaks:=New IReadableList(Of Protocol.PlayerActionSet)() {}.AsReadableList))
             AddHandler _loadScreen.Finished, Sub(sender) _motor.QueueStart()
+        End Sub
+        Private Sub InitMotor()
+            _motor.Init()
+            AddHandler _motor.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
+            AddHandler _motor.Tick, Sub(sender, timeSpan, actualActions, visibleActions) _kernel.OutQueue.QueueAction(Sub() RaiseEvent Tick(Me, timeSpan, actualActions, visibleActions))
+            AddHandler _motor.ReceivedPlayerActions, Sub(sender, player, actions) _kernel.OutQueue.QueueAction(Sub() RaiseEvent ReceivedPlayerActions(Me, player, actions))
         End Sub
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
