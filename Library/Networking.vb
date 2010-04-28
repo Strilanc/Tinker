@@ -111,4 +111,25 @@ Public Module NetworkingCommon
             requestCallback:=Sub(ar) result.SetByEvaluating(Function() Net.Dns.EndGetHostEntry(ar))))
         Return result.Task.AssumeNotNull
     End Function
+
+    Public Function AsyncDnsLookupAddress(ByVal remoteHost As String,
+                                          ByVal addressSelector As Random) As Task(Of Net.IPAddress)
+        Contract.Requires(remoteHost IsNot Nothing)
+        Contract.Requires(addressSelector IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task(Of Net.IPAddress))() IsNot Nothing)
+        Return From hostEntry In AsyncDnsLookup(remoteHost)
+               Select hostEntry.AddressList(addressSelector.Next(hostEntry.AddressList.Count))
+    End Function
+
+    <Pure()>
+    Public Function AsyncTcpLookupConnect(ByVal remoteHost As String,
+                                          ByVal addressSelector As Random,
+                                          ByVal port As UShort) As Task(Of TcpClient)
+        Contract.Requires(remoteHost IsNot Nothing)
+        Contract.Requires(addressSelector IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
+        Return From address In AsyncDnsLookupAddress(remoteHost, addressSelector)
+               From client In AsyncTcpConnect(address, port)
+               Select client
+    End Function
 End Module
