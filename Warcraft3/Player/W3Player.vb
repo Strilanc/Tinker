@@ -32,6 +32,7 @@ Namespace WC3
         Private ReadOnly _tickQueue As New Queue(Of TickRecord)
         Private ReadOnly _packetHandler As Protocol.W3PacketHandler
         Private ReadOnly _taskTestCanHost As Task
+        Private ReadOnly _startedReading As New OnetimeLock
 
         Private _ready As Boolean
         Private _state As PlayerState
@@ -58,6 +59,7 @@ Namespace WC3
             Contract.Invariant(_listenEndPoint IsNot Nothing)
             Contract.Invariant(_listenEndPoint.Address IsNot Nothing)
             Contract.Invariant(_taskTestCanHost IsNot Nothing)
+            Contract.Invariant(_startedReading IsNot Nothing)
 
             'Contract.Invariant(_socket Is Nothing = IsFake)
             Contract.Invariant(_totalTockTime >= 0)
@@ -111,12 +113,12 @@ Namespace WC3
         <ContractVerification(False)>
         Public Shared Function MakeFake(ByVal id As PlayerId,
                                         ByVal name As InvariantString,
-                                        Optional ByVal logger As Logger = Nothing) As Player
+                                        ByVal logger As Logger) As Player
+            Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             Dim hostFail = New TaskCompletionSource(Of Boolean)
             hostFail.SetException(New ArgumentException("Fake players can't host."))
-            logger = If(logger, New Logger)
 
             Dim player = New Player(id:=id,
                                     name:=name,
@@ -137,14 +139,14 @@ Namespace WC3
                                           ByVal socket As W3Socket,
                                           ByVal clock As IClock,
                                           ByVal downloadManager As Download.Manager,
-                                          Optional ByVal logger As Logger = Nothing) As Player
+                                          ByVal logger As Logger) As Player
             Contract.Requires(knockData IsNot Nothing)
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(downloadManager IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
-            logger = If(logger, New Logger)
             socket.Logger = logger
             Dim listenEndPoint = New Net.IPEndPoint(socket.RemoteEndPoint.Address, knockData.ListenPort)
             Dim taskTestCanHost = AsyncTcpConnect(listenEndPoint.Address, CUShort(listenEndPoint.Port))
@@ -163,22 +165,6 @@ Namespace WC3
                                     pinger:=pinger,
                                     socket:=socket,
                                     downloadManager:=downloadManager)
-
-            'packets with no handler [within the Player class; received packets without a logger or handler kill the connection]
-            player.AddPacketLogger(Protocol.PeerPackets.MapFileDataProblem)
-            player.AddPacketLogger(Protocol.PeerPackets.MapFileDataReceived)
-            player.AddPacketLogger(Protocol.ClientPackets.NonGameAction)
-            player.AddPacketLogger(Protocol.ClientPackets.RequestDropLaggers)
-            player.AddPacketLogger(Protocol.ClientPackets.GameAction)
-
-            'packets with associated handler
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientConfirmHostLeaving, Sub() player.SendPacket(Protocol.MakeHostConfirmHostLeaving()))
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientMapInfo, AddressOf player.OnReceiveClientMapInfo)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Leaving, AddressOf player.OnReceiveLeaving)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.PeerConnectionInfo, AddressOf player.OnReceivePeerConnectionInfo)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Pong, AddressOf player.OnReceivePong)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Ready, AddressOf player.OnReceiveReady)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Tock, AddressOf player.OnReceiveTock)
 
             player.AddRemotePacketHandler(Protocol.ClientPackets.Pong, AddressOf player._pinger.QueueReceivedPong)
             AddHandler socket.Disconnected, AddressOf player.OnSocketDisconnected
@@ -399,6 +385,24 @@ Namespace WC3
 
         Private Sub BeginReading()
             If _socket Is Nothing Then Return
+            If Not _startedReading.TryAcquire Then Return
+
+            'packets with no handler [within the Player class; received packets without a logger or handler kill the connection]
+            AddPacketLogger(Protocol.PeerPackets.MapFileDataProblem)
+            AddPacketLogger(Protocol.PeerPackets.MapFileDataReceived)
+            AddPacketLogger(Protocol.ClientPackets.NonGameAction)
+            AddPacketLogger(Protocol.ClientPackets.RequestDropLaggers)
+            AddPacketLogger(Protocol.ClientPackets.GameAction)
+
+            'packets with associated handler
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientConfirmHostLeaving, Sub() SendPacket(Protocol.MakeHostConfirmHostLeaving()))
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientMapInfo, AddressOf OnReceiveClientMapInfo)
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.Leaving, AddressOf OnReceiveLeaving)
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.PeerConnectionInfo, AddressOf OnReceivePeerConnectionInfo)
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.Pong, AddressOf OnReceivePong)
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.Ready, AddressOf OnReceiveReady)
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.Tock, AddressOf OnReceiveTock)
+
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf _socket.AsyncReadPacket,
                 consumer:=Function(packetData) _packetHandler.HandlePacket(packetData),
