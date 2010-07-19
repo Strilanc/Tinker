@@ -71,6 +71,7 @@
         End Function
     End Class
 
+    <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class ParsedValue(Of T)
         Private ReadOnly _value As T
         Private ReadOnly _usedDataCount As Int32
@@ -100,6 +101,10 @@
                 Return _usedDataCount
             End Get
         End Property
+
+        Public Overrides Function ToString() As String
+            Return "Parsed from {0} bytes: {1}".Frmt(_usedDataCount, _value)
+        End Function
     End Class
 
     '''<summary>Parses data and packs values into pickles.</summary>
