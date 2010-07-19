@@ -669,8 +669,8 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerWaitFinishedTest()
-        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.TriggerWaitFinished) Is GameActions.TriggerWaitFinished)
-        JarTest(GameActions.TriggerWaitFinished.Jar,
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.TriggerSleepOrSyncFinished) Is GameActions.TriggerSleepOrSyncFinished)
+        JarTest(GameActions.TriggerSleepOrSyncFinished.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        1, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {

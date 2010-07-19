@@ -51,8 +51,8 @@ Namespace WC3.Protocol
 
         TriggerChatEvent = &H60
         PressedEscape = &H61
-        TriggerWaitFinished = &H62
-        '_unseen0x63 = &H63
+        TriggerSleepOrSyncFinished = &H62
+        TriggerSyncReady = &H63
         TriggerMouseClickedTrackable = &H64
         TriggerMouseTouchedTrackable = &H65
         EnterChooseHeroSkillSubmenu = &H66
@@ -597,9 +597,12 @@ Namespace WC3.Protocol
         Public Shared ReadOnly TriggerSelectionEvent As Definition(Of NamedValueMap) = Define(GameActionId.TriggerSelectionEvent,
                     New EnumByteJar(Of SelectionOperation)().Named("operation"),
                     New GameObjectIdJar().Named("target"))
-        '''<summary>Occurs when a TriggerSleepAction finishes.</summary>
-        '''<remarks>This action exists to avoid desyncs because TriggerSleepAction inexplicably waits in real time instead of game time.</remarks>
-        Public Shared ReadOnly TriggerWaitFinished As Definition(Of NamedValueMap) = Define(GameActionId.TriggerWaitFinished,
+        '''<summary>Occurs when a call to TriggerSyncReady happens.</summary>
+        Public Shared ReadOnly TriggerSyncReady As Definition(Of GameObjectId) = Define(GameActionId.TriggerSyncReady,
+                    New GameObjectIdJar().Named("trigger thread"))
+        '''<summary>Occurs when a TriggerSleepAction or TriggerSyncReady finish.</summary>
+        '''<remarks>Used for TriggerSleepAction to avoid desyncs because it inexplicably waits in real time instead of game time.</remarks>
+        Public Shared ReadOnly TriggerSleepOrSyncFinished As Definition(Of NamedValueMap) = Define(GameActionId.TriggerSleepOrSyncFinished,
                     New GameObjectIdJar().Named("trigger thread"),
                     New UInt32Jar().Named("thread wait count"))
     End Class
