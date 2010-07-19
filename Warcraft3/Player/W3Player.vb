@@ -320,12 +320,7 @@ Namespace WC3
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Dim ld = _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
-            Dim hd = _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data).Value))
-            Return New DelegatedDisposable(Sub()
-                                               ld.Dispose()
-                                               hd.Dispose()
-                                           End Sub)
+            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data).Value))
         End Function
         Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                     ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _
