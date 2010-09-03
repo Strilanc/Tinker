@@ -26,6 +26,7 @@
             Me._activated = activated
             Me._logger = logger
         End Sub
+        <ContractVerification(False)>
         Public Shared Function MakeMock(ByVal logger As Logger) As Warden.Client
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Warden.Client)() IsNot Nothing)

@@ -55,25 +55,21 @@ Namespace Bot
 
                     'Find download link
                     Dim i = httpFile.IndexOf("alt=""Download""", StringComparison.OrdinalIgnoreCase)
+                    If i < 0 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     i = httpFile.IndexOf("a href=""", i, StringComparison.OrdinalIgnoreCase)
-                    If i = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
+                    If i < 0 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     i += "a href=""".Length
+                    If i >= httpFile.Length Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     Dim j = httpFile.IndexOf(">", i, StringComparison.OrdinalIgnoreCase)
-                    If j = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
-                    Contract.Assume(i >= 0)
-                    Contract.Assume(j >= i)
-                    Contract.Assume(j < httpFile.Length)
+                    If j < i Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     Dim link = "http://epicwar.com{0}".Frmt(httpFile.Substring(i, j - i))
                     Contract.Assume(link.Length > 0)
 
                     'Find filename
                     i = httpFile.IndexOf("Download ", i, StringComparison.OrdinalIgnoreCase) + "Download ".Length
-                    If i = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
+                    If i < 0 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     j = httpFile.IndexOf("<", i, StringComparison.OrdinalIgnoreCase)
-                    If j = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
-                    Contract.Assume(i >= 0)
-                    Contract.Assume(j >= i)
-                    Contract.Assume(j < httpFile.Length)
+                    If j < 0 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     Dim filename = httpFile.Substring(i, j - i)
                     path = My.Settings.mapPath.AssumeNotNull + filename
                     Contract.Assume(path.Length > 0)
@@ -94,13 +90,12 @@ Namespace Bot
 
                     'Finished
                     Return "Finished downloading map with filename '{0}'.".Frmt(filename)
-                Catch e As Exception
+                Finally
                     If started Then
                         'cleanup
                         IO.File.Delete(dlPath)
                         IO.File.Delete(path)
                     End If
-                    Throw
                 End Try
             End Function
         End Class

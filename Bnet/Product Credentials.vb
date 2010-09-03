@@ -124,7 +124,7 @@
         Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte), ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair)
 
         <ContractClassFor(GetType(IProductAuthenticator))>
-        Class ContractClass
+        MustInherit Class ContractClass
             Implements IProductAuthenticator
             Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
                                               ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate

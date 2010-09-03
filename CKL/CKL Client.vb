@@ -32,9 +32,6 @@ Namespace CKL
         <ContractVerification(False)>
         Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
                                           ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
-            Contract.Requires(clientSalt IsNot Nothing)
-            Contract.Requires(serverSalt IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of ProductCredentialPair))() IsNot Nothing)
 
             'Connect to CKL server
             Dim asyncSocket = PacketSocket.AsyncConnect(_remoteHost, _remotePort, _clock, timeout:=10.Seconds)

@@ -1,6 +1,4 @@
-﻿Imports Tinker.Pickling
-
-Namespace WC3.Download
+﻿Namespace WC3.Download
     <ContractClass(GetType(IPlayerDownloadAspect.ContractClass))>
     Public Interface IPlayerDownloadAspect
         Inherits IDisposableWithTask
@@ -14,7 +12,6 @@ Namespace WC3.Download
 
         <ContractClassFor(GetType(IPlayerDownloadAspect))>
         MustInherit Shadows Class ContractClass
-            Inherits IDisposableWithTask.ContractClass
             Implements IPlayerDownloadAspect
             Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined
                 Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
@@ -48,6 +45,15 @@ Namespace WC3.Download
                 Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
+
+            Public ReadOnly Property DisposalTask As Task Implements IDisposableWithTask.DisposalTask
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public Sub Dispose() Implements IDisposable.Dispose
+                Throw New NotSupportedException
+            End Sub
         End Class
     End Interface
 End Namespace

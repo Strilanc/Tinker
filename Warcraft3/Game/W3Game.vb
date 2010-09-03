@@ -95,6 +95,7 @@ Namespace WC3
                                             ByVal logger As Logger) As Game
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(settings IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Game)() IsNot Nothing)
 
             Dim inQueue = New TaskedCallQueue
@@ -113,8 +114,8 @@ Namespace WC3
             Dim speedFactor = My.Settings.game_speed_factor
             Dim tickPeriod = CUInt(My.Settings.game_tick_period).Milliseconds
             Dim lagLimit = CUInt(My.Settings.game_lag_limit).Milliseconds
-            Contract.Assume(speedFactor > 0)
-            Contract.Assume(tickPeriod.Ticks > 0)
+            If speedFactor <= 0 Then Throw New InvalidStateException("Non-positive speed factor.")
+            If tickPeriod.Ticks <= 0 Then Throw New InvalidStateException("Non-positive tick period.")
             Dim motor = New GameMotor(defaultSpeedFactor:=speedFactor,
                                       defaultTickPeriod:=tickPeriod,
                                       defaultLagLimit:=lagLimit,

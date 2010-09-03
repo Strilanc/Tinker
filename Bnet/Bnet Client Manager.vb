@@ -88,6 +88,7 @@ Namespace Bnet
             Return ClientCommands.Invoke(Me, user, argument)
         End Function
 
+        <ContractVerification(False)>
         Private Sub OnReceivedChatEvent(ByVal vals As NamedValueMap)
             Contract.Requires(vals IsNot Nothing)
 

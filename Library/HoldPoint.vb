@@ -4,7 +4,7 @@ Public Interface IHoldPoint(Of Out TArg)
     Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable
 End Interface
 <ContractClassFor(GetType(IHoldPoint(Of )))>
-Public Class IHoldPointContracts(Of TArg)
+Public MustInherit Class IHoldPointContracts(Of TArg)
     Implements IHoldPoint(Of TArg)
     Public Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionHandler
         Contract.Requires(handler IsNot Nothing)

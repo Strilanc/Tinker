@@ -18,7 +18,7 @@ Namespace Plugins
         Function IsArgumentPrivate(ByVal argument As String) As Boolean
 
         <ContractClassFor(GetType(IPlugin))>
-        NotInheritable Shadows Class ContractClass
+        MustInherit Shadows Class ContractClass
             Implements IPlugin
             Public ReadOnly Property Description As String Implements IPlugin.Description
                 Get
@@ -68,7 +68,7 @@ Namespace Plugins
         Function CreatePlugin(ByVal bot As Bot.MainBot) As IPlugin
 
         <ContractClassFor(GetType(IPluginFactory))>
-        NotInheritable Class ContractClass
+        MustInherit Class ContractClass
             Implements IPluginFactory
 
             Public Function CreatePlugin(ByVal bot As Bot.MainBot) As IPlugin Implements IPluginFactory.CreatePlugin

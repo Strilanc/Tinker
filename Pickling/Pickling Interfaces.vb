@@ -7,7 +7,7 @@
         ReadOnly Property Jar As ISimpleJar
 
         <ContractClassFor(GetType(ISimplePickle))>
-        Class ContractClass
+        MustInherit Class ContractClass
             Implements ISimplePickle
             Public ReadOnly Property Value As Object Implements ISimplePickle.Value
                 Get
@@ -114,7 +114,6 @@
 
         <ContractClassFor(GetType(ISimpleValueEditor))>
         MustInherit Class ContractClass
-            Inherits DisposableWithTask
             Implements ISimpleValueEditor
             Public Event ValueChanged(ByVal sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
             Public ReadOnly Property Control As System.Windows.Forms.Control Implements ISimpleValueEditor.Control
@@ -133,6 +132,8 @@
                     Throw New NotSupportedException
                 End Set
             End Property
+            Public Sub Dispose() Implements IDisposable.Dispose
+            End Sub
         End Class
     End Interface
 
@@ -145,7 +146,6 @@
 
     <ContractClassFor(GetType(IPickle(Of )))>
     Public MustInherit Class ContractClassIPickle(Of T)
-        Inherits ISimplePickle.ContractClass
         Implements IPickle(Of T)
         Public Shadows ReadOnly Property Value As T Implements IPickle(Of T).Value
             Get
@@ -153,10 +153,24 @@
                 Throw New NotSupportedException
             End Get
         End Property
+        Private ReadOnly Property SimpleValue As Object Implements ISimplePickle.Value
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Private ReadOnly Property SimpleData As IReadableList(Of Byte) Implements ISimplePickle.Data
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Private ReadOnly Property SimpleJar As ISimpleJar Implements ISimplePickle.Jar
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
     End Class
     <ContractClassFor(GetType(IJar(Of )))>
     Public MustInherit Class ContractClassIJar(Of T)
-        Inherits ISimpleJar.ContractClass
         Implements IJar(Of T)
 
         <Pure()>
@@ -189,13 +203,28 @@
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
+        Private Function SimpleDescribe(ByVal value As Object) As String Implements ISimpleJar.Describe
+            Throw New NotSupportedException
+        End Function
+        Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
+            Throw New NotSupportedException
+        End Function
+        Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
+            Throw New NotSupportedException()
+        End Function
+        Private Function SimplePack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
+            Throw New NotSupportedException
+        End Function
+        Private Function SimpleParse(ByVal text As String) As Object Implements ISimpleJar.Parse
+            Throw New NotSupportedException
+        End Function
     End Class
     <ContractClassFor(GetType(IValueEditor(Of )))>
     MustInherit Class ContractClassIValueEditor(Of T)
-        Inherits ISimpleValueEditor.ContractClass
         Implements IValueEditor(Of T)
-        Public Shadows Event ValueChanged(ByVal sender As IValueEditor(Of T)) Implements IValueEditor(Of T).ValueChanged
-        Public Shadows Property Value As T Implements IValueEditor(Of T).Value
+        Public Event SimpleValueChanged(ByVal sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
+        Public Event ValueChanged(ByVal sender As IValueEditor(Of T)) Implements IValueEditor(Of T).ValueChanged
+        Public Property Value As T Implements IValueEditor(Of T).Value
             Get
                 Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
                 Throw New NotSupportedException
@@ -205,5 +234,20 @@
                 Throw New NotSupportedException
             End Set
         End Property
+        Public ReadOnly Property Control As System.Windows.Forms.Control Implements ISimpleValueEditor.Control
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public Property SimpleValue As Object Implements ISimpleValueEditor.Value
+            Get
+                Throw New NotSupportedException
+            End Get
+            Set(ByVal value As Object)
+                Throw New NotSupportedException
+            End Set
+        End Property
+        Public Sub Dispose() Implements IDisposable.Dispose
+        End Sub
     End Class
 End Namespace

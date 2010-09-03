@@ -459,7 +459,7 @@ Namespace Bnet
                     If parts.Count <> 2 OrElse Not UShort.TryParse(parts.Last, NumberStyles.Integer, CultureInfo.InvariantCulture, port) Then
                         Throw New ArgumentException("Invalid hostname.")
                     End If
-                    remoteHost = parts.First
+                    remoteHost = parts.First.AssumeNotNull
                 End If
 
                 Return target.QueueConnect(remoteHost, port).ContinueWithFunc(Function() "Established connection to {0}".Frmt(remoteHost))

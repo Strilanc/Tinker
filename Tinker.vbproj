@@ -92,6 +92,8 @@
     <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
     <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036,42105,42106,42107</WarningsAsErrors>
     <Optimize>false</Optimize>
+    <CodeContractsContainerAnalysis>False</CodeContractsContainerAnalysis>
+    <CodeContractsExtraRewriteOptions />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>

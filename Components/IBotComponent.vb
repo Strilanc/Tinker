@@ -13,7 +13,6 @@
 
         <ContractClassFor(GetType(IBotComponent))>
         MustInherit Shadows Class ContractClass
-            Inherits IDisposableWithTask.ContractClass
             Implements IBotComponent
 
             Public ReadOnly Property Logger As Logger Implements IBotComponent.Logger
@@ -58,6 +57,15 @@
                     Throw New NotSupportedException
                 End Get
             End Property
+
+            Public ReadOnly Property DisposalTask As Task Implements IDisposableWithTask.DisposalTask
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public Sub Dispose() Implements IDisposable.Dispose
+                Throw New NotSupportedException
+            End Sub
         End Class
     End Interface
 End Namespace
