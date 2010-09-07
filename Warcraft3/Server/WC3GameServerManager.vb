@@ -194,7 +194,9 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of UInt32)() > 0)
             _gameIdCount += 1UI
             If _gameIdCount > 1000 Then _gameIdCount = 1
-            Return _gameIdCount * 10000UI + CUInt(_gameIdGenerator.Next(1000))
+            Dim result = _gameIdCount * 10000UI + CUInt(_gameIdGenerator.Next(1000))
+            Contract.Assume(result > 0)
+            Return result
         End Function
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>

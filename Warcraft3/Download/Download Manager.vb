@@ -289,6 +289,7 @@ Namespace WC3.Download
         ''' Returns a transfer which has not seen any activity for some time.
         ''' Returns null if there is no such transfer.
         ''' </summary>
+        <Pure()>
         Private Function TryFindFrozenTransfer() As Transfer
             Return (From client In AllClients
                     Where client.Transfer IsNot Nothing
@@ -301,6 +302,7 @@ Namespace WC3.Download
         ''' Returns a transfer which could be improved by cancelling it and switching the downloader to another uploader.
         ''' Returns null if there is no such transfer.
         ''' </summary>
+        <Pure()>
         Private Function TryFindImprovableTransfer() As Transfer
             For Each transfer In From client In AllClients
                                  Where client.HasReported

@@ -34,7 +34,7 @@ Namespace Bnet
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_userName IsNot Nothing)
             Contract.Invariant(_password IsNot Nothing)
-            Contract.Invariant(_privateKey >= 0)
+            Contract.Invariant(_privateKey > 0)
             Contract.Invariant(_publicKey >= 0)
         End Sub
 
@@ -51,7 +51,7 @@ Namespace Bnet
                        ByVal privateKey As BigInteger)
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
-            Contract.Requires(privateKey >= 0)
+            Contract.Requires(privateKey > 0)
             Contract.Ensures(Me.UserName = userName)
             Me._userName = userName
             Me._password = password
@@ -104,7 +104,8 @@ Namespace Bnet
         '''<summary>Generates a new private crypto key.</summary>
         '''<remarks>I'm not a cryptographer but this is probably safe enough, given the application.</remarks>
         Private Shared Function GeneratePrivateKey(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As BigInteger
-            Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
+            Contract.Ensures(Contract.Result(Of BigInteger)() > 0)
+            Contract.Assume(N > 0)
             Contract.Assume(N >= 0)
             Dim privateKeyDataBuffer = N.ToUnsignedBytes.ToArray
             If rng Is Nothing Then
@@ -114,9 +115,7 @@ Namespace Bnet
             Else
                 rng.GetBytes(privateKeyDataBuffer)
             End If
-            Dim key = (privateKeyDataBuffer.ToUnsignedBigInteger Mod (N - 1)) + 1
-            Contract.Assume(key >= 0)
-            Return key
+            Return privateKeyDataBuffer.ToUnsignedBigInteger.PositiveMod(N)
         End Function
         '''<summary>Derives a fixed salt value from the shared crypto constants.</summary>
         Private Shared ReadOnly Property FixedSalt() As IEnumerable(Of Byte)

@@ -449,10 +449,11 @@ Public Module PoorlyCategorizedFunctions
 
         Return xorTable.ToArray
     End Function
+    '''<summary>Reads all remaining data from a stream, computing its CRC32 checksum.</summary>
     <Extension()>
-    Public Function CRC32(ByVal data As IReadableStream,
-                          Optional ByVal poly As UInteger = &H4C11DB7,
-                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
+    Public Function readCRC32(ByVal data As IReadableStream,
+                              Optional ByVal poly As UInteger = &H4C11DB7,
+                              Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
         Contract.Requires(data IsNot Nothing)
         Dim xorTable = CRC32Table(poly, polyAlreadyReversed)
 
@@ -468,12 +469,13 @@ Public Module PoorlyCategorizedFunctions
 
         Return Not result
     End Function
+    '''<summary>Determines the CRC32 checksum of a sequence of bytes.</summary>
     <Extension()> <Pure()>
     Public Function CRC32(ByVal data As IEnumerable(Of Byte),
                           Optional ByVal poly As UInteger = &H4C11DB7,
                           Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
         Contract.Requires(data IsNot Nothing)
-        Return data.AsReadableStream.CRC32(poly, polyAlreadyReversed)
+        Return data.AsReadableStream.readCRC32(poly, polyAlreadyReversed)
     End Function
 
     '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>
@@ -567,4 +569,37 @@ Public Module PoorlyCategorizedFunctions
             panel.Width = maxWidth
         End If
     End Sub
+
+    <Extension()>
+    Public Function ReplaceDirectorySeparatorWith(ByVal path As String, ByVal separator As Char) As String
+        Contract.Requires(path IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Return path.ToString.
+                    Replace(IO.Path.DirectorySeparatorChar, separator).
+                    Replace(IO.Path.AltDirectorySeparatorChar, separator)
+    End Function
+
+    ''' <summary>
+    ''' Determines the relative path to a file from a directory.
+    ''' Returns null if the file is not nested within the directory.
+    ''' </summary>
+    Public Function FilePathRelativeToDirectoryPath(ByVal path As String, ByVal baseDirectoryPath As String) As String
+        Contract.Requires(path IsNot Nothing)
+        Contract.Requires(baseDirectoryPath IsNot Nothing)
+
+        Dim baseDir = New IO.DirectoryInfo(path)
+        Dim fileInfo = New IO.FileInfo(path)
+        Dim result = New List(Of String) From {fileInfo.Name}
+
+        Dim parentDir = fileInfo.Directory
+        Do
+            If parentDir Is Nothing Then
+                Return Nothing 'not nested
+            ElseIf parentDir.Equals(baseDir) Then
+                Return result.StringJoin(IO.Path.DirectorySeparatorChar) 'nested
+            End If
+            result.Add(parentDir.Name)
+            parentDir = parentDir.Parent
+        Loop
+    End Function
 End Module

@@ -78,39 +78,40 @@ Namespace WC3
             Me._name = name
         End Sub
 
+        <ContractVerification(False)>
         Public Shared Function FromFile(ByVal filePath As InvariantString,
                                         ByVal wc3MapFolder As InvariantString,
                                         ByVal wc3PatchMPQFolder As InvariantString) As Map
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
+
             Dim factory = Function() New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream.AsNonNull
             Dim mapArchive = MPQ.Archive.FromStreamFactory(factory)
             Dim war3PatchArchive = MPQ.Archive.FromFile(IO.Path.Combine(wc3PatchMPQFolder, "War3Patch.mpq"))
+
             Dim info = ReadMapInfo(mapArchive)
+            Dim relPath = If(FilePathRelativeToDirectoryPath(filePath, wc3MapFolder),
+                             IO.Path.GetFileName(filePath))
 
-            Dim basePath = wc3MapFolder.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar).ToInvariant
-            Dim relPath = filePath.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar).ToInvariant
-            If Not basePath.EndsWith(IO.Path.DirectorySeparatorChar) Then basePath += IO.Path.DirectorySeparatorChar
-            If relPath.StartsWith(basePath) Then
-                relPath = relPath.Substring(basePath.Length)
-            Else
-                relPath = IO.Path.GetFileName(relPath)
-            End If
-
+            Dim fileSize As UInt32
+            Dim fileChecksumCRC32 As UInt32
             Using crcStream = factory().Value
-                Return New Map(streamFactory:=factory,
-                               AdvertisedPath:="Maps\" + relPath.ToString.Replace(IO.Path.DirectorySeparatorChar, "\"),
-                               FileSize:=CUInt(crcStream.Length),
-                               FileChecksumCRC32:=crcStream.CRC32,
-                               MapChecksumSHA1:=ComputeMapSha1Checksum(mapArchive, war3PatchArchive),
-                               MapChecksumXORO:=ComputeMapXoro(mapArchive, war3PatchArchive),
-                               lobbySlots:=info.slots,
-                               PlayableWidth:=info.playableWidth,
-                               PlayableHeight:=info.playableHeight,
-                               IsMelee:=info.options.EnumUInt32Includes(MapOptions.Melee),
-                               UsesCustomForces:=info.options.EnumUInt32Includes(MapOptions.CustomForces),
-                               UsesFixedPlayerSettings:=info.options.EnumUInt32Includes(MapOptions.FixedPlayerSettings),
-                               Name:=info.name)
+                fileSize = CUInt(crcStream.Length)
+                fileChecksumCRC32 = crcStream.readCRC32
             End Using
+
+            Return New Map(streamFactory:=factory,
+                           AdvertisedPath:=IO.Path.Combine("Maps", relPath).ReplaceDirectorySeparatorWith("\"c),
+                           fileSize:=fileSize,
+                           fileChecksumCRC32:=fileChecksumCRC32,
+                           MapChecksumSHA1:=ComputeMapSha1Checksum(mapArchive, war3PatchArchive),
+                           MapChecksumXORO:=ComputeMapXoro(mapArchive, war3PatchArchive),
+                           LobbySlots:=info.slots,
+                           PlayableWidth:=info.playableWidth,
+                           PlayableHeight:=info.playableHeight,
+                           IsMelee:=info.options.EnumUInt32Includes(MapOptions.Melee),
+                           UsesCustomForces:=info.options.EnumUInt32Includes(MapOptions.CustomForces),
+                           UsesFixedPlayerSettings:=info.options.EnumUInt32Includes(MapOptions.FixedPlayerSettings),
+                           Name:=info.name)
         End Function
 
         <ContractVerification(False)>
@@ -539,7 +540,7 @@ Namespace WC3
         <ContractVerification(False)>
         Private Shared Function ReadMapInfo(ByVal mapArchive As MPQ.Archive) As ReadMapInfoResult
             Contract.Requires(mapArchive IsNot Nothing)
-            'Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
 
             Using stream = mapArchive.OpenFileByName("war3map.w3i")
                 Dim fileFormat = CType(stream.ReadUInt32(), MapInfoFormatVersion)

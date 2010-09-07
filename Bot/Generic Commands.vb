@@ -44,6 +44,7 @@ Namespace Bot
                     End Function
                 )
             End Function
+            <ContractVerification(False)>
             Private Shared Function DownloadEpicWar(ByVal id As String) As String
                 Dim path As String = Nothing
                 Dim dlPath As String = Nothing
