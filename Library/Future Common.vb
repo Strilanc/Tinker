@@ -65,7 +65,7 @@
         Contract.Requires(errorHandler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
-        Dim result = New TaskCompletionSource(Of Boolean)
+        Dim result = New TaskCompletionSource(Of NoValue)
 
         'Setup iteration
         Dim onFinishedConsuming As Action(Of Task) = Nothing
@@ -103,7 +103,7 @@
             producer:=producer,
             errorHandler:=errorHandler,
             consumer:=Function(value)
-                          Dim result = New TaskCompletionSource(Of Boolean)
+                          Dim result = New TaskCompletionSource(Of NoValue)
                           result.SetByCalling(Sub() consumer(value))
                           Return result.Task
                       End Function)

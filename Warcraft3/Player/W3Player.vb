@@ -117,7 +117,7 @@ Namespace WC3
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
-            Dim hostFail = New TaskCompletionSource(Of Boolean)
+            Dim hostFail = New TaskCompletionSource(Of NoValue)
             hostFail.SetException(New ArgumentException("Fake players can't host."))
 
             Dim player = New Player(id:=id,

@@ -7,7 +7,7 @@
         Public Event Disconnected(ByVal sender As Warden.Client, ByVal expected As Boolean, ByVal reason As String)
 
         Private ReadOnly _socket As Task(Of Warden.Socket)
-        Private ReadOnly _activated As New TaskCompletionSource(Of Boolean)()
+        Private ReadOnly _activated As New TaskCompletionSource(Of NoValue)()
         Private ReadOnly _logger As Logger
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -17,7 +17,7 @@
         End Sub
 
         Public Sub New(ByVal socket As Task(Of Warden.Socket),
-                       ByVal activated As TaskCompletionSource(Of Boolean),
+                       ByVal activated As TaskCompletionSource(Of NoValue),
                        ByVal logger As Logger)
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(activated IsNot Nothing)
@@ -31,7 +31,7 @@
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Warden.Client)() IsNot Nothing)
             Dim failedSocket = New TaskCompletionSource(Of Warden.Socket)
-            Dim activated = New TaskCompletionSource(Of Boolean)()
+            Dim activated = New TaskCompletionSource(Of NoValue)()
             failedSocket.SetException(New ArgumentException("No remote host specified for bnls server."))
             failedSocket.Task.IgnoreExceptions()
             activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem))
@@ -71,7 +71,7 @@
                 End Sub
             )
 
-            Dim result = New Warden.Client(socket, New TaskCompletionSource(Of Boolean), logger)
+            Dim result = New Warden.Client(socket, New TaskCompletionSource(Of NoValue), logger)
             result.Start()
             Return result
         End Function
@@ -111,7 +111,7 @@
         Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As Task
             Contract.Requires(wardenData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            _activated.TrySetResult(True)
+            _activated.TrySetResult(Nothing)
             Return _socket.ContinueWithFunc(Function(wardenClient) wardenClient.QueueSendWardenData(wardenData))
         End Function
 

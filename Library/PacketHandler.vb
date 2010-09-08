@@ -31,8 +31,8 @@ Public MustInherit Class PacketHandler(Of TKey)
                                      If pickle.Data.Count < data.Count Then Throw New PicklingException("Data left over after parsing.")
                                      If pickle.Data.Count > data.Count Then Throw New PicklingException("Pickle contains more data than was parsed.")
                                      logger.Log(Function() "Received {0} from {1}: {2}".Frmt(key, sourceName, pickle.Description), LogMessageType.DataParsed)
-                                     Dim result = New TaskCompletionSource(Of Boolean)()
-                                     result.SetResult(True)
+                                     Dim result = New TaskCompletionSource(Of NoValue)()
+                                     result.SetResult(Nothing)
                                      Return result.Task
                                  End Function)
     End Function

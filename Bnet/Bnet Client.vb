@@ -139,8 +139,8 @@ Namespace Bnet
         Private _clientCdKeySalt As UInt32
         Private _expectedServerPasswordProof As IReadableList(Of Byte)
         Private _allowRetryConnect As Boolean
-        Private _futureConnected As New TaskCompletionSource(Of Boolean)
-        Private _futureLoggedIn As New TaskCompletionSource(Of Boolean)
+        Private _futureConnected As New TaskCompletionSource(Of NoValue)
+        Private _futureLoggedIn As New TaskCompletionSource(Of NoValue)
 
         Public Event StateChanged(ByVal sender As Client, ByVal oldState As ClientState, ByVal newState As ClientState)
         Public Event AdvertisedGame(ByVal sender As Client, ByVal gameDescription As WC3.LocalGameDescription, ByVal [private] As Boolean, ByVal refreshed As Boolean)
@@ -406,7 +406,7 @@ Namespace Bnet
 
             'Reset the class future for the connection outcome
             Me._futureConnected.TrySetException(New InvalidStateException("Another connection was initiated."))
-            Me._futureConnected = New TaskCompletionSource(Of Boolean)
+            Me._futureConnected = New TaskCompletionSource(Of NoValue)
             Me._futureConnected.IgnoreExceptions()
 
             'Introductions
@@ -440,7 +440,7 @@ Namespace Bnet
             End If
 
             Me._futureLoggedIn.TrySetException(New InvalidStateException("Another login was initiated."))
-            Me._futureLoggedIn = New TaskCompletionSource(Of Boolean)
+            Me._futureLoggedIn = New TaskCompletionSource(Of NoValue)
             Me._futureLoggedIn.IgnoreExceptions()
 
             Me._userCredentials = credentials
@@ -694,7 +694,7 @@ Namespace Bnet
                 End If
 
                 ChangeState(ClientState.EnterUserCredentials)
-                _futureConnected.TrySetResult(True)
+                _futureConnected.TrySetResult(Nothing)
                 _allowRetryConnect = True
             Catch ex As Exception
                 _futureConnected.TrySetException(ex)
@@ -757,7 +757,7 @@ Namespace Bnet
 
                 ChangeState(ClientState.WaitingForEnterChat)
                 Logger.Log("Logged on with username {0}.".Frmt(Me._userCredentials.UserName), LogMessageType.Typical)
-                _futureLoggedIn.TrySetResult(True)
+                _futureLoggedIn.TrySetResult(Nothing)
 
                 'respond
                 SetReportedListenPort(6112)

@@ -36,7 +36,7 @@ Public Class HoldPoint(Of TArg)
     ''' </summary>
     Public Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionHandler
         Return IncludeTaskHandler(Function(arg)
-                                      Dim result = New TaskCompletionSource(Of Boolean)()
+                                      Dim result = New TaskCompletionSource(Of NoValue)()
                                       result.SetByCalling(Sub() handler(arg))
                                       Return result.Task
                                   End Function)
