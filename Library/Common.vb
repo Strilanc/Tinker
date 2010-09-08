@@ -126,43 +126,6 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of Maybe(Of T))().HasValue)
         Return New Maybe(Of T)(value)
     End Function
-    <Extension()> <Pure()>
-    Public Function HasBitSet(ByVal value As Byte, ByVal bitPosition As Integer) As Boolean
-        Return ((value >> bitPosition) And CByte(1)) <> 0
-    End Function
-    <Extension()> <Pure()>
-    Public Function HasBitSet(ByVal value As UInt16, ByVal bitPosition As Integer) As Boolean
-        Return ((value >> bitPosition) And 1US) <> 0
-    End Function
-    <Extension()> <Pure()>
-    Public Function HasBitSet(ByVal value As UInt32, ByVal bitPosition As Integer) As Boolean
-        Return ((value >> bitPosition) And 1UI) <> 0
-    End Function
-    <Extension()> <Pure()>
-    Public Function HasBitSet(ByVal value As UInt64, ByVal bitPosition As Integer) As Boolean
-        Return ((value >> bitPosition) And 1UL) <> 0
-    End Function
-
-    <Extension()> <Pure()>
-    Public Function WithBitSetTo(ByVal value As Byte, ByVal bitPosition As Integer, ByVal bitValue As Boolean) As Byte
-        Dim bit = CByte(1) << bitPosition
-        Return If(bitValue, value Or bit, value And Not bit)
-    End Function
-    <Extension()> <Pure()>
-    Public Function WithBitSetTo(ByVal value As UInt16, ByVal bitPosition As Integer, ByVal bitValue As Boolean) As UInt16
-        Dim bit = 1US << bitPosition
-        Return If(bitValue, value Or bit, value And Not bit)
-    End Function
-    <Extension()> <Pure()>
-    Public Function WithBitSetTo(ByVal value As UInt32, ByVal bitPosition As Integer, ByVal bitValue As Boolean) As UInt32
-        Dim bit = 1UI << bitPosition
-        Return If(bitValue, value Or bit, value And Not bit)
-    End Function
-    <Extension()> <Pure()>
-    Public Function WithBitSetTo(ByVal value As UInt64, ByVal bitPosition As Integer, ByVal bitValue As Boolean) As UInt64
-        Dim bit = 1UL << bitPosition
-        Return If(bitValue, value Or bit, value And Not bit)
-    End Function
 
     <Extension()> <Pure()>
     Public Function EnumUInt32Includes(Of T)(ByVal value As T, ByVal [option] As UInt32) As Boolean
@@ -203,35 +166,6 @@ Public Module PoorlyCategorizedFunctions
             Case Else
                 Throw New InvalidOperationException("{0} does not have a recognized underlying enum type.".Frmt(GetType(TEnum)))
         End Select
-    End Function
-
-    <Extension()> <Pure()>
-    <ContractVerification(False)>
-    Public Function Bits(ByVal value As UInt64) As IEnumerable(Of Boolean)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 64)
-        Return From i In 64.Range Select value.HasBitSet(i)
-    End Function
-    <Extension()> <Pure()>
-    <ContractVerification(False)>
-    Public Function Bits(ByVal value As UInt32) As IEnumerable(Of Boolean)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 32)
-        Return From i In 32.Range Select value.HasBitSet(i)
-    End Function
-    <Extension()> <Pure()>
-    <ContractVerification(False)>
-    Public Function Bits(ByVal value As UInt16) As IEnumerable(Of Boolean)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 16)
-        Return From i In 16.Range Select value.HasBitSet(i)
-    End Function
-    <Extension()> <Pure()>
-    <ContractVerification(False)>
-    Public Function Bits(ByVal value As Byte) As IEnumerable(Of Boolean)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 8)
-        Return From i In 8.Range Select value.HasBitSet(i)
     End Function
 
     <CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")>

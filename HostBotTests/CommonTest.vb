@@ -2,6 +2,7 @@
 Imports Tinker
 Imports Strilbrary.Collections
 Imports Strilbrary.Time
+Imports Strilbrary.Values
 
 <TestClass()>
 Public Class CommonTest

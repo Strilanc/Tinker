@@ -697,9 +697,9 @@ Namespace WC3
                                          race:=Protocol.Races.Random)
                         ).ToReadableList
             Else
-                Return (From slot In LobbySlots
+                Return (From slot In lobbySlots
                         Let team = (From force In forceData
-                                    Where force.memberBitField.Bits(slot.Color)
+                                    Where force.memberBitField.Bits.ElementAt(slot.Color)
                                     Select force.index
                                     ).Single
                         Select slot.With(team:=team)
