@@ -158,7 +158,7 @@ Namespace Bnet
             Dim lines = challengeInstructions.Split(" "c)
             Dim declarations = From line In lines Where line Like "[a-zA-Z]=#*"
             Dim statements = From line In lines Where line Like "[a-zA-Z]=[a-zA-Z]?[a-zA-Z]"
-            Dim statementCount = UInt32.Parse((From line In lines Where line Like "#").First, CultureInfo.InvariantCulture)
+            Dim statementCount = UInt32.Parse((From line In lines Where line Like "#").Single, CultureInfo.InvariantCulture)
 
             'Check
             If statements.Count <> statementCount Then Throw New ArgumentException("Statement count didn't match number of statements.")
@@ -175,7 +175,7 @@ Namespace Bnet
             Dim initialization = Expression.Block(
                     ParseDeclarations(declarations, hashVariables),
                     Expression.Assign(varBuffer, Expression.NewArrayBounds(GetType(Byte), Expression.Constant(1024))),
-                    expression.ExclusiveOrAssign(hashVariables(SeedVar), Expression.Constant(ParseChallengeSeed(challengeSeed))))
+                    Expression.ExclusiveOrAssign(hashVariables(SeedVar), Expression.Constant(ParseChallengeSeed(challengeSeed))))
 
             'Method Main Loop
             '[Applies hashing instructions to each dword in buffered data]
