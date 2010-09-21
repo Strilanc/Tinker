@@ -13,7 +13,7 @@ Imports TinkerTests.PicklingTest
 Public Class WC3ProtocolTest
     <TestMethod()>
     Public Sub ClientConfirmHostLeavingTest()
-        JarTest(ClientPackets.ClientConfirmHostLeaving.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ClientPackets.ClientConfirmHostLeaving.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub ClientMapInfoTest()
@@ -49,7 +49,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub HostConfirmHostLeavingTest()
-        JarTest(ServerPackets.HostConfirmHostLeaving.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ServerPackets.HostConfirmHostLeaving.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub HostMapInfoTest()
@@ -394,7 +394,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ReadyTest()
-        JarTest(ClientPackets.Ready.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ClientPackets.Ready.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub RejectEntryTest()
@@ -415,7 +415,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub RequestDropLaggersTest()
-        JarTest(ClientPackets.RequestDropLaggers.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ClientPackets.RequestDropLaggers.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub SetDownloadSourceTest()
@@ -454,11 +454,11 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub StartCountdownTest()
-        JarTest(ServerPackets.StartCountdown.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ServerPackets.StartCountdown.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub StartLoadingTest()
-        JarTest(ServerPackets.StartLoading.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ServerPackets.StartLoading.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub TextTest()
@@ -482,7 +482,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"speaker", New PlayerId(1)},
-                        {"type group", ChatType.Lobby.KeyValue(Of Object)(New EmptyJar.EmptyValue)},
+                        {"type group", ChatType.Lobby.KeyValue(Of Object)(New NoValue)},
                         {"message", "test"}
                     })
     End Sub

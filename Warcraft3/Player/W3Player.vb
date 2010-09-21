@@ -341,7 +341,7 @@ Namespace WC3
             _reportedDownloadPosition = vals.ItemAs(Of UInt32)("total downloaded")
             _outQueue.QueueAction(Sub() RaiseEvent StateUpdated(Me))
         End Sub
-        Private Sub OnReceiveReady(ByVal value As EmptyJar.EmptyValue)
+        Private Sub OnReceiveReady(ByVal value As NoValue)
             _ready = True
             _logger.Log("{0} is ready".Frmt(Name), LogMessageType.Positive)
         End Sub

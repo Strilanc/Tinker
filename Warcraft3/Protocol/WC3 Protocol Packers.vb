@@ -40,7 +40,7 @@ Namespace WC3.Protocol
                     Return Packet.FromValue(ServerPackets.Text, New Dictionary(Of InvariantString, Object) From {
                             {"requested receivers", receivers.ToReadableList},
                             {"speaker", sender},
-                            {"type group", chatType.KeyValue(Of Object)(New EmptyJar.EmptyValue)},
+                            {"type group", chatType.KeyValue(Of Object)(New NoValue)},
                             {"message", text}})
                 Case Else
                     Throw chatType.MakeArgumentValueException("chatType")
@@ -134,17 +134,17 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeStartCountdown() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromValue(ServerPackets.StartCountdown, New EmptyJar.EmptyValue)
+            Return Packet.FromValue(ServerPackets.StartCountdown, New NoValue)
         End Function
         <Pure()>
         Public Function MakeStartLoading() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromValue(ServerPackets.StartLoading, New EmptyJar.EmptyValue)
+            Return Packet.FromValue(ServerPackets.StartLoading, New NoValue)
         End Function
         <Pure()>
         Public Function MakeHostConfirmHostLeaving() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromValue(ServerPackets.HostConfirmHostLeaving, New EmptyJar.EmptyValue)
+            Return Packet.FromValue(ServerPackets.HostConfirmHostLeaving, New NoValue)
         End Function
         <Pure()>
         Public Function MakeTickPreOverflow(ByVal actions As IReadableList(Of PlayerActionSet),
@@ -295,7 +295,7 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeReady() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromValue(ClientPackets.Ready, New EmptyJar.EmptyValue)
+            Return Packet.FromValue(ClientPackets.Ready, New NoValue)
         End Function
         <Pure()>
         Public Function MakePong(ByVal salt As UInteger) As Packet

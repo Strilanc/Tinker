@@ -95,7 +95,7 @@ Namespace WC3.Replay
             Return ReplayEntry.FromDefinitionAndValue(Format.ReplayEntryChatMessage, New Dictionary(Of InvariantString, Object) From {
                     {"speaker", sender},
                     {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                        {"type group", Protocol.ChatType.Lobby.KeyValue(Of Object)(New EmptyJar.EmptyValue)},
+                        {"type group", Protocol.ChatType.Lobby.KeyValue(Of Object)(New NoValue)},
                         {"message", message}})}})
         End Function
         <Pure()>

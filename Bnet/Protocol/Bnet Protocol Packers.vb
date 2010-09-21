@@ -148,7 +148,7 @@ Namespace Bnet.Protocol
         <Pure()>
         Public Function MakeCloseGame3() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromValue(Packets.ClientToServer.CloseGame3, New Pickling.EmptyJar.EmptyValue)
+            Return Packet.FromValue(Packets.ClientToServer.CloseGame3, New NoValue)
         End Function
 
         <Pure()>

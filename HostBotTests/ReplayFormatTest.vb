@@ -21,7 +21,7 @@ Public Class ReplayFormatTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"speaker", New PlayerId(1)},
                         {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                            {"type group", Protocol.ChatType.Lobby.KeyValue(Of Object)(New EmptyJar.EmptyValue)},
+                            {"type group", Protocol.ChatType.Lobby.KeyValue(Of Object)(New NoValue)},
                             {"message", "test"}})}})
         JarTest(Format.ReplayEntryChatMessage.Jar,
                 data:={1,

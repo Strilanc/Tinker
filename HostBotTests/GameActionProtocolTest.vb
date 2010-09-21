@@ -64,32 +64,32 @@ Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub CheatDisableTechRequirementsTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatDisableTechRequirements) Is GameActions.CheatDisableTechRequirements)
-        JarTest(GameActions.CheatDisableTechRequirements.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatDisableTechRequirements.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatDisableVictoryConditionsTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatDisableVictoryConditions) Is GameActions.CheatDisableVictoryConditions)
-        JarTest(GameActions.CheatDisableVictoryConditions.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatDisableVictoryConditions.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatEnableResearchTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatEnableResearch) Is GameActions.CheatEnableResearch)
-        JarTest(GameActions.CheatEnableResearch.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatEnableResearch.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatFastCooldownTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatFastCooldown) Is GameActions.CheatFastCooldown)
-        JarTest(GameActions.CheatFastCooldown.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatFastCooldown.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatFastDeathDecayTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatFastDeathDecay) Is GameActions.CheatFastDeathDecay)
-        JarTest(GameActions.CheatFastDeathDecay.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatFastDeathDecay.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatGodModeTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatGodMode) Is GameActions.CheatGodMode)
-        JarTest(GameActions.CheatGodMode.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatGodMode.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatGoldTest()
@@ -116,12 +116,12 @@ Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub CheatInstantDefeatTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatInstantDefeat) Is GameActions.CheatInstantDefeat)
-        JarTest(GameActions.CheatInstantDefeat.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatInstantDefeat.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatInstantVictoryTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatInstantVictory) Is GameActions.CheatInstantVictory)
-        JarTest(GameActions.CheatInstantVictory.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatInstantVictory.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatLumberTest()
@@ -137,22 +137,22 @@ Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub CheatNoDefeatTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatNoDefeat) Is GameActions.CheatNoDefeat)
-        JarTest(GameActions.CheatNoDefeat.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatNoDefeat.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatNoFoodLimitTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatNoFoodLimit) Is GameActions.CheatNoFoodLimit)
-        JarTest(GameActions.CheatNoFoodLimit.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatNoFoodLimit.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatRemoveFogOfWarTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatRemoveFogOfWar) Is GameActions.CheatRemoveFogOfWar)
-        JarTest(GameActions.CheatRemoveFogOfWar.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatRemoveFogOfWar.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatResearchUpgradesTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatResearchUpgrades) Is GameActions.CheatResearchUpgrades)
-        JarTest(GameActions.CheatResearchUpgrades.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatResearchUpgrades.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatSetTimeOfDayTest()
@@ -164,17 +164,17 @@ Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub CheatSpeedConstructionTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatSpeedConstruction) Is GameActions.CheatSpeedConstruction)
-        JarTest(GameActions.CheatSpeedConstruction.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatSpeedConstruction.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub CheatUnlimitedManaTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatUnlimitedMana) Is GameActions.CheatUnlimitedMana)
-        JarTest(GameActions.CheatUnlimitedMana.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.CheatUnlimitedMana.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub DecreaseGameSpeedTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.DecreaseGameSpeed) Is GameActions.DecreaseGameSpeed)
-        JarTest(GameActions.DecreaseGameSpeed.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.DecreaseGameSpeed.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub DequeueBuildingOrderTest()
@@ -212,12 +212,12 @@ Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub EnterChooseBuildingSubmenuTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.EnterChooseBuildingSubmenu) Is GameActions.EnterChooseBuildingSubmenu)
-        JarTest(GameActions.EnterChooseBuildingSubmenu.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.EnterChooseBuildingSubmenu.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub EnterChooseHeroSkillSubmenuTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.EnterChooseHeroSkillSubmenu) Is GameActions.EnterChooseHeroSkillSubmenu)
-        JarTest(GameActions.EnterChooseHeroSkillSubmenu.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.EnterChooseHeroSkillSubmenu.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub FogObjectOrderTest()
@@ -448,7 +448,7 @@ Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub IncreaseGameSpeedTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.IncreaseGameSpeed) Is GameActions.IncreaseGameSpeed)
-        JarTest(GameActions.IncreaseGameSpeed.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.IncreaseGameSpeed.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub MinimapPingTest()
@@ -486,7 +486,7 @@ Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub PauseGameTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.PauseGame) Is GameActions.PauseGame)
-        JarTest(GameActions.PauseGame.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.PauseGame.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub PointOrderTest()
@@ -509,17 +509,17 @@ Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub PressedEscapeTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.PressedEscape) Is GameActions.PressedEscape)
-        JarTest(GameActions.PressedEscape.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.PressedEscape.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub PreSubGroupSelectionTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.PreSubGroupSelection) Is GameActions.PreSubGroupSelection)
-        JarTest(GameActions.PreSubGroupSelection.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.PreSubGroupSelection.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub ResumeGameTest()
         Assert.IsTrue(GameActions.DefinitionFor(GameActionId.ResumeGame) Is GameActions.ResumeGame)
-        JarTest(GameActions.ResumeGame.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(GameActions.ResumeGame.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub SaveGameFinishedTest()

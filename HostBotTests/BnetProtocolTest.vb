@@ -21,7 +21,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientCloseGame3Test()
-        JarTest(Packets.ClientToServer.CloseGame3.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(Packets.ClientToServer.CloseGame3.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub ClientCreateGame3Test()
@@ -73,7 +73,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientGetIconDataTest()
-        JarTest(Packets.ClientToServer.GetIconData.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(Packets.ClientToServer.GetIconData.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub ClientJoinChannelTest()
@@ -93,7 +93,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientNullTest()
-        JarTest(Packets.ClientToServer.Null.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(Packets.ClientToServer.Null.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub ClientPingTest()
@@ -313,7 +313,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerNullTest()
-        JarTest(Packets.ServerToClient.Null.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(Packets.ServerToClient.Null.Jar, data:={}, value:=New NoValue)
     End Sub
     <TestMethod()>
     Public Sub ServerPingTest()
