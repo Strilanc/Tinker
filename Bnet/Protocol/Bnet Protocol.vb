@@ -269,6 +269,10 @@ Namespace Bnet.Protocol
             End Property
         End Class
 
+        Private Shared Function Define(ByVal id As PacketId) As Definition(Of NoValue)
+            Contract.Ensures(Contract.Result(Of Definition(Of NoValue))() IsNot Nothing)
+            Return Define(id, New EmptyJar)
+        End Function
         Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
@@ -340,8 +344,7 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly CreateGame3 As Definition(Of UInt32) = Define(PacketId.CreateGame3,
                     New UInt32Jar().Named("result"))
 
-            Public Shared ReadOnly Null As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.Null,
-                    New EmptyJar())
+            Public Shared ReadOnly Null As Definition(Of NoValue) = Define(PacketId.Null)
             Public Shared ReadOnly Ping As Definition(Of UInt32) = Define(PacketId.Ping,
                     New UInt32Jar(showHex:=True).Named("salt"))
             Public Shared ReadOnly Warden As Definition(Of IReadableList(Of Byte)) = Define(PacketId.Warden,
@@ -422,16 +425,14 @@ Namespace Bnet.Protocol
                     New TextHexUInt32Jar(digitCount:=1).Named("num free slots"),
                     New TextHexUInt32Jar(digitCount:=8).Named("game id"),
                     New WC3.Protocol.GameStatsJar().Named("statstring"))
-            Public Shared ReadOnly CloseGame3 As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.CloseGame3,
-                    New EmptyJar())
+            Public Shared ReadOnly CloseGame3 As Definition(Of NoValue) = Define(PacketId.CloseGame3)
             Public Shared ReadOnly JoinChannel As Definition(Of NamedValueMap) = Define(PacketId.JoinChannel,
                     New EnumUInt32Jar(Of JoinChannelType)().Named("join type"),
                     New UTF8Jar().NullTerminated.Named("channel"))
             Public Shared ReadOnly NetGamePort As Definition(Of UInt16) = Define(PacketId.NetGamePort,
                     New UInt16Jar().Named("port"))
 
-            Public Shared ReadOnly Null As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.Null,
-                    New EmptyJar())
+            Public Shared ReadOnly Null As Definition(Of NoValue) = Define(PacketId.Null)
             Public Shared ReadOnly Ping As Definition(Of UInt32) = Define(PacketId.Ping,
                     New UInt32Jar(showhex:=True).Named("salt"))
             Public Shared ReadOnly Warden As Definition(Of IReadableList(Of Byte)) = Define(PacketId.Warden,
@@ -441,8 +442,7 @@ Namespace Bnet.Protocol
                     New UInt32Jar().Named("request id"),
                     New UInt32Jar().Named("unknown"),
                     New UTF8Jar().NullTerminated.Named("filename"))
-            Public Shared ReadOnly GetIconData As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.GetIconData,
-                    New EmptyJar())
+            Public Shared ReadOnly GetIconData As Definition(Of NoValue) = Define(PacketId.GetIconData)
         End Class
     End Class
 End Namespace

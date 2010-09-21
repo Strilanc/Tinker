@@ -299,6 +299,10 @@ Namespace WC3.Protocol
             End Property
         End Class
 
+        Private Shared Function Define(ByVal id As GameActionId) As Definition(Of NoValue)
+            Contract.Ensures(Contract.Result(Of Definition(Of NoValue))() IsNot Nothing)
+            Return Define(id, New EmptyJar)
+        End Function
         Private Shared Function Define(Of T)(ByVal id As GameActionId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
@@ -333,23 +337,17 @@ Namespace WC3.Protocol
                     New EnumByteJar(Of SelectionOperation)().Named("operation"),
                     New GameObjectIdJar().RepeatedWithCountPrefix(prefixSize:=2).Named("targets"))
         '''<summary>Occurs when a player uses the Synergy cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatDisableTechRequirements As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatDisableTechRequirements,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatDisableTechRequirements As Definition(Of NoValue) = Define(GameActionId.CheatDisableTechRequirements)
         '''<summary>Occurs when a player uses the ItVexesMe cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatDisableVictoryConditions As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatDisableVictoryConditions,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatDisableVictoryConditions As Definition(Of NoValue) = Define(GameActionId.CheatDisableVictoryConditions)
         '''<summary>Occurs when a player uses the WhoIsJohnGalt cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatEnableResearch As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatEnableResearch,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatEnableResearch As Definition(Of NoValue) = Define(GameActionId.CheatEnableResearch)
         '''<summary>Occurs when a player uses the TheDudeAbides cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatFastCooldown As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatFastCooldown,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatFastCooldown As Definition(Of NoValue) = Define(GameActionId.CheatFastCooldown)
         '''<summary>Occurs when a player uses the IocainePowder cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatFastDeathDecay As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatFastDeathDecay,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatFastDeathDecay As Definition(Of NoValue) = Define(GameActionId.CheatFastDeathDecay)
         '''<summary>Occurs when a player uses the WhosYourDaddy cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatGodMode As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatGodMode,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatGodMode As Definition(Of NoValue) = Define(GameActionId.CheatGodMode)
         '''<summary>Occurs when a player uses the KeyserSoze cheat (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatGold As Definition(Of NamedValueMap) = Define(GameActionId.CheatGold,
                     New ByteJar().Named("unknown"),
@@ -359,39 +357,30 @@ Namespace WC3.Protocol
                     New ByteJar().Named("unknown"),
                     New UInt32Jar().Named("amount"))
         '''<summary>Occurs when a player uses the SomebodySetUpUsTheBomb cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatInstantDefeat As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatInstantDefeat,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatInstantDefeat As Definition(Of NoValue) = Define(GameActionId.CheatInstantDefeat)
         '''<summary>Occurs when a player uses the AllYourBaseAreBelongToUs cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatInstantVictory As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatInstantVictory,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatInstantVictory As Definition(Of NoValue) = Define(GameActionId.CheatInstantVictory)
         '''<summary>Occurs when a player uses the LeafItToMe cheat (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatLumber As Definition(Of NamedValueMap) = Define(GameActionId.CheatLumber,
                     New ByteJar().Named("unknown"),
                     New UInt32Jar().Named("amount"))
         '''<summary>Occurs when a player uses the StrengthAndHonor cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatNoDefeat As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatNoDefeat,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatNoDefeat As Definition(Of NoValue) = Define(GameActionId.CheatNoDefeat)
         '''<summary>Occurs when a player uses the PointBreak cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatNoFoodLimit As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatNoFoodLimit,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatNoFoodLimit As Definition(Of NoValue) = Define(GameActionId.CheatNoFoodLimit)
         '''<summary>Occurs when a player uses the ISeeDeadPeople cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatRemoveFogOfWar As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatRemoveFogOfWar,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatRemoveFogOfWar As Definition(Of NoValue) = Define(GameActionId.CheatRemoveFogOfWar)
         '''<summary>Occurs when a player uses the SharpAndShiny cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatResearchUpgrades As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatResearchUpgrades,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatResearchUpgrades As Definition(Of NoValue) = Define(GameActionId.CheatResearchUpgrades)
         '''<summary>Occurs when a player uses the RiseAndShine/LightsOut/DayLightSavings cheats (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatSetTimeOfDay As Definition(Of Single) = Define(GameActionId.CheatSetTimeOfDay,
                     New Float32Jar().Named("time"))
         '''<summary>Occurs when a player uses the WarpTen cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatSpeedConstruction As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatSpeedConstruction,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatSpeedConstruction As Definition(Of NoValue) = Define(GameActionId.CheatSpeedConstruction)
         '''<summary>Occurs when a player uses the ThereIsNoSpoon cheat (no effect in multiplayer).</summary>
-        Public Shared ReadOnly CheatUnlimitedMana As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.CheatUnlimitedMana,
-                    New EmptyJar())
+        Public Shared ReadOnly CheatUnlimitedMana As Definition(Of NoValue) = Define(GameActionId.CheatUnlimitedMana)
         '''<summary>Occurs when a player decreases the game speed (by hitting -, no effect in multiplayer).</summary>
-        Public Shared ReadOnly DecreaseGameSpeed As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.DecreaseGameSpeed,
-                    New EmptyJar())
+        Public Shared ReadOnly DecreaseGameSpeed As Definition(Of NoValue) = Define(GameActionId.DecreaseGameSpeed)
         '''<summary>Occurs when a player cancels/dequeues a building training/research order.</summary>
         Public Shared ReadOnly DequeueBuildingOrder As Definition(Of NamedValueMap) = Define(GameActionId.DequeueBuildingOrder,
                     New ByteJar().Named("slot number"),
@@ -422,11 +411,9 @@ Namespace WC3.Protocol
                     New GameObjectIdJar().Named("receiver"),
                     New GameObjectIdJar().Named("item"))
         '''<summary>Occurs when a player enters the construction sub-menu of a builder.</summary>
-        Public Shared ReadOnly EnterChooseBuildingSubmenu As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.EnterChooseBuildingSubmenu,
-                    New EmptyJar())
+        Public Shared ReadOnly EnterChooseBuildingSubmenu As Definition(Of NoValue) = Define(GameActionId.EnterChooseBuildingSubmenu)
         '''<summary>Occurs when a player enters the skills sub-menu of a hero.</summary>
-        Public Shared ReadOnly EnterChooseHeroSkillSubmenu As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.EnterChooseHeroSkillSubmenu,
-                    New EmptyJar())
+        Public Shared ReadOnly EnterChooseHeroSkillSubmenu As Definition(Of NoValue) = Define(GameActionId.EnterChooseHeroSkillSubmenu)
         '''<summary>Occurs when a player issues an order targeting a thing they see behind fog of war (eg. a tree or previously spotted building).</summary>
         Public Shared ReadOnly FogObjectOrder As Definition(Of NamedValueMap) = Define(GameActionId.FogObjectOrder,
                     New EnumUInt16Jar(Of OrderTypes)().Named("flags"),
@@ -514,8 +501,7 @@ Namespace WC3.Protocol
                     New DataJar().Fixed(exactDataCount:=4).Named("unknown5"),
                     New UInt16Jar(showhex:=True).Named("hotkey flags"))
         '''<summary>Occurs when a player increases the game speed (by hitting +, no effect in multiplayer).</summary>
-        Public Shared ReadOnly IncreaseGameSpeed As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.IncreaseGameSpeed,
-                    New EmptyJar())
+        Public Shared ReadOnly IncreaseGameSpeed As Definition(Of NoValue) = Define(GameActionId.IncreaseGameSpeed)
         '''<summary>Occurs when a player pings the minimap.</summary>
         Public Shared ReadOnly MinimapPing As Definition(Of NamedValueMap) = Define(GameActionId.MinimapPing,
                     New Float32Jar().Named("x"),
@@ -531,8 +517,7 @@ Namespace WC3.Protocol
                     New GameObjectIdJar().Named("target"))
         '''<summary>Occurs when a player pauses the game (no effect per player after three times in multiplayer).</summary>
         '''<remarks>Entering a menu in singleplayer counts (as do other things which automatically hold the game).</remarks>
-        Public Shared ReadOnly PauseGame As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.PauseGame,
-                    New EmptyJar())
+        Public Shared ReadOnly PauseGame As Definition(Of NoValue) = Define(GameActionId.PauseGame)
         '''<summary>Occurs when a player issues an order targeting a point (eg. attackground/earthquake/etc).</summary>
         Public Shared ReadOnly PointOrder As Definition(Of NamedValueMap) = Define(GameActionId.PointOrder,
                     New EnumUInt16Jar(Of OrderTypes)().Named("flags"),
@@ -541,14 +526,11 @@ Namespace WC3.Protocol
                     New Float32Jar().Named("target x"),
                     New Float32Jar().Named("target y"))
         '''<summary>Occurs when a player presses the escape key.</summary>
-        Public Shared ReadOnly PressedEscape As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.PressedEscape,
-                    New EmptyJar())
+        Public Shared ReadOnly PressedEscape As Definition(Of NoValue) = Define(GameActionId.PressedEscape)
         '''<summary>Seems to always occur before the SelectSubGroup action. Unsure what this action is for.</summary>
-        Public Shared ReadOnly PreSubGroupSelection As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.PreSubGroupSelection,
-                    New EmptyJar())
+        Public Shared ReadOnly PreSubGroupSelection As Definition(Of NoValue) = Define(GameActionId.PreSubGroupSelection)
         '''<summary>Occurs when a player unpauses the game.</summary>
-        Public Shared ReadOnly ResumeGame As Definition(Of EmptyJar.EmptyValue) = Define(GameActionId.ResumeGame,
-                    New EmptyJar())
+        Public Shared ReadOnly ResumeGame As Definition(Of NoValue) = Define(GameActionId.ResumeGame)
         '''<summary>Occurs when a player has finished performing a save game.</summary>
         Public Shared ReadOnly SaveGameFinished As Definition(Of UInt32) = Define(GameActionId.SaveGameFinished,
                     New UInt32Jar().Named("unknown"))

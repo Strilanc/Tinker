@@ -264,6 +264,10 @@ Namespace WC3.Protocol
             End Property
         End Class
 
+        Private Function Define(ByVal id As PacketId) As Definition(Of NoValue)
+            Contract.Ensures(Contract.Result(Of Definition(Of NoValue))() IsNot Nothing)
+            Return Define(id, New EmptyJar)
+        End Function
         Private Function Define(Of T)(ByVal id As PacketId,
                                       ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
@@ -295,8 +299,7 @@ Namespace WC3.Protocol
             Public Shared ReadOnly EncryptedServerMeleeData As Definition(Of IReadableList(Of Byte)) = Define(PacketId.EncryptedServerMeleeData,
                     New DataJar().Named("encrypted data"))
             '''<summary>Sent at end of ladder games. (? check again)</summary>
-            Public Shared ReadOnly GameEnd As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.GameEnd,
-                    New EmptyJar())
+            Public Shared ReadOnly GameEnd As Definition(Of NoValue) = Define(PacketId.GameEnd)
             ''' <summary>
             ''' Sent by server in response to <see cref="ClientPackets.Knock"/> to indicate the client has entered the game.
             ''' This packet has two forms: one includes the data from the <see cref="LobbyState"/> packet, and the other doesn't.
@@ -308,8 +311,7 @@ Namespace WC3.Protocol
             ''' <summary>
             ''' Response to ClientConfirmHostLeaving.
             ''' </summary>
-            Public Shared ReadOnly HostConfirmHostLeaving As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.HostConfirmHostLeaving,
-                         New EmptyJar())
+            Public Shared ReadOnly HostConfirmHostLeaving As Definition(Of NoValue) = Define(PacketId.HostConfirmHostLeaving)
             ''' <summary>
             ''' Sent by the server to new clients after they have entered the game.
             ''' Contains information about the map they must have to play the game.
@@ -430,15 +432,13 @@ Namespace WC3.Protocol
             ''' Clients will disconnect if they receive this packet more than once.
             ''' Can be sent without sending <see cref="StartLoading"/> afterwards (wc3 will wait at 0 seconds indefinitely).
             ''' </summary>
-            Public Shared ReadOnly StartCountdown As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.StartCountdown,
-                    New EmptyJar())
+            Public Shared ReadOnly StartCountdown As Definition(Of NoValue) = Define(PacketId.StartCountdown)
             ''' <summary>
             ''' Broadcast by server to all clients to tell them to start loading the map.
             ''' Clients will disconnect if they receive this packet more than once.
             ''' Does not require <see cref="StartCountdown"/> to have been sent.
             ''' </summary>
-            Public Shared ReadOnly StartLoading As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.StartLoading,
-                    New EmptyJar())
+            Public Shared ReadOnly StartLoading As Definition(Of NoValue) = Define(PacketId.StartLoading)
             ''' <summary>
             ''' Relayed by server to clients not connected directly to the sender.
             ''' Different formats in game and in lobby.
@@ -486,8 +486,7 @@ Namespace WC3.Protocol
             ''' Sometimes (not sure on conditions) sent by clients to the host after the host declares it is leaving.
             ''' Host responds with <see cref="ServerPackets.HostConfirmHostLeaving"/>
             ''' </summary>
-            Public Shared ReadOnly ClientConfirmHostLeaving As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.ClientConfirmHostLeaving,
-                    New EmptyJar())
+            Public Shared ReadOnly ClientConfirmHostLeaving As Definition(Of NoValue) = Define(PacketId.ClientConfirmHostLeaving)
             '''<summary>Sent by clients to the server in response to <see cref="ServerPackets.HostMapInfo"/> and when the client has received more of the map file.</summary>
             Public Shared ReadOnly ClientMapInfo As Definition(Of NamedValueMap) = Define(PacketId.ClientMapInfo,
                     New UInt32Jar().Named("map transfer key"),
@@ -542,10 +541,8 @@ Namespace WC3.Protocol
             Public Shared ReadOnly Pong As Definition(Of UInt32) = Define(PacketId.Pong,
                     New UInt32Jar(showHex:=True).Named("salt"))
             '''<summary>Sent by clients once they have finished loading the map and are ready to start playing.</summary>
-            Public Shared ReadOnly Ready As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.Ready,
-                    New EmptyJar())
-            Public Shared ReadOnly RequestDropLaggers As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.RequestDropLaggers,
-                    New EmptyJar())
+            Public Shared ReadOnly Ready As Definition(Of NoValue) = Define(PacketId.Ready)
+            Public Shared ReadOnly RequestDropLaggers As Definition(Of NoValue) = Define(PacketId.RequestDropLaggers)
             ''' <summary>
             ''' Sent by clients in response to <see cref="ServerPackets.Tick"/>.
             ''' Contains a checksum of the client's game state, which is used to detect desyncs.
