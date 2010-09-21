@@ -205,6 +205,7 @@ Namespace Bnet
             AddPacketLogger(Protocol.Packets.ServerToClient.GetIconData)
             AddPacketLogger(Protocol.Packets.ServerToClient.QueryGamesList)
             AddPacketLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
+            AddPacketLogger(Protocol.Packets.ServerToClient.RequiredWork)
         End Sub
 
         Public ReadOnly Property Profile As Bot.ClientProfile
