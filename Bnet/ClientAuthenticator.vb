@@ -20,11 +20,27 @@ Namespace Bnet
     ''' <summary>
     ''' Stores bnet login credentials for identification and authentication.
     ''' </summary>
+    ''' <remarks>
+    ''' I am not a cryptographer. I do not know how to write/verify code against things like timing attacks.
+    ''' I do consider this implementation secure enough, given that the thing at risk is the bnet user account of a bot.
+    ''' </remarks>
     <DebuggerDisplay("{UserName}")>
     Public Class ClientAuthenticator
         Private Shared ReadOnly G As BigInteger = 47
         Private Shared ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719",
                                                                    CultureInfo.InvariantCulture)
+        '''<summary>A value derived from the shared crypto constants.</summary>
+        Private Shared ReadOnly Property FixedSalt() As IEnumerable(Of Byte)
+            Get
+                Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+                Contract.Assume(G >= 0)
+                Contract.Assume(N >= 0)
+                Dim hash1 = G.ToUnsignedBytes.SHA1
+                Dim hash2 = N.ToUnsignedBytes.SHA1
+                Return From pair In hash1.Zip(hash2)
+                       Select pair.Item1 Xor pair.Item2
+            End Get
+        End Property
 
         Private ReadOnly _userName As String
         Private ReadOnly _password As String
@@ -58,23 +74,33 @@ Namespace Bnet
             Me._privateKey = privateKey
             Me._publicKey = BigInteger.ModPow(G, _privateKey, N)
         End Sub
-        ''' <summary>
-        ''' Constructs client credentials using the given username and password, and a generated a public/private key pair.
-        ''' </summary>
+        ''' <summary>Creates client credentials for the given username and password, with a public/private key pair generated using the given random number generator.</summary>
         ''' <param name="username">The client's username.</param>
         ''' <param name="password">The client's password.</param>
-        ''' <param name="randomNumberGenerator">
-        ''' An optional random number generator to generate the private key.
-        ''' A System.Cryptography.RNGCryptoServiceProvider is created and used if this argument is omitted.
-        ''' </param>
-        Public Sub New(ByVal userName As String,
-                       ByVal password As String,
-                       Optional ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator = Nothing)
-            Me.New(userName, password, GeneratePrivateKey(randomNumberGenerator))
+        ''' <param name="randomNumberGenerator">The random number generator used to create the private key.</param>
+        Public Shared Function GeneratedFrom(ByVal userName As String,
+                                             ByVal password As String,
+                                             ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientAuthenticator
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
-            Contract.Ensures(Me.UserName = userName)
-        End Sub
+            Contract.Requires(randomNumberGenerator IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = userName)
+            Return New ClientAuthenticator(userName, password, GeneratePrivateKey(randomNumberGenerator))
+        End Function
+        ''' <summary>Creates client credentials for the given username and password, with a public/private key pair generated using a new Cryptograph.RNGCryptoServiceProvider.</summary>
+        ''' <param name="username">The client's username.</param>
+        ''' <param name="password">The client's password.</param>
+        Public Shared Function GeneratedFrom(ByVal userName As String,
+                                             ByVal password As String) As ClientAuthenticator
+            Contract.Requires(userName IsNot Nothing)
+            Contract.Requires(password IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = userName)
+            Using randomNumberGenerator = New Cryptography.RNGCryptoServiceProvider()
+                Return GeneratedFrom(userName, password, randomNumberGenerator)
+            End Using
+        End Function
 
         '''<summary>The client's username used for identification.</summary>
         Public ReadOnly Property UserName As String
@@ -90,7 +116,7 @@ Namespace Bnet
                 Return _publicKey
             End Get
         End Property
-        '''<summary>Determines the 32 byte representation of the public key used for authentication.</summary>
+        '''<summary>The 32 byte representation of the public key used for authentication.</summary>
         Public ReadOnly Property PublicKeyBytes As IReadableList(Of Byte)
             Get
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
@@ -102,43 +128,34 @@ Namespace Bnet
         End Property
 
         '''<summary>Generates a new private crypto key.</summary>
-        '''<remarks>I'm not a cryptographer but this is probably safe enough, given the application.</remarks>
-        Private Shared Function GeneratePrivateKey(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As BigInteger
+        '''<remarks>1 bit of entropy is lost in the Mod operation, due to the bias towards lower values.</remarks>
+        Private Shared Function GeneratePrivateKey(ByVal rng As Cryptography.RandomNumberGenerator) As BigInteger
+            Contract.Requires(rng IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BigInteger)() > 0)
             Contract.Assume(N > 0)
             Contract.Assume(N >= 0)
             Dim privateKeyDataBuffer = N.ToUnsignedBytes.ToArray
-            If rng Is Nothing Then
-                Using r = New Cryptography.RNGCryptoServiceProvider()
-                    r.GetBytes(privateKeyDataBuffer)
-                End Using
-            Else
-                rng.GetBytes(privateKeyDataBuffer)
-            End If
+            rng.GetBytes(privateKeyDataBuffer)
             Return privateKeyDataBuffer.ToUnsignedBigInteger.PositiveMod(N)
         End Function
-        '''<summary>Derives a fixed salt value from the shared crypto constants.</summary>
-        Private Shared ReadOnly Property FixedSalt() As IEnumerable(Of Byte)
-            Get
-                Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
-                Contract.Assume(G >= 0)
-                Contract.Assume(N >= 0)
-                Dim hash1 = G.ToUnsignedBytes.SHA1
-                Dim hash2 = N.ToUnsignedBytes.SHA1
-                Return From pair In hash1.Zip(hash2)
-                       Select pair.Item1 Xor pair.Item2
-            End Get
-        End Property
 
-        '''<summary>Determines credentials for the same client, but with a new key pair.</summary>
+        '''<summary>Creates credentials for the same client, but with a new key pair generated using the given random number generator.</summary>
         <ContractVerification(False)>
-        Public Function Regenerate(Optional ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator = Nothing) As ClientAuthenticator
+        Public Function WithNewGeneratedKeys(ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientAuthenticator
+            Contract.Requires(randomNumberGenerator IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = Me.UserName)
-            Return New ClientAuthenticator(Me.UserName, Me._password, randomNumberGenerator)
+            Return GeneratedFrom(Me.UserName, Me._password, randomNumberGenerator)
+        End Function
+        '''<summary>Creates credentials for the same client, but with a new key pair generated using a new Cryptography.RNGCryptoServiceProvider.</summary>
+        <ContractVerification(False)>
+        Public Function WithNewGeneratedKeys() As ClientAuthenticator
+            Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = Me.UserName)
+            Return GeneratedFrom(Me.UserName, Me._password)
         End Function
 
-        '''<summary>Determines the shared secret value, which can be computed by both the client and server, using the client-side data.</summary>
+        '''<summary>A shared secret value, which can be computed by both the client and server.</summary>
         Private ReadOnly Property SharedSecret(ByVal accountSalt As IEnumerable(Of Byte),
                                                ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Get
@@ -165,7 +182,7 @@ Namespace Bnet
                 Return result
             End Get
         End Property
-        '''<summary>Determines a proof for the server that the client knows the password.</summary>
+        '''<summary>A proof for the server that the client knows the password.</summary>
         Public ReadOnly Property ClientPasswordProof(ByVal accountSalt As IEnumerable(Of Byte),
                                                      ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Get
@@ -183,7 +200,7 @@ Namespace Bnet
                               ).SHA1
             End Get
         End Property
-        '''<summary>Determines the expected proof, from the server, that it knew the shared secret.</summary>
+        '''<summary>An expected proof of knowing the shared secret from the server.</summary>
         Public ReadOnly Property ServerPasswordProof(ByVal accountSalt As IEnumerable(Of Byte),
                                                      ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Get

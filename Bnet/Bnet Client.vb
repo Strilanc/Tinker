@@ -492,7 +492,9 @@ Namespace Bnet
                 _clock.AsyncWait(5.Seconds).ContinueWithAction(
                     Sub()
                         Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
-                        QueueConnectAndLogOn(_bnetRemoteHostName, _bnetRemoteHostPort, Me._userCredentials.Regenerate())
+                        QueueConnectAndLogOn(_bnetRemoteHostName,
+                                             _bnetRemoteHostPort,
+                                             _userCredentials.WithNewGeneratedKeys())
                     End Sub
                 )
             End If
