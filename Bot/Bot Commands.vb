@@ -49,7 +49,7 @@ Namespace Bot
                                           Select client.QueueConnectAndLogOn(
                                                            remoteHost:=client.Profile.server.Split(" "c).First,
                                                            port:=Bnet.Client.BnetServerPort,
-                                                           credentials:=New Bnet.ClientCredentials(client.Profile.userName, client.Profile.password))
+                                                           credentials:=New Bnet.ClientAuthenticator(client.Profile.userName, client.Profile.password))
                                                        ).Unwrap.AssumeNotNull
 
                     'Store

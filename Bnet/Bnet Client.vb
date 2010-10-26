@@ -135,7 +135,7 @@ Namespace Bnet
         'connection
         Private _bnetRemoteHostName As String
         Private _bnetRemoteHostPort As UInt16
-        Private _userCredentials As ClientCredentials
+        Private _userCredentials As ClientAuthenticator
         Private _clientCdKeySalt As UInt32
         Private _expectedServerPasswordProof As IReadableList(Of Byte)
         Private _allowRetryConnect As Boolean
@@ -433,7 +433,7 @@ Namespace Bnet
                                                              reason:="Error receiving packet: {0}".Frmt(exception.Summarize)))
         End Sub
 
-        Private Function BeginLogOn(ByVal credentials As ClientCredentials) As Task
+        Private Function BeginLogOn(ByVal credentials As ClientAuthenticator) As Task
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If _state <> ClientState.EnterUserCredentials Then
@@ -450,7 +450,7 @@ Namespace Bnet
             Logger.Log("Initiating logon with username {0}.".Frmt(credentials.UserName), LogMessageType.Typical)
             Return _futureLoggedIn.Task
         End Function
-        Public Function QueueLogOn(ByVal credentials As ClientCredentials) As Task
+        Public Function QueueLogOn(ByVal credentials As ClientAuthenticator) As Task
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueFunc(Function() BeginLogOn(credentials)).Unwrap
@@ -458,7 +458,7 @@ Namespace Bnet
 
         Public Function QueueConnectAndLogOn(ByVal remoteHost As String,
                                              ByVal port As UInt16,
-                                             ByVal credentials As ClientCredentials) As Task
+                                             ByVal credentials As ClientAuthenticator) As Task
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)

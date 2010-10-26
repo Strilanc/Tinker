@@ -234,7 +234,7 @@ Namespace Bnet
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueLogOn(New Bnet.ClientCredentials(argument.RawValue(0), argument.RawValue(1))).
+                Return target.QueueLogOn(New Bnet.ClientAuthenticator(argument.RawValue(0), argument.RawValue(1))).
                               ContinueWithFunc(Function() "Logged in as {0}".Frmt(argument.RawValue(0)))
             End Function
         End Class

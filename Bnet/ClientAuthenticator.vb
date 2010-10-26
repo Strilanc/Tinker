@@ -21,7 +21,7 @@ Namespace Bnet
     ''' Stores bnet login credentials for identification and authentication.
     ''' </summary>
     <DebuggerDisplay("{UserName}")>
-    Public Class ClientCredentials
+    Public Class ClientAuthenticator
         Private Shared ReadOnly G As BigInteger = 47
         Private Shared ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719",
                                                                    CultureInfo.InvariantCulture)
@@ -132,10 +132,10 @@ Namespace Bnet
 
         '''<summary>Determines credentials for the same client, but with a new key pair.</summary>
         <ContractVerification(False)>
-        Public Function Regenerate(Optional ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator = Nothing) As ClientCredentials
-            Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = Me.UserName)
-            Return New ClientCredentials(Me.UserName, Me._password, randomNumberGenerator)
+        Public Function Regenerate(Optional ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator = Nothing) As ClientAuthenticator
+            Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = Me.UserName)
+            Return New ClientAuthenticator(Me.UserName, Me._password, randomNumberGenerator)
         End Function
 
         '''<summary>Determines the shared secret value, which can be computed by both the client and server, using the client-side data.</summary>

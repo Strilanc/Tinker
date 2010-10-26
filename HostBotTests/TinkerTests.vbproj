@@ -87,7 +87,7 @@
     <Compile Include="WC3ProtocolTest.vb" />
     <Compile Include="PicklingTest.vb" />
     <Compile Include="ProductCredentialsTest.vb" />
-    <Compile Include="ClientCredentialsTest.vb" />
+    <Compile Include="ClientAuthenticatorTest.vb" />
     <Compile Include="CommandArgumentTest.vb" />
     <Compile Include="CommandTemplateTest.vb" />
     <Compile Include="CommonTest.vb" />
