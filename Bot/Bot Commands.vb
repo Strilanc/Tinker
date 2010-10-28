@@ -308,7 +308,7 @@ Namespace Bot
                            Description:="Forwards commands to the named component.",
                            Permissions:="root:3")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 'parse
                 Dim args = argumentHead.Split(":"c)
@@ -317,9 +317,8 @@ Namespace Bot
                 Dim type = args(0).ToInvariant
                 Dim name = args(1).ToInvariant
                 'send
-                Return (From component In target.Components.QueueFindComponent(type, name)
-                        Select component.InvokeCommand(user, argumentRest)
-                       ).Unwrap.AssumeNotNull
+                Dim component = Await target.Components.QueueFindComponent(type, name)
+                Return Await component.InvokeCommand(user, argumentRest)
             End Function
         End Class
     End Class
