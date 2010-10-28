@@ -138,6 +138,9 @@
     <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AsyncCtpLibrary">
+      <HintPath>..\..\..\..\Documents\Microsoft Visual Studio Async CTP\Samples\AsyncCtpLibrary.dll</HintPath>
+    </Reference>
     <Reference Include="MpqLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9bae8fba86733575, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\Documents\Visual Studio 10\Projects\MpqLibrary\MpqLibrary\bin\Release\MpqLibrary.dll</HintPath>
