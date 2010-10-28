@@ -74,13 +74,13 @@ Namespace Bot
                            hasPrivateArguments:=True)
             End Sub
 
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim password = argument.NamedValue("password")
-                Return From server In target.QueueGetOrConstructGameServer()
-                       From game In server.QueueAddAdminGame(name, password)
-                       Select "Added admin game to server. Use Lan Advertiser on auto to advertise it."
+                Dim server = Await target.QueueGetOrConstructGameServer()
+                Dim game = Await server.QueueAddAdminGame(name, password)
+                Return "Added admin game to server. Use Lan Advertiser on auto to advertise it."
             End Function
         End Class
 
