@@ -161,7 +161,7 @@ Namespace Bot
                            Description:="Disposes a bot component.",
                            Permissions:="root:5")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 'parse
                 Dim args = argument.RawValue(0).Split(":"c)
@@ -169,11 +169,9 @@ Namespace Bot
                 Dim type = args(0).ToInvariant
                 Dim name = args(1).AssumeNotNull.ToInvariant
                 'dispose
-                Return target.Components.QueueFindComponent(type, name).ContinueWithFunc(
-                    Function(component)
-                        component.Dispose()
-                        Return "Disposed {0}".Frmt(argument.RawValue(0))
-                    End Function)
+                Dim component = Await target.Components.QueueFindComponent(type, name)
+                component.Dispose()
+                Return "Disposed {0}".Frmt(argument.RawValue(0))
             End Function
         End Class
 
