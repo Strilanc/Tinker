@@ -135,23 +135,16 @@ Namespace WC3.Replay
             Return New ReplayDataReader(stream, _dataBlockCount, _headerSize, _dataDecompressedSize)
         End Function
 
-        Public ReadOnly Property Entries() As IEnumerable(Of ReplayEntry)
+        Public ReadOnly Iterator Property Entries() As IEnumerable(Of ReplayEntry)
             Get
                 Contract.Ensures(Contract.Result(Of IEnumerable(Of ReplayEntry))() IsNot Nothing)
-                Return New Enumerable(Of ReplayEntry)(Function() EnumerateEntries())
+                Dim jar = New ReplayEntryJar()
+                Using stream = MakeDataStream()
+                    While stream.Position < stream.Length
+                        Yield stream.ReadPickle(jar).Value
+                    End While
+                End Using
             End Get
         End Property
-        Private Function EnumerateEntries() As IEnumerator(Of ReplayEntry)
-            Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
-
-            Dim jar = New ReplayEntryJar()
-            Dim stream = MakeDataStream()
-            Return New Enumerator(Of ReplayEntry)(
-                Function(controller)
-                    If stream.Position >= stream.Length Then Return controller.Break
-                    Return stream.ReadPickle(jar).Value
-                End Function,
-                disposer:=AddressOf stream.Dispose)
-        End Function
     End Class
 End Namespace
