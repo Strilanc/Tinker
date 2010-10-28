@@ -210,12 +210,12 @@ Namespace Bot
                            extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
             End Sub
             <ContractVerification(False)>
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
-                Return From server In target.QueueGetOrConstructGameServer()
-                       From gameSet In server.QueueAddGameFromArguments(argument, user)
-                       Let name = gameSet.GameSettings.GameDescription.Name
-                       Let path = gameSet.GameSettings.GameDescription.GameStats.AdvertisedPath
-                       Select "Hosted game '{0}' for map '{1}'.".Frmt(name, path)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
+                Dim server = Await target.QueueGetOrConstructGameServer()
+                Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
+                Dim name = gameSet.GameSettings.GameDescription.Name
+                Dim path = gameSet.GameSettings.GameDescription.GameStats.AdvertisedPath
+                Return "Hosted game '{0}' for map '{1}'.".Frmt(name, path)
             End Function
         End Class
 
