@@ -30,28 +30,26 @@ Namespace CKL
         End Sub
 
         <ContractVerification(False)>
-        Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
-                                          ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+        Public Async Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
+                                                ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
 
             'Connect to CKL server
-            Dim asyncSocket = PacketSocket.AsyncConnect(_remoteHost, _remotePort, _clock, timeout:=10.Seconds)
-            'Send request
-            asyncSocket.ContinueWithAction(Sub(socket) socket.WritePacket(preheader:={CKL.Server.PacketPrefixValue, CKLPacketId.Keys},
-                                                                          payload:=Concat(clientSalt, serverSalt)))
-            'Process response
-            Dim asyncResult = From socket In asyncSocket
-                              From packet In socket.AsyncReadPacket
-                              Select ParseResponse(packet)
-            'Finish
-            asyncResult.ContinueWith(Sub()
-                                         If asyncResult.Status = TaskStatus.RanToCompletion Then
-                                             _logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
-                                         End If
-                                         If asyncSocket.Status = TaskStatus.RanToCompletion Then
-                                             asyncSocket.Result.QueueDisconnect(expected:=True, reason:="Finished")
-                                         End If
-                                     End Sub)
-            Return asyncResult
+            Dim socket = Await PacketSocket.AsyncConnect(_remoteHost, _remotePort, _clock, timeout:=10.Seconds)
+            Try
+                'Send request
+                socket.WritePacket(preheader:={CKL.Server.PacketPrefixValue, CKLPacketId.Keys},
+                                   payload:=Concat(clientSalt, serverSalt))
+                'Process response
+                Dim packet = Await socket.AsyncReadPacket
+                Dim result = ParseResponse(packet)
+
+                socket.QueueDisconnect(expected:=True, reason:="Finished")
+                _logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
+                Return result
+            Catch ex As Exception
+                socket.QueueDisconnect(expected:=False, reason:=ex.Message)
+                Throw
+            End Try
         End Function
 
         Private Shared Function ParseResponse(ByVal packetData As IReadableList(Of Byte)) As ProductCredentialPair
