@@ -227,20 +227,20 @@ Namespace Bot
                            Description:="Lists all bot components. Use -type= to filter by component type.",
                            Permissions:="root:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim typeFilter = argument.TryGetOptionalNamedValue("type")
                 If typeFilter Is Nothing Then
-                    Return From components In target.Components.QueueGetAllComponents()
-                           Select "Components: {0}.".Frmt((From component In components
-                                                           Select "{0}:{1}".Frmt(component.Type, component.Name)
-                                                          ).StringJoin(", "))
+                    Dim components = Await target.Components.QueueGetAllComponents()
+                    Return "Components: {0}.".Frmt((From component In components
+                                                    Select "{0}:{1}".Frmt(component.Type, component.Name)
+                                                    ).StringJoin(", "))
                 Else
-                    Return From components In target.Components.QueueGetAllComponents()
-                           Select "{0} Components: {1}.".Frmt(typeFilter, (From component In components
-                                                                           Where component.Type = typeFilter
-                                                                           Select component.Name
-                                                                           ).StringJoin(", "))
+                    Dim components = Await target.Components.QueueGetAllComponents()
+                    Return "{0} Components: {1}.".Frmt(typeFilter, (From component In components
+                                                                    Where component.Type = typeFilter
+                                                                    Select component.Name
+                                                                    ).StringJoin(", "))
                 End If
             End Function
         End Class
