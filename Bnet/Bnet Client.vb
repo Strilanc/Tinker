@@ -352,7 +352,7 @@ Namespace Bnet
 
             'Connect
             Logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
-            Dim futureSocket = From tcpClient In AsyncTcpLookupConnect(remoteHost, New Random(), remotePort)
+            Dim futureSocket = From tcpClient In TCPConnectAsync(remoteHost, New Random(), remotePort)
                                Let stream = New ThrottledWriteStream(subStream:=tcpClient.GetStream,
                                                                      initialSlack:=1000,
                                                                      costEstimator:=Function(data) 100 + data.Length,
