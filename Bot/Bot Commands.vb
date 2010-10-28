@@ -29,7 +29,7 @@ Namespace Bot
                            Description:="Creates and connects bnet clients, using the given profiles. All of the clients will be set to automatic hosting.",
                            Permissions:="root:4")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim profileNames = (From word In argument.Split(" "c) Where word <> "").Cache
                 If profileNames.None Then Throw New ArgumentException("No profiles specified.")
@@ -58,7 +58,8 @@ Namespace Bot
                 Next profileName
 
                 'Async wait for all to complete
-                Return asyncAddedManagers.AsAggregateAllOrNoneTask().ContinueWithFunc(Function() "Connected")
+                Await asyncAddedManagers.AsAggregateAllOrNoneTask()
+                Return "Connected"
             End Function
         End Class
 
