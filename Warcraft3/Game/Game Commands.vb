@@ -104,10 +104,11 @@ Namespace WC3
                            template:="",
                            Description:="Closes this game instance.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 target.Dispose()
-                Return target.DisposalTask.ContinueWithFunc(Function() "Cancelled")
+                Await target.DisposalTask
+                Return "Cancelled"
             End Function
         End Class
 
