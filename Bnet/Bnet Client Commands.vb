@@ -356,16 +356,14 @@ Namespace Bnet
                            Description:="Returns the admin code for a game you have hosted.",
                            Permissions:="")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
-                Return target.QueueTryGetUserGameSet(user).Select(
-                    Function(gameSet)
-                        If gameSet Is Nothing Then
-                            Throw New InvalidOperationException("You don't have a hosted game to cancel.")
-                        End If
-                        Return gameSet.GameSettings.AdminPassword
-                    End Function)
+
+                Dim gameSet = Await target.QueueTryGetUserGameSet(user)
+                If gameSet Is Nothing Then Throw New InvalidOperationException("You don't have a hosted game to cancel.")
+
+                Return gameSet.GameSettings.AdminPassword
             End Function
         End Class
 
