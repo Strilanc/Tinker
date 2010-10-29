@@ -436,7 +436,7 @@ Namespace Bnet
                            Description:="Connects to a battle.net server at the given hostname.",
                            Permissions:="root:4")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim remoteHost = argument.RawValue(0)
                 Dim port = Bnet.Client.BnetServerPort
@@ -448,7 +448,8 @@ Namespace Bnet
                     remoteHost = parts.First.AssumeNotNull
                 End If
 
-                Return target.QueueConnect(remoteHost, port).ContinueWithFunc(Function() "Established connection to {0}".Frmt(remoteHost))
+                Await target.QueueConnect(remoteHost, port)
+                Return "Established connection to {0}".Frmt(remoteHost)
             End Function
         End Class
     End Class
