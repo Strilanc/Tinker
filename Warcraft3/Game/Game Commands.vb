@@ -169,10 +169,11 @@ Namespace WC3
                            template:="",
                            Description:="Causes the bot to disconnect from the game. The game might continue if one of the players can host.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 target.Dispose()
-                Return target.DisposalTask.ContinueWithFunc(Function() "Disconnected")
+                Await target.DisposalTask
+                Return "Disconnected"
             End Function
         End Class
 
