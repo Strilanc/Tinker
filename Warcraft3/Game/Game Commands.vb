@@ -297,16 +297,14 @@ Namespace WC3
                            template:="slot race",
                            Description:="Sets the race of a slot. Not allowed when the map uses Fixed Player Settings and the slot race is not Selectable.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim argSlot = argument.RawValue(0)
                 Dim argRace = argument.RawValue(1)
                 Dim race = argRace.EnumTryParse(Of Protocol.Races)(ignoreCase:=True)
-                If race.HasValue Then
-                    Return target.QueueSetSlotRace(argSlot, race.Value).ContinueWithFunc(Function() "Set Race")
-                Else
-                    Throw New InvalidOperationException("Unrecognized race: '{0}'.".Frmt(argRace))
-                End If
+                If Not race.HasValue Then Throw New InvalidOperationException("Unrecognized race: '{0}'.".Frmt(argRace))
+                Await target.QueueSetSlotRace(argSlot, race.Value)
+                Return "Set Race"
             End Function
         End Class
 
