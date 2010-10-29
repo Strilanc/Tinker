@@ -72,14 +72,12 @@ Namespace Bot
     Public Module BotExtensions
         <Extension()>
         <ContractVerification(False)>
-        Public Function InvokeCommand(ByVal this As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Public Async Function InvokeCommand(ByVal this As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
-            Return (From components In this.Components.QueueGetAllComponents(Of MainBotManager)()
-                    Select manager = components.First
-                    Select manager.InvokeCommand(user, argument)
-                   ).Unwrap.AssumeNotNull
+            Dim components = Await this.Components.QueueGetAllComponents(Of MainBotManager)()
+            Return Await components.First.InvokeCommand(user, argument)
         End Function
         <Extension()>
         Public Function QueueGetOrConstructGameServer(ByVal this As MainBot) As Task(Of WC3.GameServerManager)
