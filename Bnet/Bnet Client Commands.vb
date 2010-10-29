@@ -293,30 +293,23 @@ Namespace Bnet
                            headType:="InstanceName",
                            Description:="Forwards commands to an instance in your hosted game. By default game instances are numbered, starting with 0.")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
+                Contract.Assume(target IsNot Nothing)
                 If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
                 Dim gameName = argumentHead
 
-                'Find hosted game set, then find named instance, then pass command
-                Contract.Assume(target IsNot Nothing)
-                Return target.QueueTryGetUserGameSet(user).Select(
-                    Function(gameSet)
-                        If gameSet Is Nothing Then
-                            Throw New InvalidOperationException("You don't have a hosted game.")
-                        End If
+                'Find hosted game set
+                Dim gameSet = Await target.QueueTryGetUserGameSet(user)
+                If gameSet Is Nothing Then
+                    Throw New InvalidOperationException("You don't have a hosted game.")
+                End If
 
-                        'Find named instance, then pass command
-                        Return gameSet.QueueTryFindGame(gameName).Select(
-                            Function(game)
-                                If game Is Nothing Then
-                                    Throw New InvalidOperationException("No matching game instance found.")
-                                End If
+                'Find named instance
+                Dim game = Await gameSet.QueueTryFindGame(gameName)
+                If game Is Nothing Then Throw New InvalidOperationException("No matching game instance found.")
 
-                                Return game.QueueCommandProcessText(target.Bot, Nothing, argumentRest)
-                            End Function
-                        )
-                    End Function
-                ).Unwrap.Unwrap.AssumeNotNull
+                'Pass command
+                Return Await game.QueueCommandProcessText(target.Bot, Nothing, argumentRest)
             End Function
         End Class
 
