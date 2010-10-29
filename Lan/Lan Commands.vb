@@ -49,14 +49,15 @@ Namespace Lan
                            template:="id=# name=<game name> map=<search query>",
                            Description:="Adds a game to be advertised, but doesn't create a new server to go with it.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.NamedValue("name")
                 Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
                 Dim gameStats = WC3.GameStats.FromMapAndArgument(map, If(user Is Nothing, Application.ProductName.AssumeNotNull, user.Name.Value), argument)
                 Dim gameDescription = WC3.LocalGameDescription.FromArguments(name, map, gameStats, clock:=New SystemClock())
 
-                Return target.QueueAddGame(gameDescription).ContinueWithFunc(Function() "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.AdvertisedPath))
+                Await target.QueueAddGame(gameDescription)
+                Return "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.AdvertisedPath)
             End Function
         End Class
 
