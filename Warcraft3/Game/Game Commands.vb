@@ -364,7 +364,7 @@ Namespace WC3
                            template:="slot team",
                            Description:="Sets a slot's team. Only works in melee games.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim argSlot = argument.RawValue(0)
                 Dim argTeam = argument.RawValue(1)
@@ -373,7 +373,8 @@ Namespace WC3
                     Throw New ArgumentException("Invalid team: '{0}'.".Frmt(argTeam))
                 End If
                 team -= CByte(1)
-                Return target.QueueSetSlotTeam(argSlot, team).ContinueWithFunc(Function() "Set Team")
+                Await target.QueueSetSlotTeam(argSlot, team)
+                Return "Set Team"
             End Function
         End Class
 
