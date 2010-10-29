@@ -58,9 +58,10 @@ Namespace Bnet
                            Description:="Disconnects from bnet.",
                            Permissions:="root:4")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueDisconnect(expected:=True, reason:="Disconnect Command").ContinueWithFunc(Function() "Disconnected")
+                Await target.QueueDisconnect(expected:=True, reason:="Disconnect Command")
+                Return "Disconnected"
             End Function
         End Class
 
