@@ -225,8 +225,9 @@
             Contract.Requires(player IsNot Nothing)
             Me._coveredSlotId = coveredSlotId
         End Sub
-        Public Overrides Function AsyncGenerateDescription() As Task(Of String)
-            Return MyBase.AsyncGenerateDescription.Select(Function(desc) "[Covering {0}] {1}".Frmt(CoveredSlotId, desc))
+        Public Overrides Async Function AsyncGenerateDescription() As Task(Of String)
+            Dim desc = Await MyBase.AsyncGenerateDescription
+            Return "[Covering {0}] {1}".Frmt(CoveredSlotId, desc)
         End Function
         Public Overrides Function WithoutPlayer(ByVal player As Player) As SlotContents
             Throw New InvalidOperationException()
