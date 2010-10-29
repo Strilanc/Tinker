@@ -315,14 +315,14 @@ Namespace WC3
                            template:="name -slot=any",
                            Description:="Reserves a slot for a player.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim slotQueryString = argument.TryGetOptionalNamedValue("slot")
                 Dim slotQuery = If(slotQueryString Is Nothing, Nothing, New InvariantString?(slotQueryString))
 
-                Return target.QueueReserveSlot(name, slotQuery).
-                                  ContinueWithFunc(Function() "Reserved {0} for {1}.".Frmt(If(slotQueryString, "slot"), name))
+                Await target.QueueReserveSlot(name, slotQuery)
+                Return "Reserved {0} for {1}.".Frmt(If(slotQueryString, "slot"), name)
             End Function
         End Class
 
