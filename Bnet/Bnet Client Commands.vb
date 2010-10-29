@@ -407,32 +407,24 @@ Namespace Bnet
                            Description:="Elevates you or a specified player to admin in your hosted game.",
                            Permissions:="games:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+                Contract.Assume(target IsNot Nothing)
                 If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
+
                 Dim username = If(argument.TryGetOptionalNamedValue("player"), user.Name.Value)
                 If username Is Nothing Then Throw New ArgumentException("No player specified.")
 
-                'Find hosted server, then find player's game, then elevate player
-                Contract.Assume(target IsNot Nothing)
-                Return target.QueueTryGetUserGameSet(user).Select(
-                    Function(gameSet)
-                        If gameSet Is Nothing Then
-                            Throw New InvalidOperationException("You don't have a hosted game.")
-                        End If
+                'Find player's game set
+                Dim gameSet = Await target.QueueTryGetUserGameSet(user)
+                If gameSet Is Nothing Then Throw New InvalidOperationException("You don't have a hosted game.")
 
-                        'Find player's game, then elevate player
-                        Return gameSet.QueueTryFindPlayerGame(username).Select(
-                            Function(game)
-                                If game Is Nothing Then
-                                    Throw New InvalidOperationException("No matching user found.")
-                                End If
+                'Find player's game
+                Dim game = Await gameSet.QueueTryFindPlayerGame(username)
+                If game Is Nothing Then Throw New InvalidOperationException("No matching user found.")
 
-                                'Elevate player
-                                Return game.QueueElevatePlayer(username)
-                            End Function
-                        )
-                    End Function
-                ).Unwrap.Unwrap.AssumeNotNull.ContinueWithFunc(Function() "'{0}' is now the admin.".Frmt(username))
+                'Elevate player
+                Await game.QueueElevatePlayer(username)
+                return "'{0}' is now the admin.".Frmt(username)
             End Function
         End Class
 
