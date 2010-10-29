@@ -336,19 +336,15 @@ Namespace Bnet
                 Description:="Cancels a host command if it was issued by you, and unlinks the attached server.",
                 Permissions:="")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
-                Return target.QueueTryGetUserGameSet(user).Select(
-                  Function(gameSet)
-                      If gameSet Is Nothing Then
-                          Throw New InvalidOperationException("You don't have a hosted game to cancel.")
-                      End If
 
-                      gameSet.Dispose()
-                      Return "Cancelled hosting."
-                  End Function
-              )
+                Dim gameSet = Await target.QueueTryGetUserGameSet(user)
+                If gameSet Is Nothing Then Throw New InvalidOperationException("You don't have a hosted game to cancel.")
+
+                gameSet.Dispose()
+                Return "Cancelled hosting."
             End Function
         End Class
 
