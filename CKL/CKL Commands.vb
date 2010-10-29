@@ -16,12 +16,13 @@ Namespace CKL
                            template:="Name",
                            Description:="Removes a lendable key pair.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Server, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Server, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Dim name = argument.RawValue(0)
                 Dim rocKey = argument.NamedValue("roc")
                 Dim tftKey = argument.NamedValue("tft")
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueAddKey(name, rocKey, tftKey).ContinueWithFunc(Function() "Key '{0}' added.".Frmt(name))
+                Await target.QueueAddKey(name, rocKey, tftKey)
+                Return "Key '{0}' added.".Frmt(name)
             End Function
         End Class
         Private NotInheritable Class CommandRemoveKey
