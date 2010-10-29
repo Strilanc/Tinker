@@ -221,7 +221,7 @@ Namespace WC3
                            template:="slot value",
                            Description:="Sets the handicap of a slot.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim argSlot = argument.RawValue(0)
                 Dim argHandicap = argument.RawValue(1)
@@ -229,7 +229,8 @@ Namespace WC3
                 If Not Byte.TryParse(argHandicap, newHandicap) Then newHandicap = 0
                 Select Case newHandicap
                     Case 50, 60, 70, 80, 90, 100
-                        Return target.QueueSetSlotHandicap(argSlot, newHandicap).ContinueWithFunc(Function() "Set Handicap")
+                        Await target.QueueSetSlotHandicap(argSlot, newHandicap)
+                        Return "Set Handicap to {0}".Frmt(newHandicap)
                     Case Else
                         Throw New InvalidOperationException("Invalid handicap: '{0}'.".Frmt(argHandicap))
                 End Select
