@@ -35,31 +35,36 @@ Namespace Bot
                 If profileNames.None Then Throw New ArgumentException("No profiles specified.")
 
                 'Attempt to connect to each listed profile
-                Dim asyncCreatedManagers = New List(Of Task(Of Bnet.ClientManager))()
-                Dim asyncAddedManagers = New List(Of Task(Of Bnet.ClientManager))()
+                Dim allClients = New List(Of Task(Of Bnet.ClientManager))()
                 For Each profileName In profileNames
                     Contract.Assume(profileName IsNot Nothing)
-                    'Create and connect
-                    Dim asyncManager = Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, target)
-                    asyncManager.ContinueWithAction(Sub(manager) manager.QueueSetAutomatic(True)).IgnoreExceptions()
-                    Dim asyncAdd = (From manager In asyncManager
-                                    Select target.Components.QueueAddComponent(manager)
-                                    ).Unwrap.AssumeNotNull
-                    Dim asyncConnected = (From client In asyncAdd.ContinueWithFunc(Function() asyncManager.Result.Client)
-                                          Select client.QueueConnectAndLogOn(
-                                                           remoteHost:=client.Profile.server.Split(" "c).First,
-                                                           port:=Bnet.Client.BnetServerPort,
-                                                           credentials:=Bnet.ClientAuthenticator.GeneratedFrom(client.Profile.userName, client.Profile.password))
-                                                       ).Unwrap.AssumeNotNull
-
-                    'Store
-                    asyncCreatedManagers.Add(asyncManager)
-                    asyncAddedManagers.Add(asyncConnected.ContinueWithFunc(Function() asyncManager.Result))
+                    allClients.Add(CreateLoggedOnClientManagerAsync(target, profileName))
                 Next profileName
 
-                'Async wait for all to complete
-                Await asyncAddedManagers.AsAggregateAllOrNoneTask()
+                'Wait for all to complete
+                Await allClients.AsAggregateAllOrNoneTask()
                 Return "Connected"
+            End Function
+
+            Private Async Function CreateLoggedOnClientManagerAsync(ByVal parent As MainBot, ByVal profileName As String) As Task(Of Bnet.ClientManager)
+                Contract.Requires(parent IsNot Nothing)
+                Contract.Requires(profileName IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Task(Of Bnet.ClientManager))() IsNot Nothing)
+
+                Dim manager = Await Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, parent)
+                Try
+                    manager.QueueSetAutomatic(True)
+                    Await parent.Components.QueueAddComponent(manager)
+                    Dim client = manager.Client
+                    Dim profile = client.Profile
+                    Await client.QueueConnectAndLogOn(remoteHost:=profile.server.Split(" "c).First,
+                                                      port:=Bnet.Client.BnetServerPort,
+                                                      credentials:=Bnet.ClientAuthenticator.GeneratedFrom(profile.userName, profile.password))
+                    Return manager
+                Catch ex As Exception
+                    manager.Dispose()
+                    Throw
+                End Try
             End Function
         End Class
 
