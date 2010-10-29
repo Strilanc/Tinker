@@ -51,22 +51,21 @@ Namespace Warden
                 errorHandler:=Sub(exception) outQueue.QueueAction(Sub() RaiseEvent Failed(Me, exception))
             )
         End Sub
-        Private Function AsyncReadPacket() As Task(Of ServerPacket)
-            Return _socket.AsyncReadPacket().Select(
-                Function(packetData)
-                    'Check
-                    If packetData.Count < 3 Then
-                        Throw New IO.InvalidDataException("Packet doesn't have a header.")
-                    ElseIf packetData(2) <> BNLSPacketId.Warden Then
-                        Throw New IO.InvalidDataException("Not a bnls warden packet.")
-                    End If
+        Private Async Function AsyncReadPacket() As Task(Of ServerPacket)
+            Dim packetData = Await _socket.AsyncReadPacket()
 
-                    'Parse, log, return
-                    Dim pk = ServerPacket.FromData(packetData.SubView(3))
-                    _logger.Log(Function() "Received {0} from {1}".Frmt(pk.Id, _socket.Name), LogMessageType.DataEvent)
-                    _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(pk.Id, _socket.Name, pk), LogMessageType.DataParsed)
-                    Return pk
-                End Function)
+            'Check
+            If packetData.Count < 3 Then
+                Throw New IO.InvalidDataException("Packet doesn't have a header.")
+            ElseIf packetData(2) <> BNLSPacketId.Warden Then
+                Throw New IO.InvalidDataException("Not a bnls warden packet.")
+            End If
+
+            'Parse, log, return
+            Dim pk = ServerPacket.FromData(packetData.SubView(3))
+            _logger.Log(Function() "Received {0} from {1}".Frmt(pk.Id, _socket.Name), LogMessageType.DataEvent)
+            _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(pk.Id, _socket.Name, pk), LogMessageType.DataParsed)
+            Return pk
         End Function
         Private Sub OnReceivePacket(ByVal packet As ServerPacket)
             Contract.Requires(packet IsNot Nothing)
