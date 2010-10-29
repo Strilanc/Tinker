@@ -55,7 +55,7 @@ Namespace WC3
         End Property
 
         '''<summary>Handles new connections to the server.</summary>
-        Private Sub AcceptSocket(ByVal socket As W3Socket)
+        Private Async Sub AcceptSocket(ByVal socket As W3Socket)
             Contract.Requires(socket IsNot Nothing)
 
             _logger.Log("Connection from {0}.".Frmt(socket.Name), LogMessageType.Positive)
@@ -69,11 +69,13 @@ Namespace WC3
                 End Sub)
 
             'Try to read Knock packet
-            socket.AsyncReadPacket().ContinueWithAction(
-                Sub(data) If socketHandled.TryAcquire Then HandleFirstPacket(socket, data)
-            ).Catch(
-                Sub(exception) socket.Disconnect(expected:=False, reason:=exception.Summarize)
-            )
+            Try
+                Dim data = Await socket.AsyncReadPacket()
+                If Not socketHandled.TryAcquire Then Return
+                HandleFirstPacket(socket, data)
+            Catch ex As Exception
+                socket.Disconnect(expected:=False, reason:=ex.Summarize)
+            End Try
         End Sub
         Public Function QueueAcceptSocket(ByVal socket As W3Socket) As Task
             Contract.Requires(socket IsNot Nothing)
@@ -104,7 +106,7 @@ Namespace WC3
         End Sub
 
         '''<summary>Handles connecting players that have sent their Knock packet.</summary>
-        Private Sub OnPlayerIntroduction(ByVal knockData As Protocol.KnockData, ByVal socket As W3Socket)
+        Private Async Sub OnPlayerIntroduction(ByVal knockData As Protocol.KnockData, ByVal socket As W3Socket)
             Contract.Requires(knockData IsNot Nothing)
             Contract.Requires(socket IsNot Nothing)
 
@@ -119,15 +121,14 @@ Namespace WC3
             Contract.Assume(entry IsNot Nothing)
 
             'Send player to game set
-            entry.QueueTryAcceptPlayer(knockData, socket).ContinueWithAction(
-                Sub(game) _logger.Log("{0} entered {1}.".Frmt(knockData.Name, game.Name), LogMessageType.Positive)
-            ).Catch(
-                Sub(exception)
-                    _logger.Log("A game could not be found for {0}.".Frmt(knockData.Name), LogMessageType.Negative)
-                    socket.SendPacket(Protocol.MakeReject(Protocol.RejectReason.GameFull))
-                    socket.Disconnect(expected:=True, reason:="A game could not be found for {0}.".Frmt(knockData.Name))
-                End Sub
-            )
+            Try
+                Dim game = Await entry.QueueTryAcceptPlayer(knockData, socket)
+                _logger.Log("{0} entered {1}.".Frmt(knockData.Name, game.Name), LogMessageType.Positive)
+            Catch ex As Exception
+                _logger.Log("A game could not be found for {0}.".Frmt(knockData.Name), LogMessageType.Negative)
+                socket.SendPacket(Protocol.MakeReject(Protocol.RejectReason.GameFull))
+                socket.Disconnect(expected:=True, reason:="A game could not be found for {0}.".Frmt(knockData.Name))
+            End Try
         End Sub
 
         Private Function AddGameSet(ByVal gameSettings As GameSettings) As GameSet
