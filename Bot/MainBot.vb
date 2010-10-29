@@ -87,9 +87,9 @@ Namespace Bot
                 factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer(New SystemClock()), this))
         End Function
         <Extension()>
-        Public Function QueueCreateActiveGameSetsAsyncView(ByVal this As MainBot,
-                                                           ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
-                                                           ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
+        Public Async Function QueueCreateActiveGameSetsAsyncView(ByVal this As MainBot,
+                                                                 ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
+                                                                 ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
@@ -115,14 +115,15 @@ Namespace Bot
             hooks.Add(viewHook)
 
             inQueue.Start()
-            Return viewHook.Select(Of IDisposable)(Function() New DelegatedDisposable(Sub() inQueue.QueueAction(
+            Await viewHook
+            Return New DelegatedDisposable(Sub() inQueue.QueueAction(
                 Sub()
                     If hooks Is Nothing Then Return
                     For Each hook In hooks
                         hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
                     Next hook
                     hooks = Nothing
-                End Sub)))
+                End Sub))
         End Function
     End Module
 End Namespace
