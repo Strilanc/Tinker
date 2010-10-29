@@ -268,15 +268,19 @@ Namespace Bot
                            Description:="Loads the named plugin.",
                            Permissions:="root:5")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim profile = (From p In target.Settings.PluginProfiles Where p.name = argument.RawValue(0)).FirstOrDefault
                 If profile Is Nothing Then Throw New InvalidOperationException("No such plugin profile.")
                 Dim socket = New Plugins.Socket(profile.name, target, profile.location)
                 Dim manager = New Plugins.PluginManager(socket)
-                Dim added = target.Components.QueueAddComponent(manager)
-                added.Catch(Sub() manager.Dispose())
-                Return added.ContinueWithFunc(Function() "Loaded plugin. Description: {0}".Frmt(socket.Plugin.Description))
+                Try
+                    Await target.Components.QueueAddComponent(manager)
+                    Return "Loaded plugin. Description: {0}".Frmt(socket.Plugin.Description)
+                Catch ex As Exception
+                    manager.Dispose()
+                    Throw
+                End Try
             End Function
         End Class
 
