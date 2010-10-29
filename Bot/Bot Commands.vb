@@ -149,7 +149,7 @@ Namespace Bot
                            Description:="Creates a lan advertiser. -Manual causes the advertiser to not automatically advertise any games hosted by the bot.",
                            Permissions:="root:4")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim remoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
@@ -157,10 +157,14 @@ Namespace Bot
 
                 Dim advertiser = New Lan.Advertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
                 Dim manager = New Lan.AdvertiserManager(name, target, advertiser)
-                If auto Then manager.QueueSetAutomatic(auto)
-                Dim finished = target.Components.QueueAddComponent(manager)
-                finished.Catch(Sub() manager.Dispose())
-                Return finished.ContinueWithFunc(Function() "Created lan advertiser.")
+                Try
+                    If auto Then manager.QueueSetAutomatic(auto)
+                    Await target.Components.QueueAddComponent(manager)
+                    Return "Created lan advertiser."
+                Catch ex As Exception
+                    manager.Dispose()
+                    Throw
+                End Try
             End Function
         End Class
 
