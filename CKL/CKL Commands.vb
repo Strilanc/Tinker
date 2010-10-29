@@ -31,10 +31,11 @@ Namespace CKL
                            template:="Name roc=key tft=key",
                            Description:="Adds a lendable key pair.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Server, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Server, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Dim name = argument.RawValue(0)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueRemoveKey(name).ContinueWithFunc(Function() "Key '{0}' removed.".Frmt(name))
+                Await target.QueueRemoveKey(name)
+                Return "Key '{0}' removed.".Frmt(name)
             End Function
         End Class
     End Class
