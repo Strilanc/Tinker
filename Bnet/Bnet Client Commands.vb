@@ -375,11 +375,12 @@ Namespace Bnet
                            Description:="Causes the bot to say the given text, including any bnet commands.",
                            Permissions:="root:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim text = argument.RawValue(0)
                 If text.Length = 0 Then Throw New ArgumentException("Must say something.")
-                Return target.QueueSendText(text).ContinueWithFunc(Function() "Said {0}".Frmt(text))
+                Await target.QueueSendText(text)
+                Return "Said {0}".Frmt(text)
             End Function
         End Class
 
