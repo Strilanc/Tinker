@@ -97,7 +97,7 @@ Namespace Bot
                            template:="name",
                            Permissions:="root:5")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim port = target.PortPool.TryAcquireAnyPort()
                 If port Is Nothing Then Throw New OperationFailedException("No available ports in the pool.")
@@ -106,9 +106,13 @@ Namespace Bot
                                             listenport:=port,
                                             clock:=New SystemClock())
                 Dim manager = New CKL.ServerManager(server)
-                Dim finished = target.Components.QueueAddComponent(manager)
-                finished.Catch(Sub() manager.Dispose())
-                Return finished.ContinueWithFunc(Function() "Added CKL server {0}".Frmt(name))
+                Try
+                    Await target.Components.QueueAddComponent(manager)
+                    Return "Added CKL server {0}".Frmt(name)
+                Catch ex As Exception
+                    manager.Dispose()
+                    Throw
+                End Try
             End Function
         End Class
 
