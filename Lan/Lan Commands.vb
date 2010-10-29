@@ -65,20 +65,16 @@ Namespace Lan
                            template:="id",
                            Description:="Removes a game being advertised.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
+
                 Dim id As UInteger
-                If Not UInteger.TryParse(argument.RawValue(0), id) Then
-                    Throw New InvalidOperationException("Invalid game id.")
-                End If
-                Return target.QueueRemoveGame(id).Select(
-                    Function(val)
-                        If val Then
-                            Return "Removed game with id {0}".Frmt(id)
-                        Else
-                            Throw New InvalidOperationException("Invalid game id.")
-                        End If
-                    End Function)
+                If Not UInteger.TryParse(argument.RawValue(0), id) Then Throw New InvalidOperationException("Invalid game id.")
+
+                Dim removed = Await target.QueueRemoveGame(id)
+                If Not removed Then Throw New InvalidOperationException("Invalid game id.")
+
+                Return "Removed game with id {0}".Frmt(id)
             End Function
         End Class
 
