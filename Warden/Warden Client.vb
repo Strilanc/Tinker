@@ -111,11 +111,12 @@
             End Get
         End Property
 
-        Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As Task
+        Public Async Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As Task
             Contract.Requires(wardenData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             _activated.TrySetResult(Nothing)
-            Return _socket.ContinueWithFunc(Function(wardenClient) wardenClient.QueueSendWardenData(wardenData))
+            Dim wardenClient = Await _socket
+            Await wardenClient.QueueSendWardenData(wardenData)
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
