@@ -399,9 +399,10 @@ Namespace WC3
                            template:="",
                            Description:="Starts the launch countdown.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueStartCountdown().ContinueWithFunc(Function() "Started Countdown")
+                Await target.QueueStartCountdown()
+                Return "Started Countdown"
             End Function
         End Class
 
