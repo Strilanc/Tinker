@@ -427,13 +427,15 @@ Namespace WC3
                            template:="?slot",
                            Description:="Allows players to move from a slot and change its properties. Omit the slot argument to affect all slots.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim lockType = WC3.Slot.LockState.Unlocked
                 If argument.RawValueCount = 0 Then
-                    Return target.QueueSetAllSlotsLocked(lockType).ContinueWithFunc(Function() "Unlocked slots")
+                    Await target.QueueSetAllSlotsLocked(lockType)
+                    Return "Unlocked slots"
                 Else
-                    Return target.QueueSetSlotLocked(argument.RawValue(0), lockType).ContinueWithFunc(Function() "Unlocked slot")
+                    Await target.QueueSetSlotLocked(argument.RawValue(0), lockType)
+                    Return "Unlocked slot"
                 End If
             End Function
         End Class
