@@ -263,40 +263,37 @@ Namespace WC3
                               _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc))
                    ).Unwrap.AssumeNotNull
         End Function
-        Public Function AsyncDescription() As Task(Of String)
+        Public Async Function AsyncDescription() As Task(Of String)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
-            Return QueueGetLatencyDescription.Select(
-                Function(latencyDesc)
-                    Dim contextInfo As Task(Of String)
-                    Select Case _state
-                        Case PlayerState.Lobby
-                            Dim p = AdvertisedDownloadPercent
-                            Dim dlText As String
-                            Select Case p
-                                Case 255 : dlText = "?"
-                                Case 254 : dlText = "fake"
-                                Case Else : dlText = "{0}%".Frmt(p)
-                            End Select
-                            contextInfo = From rateDescription In _downloadManager.QueueGetClientBandwidthDescription(Me)
-                                          Select "DL={0}".Frmt(dlText).Padded(9) + _
-                                                 "EB={0}".Frmt(rateDescription)
-                        Case PlayerState.Loading
-                            contextInfo = "Ready={0}".Frmt(IsReady).AsTask
-                        Case PlayerState.Playing
-                            contextInfo = "DT={0}gms".Frmt(Me._maxTockTime - Me._totalTockTime).AsTask
-                        Case Else
-                            Throw _state.MakeImpossibleValueException
+            'Information differing based on the current player state
+            Dim contextInfo As String
+            Select Case _state
+                Case PlayerState.Lobby
+                    Dim p = AdvertisedDownloadPercent
+                    Dim dlText As String
+                    Select Case p
+                        Case 255 : dlText = "?"
+                        Case 254 : dlText = "fake"
+                        Case Else : dlText = "{0}%".Frmt(p)
                     End Select
-                    Contract.Assert(contextInfo IsNot Nothing)
+                    Dim rateDescription = Await _downloadManager.QueueGetClientBandwidthDescription(Me)
+                    contextInfo = "DL={0}".Frmt(dlText).Padded(9) + "EB={0}".Frmt(rateDescription)
+                Case PlayerState.Loading
+                    contextInfo = "Ready={0}".Frmt(IsReady)
+                Case PlayerState.Playing
+                    contextInfo = "DT={0}gms".Frmt(Me._maxTockTime - Me._totalTockTime)
+                Case Else
+                    Throw _state.MakeImpossibleValueException
+            End Select
+            Contract.Assert(contextInfo IsNot Nothing)
 
-                    Return From text In contextInfo
-                           Select Name.Value.Padded(20) +
-                                  Me.Id.ToString.Padded(6) +
-                                  "Host={0}".Frmt(CanHost()).Padded(12) +
-                                  "{0}c".Frmt(_numPeerConnections).Padded(5) +
-                                  latencyDesc.Padded(12) +
-                                  text
-                End Function).Unwrap.AssumeNotNull
+            Dim latencyDesc = Await QueueGetLatencyDescription()
+            Return Name.Value.Padded(20) +
+                   Me.Id.ToString.Padded(6) +
+                   "Host={0}".Frmt(CanHost()).Padded(12) +
+                   "{0}c".Frmt(_numPeerConnections).Padded(5) +
+                   latencyDesc.Padded(12) +
+                   contextInfo
         End Function
 
         Private Function AddPacketLogger(ByVal packetDefinition As Protocol.Packets.Definition) As IDisposable
