@@ -114,30 +114,18 @@
     ''' Doesn't evaluate the filter on futures past the matching future.
     ''' </summary>
     <Extension()>
-    Public Function FutureSelect(Of T)(ByVal sequence As IEnumerable(Of T),
-                                       ByVal filterFunction As Func(Of T, Task(Of Boolean))) As Task(Of T)
+    Public Async Function FirstMatchAsync(Of T)(ByVal sequence As IEnumerable(Of T),
+                                             ByVal filterFunction As Func(Of T, Task(Of Boolean))) As Task(Of T)
         Contract.Requires(sequence IsNot Nothing)
         Contract.Requires(filterFunction IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
 
-        Dim enumerator = sequence.GetEnumerator
-        Dim result = New TaskCompletionSource(Of T)
-        Dim iterator As Action(Of Task(Of Boolean))
-        iterator = Sub(task)
-                       If task IsNot Nothing AndAlso task.Status = TaskStatus.Faulted Then
-                           result.SetException(task.Exception.InnerExceptions)
-                       ElseIf task IsNot Nothing AndAlso task.Result Then
-                           result.SetResult(enumerator.Current)
-                       ElseIf Not enumerator.MoveNext Then
-                           result.SetException(New OperationFailedException("No Matches"))
-                       Else
-                           Dim futureAccept = filterFunction(enumerator.Current)
-                           Contract.Assume(futureAccept IsNot Nothing)
-                           futureAccept.ContinueWith(iterator)
-                       End If
-                   End Sub
-        Call iterator(Nothing)
-        Return result.Task.AssumeNotNull
+        For Each item In sequence
+            If Await filterFunction(item) Then
+                Return item
+            End If
+        Next item
+        Throw New OperationFailedException("No Matches")
     End Function
 
     <Extension()>

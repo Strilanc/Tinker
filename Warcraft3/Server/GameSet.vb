@@ -57,30 +57,22 @@
             End Set
         End Property
 
-        Private Function AsyncTryAcceptPlayer(ByVal knockData As Protocol.KnockData,
-                                              ByVal socket As W3Socket) As Task(Of Game)
+        Private Async Function AsyncTryAcceptPlayer(ByVal knockData As Protocol.KnockData,
+                                                    ByVal socket As W3Socket) As Task(Of Game)
             Contract.Requires(knockData IsNot Nothing)
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
-            Dim result = New TaskCompletionSource(Of Game)()
 
-            Dim futureSelectGame = _games.FutureSelect(
-                filterFunction:=Function(game) game.QueueAddPlayer(knockData, socket).ContinueWith(
-                                        Function(task) task.Status = TaskStatus.RanToCompletion AndAlso task.Result IsNot Nothing
-                                    ))
-
-            futureSelectGame.ContinueWithAction(
-                Sub(game) result.SetResult(game)
-            ).Catch(
-                Sub(exception)
-                    If _gameSettings.UseInstanceOnDemand Then
-                        result.SetResult(AddInstance())
-                    Else
-                        result.SetException(New OperationFailedException("Failed to find game for player (eg. {0}).".Frmt(exception.Summarize)))
-                    End If
-                End Sub
-            )
-            Return result.Task.AssumeNotNull
+            Try
+                Return Await _games.FirstMatchAsync(
+                    Async Function(g)
+                        Dim player = Await g.QueueAddPlayer(knockData, socket)
+                        Return player IsNot Nothing
+                    End Function)
+            Catch ex As OperationFailedException
+                If _gameSettings.UseInstanceOnDemand Then Return AddInstance()
+                Throw New OperationFailedException("Failed to find game for player.", ex)
+            End Try
         End Function
         Public Function QueueTryAcceptPlayer(ByVal knockData As Protocol.KnockData,
                                              ByVal socket As W3Socket) As Task(Of Game)
@@ -153,7 +145,11 @@
 
         Private Function AsyncTryFindPlayerGame(ByVal userName As InvariantString) As Task(Of Game)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
-            Return _games.ToList.FutureSelect(Function(game) game.QueueTryFindPlayer(userName).Select(Function(player) player IsNot Nothing))
+            Return _games.ToList.FirstMatchAsync(
+                Async Function(game)
+                    Dim player = Await game.QueueTryFindPlayer(userName)
+                    Return player IsNot Nothing
+                End Function)
         End Function
         Public Function QueueTryFindPlayerGame(ByVal userName As InvariantString) As Task(Of Game)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
