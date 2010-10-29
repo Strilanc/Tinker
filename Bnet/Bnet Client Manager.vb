@@ -89,7 +89,7 @@ Namespace Bnet
         End Function
 
         <ContractVerification(False)>
-        Private Sub OnReceivedChatEvent(ByVal vals As NamedValueMap)
+        Private Async Sub OnReceivedChatEvent(ByVal vals As NamedValueMap)
             Contract.Requires(vals IsNot Nothing)
 
             Dim id = vals.ItemAs(Of Bnet.Protocol.ChatEventId)("event id")
@@ -110,14 +110,9 @@ Namespace Bnet
                 Return 'not a command
             End If
 
-            'Normal commands
+            'Start Command
             Dim commandText = text.Substring(commandPrefix.Length)
             Dim commandResult = Me.InvokeCommand(user, commandText)
-            commandResult.ContinueWithAction(
-                Sub(message) _client.QueueSendWhisper(user.Name, If(message, "Command Succeeded"))
-            ).Catch(
-                Sub(exception) _client.QueueSendWhisper(user.Name, "Failed: {0}".Frmt(exception.Summarize))
-            )
             Call New SystemClock().AsyncWait(2.Seconds).ContinueWithAction(
                 Sub()
                     If commandResult.Status <> TaskStatus.Faulted AndAlso commandResult.Status <> TaskStatus.RanToCompletion Then
@@ -125,6 +120,14 @@ Namespace Bnet
                     End If
                 End Sub
             )
+
+            'Finish Command
+            Try
+                Dim message = Await commandResult
+                _client.QueueSendWhisper(user.Name, If(message, "Command Succeeded"))
+            Catch ex As Exception
+                _client.QueueSendWhisper(user.Name, "Failed: {0}".Frmt(ex.Summarize))
+            End Try
         End Sub
 
         Public Shared Function AsyncCreateFromProfile(ByVal clientName As InvariantString,
