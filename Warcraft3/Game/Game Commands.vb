@@ -67,11 +67,12 @@ Namespace WC3
                            template:="Name/Color -close",
                            Description:="Kicks a player from the game. Closes their slot if -close is specified.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim slotQuery = argument.RawValue(0)
                 Dim shouldClose = argument.HasOptionalSwitch("close")
-                Return target.QueueBoot(slotQuery, shouldClose).ContinueWithFunc(Function() "Booted")
+                Await target.QueueBoot(slotQuery, shouldClose)
+                Return "Booted"
             End Function
         End Class
 
