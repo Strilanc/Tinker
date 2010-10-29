@@ -138,13 +138,14 @@
             End Get
         End Property
         <Pure()>
-        Public Function AsyncGenerateDescription() As Task(Of String)
-            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+        Public Async Function AsyncGenerateDescription() As Task(Of String)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing))
             Dim result = ""
             If Locked <> LockState.Unlocked Then result += "({0}) ".Frmt(Locked)
             result += If(Team = ObserverTeamIndex, "Observer", "Team {0}, {1}, {2}".Frmt(Team + 1, Race, Color))
             result = result.Padded(30)
-            Return Contents.AsyncGenerateDescription.Select(Function(desc) result + desc)
+            Dim desc = Await Contents.AsyncGenerateDescription
+            Return result + desc
         End Function
 
         Public Overloads Function Equals(ByVal other As Slot) As Boolean Implements IEquatable(Of Slot).Equals
