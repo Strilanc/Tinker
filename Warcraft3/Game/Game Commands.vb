@@ -184,10 +184,11 @@ Namespace WC3
                            template:="password",
                            Description:="Gives access to admin or host commands.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
-                Return target.QueueElevatePlayer(user.Name, argument.RawValue(0)).ContinueWithFunc(Function() "Elevated")
+                Await target.QueueElevatePlayer(user.Name, argument.RawValue(0))
+                Return "Elevated"
             End Function
         End Class
 
