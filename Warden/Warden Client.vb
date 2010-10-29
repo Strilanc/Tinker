@@ -75,7 +75,7 @@
             result.Start()
             Return result
         End Function
-        Private Sub Start()
+        Private Async Sub Start()
             Dim receiveForward As Warden.Socket.ReceivedWardenDataEventHandler =
                     Sub(sender, wardenData) RaiseEvent ReceivedWardenData(Me, wardenData)
             Dim failForward As Warden.Socket.FailedEventHandler =
@@ -84,21 +84,24 @@
                     Sub(sender, expected, reason) RaiseEvent Disconnected(Me, expected, reason)
 
             'Wire events
-            _socket.ContinueWithAction(
-                Sub(wardenClient)
-                    _logger.Log("Connected to bnls server.", LogMessageType.Positive)
+            Dim wardenClient As Socket
+            Try
+                wardenClient = Await _socket
+            Catch ex As Exception
+                'socket creation exceptions are handled elsewhere
+                Return
+            End Try
 
-                    AddHandler wardenClient.ReceivedWardenData, receiveForward
-                    AddHandler wardenClient.Failed, failForward
-                    AddHandler wardenClient.Disconnected, disconnectForward
-                    wardenClient.DisposalTask.ContinueWithAction(
-                        Sub()
-                            RemoveHandler wardenClient.ReceivedWardenData, receiveForward
-                            RemoveHandler wardenClient.Failed, failForward
-                            RemoveHandler wardenClient.Disconnected, disconnectForward
-                        End Sub)
-                End Sub
-            ).IgnoreExceptions()
+            _logger.Log("Connected to bnls server.", LogMessageType.Positive)
+
+            AddHandler wardenClient.ReceivedWardenData, receiveForward
+            AddHandler wardenClient.Failed, failForward
+            AddHandler wardenClient.Disconnected, disconnectForward
+
+            Await wardenClient.DisposalTask
+            RemoveHandler wardenClient.ReceivedWardenData, receiveForward
+            RemoveHandler wardenClient.Failed, failForward
+            RemoveHandler wardenClient.Disconnected, disconnectForward
         End Sub
 
         Public ReadOnly Property Activated As Task
