@@ -151,16 +151,14 @@ Namespace WC3
                            template:="slot ?difficulty",
                            Description:="Places a computer in a slot, unless it contains a player.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim argSlot = argument.RawValue(0)
                 Dim argDifficulty = If(argument.RawValueCount >= 2, argument.RawValue(1), WC3.Protocol.ComputerLevel.Normal.ToString)
                 Dim difficulty = argDifficulty.EnumTryParse(Of Protocol.ComputerLevel)(ignoreCase:=True)
-                If difficulty.HasValue Then
-                    Return target.QueueSetSlotCpu(argSlot, difficulty.Value).ContinueWithFunc(Function() "Set {0} to Computer ({1})".Frmt(argSlot, argDifficulty))
-                Else
-                    Throw New InvalidOperationException("Unrecognized difficulty: '{0}'.".Frmt(argDifficulty))
-                End If
+                If Not difficulty.HasValue Then Throw New InvalidOperationException("Unrecognized difficulty: '{0}'.".Frmt(argDifficulty))
+                Await target.QueueSetSlotCpu(argSlot, difficulty.Value)
+                Return "Set {0} to Computer ({1})".Frmt(argSlot, argDifficulty)
             End Function
         End Class
 
