@@ -392,9 +392,10 @@ Namespace Bnet
                            Description:="Stops placing a game in the custom games list and unlinks from any linked server.",
                            Permissions:="root:4,games:5")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueRemoveAllAdvertisableGames().ContinueWithFunc(Function() "Cancelled advertising of all games.")
+                Await target.QueueRemoveAllAdvertisableGames()
+                Return "Cancelled advertising of all games."
             End Function
         End Class
 
