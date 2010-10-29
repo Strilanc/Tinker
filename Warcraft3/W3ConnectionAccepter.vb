@@ -53,7 +53,7 @@ Namespace WC3
 
         '''<summary>Handles new connections.</summary>
         <ContractVerification(False)>
-        Private Sub OnAcceptConnection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
+        Private Async Sub OnAcceptConnection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
             Dim socket = New W3Socket(New PacketSocket(stream:=client.GetStream,
@@ -68,18 +68,6 @@ Namespace WC3
                 _sockets.Add(socket)
             End SyncLock
 
-            socket.AsyncReadPacket().ContinueWithAction(
-                Sub(packetData)
-                    If Not TryRemoveSocket(socket) Then Return
-                    Dim id = CType(packetData(1), Protocol.PacketId)
-                    Dim pickle = ProcessConnectingPlayer(socket, packetData)
-                    _logger.Log(Function() "Received {0} from {1}".Frmt(id, socket.Name), LogMessageType.DataEvent)
-                    _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description), LogMessageType.DataParsed)
-                End Sub
-            ).Catch(
-                Sub(ex) socket.Disconnect(expected:=False, reason:=ex.Summarize)
-            )
-
             _clock.AsyncWait(FirstPacketTimeout).ContinueWithAction(
                 Sub()
                     If Not TryRemoveSocket(socket) Then Return
@@ -87,6 +75,17 @@ Namespace WC3
                     socket.Disconnect(expected:=False, reason:="Idle")
                 End Sub
             )
+
+            Try
+                Dim packetData = Await socket.AsyncReadPacket()
+                If Not TryRemoveSocket(socket) Then Return
+                Dim id = CType(packetData(1), Protocol.PacketId)
+                Dim pickle = ProcessConnectingPlayer(socket, packetData)
+                _logger.Log(Function() "Received {0} from {1}".Frmt(id, socket.Name), LogMessageType.DataEvent)
+                _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description), LogMessageType.DataParsed)
+            Catch ex As Exception
+                socket.Disconnect(expected:=False, reason:=ex.Summarize)
+            End Try
         End Sub
 
         '''<summary>Atomically checks if a socket has already been processed, and removes it if not.</summary>
