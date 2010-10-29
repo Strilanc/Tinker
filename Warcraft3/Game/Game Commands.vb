@@ -413,9 +413,10 @@ Namespace WC3
                            template:="slot1 slot2",
                            Description:="Swaps the contents of two slots.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueSwapSlotContents(argument.RawValue(0), argument.RawValue(1)).ContinueWithFunc(Function() "Swapped Slots")
+                Await target.QueueSwapSlotContents(argument.RawValue(0), argument.RawValue(1))
+                Return "Swapped Slots"
             End Function
         End Class
 
