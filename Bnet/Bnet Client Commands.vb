@@ -211,13 +211,15 @@ Namespace Bnet
                            template:="On|Off",
                            Description:="Causes the client to automatically advertise any games on any server when 'On'.")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Select Case New InvariantString(argument.RawValue(0))
                     Case "On"
-                        Return target.QueueSetAutomatic(True).ContinueWithFunc(Function() "Now automatically advertising games.")
+                        Await target.QueueSetAutomatic(True)
+                        Return "Now automatically advertising games."
                     Case "Off"
-                        Return target.QueueSetAutomatic(False).ContinueWithFunc(Function() "Now not automatically advertising games.")
+                        Await target.QueueSetAutomatic(False)
+                        Return "Now not automatically advertising games."
                     Case Else
                         Throw New ArgumentException("Must specify 'On' or 'Off' as an argument.")
                 End Select
