@@ -133,16 +133,14 @@ Namespace WC3
                            template:="slot value",
                            Description:="Sets the color of a slot. Not allowed when the map uses Fixed Player Settings.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim argSlot = argument.RawValue(0)
                 Dim argColor = argument.RawValue(1)
                 Dim color = argColor.EnumTryParse(Of Protocol.PlayerColor)(ignoreCase:=True)
-                If color.HasValue Then
-                    Return target.QueueSetSlotColor(argSlot, color.Value).ContinueWithFunc(Function() "Set Color")
-                Else
-                    Throw New InvalidOperationException("Unrecognized color: '{0}'.".Frmt(argColor))
-                End If
+                If Not color.HasValue Then Throw New InvalidOperationException("Unrecognized color: '{0}'.".Frmt(argColor))
+                Await target.QueueSetSlotColor(argSlot, color.Value)
+                Return "Set Color"
             End Function
         End Class
 
