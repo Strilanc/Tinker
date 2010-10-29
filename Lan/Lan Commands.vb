@@ -89,18 +89,18 @@ Namespace Lan
                            Permissions:="games:1",
                            extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
-                Dim futureGameSet = (From server In futureServer
-                                     Select server.QueueAddGameFromArguments(argument, user)
-                                    ).Unwrap.AssumeNotNull
-                Dim futureAdvertised = (From gameSet In futureGameSet
-                                        Select target.Advertiser.QueueAddGame(gameSet.GameSettings.GameDescription)
-                                       ).Unwrap.AssumeNotNull
-                futureAdvertised.Catch(Sub() If futureGameSet.Status = TaskStatus.RanToCompletion Then futureGameSet.Result.Dispose())
-                Dim futureDesc = futureAdvertised.ContinueWithFunc(Function() futureGameSet.Result.GameSettings.GameDescription)
-                Return futureDesc.select(Function(desc) "Hosted game '{0}' for map '{1}'".Frmt(desc.name, desc.GameStats.AdvertisedPath))
+                Dim server = Await target.Bot.QueueGetOrConstructGameServer()
+                Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
+                Try
+                    Await target.Advertiser.QueueAddGame(gameSet.GameSettings.GameDescription)
+                Catch ex As Exception
+                    gameSet.Dispose()
+                    Throw
+                End Try
+                Dim desc = gameSet.GameSettings.GameDescription
+                Return "Hosted game '{0}' for map '{1}'".Frmt(desc.Name, desc.GameStats.AdvertisedPath)
             End Function
         End Class
     End Class
