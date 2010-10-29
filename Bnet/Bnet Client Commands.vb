@@ -253,34 +253,36 @@ Namespace Bnet
                             extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
                                               WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
-                Dim futureGameSet = (From server In futureServer
-                                     Select server.QueueAddGameFromArguments(argument, user)
-                                     ).Unwrap.AssumeNotNull
-                Dim futureAdvertised = futureGameSet.Select(
-                    Function(gameSet)
-                        Dim result = target.Client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
-                                                                            isPrivate:=gameSet.GameSettings.IsPrivate)
-                        If user IsNot Nothing Then
-                            target.QueueSetUserGameSet(user, gameSet)
-                            gameSet.DisposalTask.ContinueWithAction(Sub() target.QueueResetUserGameSet(user, gameSet)).IgnoreExceptions()
-                        End If
-                        Dim onStarted As WC3.GameSet.StateChangedEventHandler
-                        onStarted = Sub(sender, active)
-                                        If active Then Return
-                                        RemoveHandler gameSet.StateChanged, onStarted
-                                        target.Client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription)
-                                    End Sub
-                        AddHandler gameSet.StateChanged, onStarted
-                        Return result
-                    End Function).Unwrap.AssumeNotNull
-                futureAdvertised.Catch(Sub() If futureGameSet.Status = TaskStatus.RanToCompletion Then futureGameSet.Result.Dispose())
-                Return From gameDescription In futureAdvertised
-                       Select "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(gameDescription.Name,
-                                                                                      gameDescription.GameStats.AdvertisedPath,
-                                                                                      futureGameSet.Result.GameSettings.AdminPassword)
+                Dim server = Await target.Bot.QueueGetOrConstructGameServer()
+                Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
+                Try
+                    'Link user to gameSet
+                    If user IsNot Nothing Then
+                        target.QueueSetUserGameSet(user, gameSet)
+                        gameSet.DisposalTask.ContinueWithAction(Sub() target.QueueResetUserGameSet(user, gameSet)).IgnoreExceptions()
+                    End If
+
+                    'Setup auto-dispose
+                    Dim onStarted As WC3.GameSet.StateChangedEventHandler
+                    onStarted = Sub(sender, active)
+                                    If active Then Return
+                                    RemoveHandler gameSet.StateChanged, onStarted
+                                    target.Client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription)
+                                End Sub
+                    AddHandler gameSet.StateChanged, onStarted
+
+                    'Start advertising game
+                    Dim gameDescription = Await target.Client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                                                                                       isPrivate:=gameSet.GameSettings.IsPrivate)
+                    Return "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(gameDescription.Name,
+                                                                                   gameDescription.GameStats.AdvertisedPath,
+                                                                                   gameSet.GameSettings.AdminPassword)
+                Catch ex As Exception
+                    gameSet.Dispose()
+                    Throw
+                End Try
             End Function
         End Class
 
