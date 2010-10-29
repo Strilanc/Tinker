@@ -456,16 +456,7 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() BeginLogOn(credentials)).Unwrap
         End Function
 
-        Public Function QueueConnectAndLogOn(ByVal remoteHost As String,
-                                             ByVal port As UInt16,
-                                             ByVal credentials As ClientAuthenticator) As Task
-            Contract.Requires(remoteHost IsNot Nothing)
-            Contract.Requires(credentials IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return QueueConnect(remoteHost, port).ContinueWithFunc(Function() QueueLogOn(credentials)).Unwrap
-        End Function
-
-        Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
+        Private Async Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
             If _socket IsNot Nothing Then
                 _socket.QueueDisconnect(expected, reason)
@@ -489,14 +480,10 @@ Namespace Bnet
 
             If Not expected AndAlso _allowRetryConnect AndAlso _bnetRemoteHostName IsNot Nothing Then
                 _allowRetryConnect = False
-                _clock.AsyncWait(5.Seconds).ContinueWithAction(
-                    Sub()
-                        Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
-                        QueueConnectAndLogOn(_bnetRemoteHostName,
-                                             _bnetRemoteHostPort,
-                                             _userCredentials.WithNewGeneratedKeys())
-                    End Sub
-                )
+                Await _clock.AsyncWait(5.Seconds)
+                Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
+                Await QueueConnect(_bnetRemoteHostName, _bnetRemoteHostPort)
+                Await QueueLogOn(_userCredentials.WithNewGeneratedKeys())
             End If
         End Sub
         Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As Task

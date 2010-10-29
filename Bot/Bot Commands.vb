@@ -57,9 +57,9 @@ Namespace Bot
                     Await parent.Components.QueueAddComponent(manager)
                     Dim client = manager.Client
                     Dim profile = client.Profile
-                    Await client.QueueConnectAndLogOn(remoteHost:=profile.server.Split(" "c).First,
-                                                      port:=Bnet.Client.BnetServerPort,
-                                                      credentials:=Bnet.ClientAuthenticator.GeneratedFrom(profile.userName, profile.password))
+                    Await client.QueueConnect(remoteHost:=profile.server.Split(" "c).First,
+                                              remotePort:=Bnet.Client.BnetServerPort)
+                    Await client.QueueLogOn(Bnet.ClientAuthenticator.GeneratedFrom(profile.userName, profile.password))
                     Return manager
                 Catch ex As Exception
                     manager.Dispose()
