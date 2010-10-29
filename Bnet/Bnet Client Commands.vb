@@ -235,12 +235,12 @@ Namespace Bnet
                            Description:="Identifies and authenticates the client as a particular bnet user.",
                            Permissions:="root:4")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim userName = argument.RawValue(0)
                 Dim password = argument.RawValue(1)
-                Return target.QueueLogOn(Bnet.ClientAuthenticator.GeneratedFrom(userName, password)).
-                              ContinueWithFunc(Function() "Logged in as {0}".Frmt(userName))
+                Await target.QueueLogOn(Bnet.ClientAuthenticator.GeneratedFrom(userName, password))
+                Return "Logged in as {0}".Frmt(userName)
             End Function
         End Class
 
