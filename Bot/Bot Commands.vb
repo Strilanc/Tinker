@@ -115,18 +115,20 @@ Namespace Bot
                            Description:="Creates a new bnet client. -Auto causes the client to automatically advertising any games hosted by the bot.",
                            Permissions:="root:4")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim profileName = If(argument.TryGetOptionalNamedValue("profile"), "default").ToInvariant
                 Dim clientName = argument.RawValue(0).ToInvariant
 
-                Return Bnet.ClientManager.AsyncCreateFromProfile(clientName, profileName, target).Select(
-                    Function(manager)
-                        Dim added = target.Components.QueueAddComponent(manager)
-                        added.Catch(Sub() manager.Dispose())
-                        If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
-                        Return added.ContinueWithFunc(Function() "Created Client")
-                    End Function).Unwrap.AssumeNotNull
+                Dim manager = Await Bnet.ClientManager.AsyncCreateFromProfile(clientName, profileName, target)
+                Try
+                    Await target.Components.QueueAddComponent(manager)
+                    If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
+                    Return "Created Client"
+                Catch ex As Exception
+                    manager.Dispose()
+                    Throw
+                End Try
             End Function
         End Class
 
