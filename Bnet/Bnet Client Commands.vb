@@ -321,9 +321,10 @@ Namespace Bnet
                            Description:="Refreshes the bot's game list display. No useful effect from bnet.",
                            Permissions:="local:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueSendPacket(Protocol.MakeQueryGamesList()).ContinueWithFunc(Function() "Sent request.")
+                Await target.QueueSendPacket(Protocol.MakeQueryGamesList())
+                Return "Sent request."
             End Function
         End Class
 
