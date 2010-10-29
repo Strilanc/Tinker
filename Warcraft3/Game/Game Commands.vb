@@ -264,9 +264,10 @@ Namespace WC3
                            template:="slot",
                            Description:="Opens a slot.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueOpenSlot(argument.RawValue(0)).ContinueWithFunc(Function() "Opened")
+                Await target.QueueOpenSlot(argument.RawValue(0))
+                Return "Opened"
             End Function
         End Class
 
