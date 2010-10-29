@@ -447,12 +447,11 @@ Namespace WC3
                            template:="-cancel",
                            Description:="Places or cancels a vote to prematurely start an autostarted game. Requires at least 2 players and at least a 2/3 majority.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
-                Return target.QueueSetPlayerVoteToStart(user.Name,
-                                                        wantsToStart:=Not argument.HasOptionalSwitch("cancel")
-                                                        ).ContinueWithFunc(Function() "Voted to start")
+                Await target.QueueSetPlayerVoteToStart(user.Name, wantsToStart:=Not argument.HasOptionalSwitch("cancel"))
+                Return "Voted to start"
             End Function
         End Class
     End Class
