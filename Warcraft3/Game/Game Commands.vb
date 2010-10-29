@@ -244,13 +244,15 @@ Namespace WC3
                            template:="?slot -full",
                            Description:="Prevents players from leaving a slot or from changing slot properties (if -full). Omit the slot argument to affect all slots.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim lockType = If(argument.HasOptionalSwitch("full"), WC3.Slot.LockState.Frozen, WC3.Slot.LockState.Sticky)
                 If argument.RawValueCount = 0 Then
-                    Return target.QueueSetAllSlotsLocked(lockType).ContinueWithFunc(Function() "Locked slots")
+                    Await target.QueueSetAllSlotsLocked(lockType)
+                    Return "Locked slots"
                 Else
-                    Return target.QueueSetSlotLocked(argument.RawValue(0), lockType).ContinueWithFunc(Function() "Locked slot")
+                    Await target.QueueSetSlotLocked(argument.RawValue(0), lockType)
+                    Return "Locked slot"
                 End If
             End Function
         End Class
