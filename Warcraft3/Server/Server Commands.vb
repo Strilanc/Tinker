@@ -34,9 +34,10 @@ Namespace WC3
                            extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
                                              WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As WC3.GameServerManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As WC3.GameServerManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueAddGameFromArguments(argument, user).Select(Function() "Game added.")
+                Await target.QueueAddGameFromArguments(argument, user)
+                Return "Game added."
             End Function
         End Class
     End Class
