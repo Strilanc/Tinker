@@ -385,9 +385,10 @@ Namespace WC3
                            template:="teams",
                            Description:="Sets up the number of slots on each team (eg. 'SetupTeams 2v2' will leave two open slots on each team).")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueTrySetTeamSizes(TeamVersusStringToTeamSizes(argument.RawValue(0))).ContinueWithFunc(Function() "Set Teams")
+                Await target.QueueTrySetTeamSizes(TeamVersusStringToTeamSizes(argument.RawValue(0)))
+                Return "Set Teams"
             End Function
         End Class
 
