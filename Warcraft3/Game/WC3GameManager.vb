@@ -33,7 +33,7 @@ Namespace WC3
 
             game.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
         End Sub
-        Private Sub HandleText(ByVal player As WC3.Player, ByVal text As String)
+        Private Async Sub HandleText(ByVal player As WC3.Player, ByVal text As String)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
 
@@ -45,22 +45,23 @@ Namespace WC3
                 Return
             End If
 
-            'Normal commands
+            'Start command
             Dim commandText = text.Substring(commandPrefix.Length)
             Dim commandResult = _game.QueueCommandProcessText(_bot, player, commandText)
-            commandResult.ContinueWithAction(
-                Sub(message) _game.QueueSendMessageTo(If(message, "Command Succeeded"), player)
-            ).Catch(
-                Sub(exception) _game.QueueSendMessageTo("Failed: {0}".Frmt(exception.Summarize), player)
-            )
-
-            'Delay notification
             Call New SystemClock().AsyncWait(2.Seconds).ContinueWithAction(
                 Sub()
                     If commandResult.Status <> TaskStatus.RanToCompletion AndAlso commandResult.Status <> TaskStatus.Faulted Then
                         _game.QueueSendMessageTo("Command '{0}' is running... You will be informed when it finishes.".Frmt(text), player)
                     End If
                 End Sub)
+
+            'Finish command
+            Try
+                Dim message = Await commandResult
+                _game.QueueSendMessageTo(If(message, "Command Succeeded"), player)
+            Catch ex As Exception
+                _game.QueueSendMessageTo("Failed: {0}".Frmt(ex.Summarize), player)
+            End Try
         End Sub
 
         Public ReadOnly Property Game As WC3.Game
