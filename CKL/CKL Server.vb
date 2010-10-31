@@ -72,8 +72,8 @@ Namespace CKL
         End Function
 
         <ContractVerification(False)>
-        Private Sub OnAcceptedConnection(ByVal sender As ConnectionAccepter,
-                                         ByVal acceptedClient As Net.Sockets.TcpClient) Handles _accepter.AcceptedConnection
+        Private Async Sub OnAcceptedConnection(ByVal sender As ConnectionAccepter,
+                                               ByVal acceptedClient As Net.Sockets.TcpClient) Handles _accepter.AcceptedConnection
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(acceptedClient IsNot Nothing)
             Contract.Assume(acceptedClient.Client IsNot Nothing)
@@ -83,13 +83,16 @@ Namespace CKL
                                           timeout:=10.Seconds,
                                           clock:=_clock,
                                           Logger:=Me.Logger)
-            logger.Log("Connection from {0}.".Frmt(socket.Name), LogMessageType.Positive)
+            Logger.Log("Connection from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 
-            AsyncProduceConsumeUntilError(
-                producer:=AddressOf socket.AsyncReadPacket,
-                consumer:=Function(packetData) inQueue.QueueAction(Sub() HandlePacket(socket, packetData)),
-                errorHandler:=Sub(exception) Logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, exception.Summarize), LogMessageType.Problem)
-            )
+            Try
+                Do
+                    Dim data = Await socket.AsyncReadPacket()
+                    Await inQueue.QueueAction(Sub() HandlePacket(socket, data))
+                Loop
+            Catch ex As Exception
+                Logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, ex.Summarize), LogMessageType.Problem)
+            End Try
         End Sub
         <ContractVerification(False)>
         Private Sub HandlePacket(ByVal socket As PacketSocket, ByVal packetData As IReadableList(Of Byte))
