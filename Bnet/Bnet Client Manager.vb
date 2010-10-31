@@ -110,19 +110,16 @@ Namespace Bnet
                 Return 'not a command
             End If
 
-            'Start Command
-            Dim commandText = text.Substring(commandPrefix.Length)
-            Dim commandResult = Me.InvokeCommand(user, commandText)
-            Call New SystemClock().AsyncWait(2.Seconds).ContinueWithAction(
-                Sub()
-                    If commandResult.Status <> TaskStatus.Faulted AndAlso commandResult.Status <> TaskStatus.RanToCompletion Then
-                        _client.QueueSendWhisper(user.Name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
-                    End If
-                End Sub
-            )
-
-            'Finish Command
+            'Run command
             Try
+                Dim commandResult = Me.InvokeCommand(user, argument:=text.Substring(commandPrefix.Length))
+                Call New SystemClock().AsyncWait(2.Seconds).ContinueWithAction(
+                    Sub()
+                        If commandResult.Status <> TaskStatus.Faulted AndAlso commandResult.Status <> TaskStatus.RanToCompletion Then
+                            _client.QueueSendWhisper(user.Name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
+                        End If
+                    End Sub
+                )
                 Dim message = Await commandResult
                 _client.QueueSendWhisper(user.Name, If(message, "Command Succeeded"))
             Catch ex As Exception
