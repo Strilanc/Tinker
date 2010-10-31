@@ -68,20 +68,4 @@
         Next item
         Throw New OperationFailedException("No Matches")
     End Function
-
-    <Extension()>
-    Public Async Function AsAggregateAllOrNoneTask(Of T As IDisposable)(ByVal tasks As IEnumerable(Of Task(Of T))) As Task(Of IEnumerable(Of T))
-        Contract.Requires(tasks IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task(Of IEnumerable(Of T)))() IsNot Nothing)
-        Try
-            Return Await tasks.AsAggregateTask()
-        Catch ex As Exception
-            For Each task In tasks
-                If task.Status = TaskStatus.RanToCompletion Then
-                    task.Result.Dispose()
-                End If
-            Next task
-            Throw
-        End Try
-    End Function
 End Module

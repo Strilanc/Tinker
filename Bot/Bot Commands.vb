@@ -42,7 +42,14 @@ Namespace Bot
                 Next profileName
 
                 'Wait for all to complete
-                Await allClients.AsAggregateAllOrNoneTask()
+                Try
+                    Await allClients.AsAggregateTask()
+                Catch ex As Exception
+                    For Each client In allClients
+                        If client.Status = TaskStatus.RanToCompletion Then client.Dispose()
+                    Next client
+                    Throw
+                End Try
                 Return "Connected"
             End Function
 
