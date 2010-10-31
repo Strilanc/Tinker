@@ -24,30 +24,14 @@
     ''' <summary>
     ''' Passes a produced future into a consumer, waits for the consumer to finish, and repeats while the consumer outputs true.
     ''' </summary>
-    Public Function FutureIterate(Of T)(ByVal producer As Func(Of Task(Of T)),
-                                        ByVal consumer As Func(Of Task(Of T), Task(Of Boolean))) As Task
+    Public Async Function FutureIterate(Of T)(ByVal producer As Func(Of Task(Of T)),
+                                              ByVal consumer As Func(Of Task(Of T), Task(Of Boolean))) As Task
         Contract.Requires(producer IsNot Nothing)
         Contract.Requires(consumer IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
-        Dim result = New TaskCompletionSource(Of Boolean)
-        Dim iterator As Action(Of Task(Of Boolean)) = Nothing
-        Dim futureProduct As Task(Of T)
-        iterator = Sub(task)
-                       If task.Status = TaskStatus.Faulted Then
-                           result.SetException(task.Exception.InnerExceptions)
-                       ElseIf task.Result Then
-                           futureProduct = producer()
-                           Contract.Assume(futureProduct IsNot Nothing)
-                           futureProduct.ContinueWith(consumer).Unwrap.ContinueWith(iterator)
-                       Else
-                           result.SetResult(True)
-                       End If
-                   End Sub
-        futureProduct = producer()
-        Contract.Assume(futureProduct IsNot Nothing)
-        futureProduct.ContinueWith(consumer).Unwrap.AssumeNotNull.ContinueWith(iterator)
-        Return result.Task.AssumeNotNull
+        While Await consumer(producer())
+        End While
     End Function
 
     ''' <summary>
