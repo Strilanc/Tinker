@@ -44,12 +44,15 @@ Namespace Warden
         End Sub
 
         '''<summary>Asynchronously reads packets until an exception occurs, raising events to the outside.</summary>
-        Private Sub BeginReading()
-            AsyncProduceConsumeUntilError(
-                producer:=AddressOf AsyncReadPacket,
-                consumer:=Function(packet) inQueue.QueueAction(Sub() OnReceivePacket(packet)),
-                errorHandler:=Sub(exception) outQueue.QueueAction(Sub() RaiseEvent Failed(Me, exception))
-            )
+        Private Async Sub BeginReading()
+            Try
+                Do
+                    Dim data = Await AsyncReadPacket()
+                    Await inQueue.QueueAction(Sub() OnReceivePacket(data))
+                Loop
+            Catch ex As Exception
+                outQueue.QueueAction(Sub() RaiseEvent Failed(Me, ex))
+            End Try
         End Sub
         Private Async Function AsyncReadPacket() As Task(Of ServerPacket)
             Dim packetData = Await _socket.AsyncReadPacket()
