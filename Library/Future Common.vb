@@ -91,23 +91,6 @@
         result.Task.Catch(errorHandler)
         Return result.Task
     End Function
-    Public Function AsyncProduceConsumeUntilError2(Of T)(ByVal producer As Func(Of Task(Of T)),
-                                                         ByVal consumer As Action(Of T),
-                                                         ByVal errorHandler As Action(Of AggregateException)) As Task
-        Contract.Requires(producer IsNot Nothing)
-        Contract.Requires(consumer IsNot Nothing)
-        Contract.Requires(errorHandler IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-
-        Return AsyncProduceConsumeUntilError(
-            producer:=producer,
-            errorHandler:=errorHandler,
-            consumer:=Function(value)
-                          Dim result = New TaskCompletionSource(Of NoValue)
-                          result.SetByCalling(Sub() consumer(value))
-                          Return result.Task
-                      End Function)
-    End Function
 
     ''' <summary>
     ''' Selects the first future value passing a filter.
