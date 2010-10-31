@@ -14,19 +14,22 @@
                 component.Logger.Log("Command: {0}".Frmt(argDesc), LogMessageType.Typical)
 
                 component.Logger.FutureLog(placeholder:="[running command {0}...]".Frmt(argDesc),
-                                           message:=component.InvokeCommand(Nothing, argument).ContinueWith(
-                                               Function(task)
-                                                   If task.Status = TaskStatus.Faulted Then
-                                                       Return "Failed: {0}".Frmt(task.Exception.Summarize)
-                                                   ElseIf task.Result Is Nothing OrElse task.Result = "" Then
-                                                       Return "Command '{0}' succeeded.".Frmt(argDesc)
-                                                   Else
-                                                       Return task.Result
-                                                   End If
-                                               End Function).AssumeNotNull)
+                                           message:=SafeInvokeCommand(component, argument))
             Catch e As Exception
                 e.RaiseAsUnexpected("UIInvokeCommand for {0}:{1}".Frmt(component.Type, component.Name))
             End Try
         End Sub
+        Private Async Function SafeInvokeCommand(ByVal component As IBotComponent, ByVal argument As String) As Task(Of String)
+            Contract.Requires(component IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+            Try
+                Dim result = Await Await TaskedFunc(Function() component.InvokeCommand(Nothing, argument))
+                If String.IsNullOrEmpty(result) Then Return "Succeeded with no message"
+                Return result
+            Catch ex As Exception
+                Return "Failed: {0}".Frmt(ex.Summarize)
+            End Try
+        End Function
     End Module
 End Namespace
