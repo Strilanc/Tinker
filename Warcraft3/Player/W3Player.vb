@@ -375,7 +375,7 @@ Namespace WC3
             Return Protocol.MakeOtherPlayerJoined(Name, Id, PeerKey, PeerData, listenEndPoint)
         End Function
 
-        Private Sub BeginReading()
+        Private Async Sub BeginReading()
             If _socket Is Nothing Then Return
             If Not _startedReading.TryAcquire Then Return
 
@@ -395,12 +395,16 @@ Namespace WC3
             AddQueuedLocalPacketHandler(Protocol.ClientPackets.Ready, AddressOf OnReceiveReady)
             AddQueuedLocalPacketHandler(Protocol.ClientPackets.Tock, AddressOf OnReceiveTock)
 
-            AsyncProduceConsumeUntilError(
-                producer:=AddressOf _socket.AsyncReadPacket,
-                consumer:=Function(packetData) _packetHandler.HandlePacket(packetData),
-                errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
-                                                             reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
-                                                             reasonDescription:="Error receiving packet: {0}.".Frmt(exception.Summarize)))
+            Try
+                Do
+                    Dim data = Await _socket.AsyncReadPacket()
+                    Await _packetHandler.HandlePacket(data)
+                Loop
+            Catch ex As Exception
+                QueueDisconnect(expected:=False,
+                                reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
+                                reasonDescription:="Error receiving packet: {0}.".Frmt(ex.Summarize))
+            End Try
         End Sub
         Public Sub QueueStart()
             _inQueue.QueueAction(Sub() BeginReading())
