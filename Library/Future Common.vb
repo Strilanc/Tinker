@@ -1,5 +1,28 @@
 ﻿Public Module FutureExtensionsEx
     <Extension()>
+    Public Async Function AsyncReadExact(ByVal stream As IO.Stream, ByVal size As Integer) As Task(Of Byte())
+        Contract.Requires(size >= 0)
+        Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
+
+        Dim totalRead = 0
+        Dim result(0 To size - 1) As Byte
+        While totalRead < size
+            Dim numRead = Await stream.AsyncRead(result, totalRead, size - totalRead)
+            totalRead += numRead
+
+            'End of stream?
+            If numRead <= 0 Then
+                If totalRead = 0 Then
+                    Throw New IO.IOException("End of stream.")
+                Else
+                    Throw New IO.IOException("End of stream (fragment)")
+                End If
+            End If
+        End While
+        Return result
+    End Function
+
+    <Extension()>
     Public Function AsyncRead(ByVal this As IO.Stream,
                               ByVal buffer() As Byte,
                               ByVal offset As Integer,

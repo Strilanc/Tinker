@@ -35,35 +35,14 @@ Public NotInheritable Class PacketStreamer
         End Get
     End Property
 
-    Private Async Function AsyncReadExact(ByVal size As Integer) As Task(Of Byte())
-        Contract.Requires(size >= 0)
-        Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
-
-        Dim totalRead = 0
-        Dim result(0 To size - 1) As Byte
-        While totalRead < size
-            Dim numRead = Await _subStream.AsyncRead(result, totalRead, size - totalRead)
-            totalRead += numRead
-
-            'End of stream?
-            If numRead <= 0 Then
-                If totalRead = 0 Then
-                    Throw New IO.IOException("End of stream.")
-                Else
-                    Throw New IO.IOException("Fragmented packet (stream ended in the middle of a packet).")
-                End If
-            End If
-        End While
-        Return result
-    End Function
     Public Async Function AsyncReadPacket() As Task(Of IReadableList(Of Byte))
         Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Byte)))() IsNot Nothing)
 
-        Dim header = Await AsyncReadExact(FullHeaderSize)
+        Dim header = Await _subStream.AsyncReadExact(FullHeaderSize)
         Dim totalSize = CInt(header.Skip(_preheaderLength).Take(_sizeHeaderLength).ToUValue)
         If totalSize < FullHeaderSize Then Throw New IO.InvalidDataException("Invalid packet size (less than header size).")
         If totalSize > _maxPacketSize Then Throw New IO.InvalidDataException("Packet exceeded maximum size.")
-        Dim body = Await AsyncReadExact(totalSize - FullHeaderSize)
+        Dim body = Await _subStream.AsyncReadExact(totalSize - FullHeaderSize)
 
         Return Concat(header, body).ToReadableList()
     End Function
