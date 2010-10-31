@@ -6,6 +6,7 @@
         Inherits PartialCommand(Of T)
         Private ReadOnly _commandMap As New Dictionary(Of InvariantString, Command(Of T))
         Private ReadOnly _help As New HelpCommand(Of T)
+        Private ReadOnly lock As New Object()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_commandMap IsNot Nothing)
@@ -27,7 +28,9 @@
             Dim head = argument.Substring(0, i)
             Dim rest = argument.Substring(Math.Min(i + 1, argument.Length))
             Dim command As Command(Of T) = Nothing
-            If Not _commandMap.TryGetValue(head, command) Then Return False
+            SyncLock lock
+                If Not _commandMap.TryGetValue(head, command) Then Return False
+            End SyncLock
             Contract.Assume(command IsNot Nothing)
             Return command.IsArgumentPrivate(rest)
         End Function
@@ -42,31 +45,34 @@
         Public Function AddCommand(ByVal command As Command(Of T)) As IDisposable
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            If _commandMap.ContainsKey(command.Name) Then
-                Throw New InvalidOperationException("Command already registered to {0}.".Frmt(command.Name))
-            End If
-            _commandMap(command.Name) = command
-            _help.AddCommand(command)
+            SyncLock lock
+                If _commandMap.ContainsKey(command.Name) Then
+                    Throw New InvalidOperationException("Command already registered to {0}.".Frmt(command.Name))
+                End If
+                _commandMap(command.Name) = command
+                _help.AddCommand(command)
+            End SyncLock
             Return New DelegatedDisposable(Sub() RemoveCommand(command))
         End Function
 
         Public Sub RemoveCommand(ByVal command As Command(Of T))
             Contract.Requires(command IsNot Nothing)
-            If Not _commandMap.ContainsKey(command.Name) Then Return
-            If Not _commandMap(command.Name) Is command Then Return
-            _commandMap.Remove(command.Name)
-            _help.RemoveCommand(command)
+            SyncLock lock
+                If Not _commandMap.ContainsKey(command.Name) Then Return
+                If Not _commandMap(command.Name) Is command Then Return
+                _commandMap.Remove(command.Name)
+                _help.RemoveCommand(command)
+            End SyncLock
         End Sub
 
         Protected NotOverridable Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
-            Return TaskedFunc(
-                Function()
-                    If Not _commandMap.ContainsKey(argumentHead) Then
-                        Throw New ArgumentException("Unrecognized Command: {0}.".Frmt(argumentHead))
-                    End If
-                    Return _commandMap(argumentHead).Invoke(target, user, argumentRest)
-                End Function
-            ).Unwrap.AssumeNotNull
+            Dim command As Command(Of T) = Nothing
+            SyncLock lock
+                If Not _commandMap.TryGetValue(argumentHead, command) Then
+                    Throw New ArgumentException("Unrecognized Command: {0}.".Frmt(argumentHead))
+                End If
+            End SyncLock
+            Return command.Invoke(target, user, argumentRest)
         End Function
     End Class
 End Namespace
