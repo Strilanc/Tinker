@@ -65,25 +65,25 @@ Namespace WC3
             End Get
         End Property
 
-        Private Sub BeginAccepting()
+        Private Async Sub BeginAccepting()
             Dim listener = Me._listener
-            AsyncProduceConsumeUntilError(
-                producer:=Function() listener.AsyncAcceptConnection(),
-                consumer:=Function(tcpClient)
-                              Dim socket = New WC3.W3Socket(New PacketSocket(
-                                                                stream:=tcpClient.GetStream,
-                                                                localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                                                remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-                                                                timeout:=60.Seconds,
-                                                                Logger:=Logger,
-                                                                clock:=_gameServer.Clock))
-                              Return _gameServer.QueueAcceptSocket(socket)
-                          End Function,
-                errorHandler:=Sub(exception)
-                                  If listener IsNot Me._listener Then Return 'not an error; listener was just closed or changed
-                                  exception.RaiseAsUnexpected("Accepting connections for game server.")
-                                  Logger.Log("Error accepting connections: {0}".Frmt(exception.Summarize), LogMessageType.Problem)
-                              End Sub)
+            Try
+                Do
+                    Dim tcpClient = Await listener.AsyncAcceptConnection()
+                    Dim socket = New WC3.W3Socket(New PacketSocket(
+                                                      stream:=tcpClient.GetStream,
+                                                      localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                      remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                      timeout:=60.Seconds,
+                                                      Logger:=Logger,
+                                                      clock:=_gameServer.Clock))
+                    Await _gameServer.QueueAcceptSocket(socket)
+                Loop
+            Catch ex As Exception
+                If listener IsNot Me._listener Then Return 'listener was just closed or changed
+                ex.RaiseAsUnexpected("Accepting connections for game server.")
+                Logger.Log("Error accepting connections: {0}".Frmt(ex.Summarize), LogMessageType.Problem)
+            End Try
         End Sub
 
         'verification disabled due to stupid verifier (1.2.30118.5)
