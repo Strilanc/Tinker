@@ -22,19 +22,6 @@
     End Function
 
     ''' <summary>
-    ''' Passes a produced future into a consumer, waits for the consumer to finish, and repeats while the consumer outputs true.
-    ''' </summary>
-    Public Async Function FutureIterate(Of T)(ByVal producer As Func(Of Task(Of T)),
-                                              ByVal consumer As Func(Of Task(Of T), Task(Of Boolean))) As Task
-        Contract.Requires(producer IsNot Nothing)
-        Contract.Requires(consumer IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-
-        While Await consumer(producer())
-        End While
-    End Function
-
-    ''' <summary>
     ''' Selects the first future value passing a filter.
     ''' Doesn't evaluate the filter on futures past the matching future.
     ''' </summary>
