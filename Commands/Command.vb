@@ -80,21 +80,18 @@
             Return (From pair In _permissions Where user.Permission(pair.Key) < pair.Value).None
         End Function
 
-        Public Function Invoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Public Async Function Invoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Contract.Requires(target IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
-            If IsUserAllowed(user) Then
-                Dim result = New TaskCompletionSource(Of Task(Of String))()
-                result.SetByEvaluating(Function() PerformInvoke(target, user, argument))
-                Dim result2 = result.Task.Unwrap.AssumeNotNull
-                result2.Catch(Sub(ex) ex.RaiseAsUnexpected("Error invoking command"))
-                Return result2
-            Else
-                Dim result = New TaskCompletionSource(Of String)
-                result.SetException(New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions)))
-                Return result.Task.AssumeNotNull
-            End If
+            If Not IsUserAllowed(user) Then Throw New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions))
+
+            Try
+                Return Await PerformInvoke(target, user, argument)
+            Catch ex As Exception
+                ex.RaiseAsUnexpected("Error invoking command")
+                Throw
+            End Try
         End Function
 
         Protected MustOverride Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
