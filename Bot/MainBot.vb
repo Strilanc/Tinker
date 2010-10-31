@@ -77,7 +77,7 @@ Namespace Bot
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Dim components = Await this.Components.QueueGetAllComponents(Of MainBotManager)()
-            Return Await components.First.InvokeCommand(user, argument)
+            Return Await components.Single.InvokeCommand(user, argument)
         End Function
         <Extension()>
         Public Function QueueGetOrConstructGameServer(ByVal this As MainBot) As Task(Of WC3.GameServerManager)
