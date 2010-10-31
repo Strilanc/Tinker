@@ -6,6 +6,7 @@
         Inherits Command(Of T)
 
         Private ReadOnly _commandMap As New Dictionary(Of InvariantString, Command(Of T))
+        Private ReadOnly lock As New Object
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_commandMap IsNot Nothing)
@@ -19,28 +20,39 @@
 
         Public Sub AddCommand(ByVal command As Command(Of T))
             Contract.Requires(command IsNot Nothing)
-            If _commandMap.ContainsKey(command.Name) Then
-                Throw New InvalidOperationException("There is already help for a command named '{0}'.".Frmt(command.Name))
-            End If
-            _commandMap.Add(command.Name, command)
+            SyncLock lock
+                If _commandMap.ContainsKey(command.Name) Then
+                    Throw New InvalidOperationException("There is already help for a command named '{0}'.".Frmt(command.Name))
+                End If
+                _commandMap.Add(command.Name, command)
+            End SyncLock
         End Sub
         Public Sub RemoveCommand(ByVal command As Command(Of T))
             Contract.Requires(command IsNot Nothing)
-            If Not _commandMap.ContainsKey(command.Name) Then Return
-            If Not _commandMap(command.Name) Is command Then Return
-            _commandMap.Remove(command.Name)
+            SyncLock lock
+                If Not _commandMap.ContainsKey(command.Name) Then Return
+                If Not _commandMap(command.Name) Is command Then Return
+                _commandMap.Remove(command.Name)
+            End SyncLock
         End Sub
 
         'verification disabled due to stupid verifier (1.2.3.0118.5)
         <ContractVerification(False)>
         Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+            Return GetHelp(user, argument).AsTask
+        End Function
+
+        Private Function GetHelp(ByVal user As BotUser, ByVal argument As String) As String
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+
             Select Case argument
                 Case "" 'intro
                     Return {"[Tinker] 'Help ?' for how to use commands",
                             "'Help *' for available commands",
                             "'Help +' for all commands",
                             "'Help command' for help with specific commands."
-                            }.StringJoin(", ").AsTask
+                            }.StringJoin(", ")
 
                 Case "?" 'how to use commands
                     Return {"Commands take four types of arguments: named arguments, optional named arguments, optional switches, and raw arguments.",
@@ -50,54 +62,68 @@
                             "Optional switches, such as -useFancyPants, are argument which can either be skipped or included.",
                             "Optional named arguments, such as -optional=value, can be skipped but are otherwise named arguments prefixed with a -.",
                             "There are also tail arguments, which aren't separated by spaces, like MapQuery in 'FindMaps MapQuery...'."
-                            }.StringJoin(Environment.NewLine).AsTask
+                            }.StringJoin(Environment.NewLine)
 
                 Case "*" 'list available commands
-                    Return (From command In _commandMap.Values
-                            Order By command.Name
-                            Where command.IsUserAllowed(user)
-                            Select command.Name
-                            ).StringJoin(" ").AsTask
+                    SyncLock lock
+                        Return (From command In _commandMap.Values
+                                Order By command.Name
+                                Where command.IsUserAllowed(user)
+                                Select command.Name
+                                ).StringJoin(" ")
+                    End SyncLock
 
                 Case "+" 'list all commands
-                    Return (From command In _commandMap.Values
-                            Order By command.Name
-                            Select command.Name
-                            ).StringJoin(" ").AsTask
+                    SyncLock lock
+                        Return (From command In _commandMap.Values
+                                Order By command.Name
+                                Select command.Name
+                                ).StringJoin(" ")
+                    End SyncLock
 
-                Case Else 'help with specific commands
-                    Dim p = argument.IndexOf(" "c)
-                    If p = -1 Then
-                        'basic command help
-                        Dim command As Command(Of T) = Nothing
-                        If _commandMap.TryGetValue(key:=argument, value:=command) Then
-                            Contract.Assume(command IsNot Nothing)
-                            Return "{0} [{1} {2}] {{{3}}}".Frmt(command.Description,
-                                                                command.Name,
-                                                                command.Format,
-                                                                command.Permissions).AsTask
-                        End If
-                    Else
-                        'command subtopics
-                        Dim firstWord = argument.Substring(0, p)
-                        Dim rest = argument.Substring(p + 1)
-                        Dim command As Command(Of T) = Nothing
-                        If _commandMap.TryGetValue(key:=firstWord, value:=command) Then
-                            Contract.Assume(command IsNot Nothing)
-                            Dim result As String = Nothing
-                            If rest = "*" Then 'list subtopics
-                                Return (From key In command.HelpTopics.Keys
-                                        Order By key
-                                        ).StringJoin(" ").AsTask
-                            ElseIf command.HelpTopics.TryGetValue(key:=rest, value:=result) Then
-                                Contract.Assume(result IsNot Nothing)
-                                Return result.AsTask
-                            End If
-                        End If
-                    End If
-
-                    Throw New ArgumentException("No help found for '{0}'.".Frmt(argument))
+                Case Else
+                    Return GetSpecificHelp(argument)
             End Select
+        End Function
+
+        Private Function GetSpecificHelp(ByVal argument As String) As String
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+
+            Dim p = argument.IndexOf(" "c)
+            Dim commandName = If(p = -1, argument, argument.Substring(0, p))
+            Dim subtopic = If(p = -1, Nothing, argument.Substring(p + 1))
+
+            Dim command As Command(Of T) = Nothing
+            SyncLock lock
+                If Not _commandMap.TryGetValue(key:=argument, value:=command) Then
+                    Throw New ArgumentException("No command named '{0}'.".Frmt(argument))
+                End If
+            End SyncLock
+            Contract.Assume(command IsNot Nothing)
+
+            If subtopic Is Nothing Then
+                'Basic command help
+                Return "{0} [{1} {2}] {{{3}}}".Frmt(command.Description,
+                                                    command.Name,
+                                                    command.Format,
+                                                    command.Permissions)
+            End If
+
+            If subtopic = "*" Then
+                'List subtopics
+                Return (From key In command.HelpTopics.Keys
+                        Order By key
+                        ).StringJoin(" ")
+            End If
+
+            Dim subtopicHelp As String = Nothing
+            If command.HelpTopics.TryGetValue(key:=subtopic, value:=subtopicHelp) Then
+                Contract.Assume(subtopicHelp IsNot Nothing)
+                Return subtopicHelp
+            End If
+
+            Throw New ArgumentException("No help found for '{0}'.".Frmt(argument))
         End Function
     End Class
 End Namespace
