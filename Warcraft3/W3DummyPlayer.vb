@@ -78,7 +78,7 @@ Namespace WC3
                                            Connect(hostName, port)
                                        End Sub)
         End Function
-        Private Sub Connect(ByVal hostName As String, ByVal port As UShort)
+        Private Async Sub Connect(ByVal hostName As String, ByVal port As UShort)
             Contract.Requires(hostName IsNot Nothing)
 
             Dim tcp = New Net.Sockets.TcpClient()
@@ -99,15 +99,16 @@ Namespace WC3
             AddQueuedPacketHandler(Protocol.ServerPackets.Tick, AddressOf OnReceiveTick)
             AddQueuedPacketHandler(Protocol.PeerPackets.MapFileData, AddressOf OnReceiveMapFileData)
 
-            AsyncProduceConsumeUntilError(
-                producer:=AddressOf socket.AsyncReadPacket,
-                consumer:=AddressOf _packetHandler.HandlePacket,
-                errorHandler:=Sub(exception)
-                                  'ignore
-                              End Sub
-            )
-
             socket.SendPacket(Protocol.MakeKnock(name, listenPort, CUShort(socket.LocalEndPoint.Port)))
+
+            Try
+                Do
+                    Dim data = Await _socket.AsyncReadPacket
+                    Await _packetHandler.HandlePacket(data)
+                Loop
+            Catch ex As Exception
+                'ignore (to match old behavior, should fix)
+            End Try
         End Sub
         Private Sub OnReceiveGreet(ByVal pickle As IPickle(Of NamedValueMap))
             index = New PlayerId(pickle.Value.ItemAs(Of Byte)("player index"))
