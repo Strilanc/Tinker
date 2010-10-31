@@ -424,13 +424,16 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() AsyncConnect(socket, clientCDKeySalt)).Unwrap
         End Function
 
-        Private Sub BeginHandlingPackets()
+        Private Async Sub BeginHandlingPackets()
             Contract.Requires(Me._state > ClientState.InitiatingConnection)
-            AsyncProduceConsumeUntilError(
-                producer:=AddressOf _socket.AsyncReadPacket,
-                consumer:=AddressOf _packetHandler.HandlePacket,
-                errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
-                                                             reason:="Error receiving packet: {0}".Frmt(exception.Summarize)))
+            Try
+                Do
+                    Dim data = Await _socket.AsyncReadPacket
+                    Await _packetHandler.HandlePacket(data)
+                Loop
+            Catch ex As Exception
+                QueueDisconnect(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
+            End Try
         End Sub
 
         Private Function BeginLogOn(ByVal credentials As ClientAuthenticator) As Task
