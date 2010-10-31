@@ -51,27 +51,6 @@
     End Function
 
     ''' <summary>
-    ''' Passes a produced future into a consumer, waits for the consumer to finish, and continues until an exception occurs.
-    ''' </summary>
-    ''' <param name="producer">Asynchronously produces values for the consumer to consume.</param>
-    ''' <param name="consumer">Consumes values produced by the producer.</param>
-    ''' <param name="errorHandler">Called when the produce/consume cycle eventually terminates due to an exception.</param>
-    ''' <returns>A future which fails once the produce/consume cycle terminates due to an exception.</returns>
-    Public Async Function AsyncProduceConsumeUntilError(Of T)(ByVal producer As Func(Of Task(Of T)),
-                                                              ByVal consumer As Func(Of T, Task),
-                                                              ByVal errorHandler As Action(Of AggregateException)) As Task
-        Contract.Requires(producer IsNot Nothing)
-        Contract.Requires(consumer IsNot Nothing)
-        Contract.Requires(errorHandler IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-
-        Do
-            Dim item = Await producer()
-            Await consumer(item)
-        Loop
-    End Function
-
-    ''' <summary>
     ''' Selects the first future value passing a filter.
     ''' Doesn't evaluate the filter on futures past the matching future.
     ''' </summary>
