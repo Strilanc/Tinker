@@ -45,25 +45,21 @@ Public MustInherit Class PacketHandler(Of TKey)
         Return handlers.AddHandler(key, handler)
     End Function
 
-    Public Function HandlePacket(ByVal packetData As IReadableList(Of Byte)) As Task
+    Public Async Function HandlePacket(ByVal packetData As IReadableList(Of Byte)) As Task
         Contract.Requires(packetData IsNot Nothing)
         Contract.Requires(packetData.Count >= HeaderSize)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
-        Dim result = New TaskCompletionSource(Of Task)()
-        result.SetByEvaluating(Function()
-                                   Dim head = packetData.SubView(0, HeaderSize)
-                                   Dim body = packetData.SubView(HeaderSize)
-                                   Dim key = ExtractKey(head)
-                                   logger.Log(Function() "Received {0} from {1}".Frmt(key, sourceName), LogMessageType.DataEvent)
+        Dim head = packetData.SubView(0, HeaderSize)
+        Dim body = packetData.SubView(HeaderSize)
+        Dim key = ExtractKey(head)
+        logger.Log(Function() "Received {0} from {1}".Frmt(key, sourceName), LogMessageType.DataEvent)
 
-                                   Dim handlerResults = handlers.Raise(key, body)
-                                   If handlerResults.Count = 0 Then
-                                       Throw New IO.IOException("No handler for {0}".Frmt(key))
-                                   End If
-                                   Return handlerResults.AsAggregateTask
-                               End Function)
-        Return result.Task.Unwrap.AssumeNotNull
+        Dim handlerResults = handlers.Raise(key, body)
+        If handlerResults.Count = 0 Then
+            Throw New IO.IOException("No handler for {0}".Frmt(key))
+        End If
+        Await handlerResults.AsAggregateTask
     End Function
 End Class
 <ContractClassFor(GetType(PacketHandler(Of )))>
