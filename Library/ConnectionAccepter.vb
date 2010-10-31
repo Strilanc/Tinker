@@ -14,7 +14,8 @@ Public NotInheritable Class ConnectionAccepter
     End Sub
 
     '''<summary>Tries to start listening for connections on the given port.</summary>
-    Public Sub OpenPort(ByVal port As UShort)
+    Public Async Sub OpenPort(ByVal port As UShort)
+        Dim listener As TcpListener
         SyncLock lock
             'already open?
             If TryGetListenerOnPort(port) IsNot Nothing Then
@@ -22,32 +23,26 @@ Public NotInheritable Class ConnectionAccepter
             End If
 
             'listen and accept connections
-            Dim listener = New TcpListener(IPAddress.Any, port)
+            listener = New TcpListener(IPAddress.Any, port)
             listener.Start()
             listeners.Add(listener)
-            FutureIterate(AddressOf listener.AsyncAcceptConnection,
-                Function(clientTask)
-                    SyncLock lock
-                        'succeeded?
-                        If clientTask.Status = TaskStatus.Faulted Then
-                            listener.Stop()
-                            listeners.Remove(listener)
-                            Return False.AsTask
-                        End If
-
-                        'still supposed to be listening?
-                        If Not listeners.Contains(listener) Then
-                            clientTask.Result.Close()
-                            Return False.AsTask
-                        End If
-                    End SyncLock
-
-                    'report
-                    RaiseEvent AcceptedConnection(Me, clientTask.Result)
-                    Return True.AsTask
-                End Function
-            )
         End SyncLock
+
+        'Async accept clients
+        Try
+            Do
+                Dim client = Await listener.AsyncAcceptConnection()
+                RaiseEvent AcceptedConnection(Me, client)
+                SyncLock lock
+                    If Not listeners.Contains(listener) Then Exit Do
+                End SyncLock
+            Loop
+        Catch ex As Exception
+            listener.Stop()
+            SyncLock lock
+                listeners.Remove(listener)
+            End SyncLock
+        End Try
     End Sub
 
     '''<summary>Returns a list of all ports being listened on.</summary>
