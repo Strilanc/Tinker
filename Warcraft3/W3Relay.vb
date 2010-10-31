@@ -170,21 +170,20 @@
             result.DisposalTask.ContinueWithAction(Sub() stream2.Dispose())
             Return result
         End Function
-        Private Shared Function Shunt(ByVal src As IO.Stream, ByVal dst As IO.Stream) As Task
+        Private Shared Async Function Shunt(ByVal src As IO.Stream, ByVal dst As IO.Stream) As Task
             Contract.Requires(src IsNot Nothing)
             Contract.Requires(dst IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Dim buffer(0 To 4096 - 1) As Byte
-            Return AsyncProduceConsumeUntilError2(
-                producer:=Function() src.AsyncRead(buffer, 0, buffer.Length),
-                consumer:=Sub(numRead)
-                              If numRead = 0 Then Throw New IO.IOException("End of stream")
-                              dst.Write(buffer, 0, numRead)
-                          End Sub,
-                errorHandler:=Sub(exception)
-                                  'ignore
-                              End Sub
-            )
+            Try
+                Dim buffer(0 To 4096 - 1) As Byte
+                Do
+                    Dim numRead = Await src.AsyncRead(buffer, 0, buffer.Length)
+                    If numRead = 0 Then Throw New IO.IOException("End of stream")
+                    dst.Write(buffer, 0, numRead)
+                Loop
+            Catch ex As Exception
+                'ignore (to match old behaviour, should fix)
+            End Try
         End Function
     End Class
 End Namespace
