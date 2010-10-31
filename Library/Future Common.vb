@@ -57,39 +57,18 @@
     ''' <param name="consumer">Consumes values produced by the producer.</param>
     ''' <param name="errorHandler">Called when the produce/consume cycle eventually terminates due to an exception.</param>
     ''' <returns>A future which fails once the produce/consume cycle terminates due to an exception.</returns>
-    Public Function AsyncProduceConsumeUntilError(Of T)(ByVal producer As Func(Of Task(Of T)),
-                                                        ByVal consumer As Func(Of T, Task),
-                                                        ByVal errorHandler As Action(Of AggregateException)) As Task
+    Public Async Function AsyncProduceConsumeUntilError(Of T)(ByVal producer As Func(Of Task(Of T)),
+                                                              ByVal consumer As Func(Of T, Task),
+                                                              ByVal errorHandler As Action(Of AggregateException)) As Task
         Contract.Requires(producer IsNot Nothing)
         Contract.Requires(consumer IsNot Nothing)
         Contract.Requires(errorHandler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
-        Dim result = New TaskCompletionSource(Of NoValue)
-
-        'Setup iteration
-        Dim onFinishedConsuming As Action(Of Task) = Nothing
-        Dim onFinishedProducing As Action(Of Task(Of T)) = Nothing
-        onFinishedConsuming = Sub(task)
-                                  If task IsNot Nothing AndAlso task.Status = TaskStatus.Faulted Then
-                                      result.SetException(task.Exception.InnerExceptions)
-                                  Else
-                                      result.DependentCall(Sub() producer().ContinueWith(onFinishedProducing))
-                                  End If
-                              End Sub
-        onFinishedProducing = Sub(task)
-                                  If task.Status = TaskStatus.Faulted Then
-                                      result.SetException(task.Exception.InnerExceptions)
-                                  Else
-                                      result.DependentCall(Sub() consumer(task.Result).ContinueWith(onFinishedConsuming))
-                                  End If
-                              End Sub
-
-        'Start
-        Call onFinishedConsuming(Nothing)
-        Contract.Assume(result.Task IsNot Nothing)
-        result.Task.Catch(errorHandler)
-        Return result.Task
+        Do
+            Dim item = Await producer()
+            Await consumer(item)
+        Loop
     End Function
 
     ''' <summary>
