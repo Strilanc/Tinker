@@ -79,15 +79,15 @@ Public NotInheritable Class PacketSocket
         End If
         Me._name = If(name, New InvariantString(Me.RemoteEndPoint.ToString))
     End Sub
-    Public Shared Function AsyncConnect(ByVal remoteHost As String,
-                                        ByVal remotePort As UShort,
-                                        ByVal clock As IClock,
-                                        Optional ByVal timeout As TimeSpan? = Nothing,
-                                        Optional ByVal logger As Logger = Nothing,
-                                        Optional ByVal bufferSize As Integer = DefaultBufferSize,
-                                        Optional ByVal preheaderLength As Integer = 2,
-                                        Optional ByVal sizeHeaderLength As Integer = 2,
-                                        Optional ByVal name As InvariantString? = Nothing) As Task(Of PacketSocket)
+    Public Shared Async Function AsyncConnect(ByVal remoteHost As String,
+                                              ByVal remotePort As UShort,
+                                              ByVal clock As IClock,
+                                              Optional ByVal timeout As TimeSpan? = Nothing,
+                                              Optional ByVal logger As Logger = Nothing,
+                                              Optional ByVal bufferSize As Integer = DefaultBufferSize,
+                                              Optional ByVal preheaderLength As Integer = 2,
+                                              Optional ByVal sizeHeaderLength As Integer = 2,
+                                              Optional ByVal name As InvariantString? = Nothing) As Task(Of PacketSocket)
         Contract.Requires(remoteHost IsNot Nothing)
         Contract.Requires(clock IsNot Nothing)
         Contract.Requires(preheaderLength >= 0)
@@ -95,17 +95,17 @@ Public NotInheritable Class PacketSocket
         Contract.Requires(bufferSize >= preheaderLength + sizeHeaderLength)
         Contract.Requires(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
         Contract.Ensures(Contract.Result(Of Task(Of PacketSocket))() IsNot Nothing)
-        Return From socket In AsyncTcpConnect(remoteHost, remotePort)
-               Select New PacketSocket(socket.GetStream,
-                                       DirectCast(socket.Client.LocalEndPoint, Net.IPEndPoint),
-                                       DirectCast(socket.Client.RemoteEndPoint, Net.IPEndPoint),
-                                       clock,
-                                       timeout,
-                                       logger,
-                                       bufferSize,
-                                       preheaderLength,
-                                       sizeHeaderLength,
-                                       name)
+        Dim socket = Await AsyncTcpConnect(remoteHost, remotePort)
+        Return New PacketSocket(socket.GetStream,
+                                DirectCast(socket.Client.LocalEndPoint, Net.IPEndPoint),
+                                DirectCast(socket.Client.RemoteEndPoint, Net.IPEndPoint),
+                                clock,
+                                timeout,
+                                logger,
+                                bufferSize,
+                                preheaderLength,
+                                sizeHeaderLength,
+                                name)
     End Function
 
     Public ReadOnly Property RemoteEndPoint As IPEndPoint
