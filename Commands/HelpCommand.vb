@@ -96,7 +96,7 @@
 
             Dim command As Command(Of T) = Nothing
             SyncLock lock
-                If Not _commandMap.TryGetValue(key:=argument, value:=command) Then
+                If Not _commandMap.TryGetValue(key:=commandName, value:=command) Then
                     Throw New ArgumentException("No command named '{0}'.".Frmt(argument))
                 End If
             End SyncLock
