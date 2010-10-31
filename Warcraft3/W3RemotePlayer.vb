@@ -56,15 +56,17 @@ Namespace WC3
             End Get
         End Property
 
-        Public Sub SetSocket(ByVal socket As W3Socket)
+        Public Async Sub SetSocket(ByVal socket As W3Socket)
             Me._socket = socket
             If socket Is Nothing Then Return
-            AsyncProduceConsumeUntilError2(
-                producer:=AddressOf socket.AsyncReadPacket,
-                consumer:=AddressOf _packetHandler.HandlePacket,
-                errorHandler:=Sub(exception)
-                                  'ignore
-                              End Sub)
+            Try
+                Do
+                    Dim data = Await socket.AsyncReadPacket()
+                    Await _packetHandler.HandlePacket(data)
+                Loop
+            Catch ex As Exception
+                'ignore (to match old behavior, should fix)
+            End Try
         End Sub
 
         Public Function AddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
