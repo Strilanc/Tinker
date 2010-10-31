@@ -46,10 +46,8 @@ Public Class HoldPoint(Of TArg)
     ''' Returns an IDisposable which removes the handler when disposed.
     ''' </summary>
     Public Function IncludeTaskHandler(ByVal handler As Func(Of TArg, Task)) As IDisposable Implements IHoldPoint(Of TArg).IncludeTaskHandler
-        Dim safeHandler = Function(arg As TArg)
-                              Dim result = New TaskCompletionSource(Of Task)
-                              result.SetByEvaluating(Function() handler(arg))
-                              Return result.Task.Unwrap
+        Dim safeHandler = Async Function(arg As TArg)
+                              Await handler(arg)
                           End Function
         SyncLock _lock
             _handlers.Add(safeHandler)

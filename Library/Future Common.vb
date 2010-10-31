@@ -115,7 +115,7 @@
     ''' </summary>
     <Extension()>
     Public Async Function FirstMatchAsync(Of T)(ByVal sequence As IEnumerable(Of T),
-                                             ByVal filterFunction As Func(Of T, Task(Of Boolean))) As Task(Of T)
+                                                ByVal filterFunction As Func(Of T, Task(Of Boolean))) As Task(Of T)
         Contract.Requires(sequence IsNot Nothing)
         Contract.Requires(filterFunction IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
