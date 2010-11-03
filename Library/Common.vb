@@ -536,4 +536,18 @@ Public Module PoorlyCategorizedFunctions
             parentDir = parentDir.Parent
         Loop
     End Function
+
+    <Pure()> <Extension()>
+    Public Function IndexAfter(ByVal text As String,
+                               ByVal substring As String,
+                               ByVal startIndex As Integer,
+                               ByVal comparisonType As StringComparison) As Integer?
+        Contract.Requires(text IsNot Nothing)
+        Contract.Requires(substring IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value >= startIndex + substring.Length)
+        Contract.Ensures(Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value <= text.Length)
+        Dim result = text.IndexOf(substring, startIndex, comparisonType)
+        If result < 0 Then Return Nothing
+        Return result + substring.Length()
+    End Function
 End Module
