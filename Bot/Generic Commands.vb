@@ -27,77 +27,82 @@ Namespace Bot
                            Description:="Downloads a map directly from a supported web site.",
                            Permissions:="root:2")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-                'Run download on a separate thread to avoid blocking anything
-                Return ThreadedFunc(
-                    Function()
-                        Dim site = argument.NamedValue("site").ToInvariant
-                        Dim mapId = argument.RawValue(0)
-                        Select Case site
-                            Case "epicwar"
-                                Return DownloadEpicWar(mapId)
-                            Case "mapgnome"
-                                Throw New NotImplementedException("MapGnome support not implemented.")
-                            Case Else
-                                Throw New NotSupportedException("'{0}' is not a supported download site.".Frmt(site))
-                        End Select
-                    End Function
-                )
+            Protected Overrides Async Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+                Dim site = argument.NamedValue("site").ToInvariant
+                Dim mapId = argument.RawValue(0)
+                Select Case site
+                    Case "epicwar"
+                        Return Await DownloadEpicWarAsync(mapId)
+                    Case "mapgnome"
+                        Throw New NotImplementedException("MapGnome support not implemented.")
+                    Case Else
+                        Throw New NotSupportedException("'{0}' is not a supported download site.".Frmt(site))
+                End Select
             End Function
-            <ContractVerification(False)>
-            Private Shared Function DownloadEpicWar(ByVal id As String) As String
-                Dim path As String = Nothing
-                Dim dlPath As String = Nothing
-                Dim started = False
-                Try
-                    Dim http As New Net.WebClient()
-                    Dim httpFile = http.DownloadString("http://epicwar.com/maps/{0}/".Frmt(id))
-                    Contract.Assume(httpFile IsNot Nothing)
 
-                    'Find download link
-                    Dim i = httpFile.IndexOf("alt=""Download""", StringComparison.OrdinalIgnoreCase)
-                    If i < 0 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
-                    i = httpFile.IndexOf("a href=""", i, StringComparison.OrdinalIgnoreCase)
-                    If i < 0 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
-                    i += "a href=""".Length
-                    If i >= httpFile.Length Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
-                    Dim j = httpFile.IndexOf(">", i, StringComparison.OrdinalIgnoreCase)
-                    If j < i Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
-                    Dim link = "http://epicwar.com{0}".Frmt(httpFile.Substring(i, j - i))
-                    Contract.Assume(link.Length > 0)
+            Private Shared Function TryExtractDownloadLink(ByVal html As String) As String
+                Contract.Requires(html IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
 
-                    'Find filename
-                    i = httpFile.IndexOf("Download ", i, StringComparison.OrdinalIgnoreCase) + "Download ".Length
-                    If i < 0 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
-                    j = httpFile.IndexOf("<", i, StringComparison.OrdinalIgnoreCase)
-                    If j < 0 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
-                    Dim filename = httpFile.Substring(i, j - i)
-                    path = My.Settings.mapPath.AssumeNotNull + filename
-                    Contract.Assume(path.Length > 0)
-                    dlPath = "{0}.dl".Frmt(path)
-                    Contract.Assume(dlPath.Length > 0)
+                Dim posDownload = html.IndexAfter("alt=""Download""", 0, StringComparison.OrdinalIgnoreCase)
+                If posDownload Is Nothing Then Return Nothing
+
+                Dim posLink = html.IndexAfter("a href=""", posDownload.Value, StringComparison.OrdinalIgnoreCase)
+                If posLink Is Nothing Then Return Nothing
+
+                Dim posLinkEnd = html.IndexOf(">", posLink.Value, StringComparison.OrdinalIgnoreCase)
+                If posLinkEnd < 0 Then Return Nothing
+
+                Return "http://epicwar.com{0}".Frmt(html.Substring(posLink.Value, posLinkEnd - posLink.Value))
+            End Function
+            Private Shared Function TryExtractEpicWarFilename(ByVal html As String) As String
+                Contract.Requires(html IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+
+                Dim posName = html.IndexAfter("Download ", 0, StringComparison.OrdinalIgnoreCase)
+                If posName Is Nothing Then Return Nothing
+
+                Dim posNameEnd = html.IndexOf("<", posName.Value, StringComparison.OrdinalIgnoreCase)
+                If posNameEnd < 0 Then Return Nothing
+
+                Return html.Substring(posName.Value, posNameEnd - posName.Value)
+            End Function
+            Private Shared Async Function DownloadEpicWarAsync(ByVal id As String) As Task(Of String)
+                Using http As New Net.WebClient()
+                    Dim html = Await http.DownloadStringTaskAsync("http://epicwar.com/maps/{0}/".Frmt(id))
+                    Contract.Assume(html IsNot Nothing)
+
+                    'Extract info from page
+                    Dim downloadLink = TryExtractDownloadLink(html)
+                    Dim filename = TryExtractEpicWarFilename(html)
+                    If downloadLink Is Nothing OrElse filename Is Nothing Then
+                        Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
+                    End If
 
                     'Check for existing files
-                    If IO.File.Exists(dlPath) Then
+                    Dim destPath = My.Settings.mapPath.AssumeNotNull + filename
+                    Dim downloadTempPath = "{0}.dl".Frmt(destPath)
+                    Contract.Assume(destPath.Length > 0)
+                    Contract.Assume(downloadTempPath.Length > 0)
+                    If IO.File.Exists(downloadTempPath) Then
                         Throw New InvalidOperationException("A map with the filename '{0}' is already being downloaded.".Frmt(filename))
-                    ElseIf IO.File.Exists(path) Then
+                    ElseIf IO.File.Exists(destPath) Then
                         Throw New InvalidOperationException("A map with the filename '{0}' already exists.".Frmt(filename))
                     End If
 
                     'Download
-                    started = True
-                    http.DownloadFile(link, dlPath)
-                    IO.File.Move(dlPath, path)
+                    Try
+                        Await http.DownloadFileTaskAsync(downloadLink, downloadTempPath)
+                        IO.File.Move(downloadTempPath, destPath)
+                    Catch ex As Exception
+                        IO.File.Delete(destPath)
+                        Throw
+                    Finally
+                        IO.File.Delete(downloadTempPath)
+                    End Try
 
-                    'Finished
                     Return "Finished downloading map with filename '{0}'.".Frmt(filename)
-                Finally
-                    If started Then
-                        'cleanup
-                        IO.File.Delete(dlPath)
-                        IO.File.Delete(path)
-                    End If
-                End Try
+                End Using
             End Function
         End Class
 
