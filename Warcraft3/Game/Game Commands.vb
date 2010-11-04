@@ -91,9 +91,10 @@ Namespace WC3
                 Contract.Requires(bot IsNot Nothing)
                 Me.bot = bot
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As WC3.Game, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As WC3.Game, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return Tinker.Bot.MainBotManager.BotCommands.Invoke(bot, user, argument)
+                Dim botManagers = Await bot.Components.QueueGetAllComponents(Of Bot.MainBotManager)()
+                Return Await botManagers.Single().InvokeCommand(user, argument)
             End Function
         End Class
 
