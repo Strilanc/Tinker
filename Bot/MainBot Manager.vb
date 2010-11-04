@@ -5,14 +5,14 @@ Namespace Bot
         Inherits DisposableWithTask
         Implements IBotComponent
 
-        Public Shared ReadOnly BotCommands As New Bot.BotCommands()
-
+        Private ReadOnly _commands As New Bot.BotCommands()
         Private ReadOnly _bot As MainBot
         Private ReadOnly _control As Control
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_bot IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
+            Contract.Invariant(_commands IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal bot As MainBot)
@@ -49,7 +49,7 @@ Namespace Bot
             End Get
         End Property
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
-            Return BotCommands.IsArgumentPrivate(argument)
+            Return _commands.IsArgumentPrivate(argument)
         End Function
         Public ReadOnly Property Control As Control Implements IBotComponent.Control
             Get
@@ -58,12 +58,16 @@ Namespace Bot
         End Property
 
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
-            Return BotCommands.Invoke(Bot, user, argument)
+            Return _commands.Invoke(Bot, user, argument)
         End Function
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             _bot.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
             Return Nothing
+        End Function
+        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of MainBot)) As Task(Of IDisposable)
+            _commands.AddCommand(command)
+            Return DirectCast(New DelegatedDisposable(Sub() _commands.RemoveCommand(command)), IDisposable).AsTask()
         End Function
     End Class
 End Namespace
