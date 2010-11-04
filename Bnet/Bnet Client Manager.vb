@@ -1,4 +1,5 @@
-﻿Imports Tinker.Components
+﻿Imports Tinker.Commands
+Imports Tinker.Components
 Imports Tinker.Bot
 
 Namespace Bnet
@@ -227,10 +228,10 @@ Namespace Bnet
             Return inQueue.QueueAction(Sub() If UserGameSet(user) Is gameSet Then UserGameSet(user) = Nothing)
         End Function
 
-        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of Components.IBotComponent)) As Task(Of IDisposable) Implements Components.IBotComponent.IncludeCommand
-            Return IncludeCommand(DirectCast(command, Commands.ICommand(Of ClientManager)))
+        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+            Return IncludeCommand(command)
         End Function
-        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of ClientManager)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of ClientManager)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             _commands.AddCommand(command)

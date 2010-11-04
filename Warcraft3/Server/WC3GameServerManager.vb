@@ -1,4 +1,5 @@
-﻿Imports Tinker.Components
+﻿Imports Tinker.Commands
+Imports Tinker.Components
 
 Namespace WC3
     Public Class GameServerManager
@@ -305,10 +306,10 @@ Namespace WC3
             Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Unwrap.AssumeNotNull
         End Function
 
-        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of Components.IBotComponent)) As Task(Of IDisposable) Implements Components.IBotComponent.IncludeCommand
-            Return IncludeCommand(DirectCast(command, Commands.ICommand(Of GameServerManager)))
+        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+            Return IncludeCommand(command)
         End Function
-        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of GameServerManager)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of GameServerManager)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             _commands.AddCommand(command)
