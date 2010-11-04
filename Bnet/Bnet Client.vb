@@ -540,17 +540,20 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() AddAdvertisableGame(gameDescription, isPrivate)).Unwrap
         End Function
 
-        Private Sub RemoveAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription)
-            For Each entry In From e In _advertisementList.ToList Where e.BaseGameDescription.Equals(gameDescription)
-                entry.SetRemoved()
-                _advertisementList.Remove(entry)
-            Next entry
+        Private Function RemoveAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription) As Boolean
+            Dim entry = (From e In _advertisementList.ToList
+                         Where e.BaseGameDescription.Equals(gameDescription)
+                         ).SingleOrDefault
+            If entry Is Nothing Then Return False
+            entry.SetRemoved()
+            _advertisementList.Remove(entry)
             SyncAdvertisements()
-        End Sub
-        Public Function QueueRemoveAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription) As Task
+            Return True
+        End Function
+        Public Function QueueRemoveAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription) As Task(Of Boolean)
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() RemoveAdvertisableGame(gameDescription))
+            Return inQueue.QueueFunc(Function() RemoveAdvertisableGame(gameDescription))
         End Function
 
         Private Sub RemoveAllAdvertisableGames()
