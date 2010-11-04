@@ -8,24 +8,25 @@ Imports Tinker.Pickling
 Public Module NetworkingCommon
     Private cachedExternalIP As Byte()
     Private cachedInternalIP As Byte()
-    Public Sub CacheIPAddresses()
+    Public Async Sub CacheIPAddresses()
         'Internal IP
         cachedInternalIP = GetInternalIPAddress.GetAddressBytes
 
         'External IP
-        ThreadedAction(
-            Sub()
-                Using webClient = New WebClient()
-                    Dim externalIp = New UTF8Encoding().GetString(webClient.DownloadData("http://whatismyip.com/automation/n09230945.asp"))
-                    If externalIp.Length < "#.#.#.#".Length Then Return
-                    If externalIp.Length > "###.###.###.###".Length Then Return
-                    Dim words = externalIp.Split("."c)
-                    If words.Length <> 4 Then Return
-                    If (From word In words Where Not Byte.TryParse(word, 0)).Any Then Return
-                    cachedExternalIP = (From word In words Select Byte.Parse(word, CultureInfo.InvariantCulture)).ToArray()
-                End Using
-            End Sub
-        )
+        Try
+            Using webClient = New WebClient()
+                Dim data = Await webClient.DownloadDataTaskAsync("http://whatismyip.com/automation/n09230945.asp")
+                Dim externalIp = New UTF8Encoding().GetString(data)
+                If externalIp.Length < "#.#.#.#".Length Then Return
+                If externalIp.Length > "###.###.###.###".Length Then Return
+                Dim words = externalIp.Split("."c)
+                If words.Length <> 4 Then Return
+                If (From word In words Where Not Byte.TryParse(word, 0)).Any Then Return
+                cachedExternalIP = (From word In words Select Byte.Parse(word, CultureInfo.InvariantCulture)).ToArray()
+            End Using
+        Catch ex As WebException
+            'no action
+        End Try
     End Sub
 
     Private Function GetInternalIPAddress() As Net.IPAddress
