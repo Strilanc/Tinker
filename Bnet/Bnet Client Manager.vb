@@ -6,7 +6,7 @@ Namespace Bnet
         Inherits DisposableWithTask
         Implements IBotComponent
 
-        Private Shared ReadOnly ClientCommands As New Bnet.ClientCommands()
+        Private ReadOnly _commands As New Bnet.ClientCommands()
 
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _bot As Bot.MainBot
@@ -23,6 +23,7 @@ Namespace Bnet
             Contract.Invariant(_client IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
+            Contract.Invariant(_commands IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
@@ -76,7 +77,7 @@ Namespace Bnet
             End Get
         End Property
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
-            Return ClientCommands.IsArgumentPrivate(argument)
+            Return _commands.IsArgumentPrivate(argument)
         End Function
         Public ReadOnly Property Control As Control Implements IBotComponent.Control
             Get
@@ -85,7 +86,7 @@ Namespace Bnet
         End Property
 
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
-            Return ClientCommands.Invoke(Me, user, argument)
+            Return _commands.Invoke(Me, user, argument)
         End Function
 
         <ContractVerification(False)>
@@ -224,6 +225,10 @@ Namespace Bnet
             Contract.Requires(user IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() If UserGameSet(user) Is gameSet Then UserGameSet(user) = Nothing)
+        End Function
+        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of ClientManager)) As Task(Of IDisposable)
+            _commands.AddCommand(command)
+            Return DirectCast(New DelegatedDisposable(Sub() _commands.RemoveCommand(command)), IDisposable).AsTask()
         End Function
     End Class
 End Namespace
