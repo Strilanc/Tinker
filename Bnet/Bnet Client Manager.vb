@@ -110,22 +110,28 @@ Namespace Bnet
                 Return 'not a command
             End If
 
-            'Run command
             Try
-                Dim commandResult = Me.InvokeCommand(user, argument:=text.Substring(commandPrefix.Length))
+                'Run command
+                Dim command = text.Substring(commandPrefix.Length)
+                Dim commandResult = Me.InvokeCommand(user, argument:=command)
+
+                'Setup busy message
+                Dim finishedLock = New OnetimeLock()
                 Call New SystemClock().AsyncWait(2.Seconds).ContinueWithAction(
                     Sub()
-                        If commandResult.Status <> TaskStatus.Faulted AndAlso commandResult.Status <> TaskStatus.RanToCompletion Then
-                            _client.QueueSendWhisper(user.Name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
-                        End If
+                        If Not finishedLock.TryAcquire Then Return
+                        _client.QueueSendWhisper(user.Name, "Command '{0}' is running...".Frmt(text))
                     End Sub
                 )
+
+                'Await result
                 Dim message = Await commandResult
+                finishedLock.TryAcquire()
                 _client.QueueSendWhisper(user.Name, If(message, "Command Succeeded"))
             Catch ex As Exception
                 _client.QueueSendWhisper(user.Name, "Failed: {0}".Frmt(ex.Summarize))
             End Try
-        End Sub
+        End Function
 
         Public Shared Function AsyncCreateFromProfile(ByVal clientName As InvariantString,
                                                       ByVal profileName As InvariantString,
