@@ -1,4 +1,5 @@
 Imports Tinker.Commands
+Imports Tinker.Bot.Commands
 
 Namespace Bot
     Public NotInheritable Class BotCommands
@@ -20,8 +21,10 @@ Namespace Bot
             AddCommand(New CommandSet)
             AddCommand(New CommandTo)
         End Sub
+    End Class
 
-        Private NotInheritable Class CommandConnect
+    Namespace Commands
+        Public NotInheritable Class CommandConnect
             Inherits Command(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="Connect",
@@ -75,7 +78,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandCreateAdminGame
+        Public NotInheritable Class CommandCreateAdminGame
             Inherits TemplatedCommand(Of MainBot)
 
             Public Sub New()
@@ -86,7 +89,7 @@ Namespace Bot
                            hasPrivateArguments:=True)
             End Sub
 
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim password = argument.NamedValue("password")
@@ -96,7 +99,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandCreateCKL
+        Public NotInheritable Class CommandCreateCKL
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="CreateCKL",
@@ -104,7 +107,7 @@ Namespace Bot
                            template:="name",
                            Permissions:="root:5")
             End Sub
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim port = target.PortPool.TryAcquireAnyPort()
                 If port Is Nothing Then Throw New OperationFailedException("No available ports in the pool.")
@@ -123,7 +126,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandCreateClient
+        Public NotInheritable Class CommandCreateClient
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="CreateClient",
@@ -148,7 +151,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandCreateLan
+        Public NotInheritable Class CommandCreateLan
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="CreateLan",
@@ -175,7 +178,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandDispose
+        Public NotInheritable Class CommandDispose
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="Dispose",
@@ -197,7 +200,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandGet
+        Public NotInheritable Class CommandGet
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="Get",
@@ -220,7 +223,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandHost
+        Public NotInheritable Class CommandHost
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="Host",
@@ -232,7 +235,7 @@ Namespace Bot
                            extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
             End Sub
             <ContractVerification(False)>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Dim server = Await target.QueueGetOrConstructGameServer()
                 Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
                 Dim name = gameSet.GameSettings.GameDescription.Name
@@ -241,7 +244,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandListComponents
+        Public NotInheritable Class CommandListComponents
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="Components",
@@ -267,7 +270,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandLoadPlugin
+        Public NotInheritable Class CommandLoadPlugin
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="LoadPlugin",
@@ -291,7 +294,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandSet
+        Public NotInheritable Class CommandSet
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="Set",
@@ -326,7 +329,7 @@ Namespace Bot
             End Function
         End Class
 
-        Private NotInheritable Class CommandTo
+        Public NotInheritable Class CommandTo
             Inherits PartialCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="To",
@@ -347,5 +350,5 @@ Namespace Bot
                 Return Await component.InvokeCommand(user, argumentRest)
             End Function
         End Class
-    End Class
+    End Namespace
 End Namespace
