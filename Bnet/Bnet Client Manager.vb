@@ -36,8 +36,8 @@ Namespace Bnet
             Me._client = client
             Me._control = New BnetClientControl(Me)
 
-            Me._hooks.Add(client.QueueAddPacketHandler(Bnet.Protocol.Packets.ServerToClient.ChatEvent,
-                                                       Function(pickle) TaskedAction(Sub() OnReceivedChatEvent(pickle.Value))))
+            Me._hooks.Add(client.QueueAddPacketHandler(Protocol.Packets.ServerToClient.ChatEvent,
+                                                       Function(pickle) OnReceivedChatEvent(pickle.Value)))
 
             client.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
         End Sub
@@ -89,7 +89,7 @@ Namespace Bnet
         End Function
 
         <ContractVerification(False)>
-        Private Async Sub OnReceivedChatEvent(ByVal vals As NamedValueMap)
+        Private Async Function OnReceivedChatEvent(ByVal vals As NamedValueMap) As Task
             Contract.Requires(vals IsNot Nothing)
 
             Dim id = vals.ItemAs(Of Bnet.Protocol.ChatEventId)("event id")
