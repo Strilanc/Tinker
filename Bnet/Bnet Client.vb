@@ -525,7 +525,9 @@ Namespace Bnet
 
         Private Function AddAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription, ByVal isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
             Contract.Requires(gameDescription IsNot Nothing)
-            Dim entry = (From e In _advertisementList Where e.BaseGameDescription.Equals(gameDescription)).FirstOrDefault
+            Dim entry = (From e In _advertisementList
+                         Where e.BaseGameDescription.Equals(gameDescription)
+                         ).SingleOrDefault
             If entry Is Nothing Then
                 entry = New AdvertisementEntry(gameDescription, isPrivate)
                 _advertisementList.Add(entry)
