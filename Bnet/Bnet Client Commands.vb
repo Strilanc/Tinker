@@ -28,7 +28,7 @@ Namespace Bnet
             AddCommand(New CommandAuto)
         End Sub
 
-        Public Overloads Function AddCommand(ByVal command As Command(Of Bnet.Client)) As IDisposable
+        Public Overloads Function AddCommand(ByVal command As ICommand(Of Bnet.Client)) As IDisposable
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return AddCommand(New ProjectedCommand(Of Bnet.ClientManager, Bnet.Client)(

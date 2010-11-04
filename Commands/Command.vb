@@ -4,6 +4,7 @@
     ''' </summary>
     <ContractClass(GetType(ContractClassCommand(Of )))>
     Public MustInherit Class Command(Of TTarget)
+        Implements ICommand(Of TTarget)
         Private ReadOnly _name As InvariantString
         Private ReadOnly _format As InvariantString
         Private ReadOnly _description As String
@@ -40,50 +41,43 @@
             Me._hasPrivateArguments = hasPrivateArguments
         End Sub
 
-        Public ReadOnly Property Name As InvariantString
+        Public ReadOnly Property Name As InvariantString Implements ICommand(Of TTarget).Name
             Get
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property Description As String
+        Public ReadOnly Property Description As String Implements ICommand(Of TTarget).Description
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _description
             End Get
         End Property
-        Public ReadOnly Property Format As InvariantString
+        Public ReadOnly Property Format As InvariantString Implements ICommand(Of TTarget).Format
             Get
                 Return _format
             End Get
         End Property
-        Public Overridable ReadOnly Property HelpTopics As IDictionary(Of InvariantString, String)
+        Public Overridable ReadOnly Property HelpTopics As IDictionary(Of InvariantString, String) Implements ICommand(Of TTarget).HelpTopics
             Get
-                Contract.Ensures(Contract.Result(Of IDictionary(Of InvariantString, String))() IsNot Nothing)
                 Return _extraHelp
             End Get
         End Property
-        Public ReadOnly Property Permissions As String
+        Public ReadOnly Property Permissions As String Implements ICommand(Of TTarget).Permissions
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return (From pair In Me._permissions Select "{0}:{1}".Frmt(pair.Key, pair.Value)).StringJoin(",")
             End Get
         End Property
 
         <Pure()>
-        Public Overridable Function IsArgumentPrivate(ByVal argument As String) As Boolean
-            Contract.Requires(argument IsNot Nothing)
+        Public Overridable Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements ICommand(Of TTarget).IsArgumentPrivate
             Return _hasPrivateArguments
         End Function
         <Pure()>
-        Public Function IsUserAllowed(ByVal user As BotUser) As Boolean
+        Public Function IsUserAllowed(ByVal user As BotUser) As Boolean Implements ICommand(Of TTarget).IsUserAllowed
             If user Is Nothing Then Return True
             Return (From pair In _permissions Where user.Permission(pair.Key) < pair.Value).None
         End Function
 
-        Public Async Function Invoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
-            Contract.Requires(target IsNot Nothing)
-            Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+        Public Async Function Invoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements ICommand(Of TTarget).Invoke
             If Not IsUserAllowed(user) Then Throw New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions))
 
             Try

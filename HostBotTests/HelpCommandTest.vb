@@ -13,8 +13,8 @@ Public Class HelpCommandTest
             Return "".AsTask
         End Function
     End Class
-    Private Shared ReadOnly TestCommandFactory As Func(Of Command(Of Object)) = Function() New TestCommand()
-    Private Shared Function BlockingInvoke(ByVal command As Command(Of Object), ByVal arg As String) As Task(Of String)
+    Private Shared ReadOnly TestCommandFactory As Func(Of ICommand(Of Object)) = Function() New TestCommand()
+    Private Shared Function BlockingInvoke(ByVal command As ICommand(Of Object), ByVal arg As String) As Task(Of String)
         Return BlockOnTaskValue(command.Invoke(New Object, Nothing, arg))
     End Function
 

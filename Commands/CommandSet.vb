@@ -4,7 +4,7 @@
     ''' </summary>
     Public Class CommandSet(Of T)
         Inherits PartialCommand(Of T)
-        Private ReadOnly _commandMap As New Dictionary(Of InvariantString, Command(Of T))
+        Private ReadOnly _commandMap As New Dictionary(Of InvariantString, ICommand(Of T))
         Private ReadOnly _help As New HelpCommand(Of T)
         Private ReadOnly lock As New Object()
 
@@ -27,7 +27,7 @@
             If i = -1 Then i = argument.Length
             Dim head = argument.Substring(0, i)
             Dim rest = argument.Substring(Math.Min(i + 1, argument.Length))
-            Dim command As Command(Of T) = Nothing
+            Dim command As ICommand(Of T) = Nothing
             SyncLock lock
                 If Not _commandMap.TryGetValue(head, command) Then Return False
             End SyncLock
@@ -35,14 +35,14 @@
             Return command.IsArgumentPrivate(rest)
         End Function
 
-        Public ReadOnly Property CommandMap As Dictionary(Of InvariantString, Command(Of T))
+        Public ReadOnly Property CommandMap As Dictionary(Of InvariantString, ICommand(Of T))
             Get
-                Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, Command(Of T)))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, ICommand(Of T)))() IsNot Nothing)
                 Return _commandMap
             End Get
         End Property
 
-        Public Function AddCommand(ByVal command As Command(Of T)) As IDisposable
+        Public Function AddCommand(ByVal command As ICommand(Of T)) As IDisposable
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             SyncLock lock
@@ -55,7 +55,7 @@
             Return New DelegatedDisposable(Sub() RemoveCommand(command))
         End Function
 
-        Public Sub RemoveCommand(ByVal command As Command(Of T))
+        Public Sub RemoveCommand(ByVal command As ICommand(Of T))
             Contract.Requires(command IsNot Nothing)
             SyncLock lock
                 If Not _commandMap.ContainsKey(command.Name) Then Return
@@ -66,7 +66,7 @@
         End Sub
 
         Protected NotOverridable Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
-            Dim command As Command(Of T) = Nothing
+            Dim command As ICommand(Of T) = Nothing
             SyncLock lock
                 If Not _commandMap.TryGetValue(argumentHead, command) Then
                     Throw New ArgumentException("Unrecognized Command: {0}.".Frmt(argumentHead))

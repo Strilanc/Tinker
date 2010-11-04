@@ -6,14 +6,14 @@
         Inherits Command(Of TInput)
 
         Private ReadOnly _projection As Func(Of TInput, TProjected)
-        Private ReadOnly _command As Command(Of TProjected)
+        Private ReadOnly _command As ICommand(Of TProjected)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_command IsNot Nothing)
             Contract.Invariant(_projection IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal command As Command(Of TProjected),
+        Public Sub New(ByVal command As ICommand(Of TProjected),
                        ByVal projection As Func(Of TInput, TProjected))
             MyBase.New(command.Name, command.Format, command.Description, command.Permissions)
             Contract.Requires(command IsNot Nothing)

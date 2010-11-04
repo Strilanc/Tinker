@@ -12,7 +12,7 @@ Namespace Lan
             AddCommand(New CommandRemove)
         End Sub
 
-        Public Overloads Function AddCommand(ByVal command As Command(Of Lan.Advertiser)) As IDisposable
+        Public Overloads Function AddCommand(ByVal command As ICommand(Of Lan.Advertiser)) As IDisposable
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return AddCommand(New ProjectedCommand(Of Lan.AdvertiserManager, Lan.Advertiser)(

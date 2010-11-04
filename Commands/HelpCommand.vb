@@ -5,7 +5,7 @@
     Public NotInheritable Class HelpCommand(Of T)
         Inherits Command(Of T)
 
-        Private ReadOnly _commandMap As New Dictionary(Of InvariantString, Command(Of T))
+        Private ReadOnly _commandMap As New Dictionary(Of InvariantString, ICommand(Of T))
         Private ReadOnly lock As New Object
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -18,7 +18,7 @@
                        Description:="Provides help for using commands.")
         End Sub
 
-        Public Sub AddCommand(ByVal command As Command(Of T))
+        Public Sub AddCommand(ByVal command As ICommand(Of T))
             Contract.Requires(command IsNot Nothing)
             SyncLock lock
                 If _commandMap.ContainsKey(command.Name) Then
@@ -27,7 +27,7 @@
                 _commandMap.Add(command.Name, command)
             End SyncLock
         End Sub
-        Public Sub RemoveCommand(ByVal command As Command(Of T))
+        Public Sub RemoveCommand(ByVal command As ICommand(Of T))
             Contract.Requires(command IsNot Nothing)
             SyncLock lock
                 If Not _commandMap.ContainsKey(command.Name) Then Return
@@ -94,7 +94,7 @@
             Dim commandName = If(p = -1, argument, argument.Substring(0, p))
             Dim subtopic = If(p = -1, Nothing, argument.Substring(p + 1))
 
-            Dim command As Command(Of T) = Nothing
+            Dim command As ICommand(Of T) = Nothing
             SyncLock lock
                 If Not _commandMap.TryGetValue(key:=commandName, value:=command) Then
                     Throw New ArgumentException("No command named '{0}'.".Frmt(argument))
