@@ -102,16 +102,16 @@ Namespace Bot
             Dim hooks = New List(Of Task(Of IDisposable))
             Dim viewHook = this.Components.QueueCreateAsyncView(Of WC3.GameServerManager)(
                 adder:=Sub(sender, manager) inQueue.QueueAction(
-                           Sub()
-                               If hooks Is Nothing Then Return
-                               Dim gameSetLink = manager.Server.QueueCreateActiveGameSetsAsyncView(
-                                        adder:=Sub(sender2, gameSet) adder(this, sender2, gameSet),
-                                        remover:=Sub(sender2, gameSet) remover(this, sender2, gameSet))
-                               'async remove when view is disposed
-                               hooks.Add(gameSetLink)
-                               'async auto-remove when server is disposed
-                               Call {gameSetLink, manager.Server.DisposalTask}.AsAggregateTask.QueueContinueWithAction(inQueue, Sub() gameSetLink.Result.Dispose()).IgnoreExceptions()
-                           End Sub),
+                    Sub()
+                        If hooks Is Nothing Then Return
+                        Dim gameSetLink = manager.Server.QueueCreateActiveGameSetsAsyncView(
+                                 adder:=Sub(sender2, gameSet) adder(this, sender2, gameSet),
+                                 remover:=Sub(sender2, gameSet) remover(this, sender2, gameSet))
+                        'async remove when view is disposed
+                        hooks.Add(gameSetLink)
+                        'async auto-remove when server is disposed
+                        Call {gameSetLink, manager.Server.DisposalTask}.AsAggregateTask.QueueContinueWithAction(inQueue, Sub() gameSetLink.Result.Dispose()).IgnoreExceptions()
+                    End Sub),
                 remover:=Sub(sender, server)
                              'no action needed
                          End Sub)
@@ -121,10 +121,7 @@ Namespace Bot
             Await viewHook
             Return New DelegatedDisposable(Sub() inQueue.QueueAction(
                 Sub()
-                    If hooks Is Nothing Then Return
-                    For Each hook In hooks
-                        hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
-                    Next hook
+                    hooks.DisposeAllAsync()
                     hooks = Nothing
                 End Sub))
         End Function
