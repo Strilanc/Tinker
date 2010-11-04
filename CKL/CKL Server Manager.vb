@@ -6,14 +6,14 @@ Namespace CKL
         Implements IBotComponent
 
         Public Shared ReadOnly WidgetTypeName As InvariantString = "CKL"
-        Private Shared ReadOnly Commands As New CKL.ServerCommands()
-
+        Private ReadOnly _commands As New CKL.ServerCommands()
         Private ReadOnly _server As CKL.Server
         Private ReadOnly _control As GenericBotComponentControl
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_control IsNot Nothing)
             Contract.Invariant(_server IsNot Nothing)
+            Contract.Invariant(_commands IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal server As CKL.Server)
@@ -41,10 +41,10 @@ Namespace CKL
             End Get
         End Property
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
-            Return Commands.Invoke(_server, user, argument)
+            Return _commands.Invoke(_server, user, argument)
         End Function
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
-            Return Commands.IsArgumentPrivate(argument)
+            Return _commands.IsArgumentPrivate(argument)
         End Function
         Public ReadOnly Property Logger As Logger Implements IBotComponent.Logger
             Get
@@ -61,5 +61,9 @@ Namespace CKL
                 Return WidgetTypeName
             End Get
         End Property
+        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of CKL.Server)) As Task(Of IDisposable)
+            _commands.AddCommand(command)
+            Return DirectCast(New DelegatedDisposable(Sub() _commands.RemoveCommand(command)), IDisposable).AsTask()
+        End Function
     End Class
 End Namespace
