@@ -550,4 +550,13 @@ Public Module PoorlyCategorizedFunctions
         If result < 0 Then Return Nothing
         Return result + substring.Length()
     End Function
+
+    <Extension()>
+    Public Function DisposeAllAsync(ByVal values As IEnumerable(Of Task(Of IDisposable))) As Task
+        Dim results = New List(Of Task)
+        For Each value In values
+            results.Add(value.ContinueWith(Sub(task) task.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion))
+        Next value
+        Return TaskEx.WhenAll(results)
+    End Function
 End Module
