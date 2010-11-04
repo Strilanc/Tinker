@@ -5,9 +5,9 @@ Namespace WC3
         Inherits DisposableWithTask
         Implements IBotComponent
 
-        Private Shared ReadOnly ServerCommands As New WC3.ServerCommands()
         Public Shared ReadOnly TypeName As String = "Server"
 
+        Private ReadOnly _commands As New WC3.ServerCommands()
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
         Private ReadOnly _name As InvariantString
         Private ReadOnly _gameServer As WC3.GameServer
@@ -29,6 +29,7 @@ Namespace WC3
             Contract.Invariant(_bot IsNot Nothing)
             Contract.Invariant(_listener IsNot Nothing)
             Contract.Invariant(_portHandle IsNot Nothing)
+            Contract.Invariant(_commands IsNot Nothing)
         End Sub
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -135,7 +136,7 @@ Namespace WC3
             End Get
         End Property
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
-            Return ServerCommands.IsArgumentPrivate(argument)
+            Return _commands.IsArgumentPrivate(argument)
         End Function
         Public ReadOnly Property Control As System.Windows.Forms.Control Implements IBotComponent.Control
             Get
@@ -144,7 +145,7 @@ Namespace WC3
         End Property
 
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
-            Return ServerCommands.Invoke(Me, user, argument)
+            Return _commands.Invoke(Me, user, argument)
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
@@ -305,6 +306,10 @@ Namespace WC3
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Unwrap.AssumeNotNull
+        End Function
+        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of GameServerManager)) As Task(Of IDisposable)
+            _commands.AddCommand(command)
+            Return DirectCast(New DelegatedDisposable(Sub() _commands.RemoveCommand(command)), IDisposable).AsTask()
         End Function
     End Class
 End Namespace
