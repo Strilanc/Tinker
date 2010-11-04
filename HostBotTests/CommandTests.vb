@@ -94,5 +94,7 @@ Public Class CommandTests
     Public Sub ProjectedCommandTest()
         Dim c = New ProjectedCommand(Of String, UInt32)(New TestPartialCommand(), Function(v) UInt32.Parse(v) + 1UI)
         Assert.IsTrue(c.Invoke("5", Nothing, "head rest").WaitValue = "rest6head")
+        Dim c2 = New TestPartialCommand().ProjectedFrom(Function(v As String) UInt32.Parse(v) + 1UI)
+        Assert.IsTrue(c2.Invoke("5", Nothing, "head rest").WaitValue = "rest6head")
     End Sub
 End Class

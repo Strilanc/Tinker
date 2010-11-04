@@ -36,4 +36,13 @@
             Return _command.Invoke(subTarget, user, argument)
         End Function
     End Class
+    Public Module ProjectedCommandExtensions
+        <Extension()> <Pure()>
+        Public Function ProjectedFrom(Of TOuter, TInner)(ByVal command As ICommand(Of TInner), ByVal projection As Func(Of TOuter, TInner)) As ICommand(Of TOuter)
+            Contract.Requires(command IsNot Nothing)
+            Contract.Requires(projection IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ICommand(Of TOuter))() IsNot Nothing)
+            Return New ProjectedCommand(Of TOuter, TInner)(command, projection)
+        End Function
+    End Module
 End Namespace

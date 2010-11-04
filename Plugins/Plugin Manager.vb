@@ -1,4 +1,5 @@
 ﻿Imports Tinker.Components
+Imports Tinker.Commands
 
 Namespace Plugins
     Friend Class PluginManager
@@ -65,10 +66,10 @@ Namespace Plugins
             End Get
         End Property
 
-        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
-            Return IncludeCommand(DirectCast(command, Commands.ICommand(Of PluginManager)))
+        Private Function IncludeCommand(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+            Return IncludeCommand(DirectCast(command, ICommand(Of PluginManager)))
         End Function
-        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of PluginManager)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of PluginManager)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Dim converter = Function(this As IPlugin)
@@ -77,7 +78,7 @@ Namespace Plugins
                                 End If
                                 Return Me
                             End Function
-            Dim mappedCommand = New Commands.ProjectedCommand(Of IPlugin, PluginManager)(command, converter)
+            Dim mappedCommand = command.ProjectedFrom(converter)
             Return _socket.Plugin.IncludeCommand(mappedCommand)
         End Function
     End Class

@@ -15,9 +15,7 @@ Namespace Lan
         Public Overloads Function AddCommand(ByVal command As ICommand(Of Lan.Advertiser)) As IDisposable
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return AddCommand(New ProjectedCommand(Of Lan.AdvertiserManager, Lan.Advertiser)(
-                    command:=command,
-                    projection:=Function(manager) manager.Advertiser))
+            Return AddCommand(command.ProjectedFrom(Function(manager As AdvertiserManager) manager.Advertiser))
         End Function
 
         Private Class CommandAuto
