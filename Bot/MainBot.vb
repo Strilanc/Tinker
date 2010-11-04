@@ -13,6 +13,9 @@
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
+Imports Tinker.Commands
+Imports Tinker.Components
+
 Namespace Bot
     Public NotInheritable Class MainBot
         Inherits DisposableWithTask
@@ -24,7 +27,7 @@ Namespace Bot
         Private ReadOnly _settings As New Bot.Settings()
         Private ReadOnly _portPool As New PortPool()
         Private ReadOnly _logger As Logger
-        Private ReadOnly _components As New Components.ComponentSet()
+        Private ReadOnly _components As New ComponentSet()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
@@ -50,9 +53,9 @@ Namespace Bot
                 Return _logger
             End Get
         End Property
-        Public ReadOnly Property Components As Components.ComponentSet
+        Public ReadOnly Property Components As ComponentSet
             Get
-                Contract.Ensures(Contract.Result(Of Components.ComponentSet)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ComponentSet)() IsNot Nothing)
                 Return _components
             End Get
         End Property
@@ -124,6 +127,47 @@ Namespace Bot
                     Next hook
                     hooks = Nothing
                 End Sub))
+        End Function
+
+        ''' <summary>
+        ''' Adds a command to all present and future components of the given type.
+        ''' Removes the commands when the result is disposed.
+        ''' </summary>
+        <Extension()>
+        Public Function IncludeCommandInAllComponentsOfType(Of T As IBotComponent)(ByVal this As MainBot, ByVal command As ICommand(Of T)) As IDisposable
+            Contract.Requires(this IsNot Nothing)
+            Contract.Requires(command IsNot Nothing)
+            Dim weakCommand = command.ProjectedFrom(Function(x) DirectCast(x, T))
+
+            Dim lock = New Object()
+            Dim includeDisposers = New Dictionary(Of T, Task(Of IDisposable))()
+
+            'Include commands
+            Dim view = this.Components.QueueCreateAsyncView(Of T)(
+                adder:=Sub(bot, component)
+                           SyncLock lock
+                               If includeDisposers Is Nothing Then Return
+                               includeDisposers.Add(component, component.IncludeCommand(weakCommand))
+                           End SyncLock
+                       End Sub,
+                remover:=Sub(bot, component)
+                             SyncLock lock
+                                 If includeDisposers Is Nothing Then Return
+                                 includeDisposers.Remove(component)
+                             End SyncLock
+                         End Sub)
+
+            'Dispose commands when disposed
+            Return New DelegatedDisposable(
+                Sub()
+                    SyncLock lock
+                        view.Dispose()
+                        For Each hook In includeDisposers.Values
+                            hook.ContinueWithAction(Sub(e) e.Dispose()).IgnoreExceptions()
+                        Next hook
+                        includeDisposers = Nothing
+                    End SyncLock
+                End Sub)
         End Function
     End Module
 End Namespace
