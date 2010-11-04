@@ -308,6 +308,8 @@ Namespace WC3
             Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Unwrap.AssumeNotNull
         End Function
         Public Function IncludeCommand(ByVal command As Commands.ICommand(Of GameServerManager)) As Task(Of IDisposable)
+            Contract.Requires(command IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             _commands.AddCommand(command)
             Return DirectCast(New DelegatedDisposable(Sub() _commands.RemoveCommand(command)), IDisposable).AsTask()
         End Function
