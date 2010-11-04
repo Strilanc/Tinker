@@ -63,7 +63,6 @@ Namespace Plugins
             End Property
             Public Function IncludeCommand(ByVal command As Commands.ICommand(Of IPlugin)) As Task(Of IDisposable) Implements IPlugin.IncludeCommand
                 Contract.Requires(command IsNot Nothing)
-                Contract.Requires(Me.GetType().IsAssignableFrom(command.GetType().GetGenericArguments().Single))
                 Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
