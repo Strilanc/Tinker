@@ -179,7 +179,7 @@ Namespace WC3
             Dim commandText = text.Substring(prefix.Length)
 
             Try
-                Throw New NotImplementedException() 'need to get argument for bot parameter
+                Throw New NotImplementedException("Need to retrieve bot argument.")
                 Dim result = Await game.QueueCommandProcessText(Nothing, player, commandText)
                 If String.IsNullOrEmpty(result) Then result = "Command Succeeded"
                 game.QueueSendMessageTo(result, player)
@@ -303,6 +303,10 @@ Namespace WC3
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Unwrap.AssumeNotNull
+        End Function
+
+        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of Components.IBotComponent)) As Task(Of IDisposable) Implements Components.IBotComponent.IncludeCommand
+            Return IncludeCommand(DirectCast(command, Commands.ICommand(Of GameServerManager)))
         End Function
         Public Function IncludeCommand(ByVal command As Commands.ICommand(Of GameServerManager)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)

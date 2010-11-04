@@ -56,6 +56,9 @@ Public Class ComponentTest
                 Return _type
             End Get
         End Property
+        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+            Throw New NotSupportedException
+        End Function
     End Class
     Private Class TestComponent1
         Inherits BaseTestComponent

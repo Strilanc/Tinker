@@ -111,6 +111,10 @@ Namespace Lan
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SetAutomatic(slaved))
         End Function
+
+        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of Components.IBotComponent)) As Task(Of IDisposable) Implements Components.IBotComponent.IncludeCommand
+            Return IncludeCommand(DirectCast(command, Commands.ICommand(Of AdvertiserManager)))
+        End Function
         Public Function IncludeCommand(ByVal command As Commands.ICommand(Of AdvertiserManager)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)

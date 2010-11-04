@@ -65,6 +65,10 @@ Namespace Bot
             _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
             Return Nothing
         End Function
+
+        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of Components.IBotComponent)) As Task(Of IDisposable) Implements Components.IBotComponent.IncludeCommand
+            Return IncludeCommand(DirectCast(command, Commands.ICommand(Of MainBot)))
+        End Function
         Public Function IncludeCommand(ByVal command As Commands.ICommand(Of MainBot)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)

@@ -61,6 +61,10 @@ Namespace CKL
                 Return WidgetTypeName
             End Get
         End Property
+
+        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of Components.IBotComponent)) As Task(Of IDisposable) Implements Components.IBotComponent.IncludeCommand
+            Return IncludeCommand(DirectCast(command, Commands.ICommand(Of CKL.Server)))
+        End Function
         Public Function IncludeCommand(ByVal command As Commands.ICommand(Of CKL.Server)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)

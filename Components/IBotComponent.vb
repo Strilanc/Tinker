@@ -10,6 +10,7 @@
         <Pure()>
         Function IsArgumentPrivate(ByVal argument As String) As Boolean
         Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Function IncludeCommand(ByVal command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable)
 
         <ContractClassFor(GetType(IBotComponent))>
         MustInherit Shadows Class ContractClass
@@ -66,6 +67,13 @@
             Public Sub Dispose() Implements IDisposable.Dispose
                 Throw New NotSupportedException
             End Sub
+
+            Public Function IncludeCommand(ByVal command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+                Contract.Requires(command IsNot Nothing)
+                Contract.Requires(Me.GetType().IsAssignableFrom(command.GetType().GetGenericArguments().Single))
+                Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
         End Class
     End Interface
 End Namespace
