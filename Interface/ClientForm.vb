@@ -135,8 +135,8 @@ Public Class ClientForm
     End Sub
 
     Private Sub OnClickSettings() Handles btnSettings.Click
-        Dim cp As IEnumerable(Of Bot.ClientProfile) = _bot.Settings.ClientProfiles
-        Dim pp As IEnumerable(Of Bot.PluginProfile) = _bot.Settings.PluginProfiles
+        Dim cp = _bot.Settings.ClientProfiles.AsEnumerable
+        Dim pp = _bot.Settings.PluginProfiles.AsEnumerable
         If Not SettingsForm.ShowWithProfiles(cp, pp, _bot.PortPool) Then Return
         _bot.Settings.UpdateProfiles(cp, pp)
         Using m = New IO.MemoryStream()

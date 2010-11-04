@@ -204,6 +204,7 @@ Namespace Bnet.Protocol
         IncorrectPassword = 2
         Full = 3
         AlreadyStarted = 4
+
         TooManyServerRequests = 6
     End Enum
     Public Enum ClanRank As Byte
