@@ -137,37 +137,30 @@ Namespace Bot
         Public Function IncludeCommandInAllComponentsOfType(Of T As IBotComponent)(ByVal this As MainBot, ByVal command As ICommand(Of T)) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(command IsNot Nothing)
-            Dim weakCommand = command.ProjectedFrom(Function(x) DirectCast(x, T))
+            Dim weakCommand = command.ProjectedFrom(Function(x As IBotComponent) DirectCast(x, T))
 
-            Dim lock = New Object()
-            Dim includeDisposers = New Dictionary(Of T, Task(Of IDisposable))()
+            Dim inQueue = New TaskedCallQueue()
+            Dim commandDisposers = New Dictionary(Of T, Task(Of IDisposable))()
 
             'Include commands
             Dim view = this.Components.QueueCreateAsyncView(Of T)(
-                adder:=Sub(bot, component)
-                           SyncLock lock
-                               If includeDisposers Is Nothing Then Return
-                               includeDisposers.Add(component, component.IncludeCommand(weakCommand))
-                           End SyncLock
-                       End Sub,
-                remover:=Sub(bot, component)
-                             SyncLock lock
-                                 If includeDisposers Is Nothing Then Return
-                                 includeDisposers.Remove(component)
-                             End SyncLock
-                         End Sub)
+                adder:=Sub(bot, component) inQueue.QueueAction(
+                    Sub()
+                        If commandDisposers Is Nothing Then Return
+                        commandDisposers.Add(component, component.IncludeCommand(weakCommand))
+                    End Sub),
+                remover:=Sub(bot, component) inQueue.QueueAction(
+                    Sub()
+                        If commandDisposers Is Nothing Then Return
+                        commandDisposers.Remove(component)
+                    End Sub))
 
             'Dispose commands when disposed
-            Return New DelegatedDisposable(
+            Return New DelegatedDisposable(Sub() inQueue.QueueAction(
                 Sub()
-                    SyncLock lock
-                        view.Dispose()
-                        For Each hook In includeDisposers.Values
-                            hook.ContinueWithAction(Sub(e) e.Dispose()).IgnoreExceptions()
-                        Next hook
-                        includeDisposers = Nothing
-                    End SyncLock
-                End Sub)
+                    commandDisposers.Values.Append(view).DisposeAllAsync()
+                    commandDisposers = Nothing
+                End Sub))
         End Function
     End Module
 End Namespace
