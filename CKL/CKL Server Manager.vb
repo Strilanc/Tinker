@@ -1,4 +1,5 @@
-﻿Imports Tinker.Components
+﻿Imports Tinker.Commands
+Imports Tinker.Components
 
 Namespace CKL
     Public NotInheritable Class ServerManager
@@ -62,10 +63,16 @@ Namespace CKL
             End Get
         End Property
 
-        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of Components.IBotComponent)) As Task(Of IDisposable) Implements Components.IBotComponent.IncludeCommand
-            Return IncludeCommand(DirectCast(command, Commands.ICommand(Of CKL.Server)))
+        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+            Dim converter = Function(server As CKL.Server)
+                                If server IsNot Me._server Then
+                                    Throw New NotSupportedException("Command mapped from manager to server used on different server.")
+                                End If
+                                Return Me
+                            End Function
+            Return IncludeCommand(command.ProjectedFrom(converter))
         End Function
-        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of CKL.Server)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of CKL.Server)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             _commands.AddCommand(command)

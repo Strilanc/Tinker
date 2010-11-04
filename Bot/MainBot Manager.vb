@@ -1,4 +1,5 @@
 ﻿Imports Tinker.Components
+Imports Tinker.Commands
 
 Namespace Bot
     Public Class MainBotManager
@@ -66,10 +67,16 @@ Namespace Bot
             Return Nothing
         End Function
 
-        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of Components.IBotComponent)) As Task(Of IDisposable) Implements Components.IBotComponent.IncludeCommand
-            Return IncludeCommand(DirectCast(command, Commands.ICommand(Of MainBot)))
+        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+            Dim converter = Function(bot As MainBot)
+                                If bot IsNot Me.Bot Then
+                                    Throw New NotSupportedException("Command mapped from manager to bot used on different bot.")
+                                End If
+                                Return Me
+                            End Function
+            Return IncludeCommand(command.ProjectedFrom(converter))
         End Function
-        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of MainBot)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of MainBot)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             _commands.AddCommand(command)

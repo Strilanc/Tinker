@@ -1,4 +1,5 @@
-﻿Imports Tinker.Components
+﻿Imports Tinker.Commands
+Imports Tinker.Components
 
 Namespace WC3
     Public Class GameManager
@@ -120,7 +121,7 @@ Namespace WC3
             Return Nothing
         End Function
 
-        Private Function IncludeCommand(ByVal command As Commands.ICommand(Of Components.IBotComponent)) As Task(Of IDisposable) Implements Components.IBotComponent.IncludeCommand
+        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Throw New NotImplementedException("Game commands are admin/lobby/loading/etc specific.")

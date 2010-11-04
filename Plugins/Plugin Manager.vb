@@ -66,20 +66,19 @@ Namespace Plugins
             End Get
         End Property
 
-        Private Function IncludeCommand(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
-            Return IncludeCommand(DirectCast(command, ICommand(Of PluginManager)))
-        End Function
-        Public Function IncludeCommand(ByVal command As ICommand(Of PluginManager)) As Task(Of IDisposable)
-            Contract.Requires(command IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Dim converter = Function(this As IPlugin)
-                                If this IsNot Me._socket.Plugin Then
+        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+            Dim converter = Function(plugin As IPlugin)
+                                If plugin IsNot Me._socket.Plugin Then
                                     Throw New NotSupportedException("Command mapped from manager to plugin used on different plugin.")
                                 End If
                                 Return Me
                             End Function
-            Dim mappedCommand = command.ProjectedFrom(converter)
-            Return _socket.Plugin.IncludeCommand(mappedCommand)
+            Return IncludeCommand(command.ProjectedFrom(converter))
+        End Function
+        Public Function IncludeCommand(ByVal command As ICommand(Of IPlugin)) As Task(Of IDisposable)
+            Contract.Requires(command IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
+            Return _socket.Plugin.IncludeCommand(command)
         End Function
     End Class
 End Namespace
