@@ -6,8 +6,7 @@ Namespace Lan
         Inherits DisposableWithTask
         Implements IBotComponent
 
-        Public Shared ReadOnly LanCommands As New Lan.AdvertiserCommands()
-
+        Private ReadOnly _commands As New Lan.AdvertiserCommands()
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _name As InvariantString
         Private ReadOnly _bot As Bot.MainBot
@@ -21,6 +20,7 @@ Namespace Lan
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_bot IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
+            Contract.Invariant(_commands IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
@@ -70,11 +70,11 @@ Namespace Lan
         End Property
 
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
-            Return LanCommands.Invoke(Me, user, argument)
+            Return _commands.Invoke(Me, user, argument)
         End Function
 
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
-            Return LanCommands.IsArgumentPrivate(argument)
+            Return _commands.IsArgumentPrivate(argument)
         End Function
 
         Public ReadOnly Property Logger As Logger Implements IBotComponent.Logger
@@ -110,6 +110,10 @@ Namespace Lan
         Public Function QueueSetAutomatic(ByVal slaved As Boolean) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SetAutomatic(slaved))
+        End Function
+        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of AdvertiserManager)) As Task(Of IDisposable)
+            _commands.AddCommand(command)
+            Return DirectCast(New DelegatedDisposable(Sub() _commands.RemoveCommand(command)), IDisposable).AsTask()
         End Function
     End Class
 End Namespace
