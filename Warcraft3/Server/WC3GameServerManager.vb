@@ -158,10 +158,10 @@ Namespace WC3
             Return Nothing
         End Function
 
-        Private Sub OnPlayerTalked(ByVal sender As WC3.GameServer,
-                                   ByVal game As WC3.Game,
-                                   ByVal player As WC3.Player,
-                                   ByVal text As String)
+        Private Async Sub OnPlayerTalked(ByVal sender As WC3.GameServer,
+                                         ByVal game As WC3.Game,
+                                         ByVal player As WC3.Player,
+                                         ByVal text As String)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(game IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
@@ -177,18 +177,15 @@ Namespace WC3
 
             'Normal commands
             Dim commandText = text.Substring(prefix.Length)
-            Throw New NotImplementedException() 'nothing arg follows
-            game.QueueCommandProcessText(Nothing, player, commandText).ContinueWith(
-                Sub(task)
-                    If task.Status = TaskStatus.Faulted Then
-                        game.QueueSendMessageTo("Failed: {0}".Frmt(task.Exception.Summarize), player)
-                    ElseIf task.Result IsNot Nothing Then
-                        game.QueueSendMessageTo(task.Result, player)
-                    Else
-                        game.QueueSendMessageTo("Command Succeeded", player)
-                    End If
-                End Sub
-            )
+
+            Try
+                Throw New NotImplementedException() 'need to get argument for bot parameter
+                Dim result = Await game.QueueCommandProcessText(Nothing, player, commandText)
+                If String.IsNullOrEmpty(result) Then result = "Command Succeeded"
+                game.QueueSendMessageTo(result, player)
+            Catch ex As Exception
+                game.QueueSendMessageTo("Failed: {0}".Frmt(ex.Summarize), player)
+            End Try
         End Sub
 
         Private Function AllocateGameId() As UInt32
