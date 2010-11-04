@@ -74,7 +74,7 @@ Namespace Bnet
                 _initialGameDescription.TrySetException(New InvalidOperationException("Removed before advertising succeeded."))
             End Sub
 
-            Public ReadOnly Property FutureDescription As Task(Of WC3.LocalGameDescription)
+            Public ReadOnly Property DescriptionAsync As Task(Of WC3.LocalGameDescription)
                 Get
                     Contract.Ensures(Contract.Result(Of Task(Of WC3.LocalGameDescription))() IsNot Nothing)
                     Return _initialGameDescription.Task
@@ -533,7 +533,7 @@ Namespace Bnet
                 _advertisementList.Add(entry)
                 SyncAdvertisements()
             End If
-            Return entry.FutureDescription
+            Return entry.DescriptionAsync
         End Function
         Public Function QueueAddAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription,
                                                  ByVal isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
