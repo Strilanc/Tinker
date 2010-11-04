@@ -159,5 +159,61 @@ Namespace Bot
                     commandDisposers = Nothing
                 End Sub))
         End Function
+
+        <Extension()>
+        Public Function IncludeCommandsInAllComponentsOfType(Of T As IBotComponent)(ByVal this As MainBot, ByVal commands As IEnumerable(Of ICommand(Of T))) As IDisposable
+            Contract.Requires(this IsNot Nothing)
+            Contract.Requires(commands IsNot Nothing)
+            Dim weakCommands = (From command In commands
+                                Select command.ProjectedFrom(Function(x As IBotComponent) DirectCast(x, T))
+                                ).ToArray()
+
+            Dim inQueue = New TaskedCallQueue()
+            Dim commandDisposers = New Dictionary(Of T, Task(Of IDisposable))()
+
+            'Include commands
+            Dim view = this.Components.QueueCreateAsyncView(Of T)(
+                adder:=Sub(bot, component) inQueue.QueueAction(
+                    Sub()
+                        If commandDisposers Is Nothing Then Return
+                        commandDisposers.Add(component, component.IncludeAllCommands(weakCommands))
+                    End Sub),
+                remover:=Sub(bot, component) inQueue.QueueAction(
+                    Sub()
+                        If commandDisposers Is Nothing Then Return
+                        commandDisposers.Remove(component)
+                    End Sub))
+
+            'Dispose commands when disposed
+            Return New DelegatedDisposable(Sub() inQueue.QueueAction(
+                Sub()
+                    commandDisposers.Values.Append(view).DisposeAllAsync()
+                    commandDisposers = Nothing
+                End Sub))
+        End Function
+
+        <Extension()>
+        Public Function IncludeBasicBotCommands(ByVal this As MainBot) As IDisposable
+            Dim conv = Function(x As MainBotManager) x.Bot
+            Return this.IncludeCommandsInAllComponentsOfType(Of Bot.MainBotManager)(
+                From command In New ICommand(Of MainBot)() {
+                    New GenericCommands.CommandFindMaps(Of MainBot),
+                    New GenericCommands.CommandDownloadMap(Of MainBot),
+                    New GenericCommands.CommandRecacheIP(Of MainBot),
+                    New Bot.Commands.CommandConnect(),
+                    New Bot.Commands.CommandCreateAdminGame(),
+                    New Bot.Commands.CommandCreateCKL(),
+                    New Bot.Commands.CommandCreateClient(),
+                    New Bot.Commands.CommandCreateLan(),
+                    New Bot.Commands.CommandDispose(),
+                    New Bot.Commands.CommandGet(),
+                    New Bot.Commands.CommandHost(),
+                    New Bot.Commands.CommandListComponents(),
+                    New Bot.Commands.CommandLoadPlugin(),
+                    New Bot.Commands.CommandSet(),
+                    New Bot.Commands.CommandTo()
+                } Select command.ProjectedFrom(conv)
+            )
+        End Function
     End Module
 End Namespace

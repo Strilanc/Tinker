@@ -1,28 +1,6 @@
 Imports Tinker.Commands
 Imports Tinker.Bot.Commands
 
-Namespace Bot
-    Public NotInheritable Class BotCommands
-        Inherits CommandSet(Of MainBot)
-        Public Sub New()
-            AddCommand(New GenericCommands.CommandFindMaps(Of MainBot))
-            AddCommand(New GenericCommands.CommandDownloadMap(Of MainBot))
-            AddCommand(New GenericCommands.CommandRecacheIP(Of MainBot))
-            AddCommand(New CommandCreateAdminGame)
-            AddCommand(New CommandCreateCKL)
-            AddCommand(New CommandCreateClient)
-            AddCommand(New CommandCreateLan)
-            AddCommand(New CommandConnect)
-            AddCommand(New CommandDispose)
-            AddCommand(New CommandGet)
-            AddCommand(New CommandHost)
-            AddCommand(New CommandListComponents)
-            AddCommand(New CommandLoadPlugin)
-            AddCommand(New CommandSet)
-            AddCommand(New CommandTo)
-        End Sub
-    End Class
-End Namespace
 Namespace Bot.Commands
     Public NotInheritable Class CommandConnect
         Inherits Command(Of MainBot)

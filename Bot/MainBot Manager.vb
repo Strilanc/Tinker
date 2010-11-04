@@ -6,7 +6,7 @@ Namespace Bot
         Inherits DisposableWithTask
         Implements IBotComponent
 
-        Private ReadOnly _commands As New Bot.BotCommands()
+        Private ReadOnly _commands As New CommandSet(Of MainBotManager)
         Private ReadOnly _bot As MainBot
         Private ReadOnly _control As Control
 
@@ -59,7 +59,7 @@ Namespace Bot
         End Property
 
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
-            Return _commands.Invoke(Bot, user, argument)
+            Return _commands.Invoke(Me, user, argument)
         End Function
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             _bot.Dispose()
@@ -68,15 +68,9 @@ Namespace Bot
         End Function
 
         Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
-            Dim converter = Function(bot As MainBot)
-                                If bot IsNot Me.Bot Then
-                                    Throw New NotSupportedException("Command mapped from manager to bot used on different bot.")
-                                End If
-                                Return Me
-                            End Function
-            Return IncludeCommand(command.ProjectedFrom(converter))
+            Return IncludeCommand(command)
         End Function
-        Public Function IncludeCommand(ByVal command As ICommand(Of MainBot)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of MainBotManager)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             _commands.AddCommand(command)

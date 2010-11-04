@@ -31,5 +31,24 @@
                 Return "Failed: {0}".Frmt(ex.Summarize)
             End Try
         End Function
+
+        <Extension()>
+        Public Async Function IncludeAllCommands(ByVal component As IBotComponent, ByVal commands As IEnumerable(Of Commands.ICommand(Of IBotComponent))) As Task(Of IDisposable)
+            Contract.Requires(component IsNot Nothing)
+            Contract.Requires(commands IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
+
+            Dim disposables = New List(Of Task(Of IDisposable))
+            Try
+                For Each command In commands
+                    disposables.Add(component.IncludeCommand(command))
+                Next command
+                Await TaskEx.WhenAll(disposables)
+                Return New DelegatedDisposable(Sub() disposables.DisposeAllAsync())
+            Catch ex As Exception
+                disposables.DisposeAllAsync()
+                Throw
+            End Try
+        End Function
     End Module
 End Namespace
