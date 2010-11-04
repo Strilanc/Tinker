@@ -167,7 +167,7 @@ Namespace Bnet
         End Function
 
         Private _autoHook As Task(Of IDisposable)
-        Private Sub SetAutomatic(ByVal slaved As Boolean)
+        Private Async Sub SetAutomatic(ByVal slaved As Boolean)
             'Do nothing if already in the correct state
             If slaved = (_autoHook IsNot Nothing) Then
                 Return
@@ -175,18 +175,19 @@ Namespace Bnet
 
             If slaved Then
                 _autoHook = _bot.QueueCreateActiveGameSetsAsyncView(
-                        adder:=Sub(sender, server, gameSet)
-                                   If gameSet.GameSettings.IsAdminGame Then Return
-                                   _client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
-                                                                     isPrivate:=gameSet.GameSettings.IsPrivate).IgnoreExceptions()
-                               End Sub,
-                        remover:=Sub(sender, server, gameSet)
-                                     _client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription).IgnoreExceptions()
-                                 End Sub)
+                    adder:=Sub(sender, server, gameSet)
+                               If gameSet.GameSettings.IsAdminGame Then Return
+                               _client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                                                                isPrivate:=gameSet.GameSettings.IsPrivate)
+                           End Sub,
+                    remover:=Sub(sender, server, gameSet)
+                                 _client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription)
+                             End Sub)
             Else
-                Contract.Assume(_autoHook IsNot Nothing)
-                _autoHook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
+                Dim oldHook = _autoHook
                 _autoHook = Nothing
+                Await oldHook
+                oldHook.Dispose()
             End If
         End Sub
         Public Function QueueSetAutomatic(ByVal slaved As Boolean) As Task
