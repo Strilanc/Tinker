@@ -16,6 +16,7 @@ Namespace Plugins
         ReadOnly Property Control() As Control
         Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String)
         Function IsArgumentPrivate(ByVal argument As String) As Boolean
+        Function IncludeCommand(ByVal command As Commands.ICommand(Of IPlugin)) As Task(Of IDisposable)
 
         <ContractClassFor(GetType(IPlugin))>
         MustInherit Shadows Class ContractClass
@@ -60,6 +61,12 @@ Namespace Plugins
                     Throw New NotSupportedException
                 End Get
             End Property
+            Public Function IncludeCommand(ByVal command As Commands.ICommand(Of IPlugin)) As Task(Of IDisposable) Implements IPlugin.IncludeCommand
+                Contract.Requires(command IsNot Nothing)
+                Contract.Requires(Me.GetType().IsAssignableFrom(command.GetType().GetGenericArguments().Single))
+                Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
         End Class
     End Interface
 
