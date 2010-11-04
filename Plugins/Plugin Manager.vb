@@ -64,5 +64,17 @@ Namespace Plugins
                 Return _socket.Plugin.Control
             End Get
         End Property
+        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of PluginManager)) As Task(Of IDisposable)
+            Contract.Requires(command IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
+            Dim converter = Function(this As IPlugin)
+                                If this IsNot Me._socket.Plugin Then
+                                    Throw New NotSupportedException("Command mapped from manager to plugin used on different plugin.")
+                                End If
+                                Return Me
+                            End Function
+            Dim mappedCommand = New Commands.ProjectedCommand(Of IPlugin, PluginManager)(command, converter)
+            Return _socket.Plugin.IncludeCommand(mappedCommand)
+        End Function
     End Class
 End Namespace
