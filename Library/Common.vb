@@ -188,21 +188,6 @@ Public Module PoorlyCategorizedFunctions
         End If
     End Function
 
-    <Extension()>
-    Public Function IgnoreExceptions(Of T)(ByVal task As TaskCompletionSource(Of T)) As task
-        Contract.Requires(task IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Contract.Assume(task.Task IsNot Nothing)
-        Return task.Task.IgnoreExceptions()
-    End Function
-    <Extension()>
-    Public Function IgnoreExceptions(ByVal task As Task) As task
-        Contract.Requires(task IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Return task.Catch(Sub()
-                          End Sub)
-    End Function
-
     <ContractVerification(False)>
     Public Function FindFilesMatching(ByVal fileQuery As String,
                                       ByVal likeQuery As InvariantString,
@@ -549,42 +534,5 @@ Public Module PoorlyCategorizedFunctions
         Dim result = text.IndexOf(substring, startIndex, comparisonType)
         If result < 0 Then Return Nothing
         Return result + substring.Length()
-    End Function
-
-    <Extension()>
-    Public Sub ChainEventualDisposalTo(ByVal source As DisposableWithTask, ByVal dest As IDisposable)
-        Contract.Requires(source IsNot Nothing)
-        Contract.Requires(dest IsNot Nothing)
-        source.ChainEventualDisposalTo(AddressOf dest.Dispose)
-    End Sub
-    <Extension()>
-    Public Sub ChainEventualDisposalTo(ByVal source As DisposableWithTask, ByVal action As Action)
-        Contract.Requires(source IsNot Nothing)
-        Contract.Requires(action IsNot Nothing)
-        source.DisposalTask.ContinueWith(Sub() action(), TaskContinuationOptions.OnlyOnRanToCompletion)
-    End Sub
-
-    <Extension()>
-    Public Function DisposeAsync(ByVal value As Task(Of IDisposable)) As Task
-        Contract.Requires(value IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Return value.ContinueWith(Sub(task) task.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion)
-    End Function
-    <Extension()>
-    Public Function DisposeAllAsync(ByVal values As IEnumerable(Of Task(Of IDisposable))) As Task
-        Contract.Requires(values IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Dim results = New List(Of Task)
-        For Each value In values
-            results.Add(value.DisposeAsync())
-        Next value
-        Return results.AsAggregateTask()
-    End Function
-
-    <Pure()>
-    Public Function InstantTask() As Task
-        Dim result = New TaskCompletionSource(Of NoValue)()
-        result.SetResult(Nothing)
-        Return result.Task
     End Function
 End Module
