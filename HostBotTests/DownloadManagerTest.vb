@@ -119,9 +119,7 @@ Public Class DownloadManagerTest
             SyncLock Me
                 _pq.Enqueue(packet)
                 _lock.Set()
-                Dim result = New TaskCompletionSource(Of Boolean)()
-                result.SetResult(True)
-                Return result.Task
+                Return InstantTask()
             End SyncLock
         End Function
 

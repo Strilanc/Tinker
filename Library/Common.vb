@@ -580,4 +580,11 @@ Public Module PoorlyCategorizedFunctions
         Next value
         Return results.AsAggregateTask()
     End Function
+
+    <Pure()>
+    Public Function InstantTask() As Task
+        Dim result = New TaskCompletionSource(Of NoValue)()
+        result.SetResult(Nothing)
+        Return result.Task
+    End Function
 End Module
