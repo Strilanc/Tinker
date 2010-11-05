@@ -33,10 +33,12 @@ Namespace Lan.Commands
         End Sub
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Contract.Assume(target IsNot Nothing)
+            Dim id = UInt32.Parse(argument.NamedValue("id"))
             Dim name = argument.NamedValue("name")
             Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
+            If id = 0 Then Throw New ArgumentException("Non-positive id.")
             Dim gameStats = WC3.GameStats.FromMapAndArgument(map, If(user Is Nothing, Application.ProductName.AssumeNotNull, user.Name.Value), argument)
-            Dim gameDescription = WC3.LocalGameDescription.FromArguments(name, map, gameStats, clock:=New SystemClock())
+            Dim gameDescription = WC3.LocalGameDescription.FromArguments(name, map, id, gameStats, clock:=New SystemClock())
 
             Await target.QueueAddGame(gameDescription)
             Return "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.AdvertisedPath)

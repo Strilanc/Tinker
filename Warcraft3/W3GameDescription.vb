@@ -160,11 +160,13 @@
         <ContractVerification(False)>
         Public Shared Shadows Function FromArguments(ByVal name As InvariantString,
                                                      ByVal map As Map,
+                                                     ByVal id As UInt32,
                                                      ByVal stats As GameStats,
                                                      ByVal clock As IClock) As LocalGameDescription
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(id > 0)
             Contract.Ensures(Contract.Result(Of LocalGameDescription)() IsNot Nothing)
             Dim totalSlotCount = map.LobbySlots.Count
             If stats.Observers = GameObserverOption.FullObservers OrElse stats.Observers = GameObserverOption.Referees Then
@@ -173,7 +175,7 @@
 
             Return New LocalGameDescription(name,
                                             stats,
-                                            GameId:=1,
+                                            GameId:=id,
                                             EntryKey:=0,
                                             totalSlotCount:=totalSlotCount,
                                             GameType:=map.FilterGameType,
