@@ -225,7 +225,7 @@ Namespace Bnet
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             _client.Dispose()
-            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
+            _control.DisposeControlAsync()
             Return _hooks.DisposeAllAsync()
         End Function
     End Class

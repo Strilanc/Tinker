@@ -114,7 +114,7 @@ Namespace WC3
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             _game.Dispose()
-            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
+            _control.DisposeControlAsync()
             Return _hooks.DisposeAllAsync()
         End Function
 

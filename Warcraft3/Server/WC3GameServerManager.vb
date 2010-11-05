@@ -155,8 +155,7 @@ Namespace WC3
                 hook.Dispose()
             Next hook
             _gameServer.Dispose()
-            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
-            Return Nothing
+            Return _control.DisposeControlAsync()
         End Function
 
         Private Async Sub OnPlayerTalked(ByVal sender As WC3.GameServer,

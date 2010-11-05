@@ -33,7 +33,7 @@
             Dim failedSocket = New TaskCompletionSource(Of Warden.Socket)
             Dim activated = New TaskCompletionSource(Of NoValue)()
             failedSocket.SetException(New ArgumentException("No remote host specified for bnls server."))
-            failedSocket.Task.IgnoreExceptions()
+            failedSocket.IgnoreExceptions()
             activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem))
             Return New Warden.Client(failedSocket.Task, activated, logger)
         End Function
@@ -121,7 +121,7 @@
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
-            Return _socket.ContinueWithAction(Sub(wardenClient) wardenClient.Dispose()).IgnoreExceptions()
+            Return _socket.DisposeAsync()
         End Function
     End Class
 End Namespace

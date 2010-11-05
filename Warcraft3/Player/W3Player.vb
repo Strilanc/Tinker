@@ -106,8 +106,6 @@ Namespace WC3
             Me._downloadManager = downloadManager
             Me._inQueue = If(inQueue, New TaskedCallQueue)
             Me._outQueue = If(outQueue, New TaskedCallQueue)
-
-            Me._taskTestCanHost.IgnoreExceptions()
         End Sub
 
         <ContractVerification(False)>
@@ -118,6 +116,7 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             Dim hostFail = New TaskCompletionSource(Of NoValue)
+            hostFail.IgnoreExceptions()
             hostFail.SetException(New ArgumentException("Fake players can't host."))
 
             Dim player = New Player(id:=id,

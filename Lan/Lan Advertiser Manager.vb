@@ -86,7 +86,7 @@ Namespace Lan
 
         Protected Overrides Async Function PerformDispose(ByVal finalizing As Boolean) As Task
             _advertiser.Dispose()
-            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
+            _control.DisposeControlAsync()
             QueueSetAutomatic(False)
             Await _hooks.DisposeAllAsync()
         End Function
