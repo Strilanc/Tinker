@@ -555,7 +555,7 @@ Public Module PoorlyCategorizedFunctions
     Public Function DisposeAsync(ByVal value As Task(Of IDisposable)) As Task
         Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Return value.ContinueWith(Sub(task) task.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion))
+        Return value.ContinueWith(Sub(task) task.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion)
     End Function
     <Extension()>
     Public Function DisposeAllAsync(ByVal values As IEnumerable(Of Task(Of IDisposable))) As Task
