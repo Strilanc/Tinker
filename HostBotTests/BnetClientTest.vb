@@ -53,7 +53,7 @@ Public Class BnetClientTest
                                       New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
                                       clock)
         Dim clientCdKeySalt = 13UI
-        Dim fConnect = client.QueueConnect(socket, clientCdKeySalt)
+        Dim fConnect = client.QueueConnectWith(socket, clientCdKeySalt)
         Assert.IsTrue(stream.RetrieveWriteData(1).SequenceEqual({1}))
 
         'program auth begin (C->S)

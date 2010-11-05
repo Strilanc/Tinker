@@ -139,8 +139,8 @@ Namespace Bnet
         Private _clientCdKeySalt As UInt32
         Private _expectedServerPasswordProof As IReadableList(Of Byte)
         Private _allowRetryConnect As Boolean
-        Private _futureConnected As New TaskCompletionSource(Of NoValue)
-        Private _futureLoggedIn As New TaskCompletionSource(Of NoValue)
+        Private _connectResultAsync As New TaskCompletionSource(Of NoValue)
+        Private _logOnResultAsync As New TaskCompletionSource(Of NoValue)
 
         Public Event StateChanged(ByVal sender As Client, ByVal oldState As ClientState, ByVal newState As ClientState)
         Public Event AdvertisedGame(ByVal sender As Client, ByVal gameDescription As WC3.LocalGameDescription, ByVal [private] As Boolean, ByVal refreshed As Boolean)
@@ -157,8 +157,8 @@ Namespace Bnet
             Contract.Invariant(_profile IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_productAuthenticator IsNot Nothing)
-            Contract.Invariant(_futureLoggedIn IsNot Nothing)
-            Contract.Invariant(_futureConnected IsNot Nothing)
+            Contract.Invariant(_logOnResultAsync IsNot Nothing)
+            Contract.Invariant(_connectResultAsync IsNot Nothing)
             Contract.Invariant(_productInfoProvider IsNot Nothing)
             Contract.Invariant((_socket IsNot Nothing) = (_state > ClientState.InitiatingConnection))
             Contract.Invariant((_wardenClient IsNot Nothing) = (_state > ClientState.WaitingForProgramAuthenticationBegin))
@@ -204,8 +204,8 @@ Namespace Bnet
             Return New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
         End Function
         Public Sub Init()
-            Me._futureConnected.IgnoreExceptions()
-            Me._futureLoggedIn.IgnoreExceptions()
+            Me._connectResultAsync.IgnoreExceptions()
+            Me._logOnResultAsync.IgnoreExceptions()
 
             'Handled packets
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
@@ -356,50 +356,53 @@ Namespace Bnet
             outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, oldState, newState))
         End Sub
 
-        Private Function AsyncConnect(ByVal remoteHost As String,
-                                      ByVal remotePort As UInt16) As Task
+        Private Async Function ConnectToAsync(ByVal remoteHost As String,
+                                              ByVal remotePort As UInt16) As Task
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If Me._state <> ClientState.Disconnected Then Throw New InvalidOperationException("Must disconnect before connecting again.")
             ChangeState(ClientState.InitiatingConnection)
 
-            'Connect
-            Logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
-            Dim futureSocket = From tcpClient In TCPConnectAsync(remoteHost, New Random(), remotePort)
-                               Let stream = New ThrottledWriteStream(subStream:=tcpClient.GetStream,
-                                                                     initialSlack:=1000,
-                                                                     costEstimator:=Function(data) 100 + data.Length,
-                                                                     costLimit:=400,
-                                                                     costRecoveredPerMillisecond:=0.048,
-                                                                     clock:=_clock)
-                               Select New PacketSocket(stream:=stream,
-                                                       localEndPoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                                       remoteEndPoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-                                                       clock:=_clock,
-                                                       timeout:=60.Seconds,
-                                                       Logger:=Logger,
-                                                       bufferSize:=PacketSocket.DefaultBufferSize * 10)
+            Try
+                'Connect
+                Logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
+                Dim tcpClient = Await TCPConnectAsync(remoteHost, New Random(), remotePort)
+                Dim stream = New ThrottledWriteStream(subStream:=tcpClient.GetStream,
+                                                      initialSlack:=1000,
+                                                      costEstimator:=Function(data) 100 + data.Length,
+                                                      costLimit:=400,
+                                                      costRecoveredPerMillisecond:=0.048,
+                                                      clock:=_clock)
+                Dim socket = New PacketSocket(stream:=stream,
+                                              localEndPoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                              remoteEndPoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                              clock:=_clock,
+                                              timeout:=60.Seconds,
+                                              Logger:=Logger,
+                                              bufferSize:=PacketSocket.DefaultBufferSize * 10)
 
-            'Continue
-            Dim result = futureSocket.QueueContinueWithFunc(inQueue,
-                Function(socket)
-                    _bnetRemoteHostName = remoteHost
-                    _bnetRemoteHostPort = remotePort
-                    ChangeState(ClientState.FinishedInitiatingConnection)
-                    Return AsyncConnect(socket)
-                End Function).Unwrap
-            result.QueueCatch(inQueue, Sub(exception) Disconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(exception.Summarize)))
-            Return result
+                'Continue
+                Await Await inQueue.QueueFunc(
+                    Async Function()
+                        _bnetRemoteHostName = remoteHost
+                        _bnetRemoteHostPort = remotePort
+                        ChangeState(ClientState.FinishedInitiatingConnection)
+                        Await ConnectWithAsync(socket)
+                    End Function)
+
+            Catch ex As Exception
+                QueueDisconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
+            End Try
         End Function
-        Public Function QueueConnect(ByVal remoteHost As String,
+        Public Function QueueConnectTo(ByVal remoteHost As String,
                                      ByVal remotePort As UInt16) As Task
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncConnect(remoteHost, remotePort)).Unwrap
+            Return inQueue.QueueFunc(Function() ConnectToAsync(remoteHost, remotePort)).Unwrap
         End Function
 
-        Private Function AsyncConnect(ByVal socket As PacketSocket,
-                                      Optional ByVal clientCdKeySalt As UInt32? = Nothing) As Task
+        Private Function ConnectWithAsync(ByVal socket As PacketSocket,
+                                          Optional ByVal clientCdKeySalt As UInt32? = Nothing) As Task
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If Me._state <> ClientState.Disconnected AndAlso Me._state <> ClientState.FinishedInitiatingConnection Then
@@ -419,22 +422,22 @@ Namespace Bnet
             ChangeState(ClientState.WaitingForProgramAuthenticationBegin)
 
             'Reset the class future for the connection outcome
-            Me._futureConnected.TrySetException(New InvalidStateException("Another connection was initiated."))
-            Me._futureConnected = New TaskCompletionSource(Of NoValue)
-            Me._futureConnected.IgnoreExceptions()
+            Me._connectResultAsync.TrySetException(New InvalidStateException("Another connection was initiated."))
+            Me._connectResultAsync = New TaskCompletionSource(Of NoValue)
+            Me._connectResultAsync.IgnoreExceptions()
 
             'Introductions
             socket.SubStream.Write({1}, 0, 1) 'protocol version
             SendPacket(Protocol.MakeAuthenticationBegin(_productInfoProvider.MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
 
             BeginHandlingPackets()
-            Return Me._futureConnected.Task
+            Return Me._connectResultAsync.Task
         End Function
-        Public Function QueueConnect(ByVal socket As PacketSocket,
-                                     Optional ByVal clientCDKeySalt As UInt32? = Nothing) As Task
+        Public Function QueueConnectWith(ByVal socket As PacketSocket,
+                                         Optional ByVal clientCDKeySalt As UInt32? = Nothing) As Task
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncConnect(socket, clientCDKeySalt)).Unwrap
+            Return inQueue.QueueFunc(Function() ConnectWithAsync(socket, clientCDKeySalt)).Unwrap
         End Function
 
         Private Async Sub BeginHandlingPackets()
@@ -456,15 +459,15 @@ Namespace Bnet
                 Throw New InvalidOperationException("Incorrect state for login.")
             End If
 
-            Me._futureLoggedIn.TrySetException(New InvalidStateException("Another login was initiated."))
-            Me._futureLoggedIn = New TaskCompletionSource(Of NoValue)
-            Me._futureLoggedIn.IgnoreExceptions()
+            Me._logOnResultAsync.TrySetException(New InvalidStateException("Another login was initiated."))
+            Me._logOnResultAsync = New TaskCompletionSource(Of NoValue)
+            Me._logOnResultAsync.IgnoreExceptions()
 
             Me._userCredentials = credentials
             ChangeState(ClientState.WaitingForUserAuthenticationBegin)
             SendPacket(Protocol.MakeAccountLogOnBegin(credentials))
             Logger.Log("Initiating logon with username {0}.".Frmt(credentials.UserName), LogMessageType.Typical)
-            Return _futureLoggedIn.Task
+            Return _logOnResultAsync.Task
         End Function
         Public Function QueueLogOn(ByVal credentials As ClientAuthenticator) As Task
             Contract.Requires(credentials IsNot Nothing)
@@ -483,8 +486,8 @@ Namespace Bnet
             End If
 
             'Finalize class futures
-            _futureConnected.TrySetException(New InvalidOperationException("Disconnected before connection completed ({0}).".Frmt(reason)))
-            _futureLoggedIn.TrySetException(New InvalidOperationException("Disconnected before logon completed ({0}).".Frmt(reason)))
+            _connectResultAsync.TrySetException(New InvalidOperationException("Disconnected before connection completed ({0}).".Frmt(reason)))
+            _logOnResultAsync.TrySetException(New InvalidOperationException("Disconnected before logon completed ({0}).".Frmt(reason)))
             _curAdvertisement = Nothing
 
             ChangeState(ClientState.Disconnected)
@@ -498,7 +501,7 @@ Namespace Bnet
                 _allowRetryConnect = False
                 Await _clock.AsyncWait(5.Seconds)
                 Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
-                Await QueueConnect(_bnetRemoteHostName, _bnetRemoteHostPort)
+                Await QueueConnectTo(_bnetRemoteHostName, _bnetRemoteHostPort)
                 Await QueueLogOn(_userCredentials.WithNewGeneratedKeys())
             End If
         End Sub
@@ -614,7 +617,7 @@ Namespace Bnet
 
             'Check
             If vals.ItemAs(Of Protocol.ProgramAuthenticationBeginLogOnType)("logon type") <> Protocol.ProgramAuthenticationBeginLogOnType.Warcraft3 Then
-                _futureConnected.TrySetException(New IO.InvalidDataException("Failed to connect: Unrecognized logon type from server."))
+                _connectResultAsync.TrySetException(New IO.InvalidDataException("Failed to connect: Unrecognized logon type from server."))
                 Throw New IO.InvalidDataException("Unrecognized logon type")
             End If
 
@@ -705,10 +708,10 @@ Namespace Bnet
                 End If
 
                 ChangeState(ClientState.EnterUserCredentials)
-                _futureConnected.TrySetResult(Nothing)
+                _connectResultAsync.TrySetResult(Nothing)
                 _allowRetryConnect = True
             Catch ex As Exception
-                _futureConnected.TrySetException(ex)
+                _connectResultAsync.TrySetException(ex)
                 Throw
             End Try
         End Sub
@@ -735,8 +738,8 @@ Namespace Bnet
                 ChangeState(ClientState.WaitingForUserAuthenticationFinish)
                 SendPacket(Protocol.MakeAccountLogOnFinish(clientProof))
             Catch ex As Exception
-                _futureLoggedIn.TrySetException(ex)
-                _futureConnected.TrySetException(ex)
+                _logOnResultAsync.TrySetException(ex)
+                _connectResultAsync.TrySetException(ex)
                 Throw
             End Try
         End Sub
@@ -768,14 +771,14 @@ Namespace Bnet
 
                 ChangeState(ClientState.WaitingForEnterChat)
                 Logger.Log("Logged on with username {0}.".Frmt(Me._userCredentials.UserName), LogMessageType.Typical)
-                _futureLoggedIn.TrySetResult(Nothing)
+                _logOnResultAsync.TrySetResult(Nothing)
 
                 'respond
                 SetReportedListenPort(6112)
                 SendPacket(Protocol.MakeEnterChat())
             Catch ex As Exception
-                _futureLoggedIn.TrySetException(ex)
-                _futureConnected.TrySetException(ex)
+                _logOnResultAsync.TrySetException(ex)
+                _connectResultAsync.TrySetException(ex)
                 Throw
             End Try
         End Sub

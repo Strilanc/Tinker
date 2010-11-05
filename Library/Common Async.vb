@@ -1,18 +1,20 @@
 ﻿Public Module FutureExtensionsEx
     <Extension()>
     Public Async Function ReadExactAsync(ByVal stream As IO.Stream, ByVal size As Integer) As Task(Of Byte())
-        Contract.Requires(size >= 0)
+        Contract.Requires(stream IsNot Nothing)
+        Contract.Requires(size > 0)
         Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
 
         Dim result = Await ReadBestEffortAsync(stream, size)
         If result.Length = 0 Then Throw New IO.IOException("End of stream.")
-        If result.Length < size Then Throw New IO.IOException("End of stream (fragment)")
+        If result.Length < size Then Throw New IO.IOException("End of stream (fragment).")
         Return result
     End Function
 
     <Extension()>
     Public Async Function ReadBestEffortAsync(ByVal stream As IO.Stream, ByVal maxSize As Integer) As Task(Of Byte())
-        Contract.Requires(maxSize >= 0)
+        Contract.Requires(stream IsNot Nothing)
+        Contract.Requires(maxSize > 0)
         Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
 
         Dim totalRead = 0
@@ -60,6 +62,8 @@
 
     <Extension()>
     Public Function DisposeControlAsync(ByVal control As Control) As Task
+        Contract.Requires(control IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Dim result = New TaskCompletionSource(Of NoValue)
         Try
             control.BeginInvoke(Sub()
@@ -91,6 +95,7 @@
 
     <Pure()>
     Public Function InstantTask() As Task
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Dim result = New TaskCompletionSource(Of NoValue)()
         result.SetResult(Nothing)
         Return result.Task
