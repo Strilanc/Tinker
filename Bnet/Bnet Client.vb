@@ -217,12 +217,12 @@ Namespace Bnet
             AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
             AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
             AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Ping, AddressOf ReceivePing)
-            AddPacketLogger(Protocol.Packets.ServerToClient.Null)
-            AddPacketLogger(Protocol.Packets.ServerToClient.GetFileTime)
-            AddPacketLogger(Protocol.Packets.ServerToClient.GetIconData)
-            AddPacketLogger(Protocol.Packets.ServerToClient.QueryGamesList)
-            AddPacketLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
-            AddPacketLogger(Protocol.Packets.ServerToClient.RequiredWork)
+            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.Null)
+            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.GetFileTime)
+            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.GetIconData)
+            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.QueryGamesList)
+            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
+            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.RequiredWork)
         End Sub
 
         Public ReadOnly Property Profile As Bot.ClientProfile
@@ -248,16 +248,12 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() _state)
         End Function
 
-        Private Function AddPacketLogger(ByVal packetDefinition As Protocol.Packets.Definition) As IDisposable
-            Contract.Requires(packetDefinition IsNot Nothing)
-            Return _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
-        End Function
         Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                            ByVal handler As Action(Of IPickle(Of T))) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Dim ld = AddPacketLogger(packetDefinition)
+            Dim ld = _packetHandler.AddLogger(packetDefinition)
             Dim hd = _packetHandler.AddHandler(packetDefinition.Id, Function(data) inQueue.QueueAction(Sub() handler(packetDefinition.Jar.ParsePickle(data))))
             Return New DelegatedDisposable(Sub()
                                                ld.Dispose()
@@ -265,19 +261,12 @@ Namespace Bnet
                                            End Sub)
         End Function
 
-        Private Function AddRemotePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                      ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
-            Contract.Requires(packetDefinition IsNot Nothing)
-            Contract.Requires(handler IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.ParsePickle(data)))
-        End Function
         Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                     ByVal handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable)
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AddRemotePacketHandler(packetDefinition, handler))
+            Return inQueue.QueueFunc(Function() _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.ParsePickle(data))))
         End Function
 
         Private Sub SendText(ByVal text As String)
