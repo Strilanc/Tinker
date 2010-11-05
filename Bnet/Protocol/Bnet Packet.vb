@@ -51,32 +51,18 @@ Namespace Bnet.Protocol
         End Property
     End Class
 
-    Public NotInheritable Class BnetPacketHandler
-        Inherits PacketHandler(Of PacketId)
-
-        Public Sub New(ByVal sourceName As String,
-                       Optional ByVal logger As Logger = Nothing)
-            MyBase.New(sourceName, logger)
-            Contract.Requires(sourceName IsNot Nothing)
-        End Sub
-
-        Public Overloads Function IncludeLogger(ByVal packetDefinition As Packets.Definition) As IDisposable
-            Contract.Requires(packetDefinition IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return IncludeLogger(packetDefinition.Id, packetDefinition.Jar)
+    Public Module BnetPacketHandler
+        <Pure()>
+        Public Function MakeBnetPacketHandlerLogger(ByVal logger As Logger) As PacketHandlerLogger(Of PacketId)
+            Contract.Requires(logger IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of PacketHandlerLogger(Of PacketId))() IsNot Nothing)
+            Dim handler = New PacketHandlerRaw(Of PacketId)(
+                HeaderSize:=4,
+                keyExtractor:=Function(header)
+                                  If header(0) <> Packets.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
+                                  Return DirectCast(header(1), PacketId)
+                              End Function)
+            Return New PacketHandlerLogger(Of PacketId)(handler, "BNET", logger)
         End Function
-
-        Public Overrides ReadOnly Property HeaderSize As Integer
-            Get
-                Contract.Ensures(Contract.Result(Of Integer)() = 4)
-                Return 4
-            End Get
-        End Property
-        'verification disabled due to stupid verifier (1.2.3.0118.5)
-        <ContractVerification(False)>
-        Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As PacketId
-            If header(0) <> Packets.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
-            Return DirectCast(header(1), PacketId)
-        End Function
-    End Class
+    End Module
 End Namespace

@@ -48,7 +48,7 @@ Namespace Bnet
         Private ReadOnly _profile As Bot.ClientProfile
         Private ReadOnly _productAuthenticator As IProductAuthenticator
         Private ReadOnly _logger As Logger
-        Private ReadOnly _packetHandler As Protocol.BnetPacketHandler
+        Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
         Private _socket As PacketSocket
         Private WithEvents _wardenClient As Warden.Client
 
@@ -150,7 +150,7 @@ Namespace Bnet
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_advertisementList IsNot Nothing)
-            Contract.Invariant(_packetHandler IsNot Nothing)
+            Contract.Invariant(_packetHandlerLogger IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
@@ -182,7 +182,7 @@ Namespace Bnet
             Me._logger = If(logger, New Logger)
             Me.inQueue = New TaskedCallQueue
             Me.outQueue = New TaskedCallQueue
-            Me._packetHandler = New Protocol.BnetPacketHandler("BNET", Me._logger)
+            Me._packetHandlerLogger = Protocol.MakeBnetPacketHandlerLogger(Me._logger)
         End Sub
         <Pure()>
         Public Shared Function MakeProductAuthenticator(ByVal profile As Bot.ClientProfile,
@@ -207,6 +207,7 @@ Namespace Bnet
             Me._futureConnected.IgnoreExceptions()
             Me._futureLoggedIn.IgnoreExceptions()
 
+            'Handled packets
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
@@ -217,12 +218,17 @@ Namespace Bnet
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.Ping, AddressOf ReceivePing)
-            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.Null)
-            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.GetFileTime)
-            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.GetIconData)
-            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.QueryGamesList)
-            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
-            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.RequiredWork)
+
+            'Ignored packets
+            For Each ignoredPacket In New Protocol.Packets.Definition() {
+                        Protocol.Packets.ServerToClient.Null,
+                        Protocol.Packets.ServerToClient.GetFileTime,
+                        Protocol.Packets.ServerToClient.GetIconData,
+                        Protocol.Packets.ServerToClient.QueryGamesList,
+                        Protocol.Packets.ServerToClient.FriendsUpdate,
+                        Protocol.Packets.ServerToClient.RequiredWork}
+                _packetHandlerLogger.TryIncludeLogger(ignoredPacket.Id, ignoredPacket.Jar)
+            Next
         End Sub
 
         Public ReadOnly Property Profile As Bot.ClientProfile
@@ -253,12 +259,10 @@ Namespace Bnet
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Dim ld = _packetHandler.IncludeLogger(packetDefinition)
-            Dim hd = _packetHandler.IncludeHandler(packetDefinition.Id, Function(data) inQueue.QueueAction(Sub() handler(packetDefinition.Jar.ParsePickle(data))))
-            Return New DelegatedDisposable(Sub()
-                                               ld.Dispose()
-                                               hd.Dispose()
-                                           End Sub)
+            Return _packetHandlerLogger.IncludeHandler(
+                packetDefinition.Id,
+                packetDefinition.Jar,
+                Function(value) inQueue.QueueAction(Sub() handler(value)))
         End Function
 
         Public Function QueueIncludePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
@@ -266,7 +270,10 @@ Namespace Bnet
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _packetHandler.IncludeHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.ParsePickle(data))))
+            Return inQueue.QueueFunc(Function() _packetHandlerLogger.IncludeHandler(
+                packetDefinition.Id,
+                packetDefinition.Jar,
+                handler))
         End Function
 
         Private Sub SendText(ByVal text As String)
@@ -435,7 +442,7 @@ Namespace Bnet
             Try
                 Do
                     Dim data = Await _socket.AsyncReadPacket
-                    Await _packetHandler.HandlePacket(data)
+                    Await _packetHandlerLogger.HandlePacket(data)
                 Loop
             Catch ex As Exception
                 QueueDisconnect(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
