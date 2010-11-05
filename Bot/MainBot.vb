@@ -279,5 +279,17 @@ Namespace Bot
                 }
             )
         End Function
+        <Extension()>
+        Public Function IncludeBasicCKLServerCommands(ByVal this As MainBot) As IDisposable
+            Contract.Requires(this IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Dim conv = Function(x As CKL.ServerManager) x.Server
+            Return this.IncludeCommandsInAllComponentsOfType(Of CKL.ServerManager)(
+                From command In New ICommand(Of CKL.Server)() {
+                    New CKL.ServerCommands.CommandAddKey,
+                    New CKL.ServerCommands.CommandRemoveKey
+                } Select command.ProjectedFrom(conv)
+            )
+        End Function
     End Module
 End Namespace

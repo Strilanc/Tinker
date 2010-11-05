@@ -7,7 +7,7 @@ Namespace CKL
         Implements IBotComponent
 
         Public Shared ReadOnly WidgetTypeName As InvariantString = "CKL"
-        Private ReadOnly _commands As New CKL.ServerCommands()
+        Private ReadOnly _commands As New CommandSet(Of CKL.ServerManager)
         Private ReadOnly _server As CKL.Server
         Private ReadOnly _control As GenericBotComponentControl
 
@@ -42,7 +42,7 @@ Namespace CKL
             End Get
         End Property
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
-            Return _commands.Invoke(_server, user, argument)
+            Return _commands.Invoke(Me, user, argument)
         End Function
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
             Return _commands.IsArgumentPrivate(argument)
@@ -57,6 +57,12 @@ Namespace CKL
                 Return _server.name
             End Get
         End Property
+        Public ReadOnly Property Server As CKL.Server
+            Get
+                Contract.Ensures(Contract.Result(Of CKL.Server)() IsNot Nothing)
+                Return _server
+            End Get
+        End Property
         Public ReadOnly Property Type As InvariantString Implements IBotComponent.Type
             Get
                 Return WidgetTypeName
@@ -64,15 +70,9 @@ Namespace CKL
         End Property
 
         Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
-            Dim converter = Function(server As CKL.Server)
-                                If server IsNot Me._server Then
-                                    Throw New NotSupportedException("Command mapped from manager to server used on different server.")
-                                End If
-                                Return Me
-                            End Function
-            Return IncludeCommand(command.ProjectedFrom(converter))
+            Return IncludeCommand(command)
         End Function
-        Public Function IncludeCommand(ByVal command As ICommand(Of CKL.Server)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of CKL.ServerManager)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             _commands.AddCommand(command)
