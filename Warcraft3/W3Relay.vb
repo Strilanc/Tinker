@@ -177,7 +177,7 @@
             Try
                 Dim buffer(0 To 4096 - 1) As Byte
                 Do
-                    Dim numRead = Await src.AsyncRead(buffer, 0, buffer.Length)
+                    Dim numRead = Await src.ReadAsync(buffer, 0, buffer.Length)
                     If numRead = 0 Then Throw New IO.IOException("End of stream")
                     dst.Write(buffer, 0, numRead)
                 Loop

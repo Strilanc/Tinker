@@ -2,6 +2,7 @@
 Imports Strilbrary.Values
 Imports Strilbrary.Threading
 Imports Strilbrary.Collections
+Imports System.Threading.Tasks
 
 Friend Class StreamTester
     Implements IDisposable
@@ -27,7 +28,7 @@ Friend Class StreamTester
             Select Case dataReader.ReadLine.ToUpper
                 Case "IGNORE"
                     Dim data = dataReader.ReadLine.FromHexStringToBytes
-                    testStream.AsyncRead(data, 0, data.Length).ContinueWith(
+                    testStream.ReadAsync(data, 0, data.Length).ContinueWith(
                         Sub(task)
                             If task.Status = TaskStatus.Faulted Then
                                 result.SetException(task.Exception.InnerExceptions)
@@ -40,7 +41,7 @@ Friend Class StreamTester
                 Case "READ"
                     Dim expectedData = dataReader.ReadLine.FromHexStringToBytes
                     Dim data(0 To expectedData.Length - 1) As Byte
-                    testStream.AsyncRead(data, 0, data.Length).ContinueWith(
+                    testStream.ReadAsync(data, 0, data.Length).ContinueWith(
                         Sub(task)
                             If task.Status = TaskStatus.Faulted Then
                                 result.SetException(task.Exception.InnerExceptions)

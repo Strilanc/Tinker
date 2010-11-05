@@ -38,11 +38,11 @@ Public NotInheritable Class PacketStreamer
     Public Async Function AsyncReadPacket() As Task(Of IReadableList(Of Byte))
         Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Byte)))() IsNot Nothing)
 
-        Dim header = Await _subStream.AsyncReadExact(FullHeaderSize)
+        Dim header = Await _subStream.ReadExactAsync(FullHeaderSize)
         Dim totalSize = CInt(header.Skip(_preheaderLength).Take(_sizeHeaderLength).ToUValue)
         If totalSize < FullHeaderSize Then Throw New IO.InvalidDataException("Invalid packet size (less than header size).")
         If totalSize > _maxPacketSize Then Throw New IO.InvalidDataException("Packet exceeded maximum size.")
-        Dim body = Await _subStream.AsyncReadExact(totalSize - FullHeaderSize)
+        Dim body = Await _subStream.ReadExactAsync(totalSize - FullHeaderSize)
 
         Return Concat(header, body).ToReadableList()
     End Function

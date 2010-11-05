@@ -1,47 +1,29 @@
 ﻿Public Module FutureExtensionsEx
     <Extension()>
-    Public Async Function AsyncReadExact(ByVal stream As IO.Stream, ByVal size As Integer) As Task(Of Byte())
+    Public Async Function ReadExactAsync(ByVal stream As IO.Stream, ByVal size As Integer) As Task(Of Byte())
         Contract.Requires(size >= 0)
         Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
 
-        Dim totalRead = 0
-        Dim result(0 To size - 1) As Byte
-        While totalRead < size
-            Dim numRead = Await stream.AsyncRead(result, totalRead, size - totalRead)
-            totalRead += numRead
-
-            'End of stream?
-            If numRead <= 0 Then
-                If totalRead = 0 Then
-                    Throw New IO.IOException("End of stream.")
-                Else
-                    Throw New IO.IOException("End of stream (fragment)")
-                End If
-            End If
-        End While
+        Dim result = Await ReadBestEffortAsync(stream, size)
+        If result.Length = 0 Then Throw New IO.IOException("End of stream.")
+        If result.Length < size Then Throw New IO.IOException("End of stream (fragment)")
         Return result
     End Function
 
     <Extension()>
-    Public Function AsyncRead(ByVal this As IO.Stream,
-                              ByVal buffer() As Byte,
-                              ByVal offset As Integer,
-                              ByVal count As Integer) As Task(Of Integer)
-        Contract.Requires(this IsNot Nothing)
-        Contract.Requires(buffer IsNot Nothing)
-        Contract.Requires(offset >= 0)
-        Contract.Requires(count >= 0)
-        Contract.Requires(offset + count <= buffer.Length)
-        Contract.Ensures(Contract.Result(Of Task(Of Integer))() IsNot Nothing)
+    Public Async Function ReadBestEffortAsync(ByVal stream As IO.Stream, ByVal maxSize As Integer) As Task(Of Byte())
+        Contract.Requires(maxSize >= 0)
+        Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
 
-        Dim result = New TaskCompletionSource(Of Integer)
-        result.DependentCall(Sub() this.BeginRead(
-                buffer:=buffer,
-                offset:=offset,
-                count:=count,
-                state:=Nothing,
-                callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar))))
-        Return result.Task.AssumeNotNull
+        Dim totalRead = 0
+        Dim result(0 To maxSize - 1) As Byte
+        While totalRead < maxSize
+            Dim numRead = Await stream.ReadAsync(result, totalRead, maxSize - totalRead)
+            If numRead <= 0 Then Exit While
+            totalRead += numRead
+        End While
+        If totalRead <> maxSize Then ReDim Preserve result(0 To totalRead - 1)
+        Return result
     End Function
 
     ''' <summary>
