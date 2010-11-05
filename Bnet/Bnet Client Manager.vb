@@ -158,16 +158,6 @@ Namespace Bnet
             End Try
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
-            For Each hook In _hooks
-                Contract.Assume(hook IsNot Nothing)
-                hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
-            Next hook
-            _client.Dispose()
-            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
-            Return Nothing
-        End Function
-
         Private _autoHook As Task(Of IDisposable)
         Private Async Sub SetAutomatic(ByVal slaved As Boolean)
             'Do nothing if already in the correct state
@@ -235,6 +225,12 @@ Namespace Bnet
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return _commands.IncludeCommand(command).AsTask()
+        End Function
+
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+            _client.Dispose()
+            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
+            Return _hooks.DisposeAllAsync()
         End Function
     End Class
 End Namespace
