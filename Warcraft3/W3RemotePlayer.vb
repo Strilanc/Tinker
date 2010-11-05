@@ -35,8 +35,9 @@ Namespace WC3
                        ByVal listenPort As UShort,
                        ByVal ip As Net.IPAddress,
                        ByVal peerKey As UInt32,
-                       Optional ByVal logger As Logger = Nothing)
+                       ByVal logger As Logger)
             Contract.Assume(ip IsNot Nothing)
+            Contract.Assume(logger IsNot Nothing)
             Me.name = name
             Me._packetHandlerLogger = Protocol.MakeW3PacketHandlerLogger(Me.name, logger)
             Me._id = id

@@ -10,8 +10,8 @@ Namespace Bnet.Commands
                        Description:="Forwards commands to the main bot.",
                        Permissions:="root:1")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Return target.Bot.InvokeCommand(user, argument)
         End Function
     End Class
@@ -24,8 +24,8 @@ Namespace Bnet.Commands
                        Description:="Disconnects from bnet.",
                        Permissions:="root:4")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Await target.QueueDisconnect(expected:=True, reason:="Disconnect Command")
             Return "Disconnected"
         End Function
@@ -178,8 +178,8 @@ Namespace Bnet.Commands
                        template:="On|Off",
                        Description:="Causes the client to automatically advertise any games on any server when 'On'.")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Select Case New InvariantString(argument.RawValue(0))
                 Case "On"
                     Await target.QueueSetAutomatic(True)
@@ -201,8 +201,8 @@ Namespace Bnet.Commands
                        Description:="Identifies and authenticates the client as a particular bnet user.",
                        Permissions:="root:4")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim userName = argument.RawValue(0)
             Dim password = argument.RawValue(1)
             Await target.QueueLogOn(Bnet.ClientAuthenticator.GeneratedFrom(userName, password))
@@ -222,8 +222,8 @@ Namespace Bnet.Commands
                         extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
                                           WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim server = Await target.Bot.QueueGetOrConstructGameServer()
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
             Try
@@ -262,8 +262,8 @@ Namespace Bnet.Commands
                        headType:="InstanceName",
                        Description:="Forwards commands to an instance in your hosted game. By default game instances are numbered, starting with 0.")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
             Dim gameName = argumentHead
 
@@ -290,8 +290,8 @@ Namespace Bnet.Commands
                        Description:="Refreshes the bot's game list display. No useful effect from bnet.",
                        Permissions:="local:1")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Await target.QueueSendPacket(Protocol.MakeQueryGamesList())
             Return "Sent request."
         End Function
@@ -305,8 +305,8 @@ Namespace Bnet.Commands
             Description:="Cancels a host command if it was issued by you, and unlinks the attached server.",
             Permissions:="")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
 
             Dim gameSet = Await target.QueueTryGetUserGameSet(user)
@@ -325,8 +325,8 @@ Namespace Bnet.Commands
                        Description:="Returns the admin code for a game you have hosted.",
                        Permissions:="")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
 
             Dim gameSet = Await target.QueueTryGetUserGameSet(user)
@@ -344,8 +344,8 @@ Namespace Bnet.Commands
                        Description:="Causes the bot to say the given text, including any bnet commands.",
                        Permissions:="root:1")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim text = argument.RawValue(0)
             If text.Length = 0 Then Throw New ArgumentException("Must say something.")
             Await target.QueueSendText(text)
@@ -361,8 +361,8 @@ Namespace Bnet.Commands
                        Description:="Stops placing a game in the custom games list and unlinks from any linked server.",
                        Permissions:="root:4,games:5")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Await target.QueueRemoveAllAdvertisableGames()
             Return "Cancelled advertising of all games."
         End Function
@@ -376,8 +376,8 @@ Namespace Bnet.Commands
                        Description:="Elevates you or a specified player to admin in your hosted game.",
                        Permissions:="games:1")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
 
             Dim username = If(argument.TryGetOptionalNamedValue("player"), user.Name.Value)
@@ -405,8 +405,8 @@ Namespace Bnet.Commands
                        Description:="Connects to a battle.net server at the given hostname.",
                        Permissions:="root:4")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim remoteHost = argument.RawValue(0)
             Dim port = Bnet.Client.BnetServerPort
             If remoteHost.Contains(":"c) Then

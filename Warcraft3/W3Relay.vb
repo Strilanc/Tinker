@@ -159,6 +159,7 @@
         Private Sub New()
         End Sub
 
+        <ContractVerification(False)>
         Public Shared Function InterShunt(ByVal stream1 As IO.Stream, ByVal stream2 As IO.Stream) As DisposableWithTask
             Contract.Requires(stream1 IsNot Nothing)
             Contract.Requires(stream2 IsNot Nothing)

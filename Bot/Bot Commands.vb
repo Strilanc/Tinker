@@ -9,8 +9,8 @@ Namespace Bot.Commands
                        Description:="Creates and connects bnet clients, using the given profiles. All of the clients will be set to automatic hosting.",
                        Permissions:="root:4")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim profileNames = (From word In argument.Split(" "c) Where word <> "").Cache
             If profileNames.None Then Throw New ArgumentException("No profiles specified.")
 
@@ -67,8 +67,8 @@ Namespace Bot.Commands
                        hasPrivateArguments:=True)
         End Sub
 
+        <ContractVerification(False)>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim name = argument.RawValue(0)
             Dim password = argument.NamedValue("password")
             Dim server = Await target.QueueGetOrConstructGameServer()
@@ -85,8 +85,8 @@ Namespace Bot.Commands
                        template:="name",
                        Permissions:="root:5")
         End Sub
+        <ContractVerification(False)>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim port = target.PortPool.TryAcquireAnyPort()
             If port Is Nothing Then Throw New OperationFailedException("No available ports in the pool.")
             Dim name = argument.RawValue(0)
@@ -112,8 +112,8 @@ Namespace Bot.Commands
                        Description:="Creates a new bnet client. -Auto causes the client to automatically advertising any games hosted by the bot.",
                        Permissions:="root:4")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim profileName = If(argument.TryGetOptionalNamedValue("profile"), "default").ToInvariant
             Dim clientName = argument.RawValue(0).ToInvariant
 
@@ -138,8 +138,8 @@ Namespace Bot.Commands
                        Description:="Creates a lan advertiser. -Manual causes the advertiser to not automatically advertise any games hosted by the bot.",
                        Permissions:="root:4")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim name = argument.RawValue(0)
             Dim remoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
             Dim auto = Not argument.HasOptionalSwitch("manual")
@@ -165,8 +165,8 @@ Namespace Bot.Commands
                        Description:="Disposes a bot component.",
                        Permissions:="root:5")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             'parse
             Dim args = argument.RawValue(0).Split(":"c)
             If args.Length <> 2 Then Throw New ArgumentException("Expected a component argument like: type:name.")
@@ -231,8 +231,8 @@ Namespace Bot.Commands
                        Description:="Lists all bot components. Use -type= to filter by component type.",
                        Permissions:="root:1")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim typeFilter = argument.TryGetOptionalNamedValue("type")
             If typeFilter Is Nothing Then
                 Dim components = Await target.Components.QueueGetAllComponents()
@@ -257,8 +257,8 @@ Namespace Bot.Commands
                        Description:="Loads the named plugin.",
                        Permissions:="root:5")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim profile = (From p In target.Settings.PluginProfiles Where p.name = argument.RawValue(0)).FirstOrDefault
             If profile Is Nothing Then Throw New InvalidOperationException("No such plugin profile.")
             Dim socket = New Plugins.Socket(profile.name, target, profile.location)
@@ -316,8 +316,8 @@ Namespace Bot.Commands
                        Description:="Forwards commands to the named component.",
                        Permissions:="root:3")
         End Sub
+        <ContractVerification(False)>
         Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             'parse
             Dim args = argumentHead.Split(":"c)
             If args.Length <> 2 Then Throw New ArgumentException("Expected a component type:name.")

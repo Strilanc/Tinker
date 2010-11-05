@@ -135,7 +135,8 @@ Namespace WC3
                                     pickle.Value.ItemAs(Of PlayerId)("joiner id"),
                                     CUShort(ext_addr.Port),
                                     ext_addr.Address,
-                                    pickle.Value.ItemAs(Of UInt32)("peer key"))
+                                    pickle.Value.ItemAs(Of UInt32)("peer key"),
+                                    New Logger)
             otherPlayers.Add(player)
             Dim hooks = New List(Of IDisposable)
             hooks.Add(player.AddPacketHandler(Protocol.PeerPackets.PeerPing, Function(value) inQueue.QueueAction(Sub() OnPeerReceivePeerPing(player, value))))

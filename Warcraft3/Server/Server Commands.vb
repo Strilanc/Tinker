@@ -27,8 +27,8 @@ Namespace WC3.ServerCommands
                        extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
                                          WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
+        <ContractVerification(False)>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As WC3.GameServerManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Await target.QueueAddGameFromArguments(argument, user)
             Return "Game added."
         End Function

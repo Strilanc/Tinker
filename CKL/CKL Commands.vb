@@ -8,6 +8,7 @@ Namespace CKL.ServerCommands
                        template:="Name",
                        Description:="Removes a lendable key pair.")
         End Sub
+        <ContractVerification(False)>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Server, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim name = argument.RawValue(0)
             Dim rocKey = argument.NamedValue("roc")
@@ -24,6 +25,7 @@ Namespace CKL.ServerCommands
                        template:="Name roc=key tft=key",
                        Description:="Adds a lendable key pair.")
         End Sub
+        <ContractVerification(False)>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Server, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim name = argument.RawValue(0)
             Contract.Assume(target IsNot Nothing)

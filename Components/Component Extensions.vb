@@ -14,7 +14,7 @@
                 component.Logger.Log("Command: {0}".Frmt(argDesc), LogMessageType.Typical)
 
                 component.Logger.FutureLog(placeholder:="[running command {0}...]".Frmt(argDesc),
-                                           message:=SafeInvokeCommand(component, argument))
+                                           message:=SafeInvokeCommand(component, argument).AssumeNotNull())
             Catch e As Exception
                 e.RaiseAsUnexpected("UIInvokeCommand for {0}:{1}".Frmt(component.Type, component.Name))
             End Try

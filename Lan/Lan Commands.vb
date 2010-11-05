@@ -9,8 +9,8 @@ Namespace Lan.Commands
                        template:="On|Off",
                        Description:="Causes the advertiser to automatically advertise all games on any server when 'On'.")
         End Sub
+        <ContractVerification(False)>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Select Case New InvariantString(argument.RawValue(0))
                 Case "On"
                     Await target.QueueSetAutomatic(True)
@@ -31,8 +31,8 @@ Namespace Lan.Commands
                        template:="id=# name=<game name> map=<search query>",
                        Description:="Adds a game to be advertised, but doesn't create a new server to go with it.")
         End Sub
+        <ContractVerification(False)>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim id = UInt32.Parse(argument.NamedValue("id"))
             Dim name = argument.NamedValue("name")
             Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
@@ -52,9 +52,8 @@ Namespace Lan.Commands
                        template:="id",
                        Description:="Removes a game being advertised.")
         End Sub
+        <ContractVerification(False)>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
-
             Dim id As UInteger
             If Not UInteger.TryParse(argument.RawValue(0), id) Then Throw New InvalidOperationException("Invalid game id.")
 
@@ -76,8 +75,8 @@ Namespace Lan.Commands
                        Permissions:="games:1",
                        extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
+        <ContractVerification(False)>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim server = Await target.Bot.QueueGetOrConstructGameServer()
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
             Try

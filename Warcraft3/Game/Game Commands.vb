@@ -6,6 +6,8 @@ Namespace WC3
         End Sub
 
         Private Shared Function Conv(ByVal command As ICommand(Of Game)) As ICommand(Of GameManager)
+            Contract.Requires(command IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ICommand(Of GameManager))() IsNot Nothing)
             Return command.ProjectedFrom(Function(x As GameManager) x.Game)
         End Function
 
@@ -439,8 +441,8 @@ Namespace WC3
                            template:="?slot",
                            Description:="Allows players to move from a slot and change its properties. Omit the slot argument to affect all slots.")
             End Sub
+            <ContractVerification(False)>
             Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-                Contract.Assume(target IsNot Nothing)
                 Dim lockType = WC3.Slot.LockState.Unlocked
                 If argument.RawValueCount = 0 Then
                     Await target.QueueSetAllSlotsLocked(lockType)
