@@ -42,6 +42,30 @@ Namespace Bnet
 
             client.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
         End Sub
+        Public Shared Function FromProfileAsync(ByVal clientName As InvariantString,
+                                                ByVal profileName As InvariantString,
+                                                ByVal clock As IClock,
+                                                ByVal bot As Bot.MainBot) As Task(Of ClientManager)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(bot IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of ClientManager))() IsNot Nothing)
+
+            Dim profile = (From p In bot.Settings.ClientProfiles Where p.name = profileName).FirstOrDefault
+            If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
+            Dim logger = New Logger
+
+            Dim authenticator As IProductAuthenticator
+            If profile.CKLServerAddress Like "*:#*" Then
+                Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
+                Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
+                authenticator = New CKL.Client(remoteHost, port, clock, logger)
+            Else
+                authenticator = New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
+            End If
+
+            Dim client = New Bnet.Client(profile, New CachedWC3InfoProvider, authenticator, clock, logger)
+            Return New Bnet.ClientManager(clientName, bot, client).AsTask
+        End Function
 
         Public ReadOnly Property Client As Bnet.Client
             Get
@@ -132,29 +156,6 @@ Namespace Bnet
             Catch ex As Exception
                 _client.QueueSendWhisper(user.Name, "Failed: {0}".Frmt(ex.Summarize))
             End Try
-        End Function
-
-        Public Shared Function AsyncCreateFromProfile(ByVal clientName As InvariantString,
-                                                      ByVal profileName As InvariantString,
-                                                      ByVal bot As Bot.MainBot) As Task(Of ClientManager)
-            Contract.Requires(bot IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of ClientManager))() IsNot Nothing)
-
-            Dim profile = (From p In bot.Settings.ClientProfiles Where p.name = profileName).FirstOrDefault
-            If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
-            Dim clock = New SystemClock
-            Dim logger = New Logger
-
-            Dim authenticator As IProductAuthenticator
-            If profile.CKLServerAddress Like "*:#*" Then
-                Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
-                Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
-                authenticator = New CKL.Client(remoteHost, port, clock, logger)
-            Else
-                authenticator = New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
-            End If
-
-            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedWC3InfoProvider, authenticator, clock, logger)).AsTask
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task

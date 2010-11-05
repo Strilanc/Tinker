@@ -38,7 +38,8 @@ Namespace Bot.Commands
             Contract.Requires(profileName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Bnet.ClientManager))() IsNot Nothing)
 
-            Dim manager = Await Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, parent)
+            Dim clock = New SystemClock()
+            Dim manager = Await Bnet.ClientManager.FromProfileAsync(profileName, profileName, clock, parent)
             Try
                 manager.QueueSetAutomatic(True)
                 Await parent.Components.QueueAddComponent(manager)
@@ -116,7 +117,8 @@ Namespace Bot.Commands
             Dim profileName = If(argument.TryGetOptionalNamedValue("profile"), "default").ToInvariant
             Dim clientName = argument.RawValue(0).ToInvariant
 
-            Dim manager = Await Bnet.ClientManager.AsyncCreateFromProfile(clientName, profileName, target)
+            Dim clock = New SystemClock()
+            Dim manager = Await Bnet.ClientManager.FromProfileAsync(clientName, profileName, clock, target)
             Try
                 Await target.Components.QueueAddComponent(manager)
                 If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
