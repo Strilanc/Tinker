@@ -221,17 +221,17 @@ Public Class ComponentTest
         Dim flag1 = False
         Dim flag2 = True
         Dim flag3 = False
-        Assert.IsTrue(t1 Is WaitValue(c.QueueGetOrConstructComponent(Of TestComponent1)(
+        Assert.IsTrue(t1 Is WaitValue(c.QueueFindOrElseConstructComponent(Of TestComponent1)(
             Function()
                 flag1 = True
                 Return t1
             End Function)))
-        Assert.IsTrue(t1 Is WaitValue(c.QueueGetOrConstructComponent(Of TestComponent1)(
+        Assert.IsTrue(t1 Is WaitValue(c.QueueFindOrElseConstructComponent(Of TestComponent1)(
             Function()
                 flag2 = False
                 Return t1
             End Function)))
-        Assert.IsTrue(t2 Is WaitValue(c.QueueGetOrConstructComponent(Of TestComponent2)(
+        Assert.IsTrue(t2 Is WaitValue(c.QueueFindOrElseConstructComponent(Of TestComponent2)(
             Function()
                 flag3 = True
                 Return t2

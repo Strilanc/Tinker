@@ -160,7 +160,7 @@ Namespace Components
         ''' Determines a component, from the set, with the given type.
         ''' If there was no such component then the result is a new component produced by the given factory and added to the set.
         ''' </summary>
-        Private Function GetOrConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As T
+        Private Function FindOrElseConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As T
             Contract.Requires(factory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Dim result = EnumComponents(Of T)().FirstOrDefault
@@ -175,10 +175,10 @@ Namespace Components
         ''' Asynchronously determines a component, from the set, with the given type.
         ''' If there was no such component then the result is a new component produced by the given factory and added to the set.
         ''' </summary>
-        Public Function QueueGetOrConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As Task(Of T)
+        Public Function QueueFindOrElseConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As Task(Of T)
             Contract.Requires(factory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() GetOrConstructComponent(factory))
+            Return inQueue.QueueFunc(Function() FindOrElseConstructComponent(factory))
         End Function
 
         ''' <summary>

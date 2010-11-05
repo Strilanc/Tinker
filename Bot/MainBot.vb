@@ -84,7 +84,7 @@ Namespace Bot
         Public Function QueueGetOrConstructGameServer(ByVal this As MainBot) As Task(Of WC3.GameServerManager)
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of WC3.GameServerManager))() IsNot Nothing)
-            Return this.Components.QueueGetOrConstructComponent(Of WC3.GameServerManager)(
+            Return this.Components.QueueFindOrElseConstructComponent(Of WC3.GameServerManager)(
                 factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer(New SystemClock()), this))
         End Function
         <Extension()>
