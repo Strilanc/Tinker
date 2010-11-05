@@ -54,8 +54,8 @@ Namespace WC3
         '''<summary>Handles new connections.</summary>
         <ContractVerification(False)>
         Private Async Sub OnAcceptConnection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
-            Contract.Requires(sender IsNot Nothing)
-            Contract.Requires(client IsNot Nothing)
+            Contract.Assume(sender IsNot Nothing)
+            Contract.Assume(client IsNot Nothing)
             Dim socket = New W3Socket(New PacketSocket(stream:=client.GetStream,
                                                        localendpoint:=CType(client.Client.LocalEndPoint, Net.IPEndPoint),
                                                        remoteendpoint:=CType(client.Client.RemoteEndPoint, Net.IPEndPoint),

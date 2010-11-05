@@ -263,7 +263,7 @@ Namespace WC3
                    ).Unwrap.AssumeNotNull
         End Function
         Public Async Function AsyncDescription() As Task(Of String)
-            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             'Information differing based on the current player state
             Dim contextInfo As String
             Select Case _state

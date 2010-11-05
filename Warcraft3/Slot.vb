@@ -139,7 +139,7 @@
         End Property
         <Pure()>
         Public Async Function AsyncGenerateDescription() As Task(Of String)
-            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Dim result = ""
             If Locked <> LockState.Unlocked Then result += "({0}) ".Frmt(Locked)
             result += If(Team = ObserverTeamIndex, "Observer", "Team {0}, {1}, {2}".Frmt(Team + 1, Race, Color))

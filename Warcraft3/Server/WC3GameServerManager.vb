@@ -162,10 +162,10 @@ Namespace WC3
                                          ByVal game As WC3.Game,
                                          ByVal player As WC3.Player,
                                          ByVal text As String)
-            Contract.Requires(sender IsNot Nothing)
-            Contract.Requires(game IsNot Nothing)
-            Contract.Requires(player IsNot Nothing)
-            Contract.Requires(text IsNot Nothing)
+            Contract.Assume(sender IsNot Nothing)
+            Contract.Assume(game IsNot Nothing)
+            Contract.Assume(player IsNot Nothing)
+            Contract.Assume(text IsNot Nothing)
 
             Dim prefix = My.Settings.commandPrefix.AssumeNotNull
             If text = Tinker.Bot.MainBot.TriggerCommandText Then '?trigger command

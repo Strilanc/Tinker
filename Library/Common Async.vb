@@ -1,9 +1,9 @@
 ﻿Public Module FutureExtensionsEx
     <Extension()>
     Public Async Function ReadExactAsync(ByVal stream As IO.Stream, ByVal size As Integer) As Task(Of Byte())
-        Contract.Requires(stream IsNot Nothing)
-        Contract.Requires(size > 0)
-        Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
+        Contract.Assume(stream IsNot Nothing)
+        Contract.Assume(size > 0)
+        'Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
 
         Dim result = Await ReadBestEffortAsync(stream, size)
         If result.Length = 0 Then Throw New IO.IOException("End of stream.")
@@ -13,9 +13,9 @@
 
     <Extension()>
     Public Async Function ReadBestEffortAsync(ByVal stream As IO.Stream, ByVal maxSize As Integer) As Task(Of Byte())
-        Contract.Requires(stream IsNot Nothing)
-        Contract.Requires(maxSize > 0)
-        Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
+        Contract.Assume(stream IsNot Nothing)
+        Contract.Assume(maxSize > 0)
+        'Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
 
         Dim totalRead = 0
         Dim result(0 To maxSize - 1) As Byte
@@ -35,9 +35,9 @@
     <Extension()>
     Public Async Function FirstMatchAsync(Of T)(ByVal sequence As IEnumerable(Of T),
                                                 ByVal filterFunction As Func(Of T, Task(Of Boolean))) As Task(Of T)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(filterFunction IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
+        Contract.Assume(sequence IsNot Nothing)
+        Contract.Assume(filterFunction IsNot Nothing)
+        'Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
 
         For Each item In sequence
             If Await filterFunction(item) Then

@@ -137,7 +137,7 @@ Namespace WC3.Replay
 
         Public ReadOnly Iterator Property Entries() As IEnumerable(Of ReplayEntry)
             Get
-                Contract.Ensures(Contract.Result(Of IEnumerable(Of ReplayEntry))() IsNot Nothing)
+                'Contract.Ensures(Contract.Result(Of IEnumerable(Of ReplayEntry))() IsNot Nothing)
                 Dim jar = New ReplayEntryJar()
                 Using stream = MakeDataStream()
                     While stream.Position < stream.Length

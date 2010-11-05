@@ -80,7 +80,7 @@ Namespace WC3
                                        End Sub)
         End Function
         Private Async Sub Connect(ByVal hostName As String, ByVal port As UShort)
-            Contract.Requires(hostName IsNot Nothing)
+            Contract.Assume(hostName IsNot Nothing)
 
             Dim tcp = New Net.Sockets.TcpClient()
             tcp.Connect(hostName, port)

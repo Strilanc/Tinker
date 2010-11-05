@@ -34,9 +34,9 @@ Namespace Bot.Commands
         End Function
 
         Private Async Function CreateLoggedOnClientManagerAsync(ByVal parent As MainBot, ByVal profileName As String) As Task(Of Bnet.ClientComponent)
-            Contract.Requires(parent IsNot Nothing)
-            Contract.Requires(profileName IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of Bnet.ClientComponent))() IsNot Nothing)
+            Contract.Assume(parent IsNot Nothing)
+            Contract.Assume(profileName IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of Bnet.ClientComponent))() IsNot Nothing)
 
             Dim clock = New SystemClock()
             Dim clientComponent = Bnet.ClientComponent.FromProfile(profileName, profileName, clock, parent)

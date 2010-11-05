@@ -74,9 +74,9 @@ Namespace Bot
         <Extension()>
         <ContractVerification(False)>
         Public Async Function InvokeCommand(ByVal this As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
-            Contract.Requires(this IsNot Nothing)
-            Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+            Contract.Assume(this IsNot Nothing)
+            Contract.Assume(argument IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Dim components = Await this.Components.QueueGetAllComponents(Of MainBotManager)()
             Return Await components.Single.InvokeCommand(user, argument)
         End Function
@@ -91,10 +91,10 @@ Namespace Bot
         Public Async Function QueueCreateActiveGameSetsAsyncView(ByVal this As MainBot,
                                                                  ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
                                                                  ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
-            Contract.Requires(this IsNot Nothing)
-            Contract.Requires(adder IsNot Nothing)
-            Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
+            Contract.Assume(this IsNot Nothing)
+            Contract.Assume(adder IsNot Nothing)
+            Contract.Assume(remover IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
 
             Dim inQueue = New TaskedCallQueue(initiallyStarted:=False)
             Dim hooks = New List(Of Task(Of IDisposable))

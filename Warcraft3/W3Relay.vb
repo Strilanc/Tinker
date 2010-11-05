@@ -171,9 +171,9 @@
             Return result
         End Function
         Private Shared Async Function Shunt(ByVal src As IO.Stream, ByVal dst As IO.Stream) As Task
-            Contract.Requires(src IsNot Nothing)
-            Contract.Requires(dst IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Contract.Assume(src IsNot Nothing)
+            Contract.Assume(dst IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Try
                 Dim buffer(0 To 4096 - 1) As Byte
                 Do

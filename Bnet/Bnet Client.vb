@@ -358,8 +358,8 @@ Namespace Bnet
 
         Private Async Function ConnectToAsync(ByVal remoteHost As String,
                                               ByVal remotePort As UInt16) As Task
-            Contract.Requires(remoteHost IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Contract.Assume(remoteHost IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If Me._state <> ClientState.Disconnected Then Throw New InvalidOperationException("Must disconnect before connecting again.")
             ChangeState(ClientState.InitiatingConnection)
 
@@ -441,7 +441,7 @@ Namespace Bnet
         End Function
 
         Private Async Sub BeginHandlingPackets()
-            Contract.Requires(Me._state > ClientState.InitiatingConnection)
+            Contract.Assume(Me._state > ClientState.InitiatingConnection)
             Try
                 Do
                     Dim data = Await _socket.AsyncReadPacket
@@ -476,7 +476,7 @@ Namespace Bnet
         End Function
 
         Private Async Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
-            Contract.Requires(reason IsNot Nothing)
+            Contract.Assume(reason IsNot Nothing)
             If _socket IsNot Nothing Then
                 _socket.QueueDisconnect(expected, reason)
                 RemoveHandler _socket.Disconnected, AddressOf OnSocketDisconnected

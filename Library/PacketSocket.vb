@@ -88,13 +88,13 @@ Public NotInheritable Class PacketSocket
                                               Optional ByVal preheaderLength As Integer = 2,
                                               Optional ByVal sizeHeaderLength As Integer = 2,
                                               Optional ByVal name As InvariantString? = Nothing) As Task(Of PacketSocket)
-        Contract.Requires(remoteHost IsNot Nothing)
-        Contract.Requires(clock IsNot Nothing)
-        Contract.Requires(preheaderLength >= 0)
-        Contract.Requires(sizeHeaderLength > 0)
-        Contract.Requires(bufferSize >= preheaderLength + sizeHeaderLength)
-        Contract.Requires(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
-        Contract.Ensures(Contract.Result(Of Task(Of PacketSocket))() IsNot Nothing)
+        Contract.Assume(remoteHost IsNot Nothing)
+        Contract.Assume(clock IsNot Nothing)
+        Contract.Assume(preheaderLength >= 0)
+        Contract.Assume(sizeHeaderLength > 0)
+        Contract.Assume(bufferSize >= preheaderLength + sizeHeaderLength)
+        Contract.Assume(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
+        'Contract.Ensures(Contract.Result(Of Task(Of PacketSocket))() IsNot Nothing)
         Dim socket = Await AsyncTcpConnect(remoteHost, remotePort)
         Return New PacketSocket(socket.GetStream,
                                 DirectCast(socket.Client.LocalEndPoint, Net.IPEndPoint),

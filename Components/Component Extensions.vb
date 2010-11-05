@@ -20,9 +20,9 @@
             End Try
         End Sub
         Private Async Function SafeInvokeCommand(ByVal component As IBotComponent, ByVal argument As String) As Task(Of String)
-            Contract.Requires(component IsNot Nothing)
-            Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+            Contract.Assume(component IsNot Nothing)
+            Contract.Assume(argument IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Try
                 Dim result = Await Await TaskedFunc(Function() component.InvokeCommand(Nothing, argument))
                 If String.IsNullOrEmpty(result) Then Return "Succeeded with no message"
@@ -34,9 +34,9 @@
 
         <Extension()>
         Public Async Function IncludeAllCommands(ByVal component As IBotComponent, ByVal commands As IEnumerable(Of Commands.ICommand(Of IBotComponent))) As Task(Of IDisposable)
-            Contract.Requires(component IsNot Nothing)
-            Contract.Requires(commands IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
+            Contract.Assume(component IsNot Nothing)
+            Contract.Assume(commands IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
 
             Dim disposables = New List(Of Task(Of IDisposable))
             Try

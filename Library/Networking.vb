@@ -115,9 +115,9 @@ Public Module NetworkingCommon
 
     Public Async Function DNSLookupAddressAsync(ByVal remoteHost As String,
                                                 ByVal addressSelector As Random) As Task(Of Net.IPAddress)
-        Contract.Requires(remoteHost IsNot Nothing)
-        Contract.Requires(addressSelector IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task(Of Net.IPAddress))() IsNot Nothing)
+        Contract.Assume(remoteHost IsNot Nothing)
+        Contract.Assume(addressSelector IsNot Nothing)
+        'Contract.Ensures(Contract.Result(Of Task(Of Net.IPAddress))() IsNot Nothing)
         Dim hostEntry = Await AsyncDnsLookup(remoteHost)
         Return hostEntry.AddressList(addressSelector.Next(hostEntry.AddressList.Count))
     End Function
@@ -126,9 +126,9 @@ Public Module NetworkingCommon
     Public Async Function TCPConnectAsync(ByVal remoteHost As String,
                                           ByVal addressSelector As Random,
                                           ByVal port As UShort) As Task(Of TcpClient)
-        Contract.Requires(remoteHost IsNot Nothing)
-        Contract.Requires(addressSelector IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
+        Contract.Assume(remoteHost IsNot Nothing)
+        Contract.Assume(addressSelector IsNot Nothing)
+        'Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
         Dim address = Await DNSLookupAddressAsync(remoteHost, addressSelector)
         Return Await AsyncTcpConnect(address, port)
     End Function

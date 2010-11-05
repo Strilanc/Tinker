@@ -74,8 +74,8 @@ Namespace CKL
         <ContractVerification(False)>
         Private Async Sub OnAcceptedConnection(ByVal sender As ConnectionAccepter,
                                                ByVal acceptedClient As Net.Sockets.TcpClient) Handles _accepter.AcceptedConnection
-            Contract.Requires(sender IsNot Nothing)
-            Contract.Requires(acceptedClient IsNot Nothing)
+            Contract.Assume(sender IsNot Nothing)
+            Contract.Assume(acceptedClient IsNot Nothing)
             Contract.Assume(acceptedClient.Client IsNot Nothing)
             Dim socket = New PacketSocket(stream:=acceptedClient.GetStream,
                                           localEndPoint:=DirectCast(acceptedClient.Client.LocalEndPoint, Net.IPEndPoint),

@@ -59,9 +59,9 @@
 
         Private Async Function AsyncTryAcceptPlayer(ByVal knockData As Protocol.KnockData,
                                                     ByVal socket As W3Socket) As Task(Of Game)
-            Contract.Requires(knockData IsNot Nothing)
-            Contract.Requires(socket IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
+            Contract.Assume(knockData IsNot Nothing)
+            Contract.Assume(socket IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
 
             Try
                 Return Await _games.FirstMatchAsync(
@@ -144,7 +144,7 @@
         End Function
 
         Private Function AsyncTryFindPlayerGame(ByVal userName As InvariantString) As Task(Of Game)
-            Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
             Return _games.ToList.FirstMatchAsync(
                 Async Function(game)
                     Dim player = Await game.QueueTryFindPlayer(userName)

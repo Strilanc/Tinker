@@ -112,8 +112,8 @@
         End Property
 
         Public Async Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As Task
-            Contract.Requires(wardenData IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Contract.Assume(wardenData IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             _activated.TrySetResult(Nothing)
             Dim wardenClient = Await _socket
             Await wardenClient.QueueSendWardenData(wardenData)

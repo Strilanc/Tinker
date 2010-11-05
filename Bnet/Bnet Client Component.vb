@@ -111,7 +111,7 @@ Namespace Bnet
 
         <ContractVerification(False)>
         Private Async Function OnReceivedChatEvent(ByVal vals As NamedValueMap) As Task
-            Contract.Requires(vals IsNot Nothing)
+            Contract.Assume(vals IsNot Nothing)
 
             Dim id = vals.ItemAs(Of Bnet.Protocol.ChatEventId)("event id")
             Dim user = _client.Profile.Users(vals.ItemAs(Of String)("username"))

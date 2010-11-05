@@ -36,8 +36,8 @@ Namespace WC3
             game.ChainEventualDisposalTo(Me)
         End Sub
         Private Async Sub HandleText(ByVal player As WC3.Player, ByVal text As String)
-            Contract.Requires(player IsNot Nothing)
-            Contract.Requires(text IsNot Nothing)
+            Contract.Assume(player IsNot Nothing)
+            Contract.Assume(text IsNot Nothing)
 
             Dim commandPrefix = My.Settings.commandPrefix.AssumeNotNull
             If text = Tinker.Bot.MainBot.TriggerCommandText Then '?Trigger command

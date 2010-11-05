@@ -56,7 +56,7 @@ Namespace WC3
 
         '''<summary>Handles new connections to the server.</summary>
         Private Async Sub AcceptSocket(ByVal socket As W3Socket)
-            Contract.Requires(socket IsNot Nothing)
+            Contract.Assume(socket IsNot Nothing)
 
             _logger.Log("Connection from {0}.".Frmt(socket.Name), LogMessageType.Positive)
             Dim socketHandled = New OnetimeLock()
@@ -107,8 +107,8 @@ Namespace WC3
 
         '''<summary>Handles connecting players that have sent their Knock packet.</summary>
         Private Async Sub OnPlayerIntroduction(ByVal knockData As Protocol.KnockData, ByVal socket As W3Socket)
-            Contract.Requires(knockData IsNot Nothing)
-            Contract.Requires(socket IsNot Nothing)
+            Contract.Assume(knockData IsNot Nothing)
+            Contract.Assume(socket IsNot Nothing)
 
             'Get player's desired game set
             If Not _gameSets.ContainsKey(knockData.GameId) Then

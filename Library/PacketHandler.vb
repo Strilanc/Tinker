@@ -115,9 +115,9 @@ Public NotInheritable Class PacketHandlerRaw(Of TKey)
     End Function
 
     Public Async Function HandlePacket(ByVal packetData As IReadableList(Of Byte)) As Task
-        Contract.Requires(packetData IsNot Nothing)
-        Contract.Requires(packetData.Count >= HeaderSize)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+        Contract.Assume(packetData IsNot Nothing)
+        Contract.Assume(packetData.Count >= HeaderSize)
+        'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
         Dim head = packetData.SubView(0, HeaderSize)
         Dim body = packetData.SubView(HeaderSize)
