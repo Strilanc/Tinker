@@ -27,6 +27,7 @@ Namespace Bot
                            Description:="Downloads a map directly from a supported web site.",
                            Permissions:="root:2")
             End Sub
+            <ContractVerification(False)>
             Protected Overrides Async Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Dim site = argument.NamedValue("site").ToInvariant
                 Dim mapId = argument.RawValue(0)
@@ -42,14 +43,17 @@ Namespace Bot
 
             Private Shared Function TryExtractDownloadLink(ByVal html As String) As String
                 Contract.Requires(html IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
 
                 Dim posDownload = html.IndexAfter("alt=""Download""", 0, StringComparison.OrdinalIgnoreCase)
                 If posDownload Is Nothing Then Return Nothing
 
+                Contract.Assume(posDownload.Value >= 0)
+                Contract.Assume(posDownload.Value < html.Length)
                 Dim posLink = html.IndexAfter("a href=""", posDownload.Value, StringComparison.OrdinalIgnoreCase)
                 If posLink Is Nothing Then Return Nothing
 
+                Contract.Assume(posLink.Value >= 0)
+                Contract.Assume(posLink.Value < html.Length)
                 Dim posLinkEnd = html.IndexOf(">", posLink.Value, StringComparison.OrdinalIgnoreCase)
                 If posLinkEnd < 0 Then Return Nothing
 
@@ -57,11 +61,12 @@ Namespace Bot
             End Function
             Private Shared Function TryExtractEpicWarFilename(ByVal html As String) As String
                 Contract.Requires(html IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
 
                 Dim posName = html.IndexAfter("Download ", 0, StringComparison.OrdinalIgnoreCase)
                 If posName Is Nothing Then Return Nothing
 
+                Contract.Assume(posName.Value >= 0)
+                Contract.Assume(posName.Value < html.Length)
                 Dim posNameEnd = html.IndexOf("<", posName.Value, StringComparison.OrdinalIgnoreCase)
                 If posNameEnd < 0 Then Return Nothing
 

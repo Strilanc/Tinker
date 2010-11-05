@@ -523,12 +523,15 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
+    <ContractVerification(False)>
     Public Function IndexAfter(ByVal text As String,
                                ByVal substring As String,
                                ByVal startIndex As Integer,
                                ByVal comparisonType As StringComparison) As Integer?
         Contract.Requires(text IsNot Nothing)
         Contract.Requires(substring IsNot Nothing)
+        Contract.Requires(startIndex >= 0)
+        Contract.Requires(startIndex <= text.Length)
         Contract.Ensures(Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value >= startIndex + substring.Length)
         Contract.Ensures(Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value <= text.Length)
         Dim result = text.IndexOf(substring, startIndex, comparisonType)

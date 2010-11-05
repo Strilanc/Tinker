@@ -71,6 +71,7 @@
                 If Not _commandMap.TryGetValue(argumentHead, command) Then
                     Throw New ArgumentException("Unrecognized Command: {0}.".Frmt(argumentHead))
                 End If
+                Contract.Assume(command IsNot Nothing)
             End SyncLock
             Return command.Invoke(target, user, argumentRest)
         End Function

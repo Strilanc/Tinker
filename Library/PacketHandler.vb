@@ -62,6 +62,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
 
     Public Function IncludeHandler(Of T)(ByVal key As TKey, ByVal jar As IJar(Of T), ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
         Contract.Requires(key IsNot Nothing)
+        Contract.Requires(jar IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Dim ld = TryIncludeLogger(key, jar)
@@ -77,7 +78,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
         Contract.Requires(packetData IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         If packetData.Count < _handler.HeaderSize Then Throw New ArgumentException("Not enough data.")
-        Return _handler.HandlePacket(packetData)
+        Return _handler.HandlePacket(packetData).AssumeNotNull()
     End Function
 End Class
 

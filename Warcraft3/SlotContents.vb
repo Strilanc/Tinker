@@ -225,6 +225,7 @@
             Contract.Requires(player IsNot Nothing)
             Me._coveredSlotId = coveredSlotId
         End Sub
+        <ContractVerification(False)>
         Public Overrides Async Function AsyncGenerateDescription() As Task(Of String)
             Dim desc = Await MyBase.AsyncGenerateDescription
             Return "[Covering {0}] {1}".Frmt(CoveredSlotId, desc)

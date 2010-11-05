@@ -154,7 +154,7 @@ Public NotInheritable Class PacketSocket
     Public Function AsyncReadPacket() As Task(Of IReadableList(Of Byte))
         Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Byte)))() IsNot Nothing)
         'Read
-        Dim result = packetStreamer.AsyncReadPacket()
+        Dim result = packetStreamer.AsyncReadPacket().AssumeNotNull()
         'Handle
         result.QueueContinueWithAction(inQueue,
             Sub(data)

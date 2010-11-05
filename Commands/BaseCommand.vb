@@ -77,6 +77,7 @@
             Return (From pair In _permissions Where user.Permission(pair.Key) < pair.Value).None
         End Function
 
+        <ContractVerification(False)>
         Public Async Function Invoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements ICommand(Of T).Invoke
             If Not IsUserAllowed(user) Then Throw New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions))
 

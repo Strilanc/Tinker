@@ -74,13 +74,13 @@
             ex.RaiseAsUnexpected("Disposing control: {0}.".Frmt(control.Name))
             result.SetResult(Nothing)
         End Try
-        Return result.Task
+        Return result.Task.AssumeNotNull()
     End Function
     <Extension()>
     Public Function DisposeAsync(Of T As IDisposable)(ByVal value As Task(Of T)) As Task
         Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Return value.ContinueWith(Sub(task) task.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion)
+        Return value.ContinueWith(Sub(task) task.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion).AssumeNotNull()
     End Function
     <Extension()>
     Public Function DisposeAllAsync(ByVal values As IEnumerable(Of Task(Of IDisposable))) As Task
@@ -88,6 +88,7 @@
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Dim results = New List(Of Task)
         For Each value In values
+            Contract.Assume(value IsNot Nothing)
             results.Add(value.DisposeAsync())
         Next value
         Return results.AsAggregateTask()
@@ -98,7 +99,7 @@
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Dim result = New TaskCompletionSource(Of NoValue)()
         result.SetResult(Nothing)
-        Return result.Task
+        Return result.Task.AssumeNotNull()
     End Function
 
     <Extension()>
