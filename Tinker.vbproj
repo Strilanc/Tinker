@@ -275,7 +275,7 @@
     <Compile Include="Warcraft3\Server\WC3GameServerManager.vb" />
     <Compile Include="Components\Component Extensions.vb" />
     <Compile Include="Components\IBotComponent.vb" />
-    <Compile Include="Bnet\Bnet Client Manager.vb" />
+    <Compile Include="Bnet\Bnet Client Component.vb" />
     <Compile Include="Lan\Lan Advertiser Manager.vb" />
     <Compile Include="Components\ComponentSet.vb" />
     <Compile Include="Plugins\Plugin Interfaces.vb" />
@@ -328,7 +328,7 @@
     <Compile Include="Warden\BNLS Protocol.vb" />
     <Compile Include="CKL\CKL Commands.vb" />
     <Compile Include="Commands\CommandSet.vb" />
-    <Compile Include="Commands\Command.vb" />
+    <Compile Include="Commands\BaseCommand.vb" />
     <Compile Include="Commands\CommandArgument.vb" />
     <Compile Include="Commands\HelpCommand.vb" />
     <Compile Include="Lan\Lan Commands.vb" />
@@ -524,12 +524,12 @@
   <ItemGroup>
     <PublishFile Include="Docs.txt">
       <Visible>False</Visible>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
       <FileType>File</FileType>
     </PublishFile>
   </ItemGroup>
