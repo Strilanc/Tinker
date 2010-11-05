@@ -25,6 +25,7 @@ Namespace WC3
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(game IsNot Nothing)
 
+            game.HackManager = Me
             Me._bot = bot
             Me._name = name
             Me._game = game
@@ -48,7 +49,7 @@ Namespace WC3
 
             'Start command
             Dim commandText = text.Substring(commandPrefix.Length)
-            Dim commandResult = _game.QueueCommandProcessText(_bot, player, commandText)
+            Dim commandResult = _game.QueueCommandProcessText(Me, player, commandText)
             Call New SystemClock().AsyncWait(2.Seconds).ContinueWithAction(
                 Sub()
                     If commandResult.Status <> TaskStatus.RanToCompletion AndAlso commandResult.Status <> TaskStatus.Faulted Then
@@ -108,7 +109,7 @@ Namespace WC3
         End Property
 
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
-            Return Game.QueueCommandProcessText(Bot, Nothing, argument)
+            Return Game.QueueCommandProcessText(Me, Nothing, argument)
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task

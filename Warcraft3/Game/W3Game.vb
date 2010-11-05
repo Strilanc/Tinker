@@ -17,10 +17,11 @@ Namespace WC3
     Public NotInheritable Class Game
         Inherits DisposableWithTask
 
-        Public Shared ReadOnly GuestLobbyCommands As Commands.CommandSet(Of Game) = GameCommands.MakeGuestLobbyCommands()
-        Public Shared ReadOnly GuestInGameCommands As Commands.CommandSet(Of Game) = GameCommands.MakeGuestInGameCommands()
-        Public Shared ReadOnly HostInGameCommands As Commands.CommandSet(Of Game) = GameCommands.MakeHostInGameCommands()
-        Public Shared ReadOnly HostLobbyCommands As Commands.CommandSet(Of Game) = GameCommands.MakeHostLobbyCommands()
+        Public Shared ReadOnly GuestLobbyCommands As Commands.CommandSet(Of GameManager) = GameCommands.MakeGuestLobbyCommands()
+        Public Shared ReadOnly GuestInGameCommands As Commands.CommandSet(Of GameManager) = GameCommands.MakeGuestInGameCommands()
+        Public Shared ReadOnly HostInGameCommands As Commands.CommandSet(Of GameManager) = GameCommands.MakeHostInGameCommands()
+        Public Shared ReadOnly HostLobbyCommands As Commands.CommandSet(Of GameManager) = GameCommands.MakeHostLobbyCommands()
+        Public Shared ReadOnly AdminCommands As Commands.CommandSet(Of GameManager) = GameCommands.MakeBotAdminCommands()
 
         Private ReadOnly _name As InvariantString
         Private ReadOnly _started As New OnetimeLock
@@ -32,6 +33,8 @@ Namespace WC3
         Private ReadOnly _motor As GameMotor
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly _loadScreen As GameLoadScreen
+
+        Public Property HackManager As GameManager 'eventually remove this hacked value. Only inserted to prevent commit from ballooning.
 
         Private _adminPlayer As Player
         Private _flagHasPlayerLeft As Boolean
@@ -242,35 +245,43 @@ Namespace WC3
             Return _kernel.InQueue.QueueAction(AddressOf ThrowUpdated)
         End Function
 
-        Private Function CommandProcessText(ByVal bot As Bot.MainBot,
+        Private Function CommandProcessText(ByVal manager As GameManager,
                                             ByVal player As Player,
                                             ByVal argument As String) As Task(Of String)
-            Contract.Requires(bot IsNot Nothing)
+            Contract.Requires(manager IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
-            Dim user = If(player Is Nothing, Nothing, New BotUser(player.Name))
-            If player IsNot _adminPlayer AndAlso player IsNot Nothing Then
-                If _kernel.State < GameState.Loading Then
-                    Return Game.GuestLobbyCommands.Invoke(Me, user, argument)
+
+            Dim isAdmin = player Is _adminPlayer AndAlso player IsNot Nothing
+            If Settings.IsAdminGame AndAlso isAdmin Then
+                Return Game.AdminCommands.Invoke(manager, Nothing, argument)
+            End If
+
+            Dim inLobby = _kernel.State < GameState.Loading
+            Dim commands As Commands.CommandSet(Of GameManager)
+            If isAdmin Then
+                If inLobby Then
+                    commands = Game.GuestLobbyCommands
                 Else
-                    Return Game.GuestInGameCommands.Invoke(Me, user, argument)
+                    commands = Game.GuestInGameCommands
                 End If
-            ElseIf Settings.IsAdminGame Then
-                Return GameCommands.MakeBotAdminCommands(bot).Invoke(Me, Nothing, argument)
             Else
-                If _kernel.State < GameState.Loading Then
-                    Return Game.HostLobbyCommands.Invoke(Me, user, argument)
+                If inLobby Then
+                    commands = Game.HostLobbyCommands
                 Else
-                    Return Game.HostInGameCommands.Invoke(Me, user, argument)
+                    commands = Game.HostInGameCommands
                 End If
             End If
+
+            Dim user = If(player Is Nothing, Nothing, New BotUser(player.Name))
+            Return commands.Invoke(manager, user, argument)
         End Function
-        Public Function QueueCommandProcessText(ByVal bot As Bot.MainBot,
+        Public Function QueueCommandProcessText(ByVal manager As GameManager,
                                                 ByVal player As Player,
                                                 ByVal argument As String) As Task(Of String)
-            Contract.Requires(bot IsNot Nothing)
+            Contract.Requires(manager IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
-            Return _kernel.InQueue.QueueFunc(Function() CommandProcessText(bot, player, argument)).Unwrap.AssumeNotNull
+            Return _kernel.InQueue.QueueFunc(Function() CommandProcessText(manager, player, argument)).Unwrap.AssumeNotNull
         End Function
 
         Public Function QueueGetAdminPlayer() As Task(Of Player)

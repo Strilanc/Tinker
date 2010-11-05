@@ -5,58 +5,73 @@ Namespace WC3
         Private Sub New()
         End Sub
 
-        Public Shared Function MakeBotAdminCommands(ByVal bot As Bot.MainBot) As CommandSet(Of Game)
-            Contract.Requires(bot IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of CommandSet(Of Game))() IsNot Nothing)
-            Dim result = New CommandSet(Of Game)
-            result.IncludeCommand(New CommandBot(bot))
+        Private Shared Function Conv(ByVal command As ICommand(Of Game)) As ICommand(Of GameManager)
+            Return command.ProjectedFrom(Function(x As GameManager) x.Game)
+        End Function
+
+        Public Shared Function MakeBotAdminCommands() As CommandSet(Of GameManager)
+            Contract.Ensures(Contract.Result(Of CommandSet(Of GameManager))() IsNot Nothing)
+            Dim result = New CommandSet(Of GameManager)
+            result.IncludeCommand(New CommandBot())
             Return result
         End Function
-        Public Shared Function MakeGuestLobbyCommands() As CommandSet(Of Game)
-            Contract.Ensures(Contract.Result(Of CommandSet(Of Game))() IsNot Nothing)
-            Dim result = New CommandSet(Of Game)
-            result.IncludeCommand(New CommandPing)
+        Public Shared Function MakeGuestLobbyCommands() As CommandSet(Of GameManager)
+            Contract.Ensures(Contract.Result(Of CommandSet(Of GameManager))() IsNot Nothing)
+            Dim result = New CommandSet(Of GameManager)
+            result.IncludeCommand(Conv(New CommandPing))
             Return result
         End Function
-        Public Shared Function MakeGuestInGameCommands() As CommandSet(Of Game)
-            Contract.Ensures(Contract.Result(Of CommandSet(Of Game))() IsNot Nothing)
-            Dim result = New CommandSet(Of Game)
-            result.IncludeCommand(New CommandElevate)
-            result.IncludeCommand(New CommandPing)
-            result.IncludeCommand(New CommandVoteStart)
+        Public Shared Function MakeGuestInGameCommands() As CommandSet(Of GameManager)
+            Contract.Ensures(Contract.Result(Of CommandSet(Of GameManager))() IsNot Nothing)
+            Dim result = New CommandSet(Of GameManager)
+            For Each command In From c In New ICommand(Of Game)() {
+                                    New CommandElevate,
+                                    New CommandPing,
+                                    New CommandVoteStart
+                                } Select Conv(c)
+                result.IncludeCommand(command)
+            Next command
             Return result
         End Function
-        Public Shared Function MakeHostLobbyCommands() As CommandSet(Of Game)
-            Contract.Ensures(Contract.Result(Of CommandSet(Of Game))() IsNot Nothing)
-            Dim result = New CommandSet(Of Game)
-            result.IncludeCommand(New CommandBoot)
-            result.IncludeCommand(New CommandCancel)
-            result.IncludeCommand(New CommandClose)
-            result.IncludeCommand(New CommandColor)
-            result.IncludeCommand(New CommandCPU)
-            result.IncludeCommand(New CommandGet)
-            result.IncludeCommand(New CommandHandicap)
-            result.IncludeCommand(New CommandLock)
-            result.IncludeCommand(New CommandOpen)
-            result.IncludeCommand(New CommandPing)
-            result.IncludeCommand(New CommandRace)
-            result.IncludeCommand(New CommandReserve)
-            result.IncludeCommand(New CommandSet)
-            result.IncludeCommand(New CommandSetTeam)
-            result.IncludeCommand(New CommandSetupTeams)
-            result.IncludeCommand(New CommandStart)
-            result.IncludeCommand(New CommandSwap)
-            result.IncludeCommand(New CommandUnlock)
+        Public Shared Function MakeHostLobbyCommands() As CommandSet(Of GameManager)
+            Contract.Ensures(Contract.Result(Of CommandSet(Of GameManager))() IsNot Nothing)
+            Dim result = New CommandSet(Of GameManager)
+            For Each command In From c In New ICommand(Of Game)() {
+                                    New CommandBoot,
+                                    New CommandCancel,
+                                    New CommandClose,
+                                    New CommandColor,
+                                    New CommandCPU,
+                                    New CommandGet,
+                                    New CommandHandicap,
+                                    New CommandLock,
+                                    New CommandOpen,
+                                    New CommandPing,
+                                    New CommandRace,
+                                    New CommandReserve,
+                                    New CommandSet,
+                                    New CommandSetTeam,
+                                    New CommandSetupTeams,
+                                    New CommandStart,
+                                    New CommandSwap,
+                                    New CommandUnlock
+                                } Select Conv(c)
+                result.IncludeCommand(command)
+            Next command
             Return result
         End Function
-        Public Shared Function MakeHostInGameCommands() As CommandSet(Of Game)
-            Contract.Ensures(Contract.Result(Of CommandSet(Of Game))() IsNot Nothing)
-            Dim result = New CommandSet(Of Game)
-            result.IncludeCommand(New CommandBoot)
-            result.IncludeCommand(New CommandDisconnect)
-            result.IncludeCommand(New CommandGet)
-            result.IncludeCommand(New CommandPing)
-            result.IncludeCommand(New CommandSet)
+        Public Shared Function MakeHostInGameCommands() As CommandSet(Of GameManager)
+            Contract.Ensures(Contract.Result(Of CommandSet(Of GameManager))() IsNot Nothing)
+            Dim result = New CommandSet(Of GameManager)
+            For Each command In From c In New ICommand(Of Game)() {
+                                    New CommandBoot,
+                                    New CommandDisconnect,
+                                    New CommandGet,
+                                    New CommandPing,
+                                    New CommandSet
+                                } Select Conv(c)
+                result.IncludeCommand(command)
+            Next command
             Return result
         End Function
 
@@ -77,23 +92,16 @@ Namespace WC3
         End Class
 
         Private NotInheritable Class CommandBot
-            Inherits BaseCommand(Of WC3.Game)
-            Private ReadOnly bot As Bot.MainBot
+            Inherits BaseCommand(Of GameManager)
 
-            <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(bot IsNot Nothing)
-            End Sub
-
-            Public Sub New(ByVal bot As Bot.MainBot)
+            Public Sub New()
                 MyBase.New(Name:="Bot",
                            Format:="subcommand...",
                            Description:="Forwards commands to the bot.")
-                Contract.Requires(bot IsNot Nothing)
-                Me.bot = bot
             End Sub
-            Protected Overrides Async Function PerformInvoke(ByVal target As WC3.Game, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(ByVal target As GameManager, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim botManagers = Await bot.Components.QueueGetAllComponents(Of Bot.MainBotManager)()
+                Dim botManagers = Await target.Bot.Components.QueueGetAllComponents(Of Bot.MainBotManager)()
                 Return Await botManagers.Single().InvokeCommand(user, argument)
             End Function
         End Class
@@ -285,7 +293,7 @@ Namespace WC3
                 Return From players In target.QueueGetPlayers()
                        From latencies In (From player In players Select player.QueueGetLatencyDescription).Cache.AsAggregateTask
                        Select "Estimated RTT: {0}".Frmt((From pair In players.Zip(latencies)
-                                                         Where Not pair.Item1.isFake
+                                                         Where Not pair.Item1.IsFake
                                                          Select "{0}={1}".Frmt(pair.Item1.Name, pair.Item2)
                                                          ).StringJoin(" "))
             End Function

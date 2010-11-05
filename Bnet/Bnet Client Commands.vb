@@ -278,7 +278,7 @@ Namespace Bnet.Commands
             If game Is Nothing Then Throw New InvalidOperationException("No matching game instance found.")
 
             'Pass command
-            Return Await game.QueueCommandProcessText(target.Bot, Nothing, argumentRest)
+            Return Await game.QueueCommandProcessText(game.HackManager, Nothing, argumentRest)
         End Function
     End Class
 

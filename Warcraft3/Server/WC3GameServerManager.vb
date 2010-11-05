@@ -180,8 +180,7 @@ Namespace WC3
             Dim commandText = text.Substring(prefix.Length)
 
             Try
-                Throw New NotImplementedException("Need to retrieve bot argument.")
-                Dim result = Await game.QueueCommandProcessText(Nothing, player, commandText)
+                Dim result = Await game.QueueCommandProcessText(game.HackManager, player, commandText)
                 If String.IsNullOrEmpty(result) Then result = "Command Succeeded"
                 game.QueueSendMessageTo(result, player)
             Catch ex As Exception
