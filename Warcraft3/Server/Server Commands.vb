@@ -15,30 +15,22 @@
 
 Imports Tinker.Commands
 
-Namespace WC3
-    Public NotInheritable Class ServerCommands
-        Inherits CommandSet(Of WC3.GameServerManager)
-
+Namespace WC3.ServerCommands
+    Public NotInheritable Class CommandAddGame
+        Inherits TemplatedCommand(Of WC3.GameServerManager)
         Public Sub New()
-            AddCommand(New CommandAddGame)
+            MyBase.New(Name:="Add",
+                       template:=Concat({"name=<game name>", "map=<search query>"},
+                                        WC3.GameSettings.PartialArgumentTemplates,
+                                        WC3.GameStats.PartialArgumentTemplates).StringJoin(" "),
+                       Description:="Adds a game set to the server.",
+                       extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
+                                         WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
-
-        Private NotInheritable Class CommandAddGame
-            Inherits TemplatedCommand(Of WC3.GameServerManager)
-            Public Sub New()
-                MyBase.New(Name:="Add",
-                           template:=Concat({"name=<game name>", "map=<search query>"},
-                                            WC3.GameSettings.PartialArgumentTemplates,
-                                            WC3.GameStats.PartialArgumentTemplates).StringJoin(" "),
-                           Description:="Adds a game set to the server.",
-                           extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
-                                             WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
-            End Sub
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As WC3.GameServerManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Await target.QueueAddGameFromArguments(argument, user)
-                Return "Game added."
-            End Function
-        End Class
+        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As WC3.GameServerManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Contract.Assume(target IsNot Nothing)
+            Await target.QueueAddGameFromArguments(argument, user)
+            Return "Game added."
+        End Function
     End Class
 End Namespace

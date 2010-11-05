@@ -88,6 +88,7 @@ Namespace WC3.Protocol
         NoFormation = 1 << 4
         Summon = 1 << 5
         SubGroup = 1 << 6
+
         AutoCastOn = 1 << 8
     End Enum
 

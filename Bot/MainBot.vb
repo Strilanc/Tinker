@@ -269,5 +269,15 @@ Namespace Bot
                 )
             )
         End Function
+        <Extension()>
+        Public Function IncludeBasicGameServerCommands(ByVal this As MainBot) As IDisposable
+            Contract.Requires(this IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Return this.IncludeCommandsInAllComponentsOfType(Of WC3.GameServerManager)(
+                New ICommand(Of WC3.GameServerManager)() {
+                    New WC3.ServerCommands.CommandAddGame
+                }
+            )
+        End Function
     End Module
 End Namespace

@@ -39,6 +39,7 @@ Public Class ClientForm
         Bot.IncludeBasicBotCommands(_bot)
         Bot.IncludeBasicBnetClientCommands(_bot)
         Bot.IncludeBasicLanAdvertiserCommands(_bot)
+        Bot.IncludeBasicGameServerCommands(_bot)
 
         'init port pool
         For Each port In SettingsForm.ParsePortList(My.Settings.port_pool, "")
