@@ -1,5 +1,4 @@
 Imports Tinker.Commands
-Imports Tinker.Bot.Commands
 
 Namespace Bot.Commands
     Public NotInheritable Class CommandConnect
