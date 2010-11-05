@@ -142,9 +142,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Microsoft Visual Studio Async CTP\Samples\AsyncCtpLibrary.dll</HintPath>
     </Reference>
-    <Reference Include="MpqLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9bae8fba86733575, processorArchitecture=x86">
+    <Reference Include="MpqLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=08060530187cdd8c, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Documents\Visual Studio 10\Projects\MpqLibrary\MpqLibrary\bin\Release\MpqLibrary.dll</HintPath>
+      <HintPath>..\..\MpqLibrary\MpqLibrary\bin\Release\MpqLibrary.dll</HintPath>
     </Reference>
     <Reference Include="Strilbrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=08060530187cdd8c, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>

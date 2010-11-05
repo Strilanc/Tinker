@@ -161,6 +161,7 @@
         Public Overrides Function EnumPlayers() As IEnumerable(Of Player)
             Return New Player() {_player}
         End Function
+        <ContractVerification(False)>
         Public Overrides Function AsyncGenerateDescription() As Task(Of String)
             Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.Id.Index).AsTask, _player.AsyncDescription)
         End Function
