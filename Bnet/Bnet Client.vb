@@ -175,38 +175,16 @@ Namespace Bnet
             Contract.Assume(productInfoProvider IsNot Nothing)
             Contract.Assume(clock IsNot Nothing)
             Contract.Assume(productAuthenticator IsNot Nothing)
-            Me._futureConnected.IgnoreExceptions()
-            Me._futureLoggedIn.IgnoreExceptions()
-
-            'Pass values
-            Me._clock = clock
             Me._profile = profile
             Me._productInfoProvider = productInfoProvider
-            Me._logger = If(logger, New Logger)
-            Me.outQueue = New TaskedCallQueue
-            Me.inQueue = New TaskedCallQueue
             Me._productAuthenticator = productAuthenticator
-
-            'Start packet machinery
+            Me._clock = clock
+            Me._logger = If(logger, New Logger)
+            Me.inQueue = New TaskedCallQueue
+            Me.outQueue = New TaskedCallQueue
             Me._packetHandler = New Protocol.BnetPacketHandler("BNET", Me._logger)
-
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationFinish, AddressOf ReceiveUserAuthenticationFinish)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ChatEvent, AddressOf ReceiveChatEvent)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.EnterChat, AddressOf ReceiveEnterChat)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.MessageBox, AddressOf ReceiveMessageBox)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Ping, AddressOf ReceivePing)
-            AddPacketLogger(Protocol.Packets.ServerToClient.Null)
-            AddPacketLogger(Protocol.Packets.ServerToClient.GetFileTime)
-            AddPacketLogger(Protocol.Packets.ServerToClient.GetIconData)
-            AddPacketLogger(Protocol.Packets.ServerToClient.QueryGamesList)
-            AddPacketLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
-            AddPacketLogger(Protocol.Packets.ServerToClient.RequiredWork)
         End Sub
+        <Pure()>
         Public Shared Function MakeProductAuthenticator(ByVal profile As Bot.ClientProfile,
                                                         ByVal clock As IClock,
                                                         ByVal logger As Logger) As IProductAuthenticator
@@ -225,6 +203,27 @@ Namespace Bnet
 
             Return New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
         End Function
+        Public Sub Init()
+            Me._futureConnected.IgnoreExceptions()
+            Me._futureLoggedIn.IgnoreExceptions()
+
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationFinish, AddressOf ReceiveUserAuthenticationFinish)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ChatEvent, AddressOf ReceiveChatEvent)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.EnterChat, AddressOf ReceiveEnterChat)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.MessageBox, AddressOf ReceiveMessageBox)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Ping, AddressOf ReceivePing)
+            AddPacketLogger(Protocol.Packets.ServerToClient.Null)
+            AddPacketLogger(Protocol.Packets.ServerToClient.GetFileTime)
+            AddPacketLogger(Protocol.Packets.ServerToClient.GetIconData)
+            AddPacketLogger(Protocol.Packets.ServerToClient.QueryGamesList)
+            AddPacketLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
+            AddPacketLogger(Protocol.Packets.ServerToClient.RequiredWork)
+        End Sub
 
         Public ReadOnly Property Profile As Bot.ClientProfile
             Get

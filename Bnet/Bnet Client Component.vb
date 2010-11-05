@@ -59,6 +59,7 @@ Namespace Bnet
             Dim logger = New Logger
             Dim authenticator = Bnet.Client.MakeProductAuthenticator(profile, clock, logger)
             Dim client = New Bnet.Client(profile, New CachedWC3InfoProvider, authenticator, clock, logger)
+            client.Init()
             Return New Bnet.ClientComponent(clientName, bot, client)
         End Function
 

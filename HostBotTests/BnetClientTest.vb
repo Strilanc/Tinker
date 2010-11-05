@@ -46,6 +46,7 @@ Public Class BnetClientTest
                                      New TestExternalProvider(),
                                      New CDKeyProductAuthenticator(keyRoc, keyTft),
                                      clock)
+        client.Init()
         Dim stream = New TestStream()
         Dim socket = New PacketSocket(stream,
                                       New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
