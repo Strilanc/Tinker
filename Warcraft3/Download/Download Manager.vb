@@ -394,9 +394,7 @@ Namespace WC3.Download
             Return inQueue.QueueFunc(
                 Function()
                     Dim results = New List(Of Task)()
-                    For Each e In _hooks
-                        results.Add(e.ContinueWithAction(Sub(value) value.Dispose()))
-                    Next e
+                    results.Add(_hooks.DisposeAllAsync())
                     For Each e In AllClients
                         e.Dispose()
                         results.Add(e.DisposalTask)

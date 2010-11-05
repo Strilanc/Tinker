@@ -565,6 +565,6 @@ Public Module PoorlyCategorizedFunctions
         For Each value In values
             results.Add(value.DisposeAsync())
         Next value
-        Return TaskEx.WhenAll(results)
+        Return results.AsAggregateTask()
     End Function
 End Module
