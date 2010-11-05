@@ -22,15 +22,12 @@ Namespace Bot
 
         Public Shared ReadOnly TriggerCommandText As InvariantString = "?trigger"
 
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
-
         Private ReadOnly _settings As New Bot.Settings()
         Private ReadOnly _portPool As New PortPool()
         Private ReadOnly _logger As Logger
         Private ReadOnly _components As New ComponentSet()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_settings IsNot Nothing)
             Contract.Invariant(_portPool IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
@@ -68,7 +65,8 @@ Namespace Bot
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
-            Return inQueue.QueueAction(Sub() _components.Dispose())
+            _components.Dispose()
+            Return _components.DisposalTask
         End Function
     End Class
 
