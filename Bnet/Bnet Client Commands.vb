@@ -1,41 +1,6 @@
 Imports Tinker.Bot
 Imports Tinker.Commands
-Imports Tinker.Bnet.Commands
 
-Namespace Bnet
-    Public NotInheritable Class ClientCommands
-        Inherits CommandSet(Of Bnet.ClientManager)
-
-        Public Sub New()
-            AddCommand(New CommandBot)
-            AddCommand(New CommandAddUser)
-            AddCommand(New CommandDemote)
-            AddCommand(New CommandRemoveUser)
-            AddCommand(New CommandDisconnect)
-            AddCommand(New Bot.GenericCommands.CommandFindMaps(Of Bnet.ClientManager))
-            AddCommand(New Bot.GenericCommands.CommandDownloadMap(Of Bnet.ClientManager))
-            AddCommand(New CommandPromote)
-            AddCommand(New CommandUser)
-            AddCommand(New CommandConnect)
-            AddCommand(New CommandLogOn)
-            AddCommand(New CommandAdminCode)
-            AddCommand(New CommandCancelHost)
-            AddCommand(New CommandElevate)
-            AddCommand(New CommandGame)
-            AddCommand(New CommandHost)
-            AddCommand(New CommandSay)
-            AddCommand(New CommandCancelAllHost)
-            AddCommand(New CommandRefreshGamesList)
-            AddCommand(New CommandAuto)
-        End Sub
-
-        Public Overloads Function AddCommand(ByVal command As ICommand(Of Bnet.Client)) As IDisposable
-            Contract.Requires(command IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return AddCommand(command.ProjectedFrom(Function(manager As ClientManager) manager.Client))
-        End Function
-    End Class
-End Namespace
 Namespace Bnet.Commands
     Public NotInheritable Class CommandBot
         Inherits Command(Of Bnet.ClientManager)

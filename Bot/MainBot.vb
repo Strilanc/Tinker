@@ -215,5 +215,37 @@ Namespace Bot
                 } Select command.ProjectedFrom(conv)
             )
         End Function
+        <Extension()>
+        Public Function IncludeBasicBnetClientCommands(ByVal this As MainBot) As IDisposable
+            Dim conv = Function(x As Bnet.ClientManager) x.Client
+            Return this.IncludeCommandsInAllComponentsOfType(Of Bnet.ClientManager)(
+                Concat(
+                    New ICommand(Of Bnet.ClientManager)() {
+                        New Bot.GenericCommands.CommandFindMaps(Of Bnet.ClientManager),
+                        New Bot.GenericCommands.CommandDownloadMap(Of Bnet.ClientManager),
+                        New Bnet.Commands.CommandBot,
+                        New Bnet.Commands.CommandAdminCode,
+                        New Bnet.Commands.CommandCancelHost,
+                        New Bnet.Commands.CommandElevate,
+                        New Bnet.Commands.CommandGame,
+                        New Bnet.Commands.CommandHost,
+                        New Bnet.Commands.CommandAuto
+                    },
+                    From command In New ICommand(Of Bnet.Client)() {
+                        New Bnet.Commands.CommandAddUser,
+                        New Bnet.Commands.CommandDemote,
+                        New Bnet.Commands.CommandRemoveUser,
+                        New Bnet.Commands.CommandDisconnect,
+                        New Bnet.Commands.CommandPromote,
+                        New Bnet.Commands.CommandUser,
+                        New Bnet.Commands.CommandConnect,
+                        New Bnet.Commands.CommandLogOn,
+                        New Bnet.Commands.CommandSay,
+                        New Bnet.Commands.CommandCancelAllHost,
+                        New Bnet.Commands.CommandRefreshGamesList
+                    } Select command.ProjectedFrom(conv)
+                )
+            )
+        End Function
     End Module
 End Namespace

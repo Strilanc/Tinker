@@ -7,8 +7,7 @@ Namespace Bnet
         Inherits DisposableWithTask
         Implements IBotComponent
 
-        Private ReadOnly _commands As New Bnet.ClientCommands()
-
+        Private ReadOnly _commands As New CommandSet(Of ClientManager)()
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _name As InvariantString
