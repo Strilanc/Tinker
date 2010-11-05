@@ -69,10 +69,10 @@ Public Class CommandTests
     Public Sub CommandSetTest()
         'Add
         Dim c = New CommandSet(Of UInt32)
-        Dim f1 = c.AddCommand(New TestPartialCommand())
-        Dim f2 = c.AddCommand(New TestPermissionCommand())
-        Dim f3 = c.AddCommand(New TestTemplatedCommand())
-        ExpectException(Of InvalidOperationException)(Sub() c.AddCommand(New TestTemplatedCommand()))
+        Dim f1 = c.IncludeCommand(New TestPartialCommand())
+        Dim f2 = c.IncludeCommand(New TestPermissionCommand())
+        Dim f3 = c.IncludeCommand(New TestTemplatedCommand())
+        ExpectException(Of InvalidOperationException)(Sub() c.IncludeCommand(New TestTemplatedCommand()))
 
         'Invoke
         Assert.IsTrue(c.Invoke(3, Nothing, "TestTemplatedCommand v1 arg2=v2").WaitValue() = "3 v1 v2")

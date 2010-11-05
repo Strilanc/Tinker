@@ -16,8 +16,8 @@
         Public Sub New(Optional ByVal name As InvariantString? = Nothing)
             MyBase.New(name:=If(name Is Nothing, New InvariantString("CommandSet"), name.Value),
                        headType:="SubCommand",
-                       Description:="Picks a sub-command using the first word in the argument and inokves it with the remaining argument.")
-            AddCommand(Me._help)
+                       Description:="Picks a sub-command using the first word in the argument and invokes it with the remaining argument.")
+            IncludeCommand(Me._help)
         End Sub
 
         'verification disabled due to stupid verifier (1.2.3.0118.5)
@@ -42,7 +42,7 @@
             End Get
         End Property
 
-        Public Function AddCommand(ByVal command As ICommand(Of T)) As IDisposable
+        Public Function IncludeCommand(ByVal command As ICommand(Of T)) As IDisposable
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             SyncLock lock
