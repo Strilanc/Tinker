@@ -194,6 +194,8 @@ Namespace Bot
 
         <Extension()>
         Public Function IncludeBasicBotCommands(ByVal this As MainBot) As IDisposable
+            Contract.Requires(this IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As MainBotManager) x.Bot
             Return this.IncludeCommandsInAllComponentsOfType(Of Bot.MainBotManager)(
                 From command In New ICommand(Of MainBot)() {
@@ -217,6 +219,8 @@ Namespace Bot
         End Function
         <Extension()>
         Public Function IncludeBasicBnetClientCommands(ByVal this As MainBot) As IDisposable
+            Contract.Requires(this IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As Bnet.ClientManager) x.Client
             Return this.IncludeCommandsInAllComponentsOfType(Of Bnet.ClientManager)(
                 Concat(
@@ -243,6 +247,24 @@ Namespace Bot
                         New Bnet.Commands.CommandSay,
                         New Bnet.Commands.CommandCancelAllHost,
                         New Bnet.Commands.CommandRefreshGamesList
+                    } Select command.ProjectedFrom(conv)
+                )
+            )
+        End Function
+        <Extension()>
+        Public Function IncludeBasicLanAdvertiserCommands(ByVal this As MainBot) As IDisposable
+            Contract.Requires(this IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Dim conv = Function(x As Lan.AdvertiserManager) x.Advertiser
+            Return this.IncludeCommandsInAllComponentsOfType(Of Lan.AdvertiserManager)(
+                Concat(
+                    New ICommand(Of Lan.AdvertiserManager)() {
+                        New Lan.Commands.CommandAuto,
+                        New Lan.Commands.CommandHost
+                    },
+                    From command In New ICommand(Of Lan.Advertiser)() {
+                        New Lan.Commands.CommandAdd,
+                        New Lan.Commands.CommandRemove
                     } Select command.ProjectedFrom(conv)
                 )
             )

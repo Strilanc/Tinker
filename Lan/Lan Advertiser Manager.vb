@@ -7,7 +7,7 @@ Namespace Lan
         Inherits DisposableWithTask
         Implements IBotComponent
 
-        Private ReadOnly _commands As New Lan.AdvertiserCommands()
+        Private ReadOnly _commands As New CommandSet(Of AdvertiserManager)
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _name As InvariantString
         Private ReadOnly _bot As Bot.MainBot

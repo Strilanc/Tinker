@@ -38,6 +38,7 @@ Public Class ClientForm
         _bot.Components.QueueAddComponent(New Bot.MainBotManager(_bot))
         Bot.IncludeBasicBotCommands(_bot)
         Bot.IncludeBasicBnetClientCommands(_bot)
+        Bot.IncludeBasicLanAdvertiserCommands(_bot)
 
         'init port pool
         For Each port In SettingsForm.ParsePortList(My.Settings.port_pool, "")
