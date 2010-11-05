@@ -213,7 +213,7 @@ Namespace Bnet
             Contract.Requires(profile IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Client)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IProductAuthenticator)() IsNot Nothing)
 
             If profile.CKLServerAddress Like "*:#*" Then
                 Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)

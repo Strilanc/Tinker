@@ -4,14 +4,14 @@ Namespace Bnet
     <ContractVerification(False)>
     Public Class BnetClientControl
         Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
-        Private ReadOnly _manager As Bnet.ClientComponent
+        Private ReadOnly _component As Bnet.ClientComponent
         Private ReadOnly _client As Bnet.Client
         Private ReadOnly _hooks As New List(Of IDisposable)
         Private numPrimaryStates As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
-            Contract.Invariant(_manager IsNot Nothing)
+            Contract.Invariant(_component IsNot Nothing)
             Contract.Invariant(_client IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
         End Sub
@@ -20,12 +20,12 @@ Namespace Bnet
             If Me.Parent IsNot Nothing Then inQueue.Start()
         End Sub
 
-        Public Sub New(ByVal manager As Bnet.ClientComponent)
-            Contract.Assert(manager IsNot Nothing)
+        Public Sub New(ByVal component As Bnet.ClientComponent)
+            Contract.Assert(component IsNot Nothing)
             InitializeComponent()
 
-            Me._client = manager.Client
-            Me._manager = manager
+            Me._client = component.Client
+            Me._component = component
             logClient.SetLogger(Me._client.Logger, "Client")
 
             Me._hooks.Add(Me._client.QueueAddPacketHandler(Packets.ServerToClient.ChatEvent,
@@ -184,7 +184,7 @@ Namespace Bnet
 
         Private Sub comClient_IssuedCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comClient.IssuedCommand
             Contract.Requires(argument IsNot Nothing)
-            Tinker.Components.UIInvokeCommand(_manager, argument)
+            Tinker.Components.UIInvokeCommand(_component, argument)
         End Sub
     End Class
 End Namespace
