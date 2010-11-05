@@ -215,9 +215,11 @@ Namespace Bnet
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IProductAuthenticator)() IsNot Nothing)
 
-            If profile.CKLServerAddress Like "*:#*" Then
-                Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
-                Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
+            If profile.CKLServerAddress <> "" Then
+                Dim data = profile.CKLServerAddress.Split(":"c)
+                If data.Length <> 2 Then Throw New InvalidOperationException("Invalid CKL server address in profile.")
+                Dim remoteHost = data(0)
+                Dim port = UShort.Parse(data(1).AssumeNotNull, CultureInfo.InvariantCulture)
                 Return New CKL.Client(remoteHost, port, clock, logger)
             End If
 
