@@ -45,29 +45,21 @@ Namespace Bnet
 
             client.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
         End Sub
-        Public Shared Function FromProfileAsync(ByVal clientName As InvariantString,
-                                                ByVal profileName As InvariantString,
-                                                ByVal clock As IClock,
-                                                ByVal bot As Bot.MainBot) As Task(Of ClientComponent)
+        Public Shared Function FromProfile(ByVal clientName As InvariantString,
+                                           ByVal profileName As InvariantString,
+                                           ByVal clock As IClock,
+                                           ByVal bot As Bot.MainBot) As ClientComponent
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of ClientComponent))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientComponent)() IsNot Nothing)
 
-            Dim profile = (From p In bot.Settings.ClientProfiles Where p.name = profileName).FirstOrDefault
+            Dim profile = bot.Settings.ClientProfiles.FirstOrDefault(Function(p) p.name = profileName)
             If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
+
             Dim logger = New Logger
-
-            Dim authenticator As IProductAuthenticator
-            If profile.CKLServerAddress Like "*:#*" Then
-                Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
-                Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
-                authenticator = New CKL.Client(remoteHost, port, clock, logger)
-            Else
-                authenticator = New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
-            End If
-
+            Dim authenticator = Bnet.Client.MakeProductAuthenticator(profile, clock, logger)
             Dim client = New Bnet.Client(profile, New CachedWC3InfoProvider, authenticator, clock, logger)
-            Return New Bnet.ClientComponent(clientName, bot, client).AsTask
+            Return New Bnet.ClientComponent(clientName, bot, client)
         End Function
 
         Public ReadOnly Property Client As Bnet.Client

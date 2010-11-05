@@ -39,7 +39,7 @@ Namespace Bot.Commands
             Contract.Ensures(Contract.Result(Of Task(Of Bnet.ClientComponent))() IsNot Nothing)
 
             Dim clock = New SystemClock()
-            Dim clientComponent = Await Bnet.ClientComponent.FromProfileAsync(profileName, profileName, clock, parent)
+            Dim clientComponent = Bnet.ClientComponent.FromProfile(profileName, profileName, clock, parent)
             Try
                 clientComponent.QueueSetAutomatic(True)
                 Await parent.Components.QueueAddComponent(clientComponent)
@@ -118,7 +118,7 @@ Namespace Bot.Commands
             Dim clientName = argument.RawValue(0).ToInvariant
 
             Dim clock = New SystemClock()
-            Dim clientComponent = Await Bnet.ClientComponent.FromProfileAsync(clientName, profileName, clock, target)
+            Dim clientComponent = Bnet.ClientComponent.FromProfile(clientName, profileName, clock, target)
             Try
                 Await target.Components.QueueAddComponent(clientComponent)
                 If argument.HasOptionalSwitch("auto") Then clientComponent.QueueSetAutomatic(True)

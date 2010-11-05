@@ -207,6 +207,22 @@ Namespace Bnet
             AddPacketLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
             AddPacketLogger(Protocol.Packets.ServerToClient.RequiredWork)
         End Sub
+        Public Shared Function MakeProductAuthenticator(ByVal profile As Bot.ClientProfile,
+                                                        ByVal clock As IClock,
+                                                        ByVal logger As Logger) As IProductAuthenticator
+            Contract.Requires(profile IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Client)() IsNot Nothing)
+
+            If profile.CKLServerAddress Like "*:#*" Then
+                Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
+                Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
+                Return New CKL.Client(remoteHost, port, clock, logger)
+            End If
+
+            Return New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
+        End Function
 
         Public ReadOnly Property Profile As Bot.ClientProfile
             Get
