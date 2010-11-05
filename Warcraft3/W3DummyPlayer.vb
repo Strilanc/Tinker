@@ -23,7 +23,7 @@ Namespace WC3
         Private poolPort As PortPool.PortHandle
         Private mode As DummyPlayerMode
         Private ReadOnly _playerHooks As New Dictionary(Of W3Peer, List(Of IDisposable))
-        Private ReadOnly _packetHandler As Protocol.W3PacketHandler
+        Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
@@ -31,7 +31,7 @@ Namespace WC3
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(otherPlayers IsNot Nothing)
             Contract.Invariant(_playerHooks IsNot Nothing)
-            Contract.Invariant(_packetHandler IsNot Nothing)
+            Contract.Invariant(_packetHandlerLogger IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
@@ -52,6 +52,7 @@ Namespace WC3
             Me.inQueue = New TaskedCallQueue
             Me.logger = If(logger, New Logger)
             If listenPort <> 0 Then accepter.Accepter.OpenPort(listenPort)
+            Me._packetHandlerLogger = Protocol.MakeW3PacketHandlerLogger("?", Me.logger)
         End Sub
 
 #Region "Networking"
@@ -60,7 +61,7 @@ Namespace WC3
             Contract.Requires(packet IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _packetHandler.IncludeHandler(packet.Id, Function(data) handler(packet.Jar.ParsePickle(data)))
+            Return _packetHandlerLogger.IncludeHandler(packet.Id, packet.Jar, handler)
         End Function
         Private Function AddQueuedPacketHandler(Of T)(ByVal packet As Protocol.Packets.Definition(Of T),
                                                       ByVal handler As Action(Of IPickle(Of T))) As IDisposable
@@ -104,7 +105,7 @@ Namespace WC3
             Try
                 Do
                     Dim data = Await _socket.AsyncReadPacket
-                    Await _packetHandler.HandlePacket(data)
+                    Await _packetHandlerLogger.HandlePacket(data)
                 Loop
             Catch ex As Exception
                 'ignore (to match old behavior, should fix)

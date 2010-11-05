@@ -30,7 +30,7 @@ Namespace WC3
         Private ReadOnly _pinger As Pinger
         Private ReadOnly _socket As W3Socket
         Private ReadOnly _tickQueue As New Queue(Of TickRecord)
-        Private ReadOnly _packetHandler As Protocol.W3PacketHandler
+        Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
         Private ReadOnly _taskTestCanHost As Task
         Private ReadOnly _startedReading As New OnetimeLock
 
@@ -55,7 +55,7 @@ Namespace WC3
             Contract.Invariant(_outQueue IsNot Nothing)
             Contract.Invariant(_peerData IsNot Nothing)
             Contract.Invariant(_tickQueue IsNot Nothing)
-            Contract.Invariant(_packetHandler IsNot Nothing)
+            Contract.Invariant(_packetHandlerLogger IsNot Nothing)
             Contract.Invariant(_listenEndPoint IsNot Nothing)
             Contract.Invariant(_listenEndPoint.Address IsNot Nothing)
             Contract.Invariant(_taskTestCanHost IsNot Nothing)
@@ -74,7 +74,7 @@ Namespace WC3
                        ByVal logger As Logger,
                        ByVal peerKey As UInt32,
                        ByVal peerData As IReadableList(Of Byte),
-                       ByVal packetHandler As Protocol.W3PacketHandler,
+                       ByVal packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId),
                        ByVal listenEndPoint As Net.IPEndPoint,
                        ByVal taskTestCanHost As Task,
                        Optional ByVal pinger As Pinger = Nothing,
@@ -83,7 +83,7 @@ Namespace WC3
                        Optional ByVal downloadManager As Download.Manager = Nothing,
                        Optional ByVal inQueue As CallQueue = Nothing,
                        Optional ByVal outQueue As CallQueue = Nothing)
-            Contract.Requires(packetHandler IsNot Nothing)
+            Contract.Requires(packetHandlerLogger IsNot Nothing)
             Contract.Requires(peerData IsNot Nothing)
             Contract.Requires(listenEndPoint IsNot Nothing)
             Contract.Requires(listenEndPoint.Address IsNot Nothing)
@@ -100,7 +100,7 @@ Namespace WC3
             Me._socket = socket
             Me._peerKey = peerKey
             Me._peerData = peerData
-            Me._packetHandler = packetHandler
+            Me._packetHandlerLogger = packetHandlerLogger
             Me._listenEndPoint = listenEndPoint
             Me._taskTestCanHost = taskTestCanHost
             Me._downloadManager = downloadManager
@@ -126,7 +126,7 @@ Namespace WC3
                                     logger:=logger,
                                     PeerKey:=0,
                                     PeerData:=New Byte() {0}.AsReadableList,
-                                    PacketHandler:=New Protocol.W3PacketHandler(name, logger),
+                                    PacketHandlerLogger:=Protocol.MakeW3PacketHandlerLogger(name, logger),
                                     ListenEndPoint:=New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0),
                                     taskTestCanHost:=hostFail.Task)
             player._ready = True
@@ -159,7 +159,7 @@ Namespace WC3
                                     logger:=logger,
                                     PeerKey:=knockData.PeerKey,
                                     PeerData:=knockData.PeerData,
-                                    PacketHandler:=New Protocol.W3PacketHandler(knockData.Name, logger),
+                                    PacketHandlerLogger:=Protocol.MakeW3PacketHandlerLogger(knockData.Name, logger),
                                     listenEndPoint:=listenEndPoint,
                                     taskTestCanHost:=taskTestCanHost,
                                     pinger:=pinger,
@@ -296,28 +296,29 @@ Namespace WC3
                    contextInfo
         End Function
 
-        Private Function AddPacketLogger(ByVal packetDefinition As Protocol.Packets.Definition) As IDisposable
+        Private Function TryAddPacketLogger(ByVal packetDefinition As Protocol.Packets.Definition) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
-            Return _packetHandler.IncludeLogger(packetDefinition.Id, packetDefinition.Jar)
+            Return _packetHandlerLogger.TryIncludeLogger(packetDefinition.Id, packetDefinition.Jar)
         End Function
         Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                            ByVal handler As Action(Of T)) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Dim ld = AddPacketLogger(packetDefinition)
-            Dim hd = _packetHandler.IncludeHandler(packetDefinition.Id, Function(data) _inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data).Value)))
-            Return New DelegatedDisposable(Sub()
-                                               ld.Dispose()
-                                               hd.Dispose()
-                                           End Sub)
+            Return _packetHandlerLogger.IncludeHandler(
+                packetDefinition.Id,
+                packetDefinition.Jar,
+                Function(pickle) _inQueue.QueueAction(Sub() handler(pickle.Value)))
         End Function
         Private Function AddRemotePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                       ByVal handler As Func(Of T, Task)) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _packetHandler.IncludeHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data).Value))
+            Return _packetHandlerLogger.IncludeHandler(Of T)(
+                packetDefinition.Id,
+                packetDefinition.Jar,
+                Function(pickle) handler(pickle.Value))
         End Function
         Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                     ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _
@@ -380,11 +381,11 @@ Namespace WC3
             If Not _startedReading.TryAcquire Then Return
 
             'packets with no handler [within the Player class; received packets without a logger or handler kill the connection]
-            AddPacketLogger(Protocol.PeerPackets.MapFileDataProblem)
-            AddPacketLogger(Protocol.PeerPackets.MapFileDataReceived)
-            AddPacketLogger(Protocol.ClientPackets.NonGameAction)
-            AddPacketLogger(Protocol.ClientPackets.RequestDropLaggers)
-            AddPacketLogger(Protocol.ClientPackets.GameAction)
+            TryAddPacketLogger(Protocol.PeerPackets.MapFileDataProblem)
+            TryAddPacketLogger(Protocol.PeerPackets.MapFileDataReceived)
+            TryAddPacketLogger(Protocol.ClientPackets.NonGameAction)
+            TryAddPacketLogger(Protocol.ClientPackets.RequestDropLaggers)
+            TryAddPacketLogger(Protocol.ClientPackets.GameAction)
 
             'packets with associated handler
             AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientConfirmHostLeaving, Sub() SendPacket(Protocol.MakeHostConfirmHostLeaving()))
@@ -398,7 +399,7 @@ Namespace WC3
             Try
                 Do
                     Dim data = Await _socket.AsyncReadPacket()
-                    Await _packetHandler.HandlePacket(data)
+                    Await _packetHandlerLogger.HandlePacket(data)
                 Loop
             Catch ex As Exception
                 QueueDisconnect(expected:=False,

@@ -75,7 +75,7 @@ Public Class DownloadManagerTest
         Private ReadOnly _pid As PlayerId
         Private ReadOnly _pq As New Queue(Of Packet)()
         Private ReadOnly _lock As New System.Threading.ManualResetEvent(initialState:=False)
-        Private ReadOnly _handler As New W3PacketHandler("TestSource")
+        Private ReadOnly _handler As PacketHandlerLogger(Of Protocol.PacketId) = Protocol.MakeW3PacketHandlerLogger("TestSource", New Logger)
         Private ReadOnly _logger As Logger
         Private ReadOnly _name As InvariantString
         Public Sub New(ByVal pid As PlayerId,
@@ -108,11 +108,14 @@ Public Class DownloadManagerTest
                                                      ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _
                                                      Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
             SyncLock Me
-                Return _handler.IncludeHandler(packetDefinition.Id, Function(data)
-                                                                        Dim result = handler(packetDefinition.Jar.Parse(data).Value)
-                                                                        result.Catch(Sub(ex) _failFuture.TrySetException(ex.InnerExceptions))
-                                                                        Return result
-                                                                    End Function).AsTask
+                Return _handler.IncludeHandler(
+                    packetDefinition.Id,
+                    packetDefinition.Jar,
+                    Function(pickle)
+                        Dim result = handler(pickle.Value)
+                        result.Catch(Sub(ex) _failFuture.TrySetException(ex.InnerExceptions))
+                        Return result
+                    End Function).AsTask
             End SyncLock
         End Function
         Public Function QueueSendPacket(ByVal packet As Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket

@@ -23,11 +23,11 @@ Namespace WC3
         Public ReadOnly ip As Net.IPAddress
         Public ReadOnly peerKey As UInteger
         Private WithEvents _socket As W3Socket
-        Private ReadOnly _packetHandler As Protocol.W3PacketHandler
+        Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
         Public Event Disconnected(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_packetHandler IsNot Nothing)
+            Contract.Invariant(_packetHandlerLogger IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
@@ -38,7 +38,7 @@ Namespace WC3
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(ip IsNot Nothing)
             Me.name = name
-            Me._packetHandler = New Protocol.W3PacketHandler(Me.name, logger)
+            Me._packetHandlerLogger = Protocol.MakeW3PacketHandlerLogger(Me.name, logger)
             Me._id = id
             Me.listenPort = listenPort
             Me.ip = ip
@@ -62,7 +62,7 @@ Namespace WC3
             Try
                 Do
                     Dim data = Await socket.AsyncReadPacket()
-                    Await _packetHandler.HandlePacket(data)
+                    Await _packetHandlerLogger.HandlePacket(data)
                 Loop
             Catch ex As Exception
                 'ignore (to match old behavior, should fix)
@@ -74,7 +74,7 @@ Namespace WC3
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _packetHandler.IncludeHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.ParsePickle(data)))
+            Return _packetHandlerLogger.IncludeHandler(packetDefinition.Id, packetDefinition.Jar, handler)
         End Function
 
         Private Sub OnDisconnected(ByVal sender As WC3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
