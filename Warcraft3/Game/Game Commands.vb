@@ -77,7 +77,7 @@ Namespace WC3
         End Class
 
         Private NotInheritable Class CommandBot
-            Inherits Command(Of WC3.Game)
+            Inherits BaseCommand(Of WC3.Game)
             Private ReadOnly bot As Bot.MainBot
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()

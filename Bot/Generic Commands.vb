@@ -107,7 +107,7 @@ Namespace Bot
         End Class
 
         Public NotInheritable Class CommandFindMaps(Of T)
-            Inherits Command(Of T)
+            Inherits BaseCommand(Of T)
             Public Sub New()
                 MyBase.New(Name:="FindMaps",
                            Description:="Returns the first five maps matching a search query. The first match is the map used by other commands given the same query (eg. host).",

@@ -41,7 +41,7 @@ Public Class CommandTests
     End Sub
 
     Private Class TestPermissionCommand
-        Inherits Command(Of UInt32)
+        Inherits BaseCommand(Of UInt32)
         Public Property InvokeCount As Integer
         Public Sub New()
             MyBase.New("TestPermissionCommand", "format", "description", "perm:3")

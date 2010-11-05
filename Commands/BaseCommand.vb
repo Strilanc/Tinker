@@ -2,9 +2,9 @@
     ''' <summary>
     ''' Performs actions specified by text arguments.
     ''' </summary>
-    <ContractClass(GetType(ContractClassCommand(Of )))>
-    Public MustInherit Class Command(Of TTarget)
-        Implements ICommand(Of TTarget)
+    <ContractClass(GetType(ContractClassBaseCommand(Of )))>
+    Public MustInherit Class BaseCommand(Of T)
+        Implements ICommand(Of T)
         Private ReadOnly _name As InvariantString
         Private ReadOnly _format As InvariantString
         Private ReadOnly _description As String
@@ -41,43 +41,43 @@
             Me._hasPrivateArguments = hasPrivateArguments
         End Sub
 
-        Public ReadOnly Property Name As InvariantString Implements ICommand(Of TTarget).Name
+        Public ReadOnly Property Name As InvariantString Implements ICommand(Of T).Name
             Get
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property Description As String Implements ICommand(Of TTarget).Description
+        Public ReadOnly Property Description As String Implements ICommand(Of T).Description
             Get
                 Return _description
             End Get
         End Property
-        Public ReadOnly Property Format As InvariantString Implements ICommand(Of TTarget).Format
+        Public ReadOnly Property Format As InvariantString Implements ICommand(Of T).Format
             Get
                 Return _format
             End Get
         End Property
-        Public Overridable ReadOnly Property HelpTopics As IDictionary(Of InvariantString, String) Implements ICommand(Of TTarget).HelpTopics
+        Public Overridable ReadOnly Property HelpTopics As IDictionary(Of InvariantString, String) Implements ICommand(Of T).HelpTopics
             Get
                 Return _extraHelp
             End Get
         End Property
-        Public ReadOnly Property Permissions As String Implements ICommand(Of TTarget).Permissions
+        Public ReadOnly Property Permissions As String Implements ICommand(Of T).Permissions
             Get
                 Return (From pair In Me._permissions Select "{0}:{1}".Frmt(pair.Key, pair.Value)).StringJoin(",")
             End Get
         End Property
 
         <Pure()>
-        Public Overridable Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements ICommand(Of TTarget).IsArgumentPrivate
+        Public Overridable Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements ICommand(Of T).IsArgumentPrivate
             Return _hasPrivateArguments
         End Function
         <Pure()>
-        Public Function IsUserAllowed(ByVal user As BotUser) As Boolean Implements ICommand(Of TTarget).IsUserAllowed
+        Public Function IsUserAllowed(ByVal user As BotUser) As Boolean Implements ICommand(Of T).IsUserAllowed
             If user Is Nothing Then Return True
             Return (From pair In _permissions Where user.Permission(pair.Key) < pair.Value).None
         End Function
 
-        Public Async Function Invoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements ICommand(Of TTarget).Invoke
+        Public Async Function Invoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements ICommand(Of T).Invoke
             If Not IsUserAllowed(user) Then Throw New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions))
 
             Try
@@ -88,15 +88,15 @@
             End Try
         End Function
 
-        Protected MustOverride Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Protected MustOverride Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
     End Class
-    <ContractClassFor(GetType(Command(Of )))>
-    MustInherit Class ContractClassCommand(Of TTarget)
-        Inherits Command(Of TTarget)
+    <ContractClassFor(GetType(BaseCommand(Of )))>
+    MustInherit Class ContractClassBaseCommand(Of T)
+        Inherits BaseCommand(Of T)
         Protected Sub New()
             MyBase.New("", "", "")
         End Sub
-        Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Contract.Requires(target IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)

@@ -5,7 +5,7 @@ Imports Tinker.Commands
 <TestClass()>
 Public Class HelpCommandTest
     Private Class TestCommand
-        Inherits Command(Of Object)
+        Inherits BaseCommand(Of Object)
         Public Sub New()
             MyBase.New("Test", "arg -option", "A test command.", "root:1", "x=test")
         End Sub

@@ -3,7 +3,7 @@
     ''' A command which provides help using commands.
     ''' </summary>
     Public NotInheritable Class HelpCommand(Of T)
-        Inherits Command(Of T)
+        Inherits BaseCommand(Of T)
 
         Private ReadOnly _commandMap As New Dictionary(Of InvariantString, ICommand(Of T))
         Private ReadOnly lock As New Object

@@ -2,7 +2,7 @@ Imports Tinker.Commands
 
 Namespace Bot.Commands
     Public NotInheritable Class CommandConnect
-        Inherits Command(Of MainBot)
+        Inherits BaseCommand(Of MainBot)
         Public Sub New()
             MyBase.New(Name:="Connect",
                        Format:="profile1 profile2 ...",

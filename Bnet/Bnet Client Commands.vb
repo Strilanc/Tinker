@@ -3,7 +3,7 @@ Imports Tinker.Commands
 
 Namespace Bnet.Commands
     Public NotInheritable Class CommandBot
-        Inherits Command(Of Bnet.ClientManager)
+        Inherits BaseCommand(Of Bnet.ClientManager)
         Public Sub New()
             MyBase.New(Name:="Bot",
                        Format:="...",

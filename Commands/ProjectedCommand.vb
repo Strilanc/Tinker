@@ -3,7 +3,7 @@
     ''' A command which delegates to a subcommand which takes a target derived from the given target.
     ''' </summary>
     Public NotInheritable Class ProjectedCommand(Of TInput, TProjected)
-        Inherits Command(Of TInput)
+        Inherits BaseCommand(Of TInput)
 
         Private ReadOnly _projection As Func(Of TInput, TProjected)
         Private ReadOnly _command As ICommand(Of TProjected)

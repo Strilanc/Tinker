@@ -1,4 +1,7 @@
 ﻿Namespace Commands
+    ''' <summary>
+    ''' Performs actions specified by text arguments.
+    ''' </summary>
     <ContractClass(GetType(ICommandContractClass(Of )))>
     Public Interface ICommand(Of In T)
         ReadOnly Property Name As InvariantString

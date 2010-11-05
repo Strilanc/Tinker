@@ -4,7 +4,7 @@
     ''' </summary>
     <ContractClass(GetType(ContractClassPartialCommand(Of )))>
     Public MustInherit Class PartialCommand(Of TTarget)
-        Inherits Command(Of TTarget)
+        Inherits BaseCommand(Of TTarget)
 
         Protected Sub New(ByVal name As InvariantString,
                           ByVal headType As String,

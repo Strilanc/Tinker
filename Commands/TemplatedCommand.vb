@@ -4,7 +4,7 @@
     ''' </summary>
     <ContractClass(GetType(ContractClassTemplatedCommand(Of )))>
     Public MustInherit Class TemplatedCommand(Of TTarget)
-        Inherits Command(Of TTarget)
+        Inherits BaseCommand(Of TTarget)
 
         Private ReadOnly _template As CommandTemplate
 
