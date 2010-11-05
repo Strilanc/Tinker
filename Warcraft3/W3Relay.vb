@@ -166,8 +166,8 @@
             Dim result = New DisposableWithTask
             Shunt(stream1, stream2).ContinueWithAction(Sub() result.Dispose())
             Shunt(stream2, stream1).ContinueWithAction(Sub() result.Dispose())
-            result.DisposalTask.ContinueWithAction(Sub() stream1.Dispose())
-            result.DisposalTask.ContinueWithAction(Sub() stream2.Dispose())
+            result.ChainEventualDisposalTo(stream1)
+            result.ChainEventualDisposalTo(stream2)
             Return result
         End Function
         Private Shared Async Function Shunt(ByVal src As IO.Stream, ByVal dst As IO.Stream) As Task

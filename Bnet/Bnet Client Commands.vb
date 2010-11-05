@@ -230,7 +230,7 @@ Namespace Bnet.Commands
                 'Link user to gameSet
                 If user IsNot Nothing Then
                     target.QueueSetUserGameSet(user, gameSet)
-                    gameSet.DisposalTask.ContinueWithAction(Sub() target.QueueResetUserGameSet(user, gameSet)).IgnoreExceptions()
+                    gameSet.ChainEventualDisposalTo(Sub() target.QueueResetUserGameSet(user, gameSet))
                 End If
 
                 'Setup auto-dispose

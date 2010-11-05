@@ -57,7 +57,7 @@ Namespace WC3
 
             BeginAccepting()
 
-            _gameServer.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
+            _gameServer.ChainEventualDisposalTo(Me)
         End Sub
 
         Public ReadOnly Property Server As WC3.GameServer

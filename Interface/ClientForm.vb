@@ -24,7 +24,7 @@ Public Class ClientForm
             Contract.Assume(_exceptionForm.IsHandleCreated)
 
             AddHandler _exceptionForm.ExceptionCountChanged, Sub() btnShowExceptionLog.Text = "Exception Log ({0})".Frmt(_exceptionForm.ExceptionCount)
-            _bot.DisposalTask.ContinueWithAction(Sub() Me.BeginInvoke(Sub() Me.Dispose())).IgnoreExceptions()
+            _bot.ChainEventualDisposalTo(Sub() Me.BeginInvoke(Sub() Me.Dispose()))
         Catch ex As Exception
             MessageBox.Show("Error loading program: {0}.".Frmt(ex))
             Me.Close()

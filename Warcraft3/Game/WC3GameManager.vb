@@ -33,7 +33,7 @@ Namespace WC3
 
             AddHandler game.PlayerTalked, Sub(sender, player, text, receivers) HandleText(player, text)
 
-            game.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
+            game.ChainEventualDisposalTo(Me)
         End Sub
         Private Async Sub HandleText(ByVal player As WC3.Player, ByVal text As String)
             Contract.Requires(player IsNot Nothing)

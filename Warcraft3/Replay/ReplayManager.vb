@@ -42,7 +42,7 @@
             Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.PlayerLeft, leaveHandler))
             Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.RecordGameStarted, launchHandler))
 
-            game.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
+            game.ChainEventualDisposalTo(Me)
         End Sub
 
         Public Shared Function StartRecordingFrom(ByVal defaultFileName As String,

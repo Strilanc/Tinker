@@ -552,6 +552,19 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()>
+    Public Sub ChainEventualDisposalTo(ByVal source As DisposableWithTask, ByVal dest As IDisposable)
+        Contract.Requires(source IsNot Nothing)
+        Contract.Requires(dest IsNot Nothing)
+        source.ChainEventualDisposalTo(AddressOf dest.Dispose)
+    End Sub
+    <Extension()>
+    Public Sub ChainEventualDisposalTo(ByVal source As DisposableWithTask, ByVal action As Action)
+        Contract.Requires(source IsNot Nothing)
+        Contract.Requires(action IsNot Nothing)
+        source.DisposalTask.ContinueWith(Sub() action(), TaskContinuationOptions.OnlyOnRanToCompletion)
+    End Sub
+
+    <Extension()>
     Public Function DisposeAsync(ByVal value As Task(Of IDisposable)) As Task
         Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)

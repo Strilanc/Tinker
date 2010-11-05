@@ -43,7 +43,7 @@ Namespace Bnet
             Me._hooks.Add(client.QueueAddPacketHandler(Protocol.Packets.ServerToClient.ChatEvent,
                                                        Function(pickle) OnReceivedChatEvent(pickle.Value)))
 
-            client.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
+            client.ChainEventualDisposalTo(Me)
         End Sub
         Public Shared Function FromProfile(ByVal clientName As InvariantString,
                                            ByVal profileName As InvariantString,
