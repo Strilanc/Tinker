@@ -1,5 +1,6 @@
 Imports Tinker.Bot
 Imports Tinker.Commands
+Imports Tinker.Bnet.Commands
 
 Namespace Bnet
     Public NotInheritable Class ClientCommands
@@ -33,8 +34,9 @@ Namespace Bnet
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return AddCommand(command.ProjectedFrom(Function(manager As ClientManager) manager.Client))
         End Function
-
-        Private NotInheritable Class CommandBot
+    End Class
+    Namespace Commands
+        Public NotInheritable Class CommandBot
             Inherits Command(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Bot",
@@ -48,7 +50,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandDisconnect
+        Public NotInheritable Class CommandDisconnect
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="Disconnect",
@@ -63,7 +65,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandAddUser
+        Public NotInheritable Class CommandAddUser
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="AddUser",
@@ -78,7 +80,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandRemoveUser
+        Public NotInheritable Class CommandRemoveUser
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="RemoveUser",
@@ -101,7 +103,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandPromote
+        Public NotInheritable Class CommandPromote
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="Promote",
@@ -139,7 +141,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandDemote
+        Public NotInheritable Class CommandDemote
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="Demote",
@@ -177,7 +179,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandUser
+        Public NotInheritable Class CommandUser
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="User",
@@ -203,7 +205,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandAuto
+        Public NotInheritable Class CommandAuto
             Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Auto",
@@ -225,7 +227,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandLogOn
+        Public NotInheritable Class CommandLogOn
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="LogOn",
@@ -242,7 +244,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandHost
+        Public NotInheritable Class CommandHost
             Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Host",
@@ -287,7 +289,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandGame
+        Public NotInheritable Class CommandGame
             Inherits PartialCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Game",
@@ -314,7 +316,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandRefreshGamesList
+        Public NotInheritable Class CommandRefreshGamesList
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="RefreshGamesList",
@@ -329,7 +331,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandCancelHost
+        Public NotInheritable Class CommandCancelHost
             Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="CancelHost",
@@ -349,7 +351,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandAdminCode
+        Public NotInheritable Class CommandAdminCode
             Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="AdminCode",
@@ -368,7 +370,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandSay
+        Public NotInheritable Class CommandSay
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="Say",
@@ -385,7 +387,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandCancelAllHost
+        Public NotInheritable Class CommandCancelAllHost
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="CancelAllHost",
@@ -400,7 +402,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CommandElevate
+        Public NotInheritable Class CommandElevate
             Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Elevate",
@@ -425,11 +427,11 @@ Namespace Bnet
 
                 'Elevate player
                 Await game.QueueElevatePlayer(username)
-                return "'{0}' is now the admin.".Frmt(username)
+                Return "'{0}' is now the admin.".Frmt(username)
             End Function
         End Class
 
-        Private NotInheritable Class CommandConnect
+        Public NotInheritable Class CommandConnect
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
                 MyBase.New(Name:="Connect",
@@ -453,5 +455,5 @@ Namespace Bnet
                 Return "Established connection to {0}".Frmt(remoteHost)
             End Function
         End Class
-    End Class
+    End Namespace
 End Namespace
