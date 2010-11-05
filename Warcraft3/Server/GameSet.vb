@@ -111,7 +111,7 @@
             game.DisposalTask.QueueContinueWithAction(inQueue,
                 Sub()
                     _games.Remove(game)
-                    playerLink.ContinueWithAction(Sub(link) link.Dispose()).IgnoreExceptions()
+                    playerLink.DisposeAsync()
                     If _gameSettings.UsePermanent Then AddInstance()
                     If _games.Count = 0 AndAlso Not _gameSettings.UseInstanceOnDemand Then
                         Me.Dispose()

@@ -50,12 +50,8 @@ Namespace Plugins
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
-            For Each hook In _hooks
-                Contract.Assume(hook IsNot Nothing)
-                hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
-            Next hook
             _socket.Dispose()
-            Return Nothing
+            Return _hooks.DisposeAllAsync()
         End Function
 
         Public ReadOnly Property Control As Control Implements IBotComponent.Control

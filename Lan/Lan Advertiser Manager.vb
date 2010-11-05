@@ -84,15 +84,11 @@ Namespace Lan
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
-            For Each hook In _hooks
-                Contract.Assume(hook IsNot Nothing)
-                hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
-            Next hook
+        Protected Overrides Async Function PerformDispose(ByVal finalizing As Boolean) As Task
             _advertiser.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
             QueueSetAutomatic(False)
-            Return Nothing
+            Await _hooks.DisposeAllAsync()
         End Function
 
         Private _autoHook As Task(Of IDisposable)
@@ -104,7 +100,7 @@ Namespace Lan
                         remover:=Sub(sender, server, gameSet) _advertiser.QueueRemoveGame(gameSet.GameSettings.GameDescription.GameId).IgnoreExceptions())
             Else
                 Contract.Assume(_autoHook IsNot Nothing)
-                _autoHook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
+                _autoHook.DisposeAsync()
                 _autoHook = Nothing
             End If
         End Sub

@@ -10,6 +10,7 @@
         <Pure()>
         Function IsArgumentPrivate(ByVal argument As String) As Boolean
         Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        '''<summary>Adds a command to the component and returns an IDisposable that removes the command upon disposal.</summary>
         Function IncludeCommand(ByVal command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable)
 
         <ContractClassFor(GetType(IBotComponent))>

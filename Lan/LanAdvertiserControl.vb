@@ -36,10 +36,7 @@ Namespace Lan
             Return inQueue.QueueAction(Sub() Me.Dispose())
         End Function
         Private Sub BnetClientControl_Disposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
-            For Each hook In _hooks
-                Contract.Assume(hook IsNot Nothing)
-                hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
-            Next hook
+            _hooks.DisposeAllAsync()
         End Sub
 
         Private Sub OnAddedGame(ByVal game As Lan.Advertiser.LanGame)

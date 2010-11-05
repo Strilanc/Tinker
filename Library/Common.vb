@@ -552,10 +552,18 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()>
+    Public Function DisposeAsync(ByVal value As Task(Of IDisposable)) As Task
+        Contract.Requires(value IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+        Return value.ContinueWith(Sub(task) task.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion))
+    End Function
+    <Extension()>
     Public Function DisposeAllAsync(ByVal values As IEnumerable(Of Task(Of IDisposable))) As Task
+        Contract.Requires(values IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Dim results = New List(Of Task)
         For Each value In values
-            results.Add(value.ContinueWith(Sub(task) task.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion))
+            results.Add(value.DisposeAsync())
         Next value
         Return TaskEx.WhenAll(results)
     End Function

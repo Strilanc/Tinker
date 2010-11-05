@@ -233,9 +233,7 @@ Namespace WC3.Download
                 _transfer.Dispose()
                 _transfer = Nothing
             End If
-            Return (From hook In _hooks
-                    Select hook.ContinueWithAction(Sub(value) value.Dispose())
-                   ).AsAggregateTask
+            Return _hooks.DisposeAllAsync()
         End Function
 
         Public Overrides Function ToString() As String

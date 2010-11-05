@@ -112,13 +112,9 @@ Namespace WC3
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
-            For Each hook In _hooks
-                Contract.Assume(hook IsNot Nothing)
-                hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
-            Next hook
             _game.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
-            Return Nothing
+            Return _hooks.DisposeAllAsync()
         End Function
 
         Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand

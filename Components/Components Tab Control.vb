@@ -40,10 +40,7 @@ Namespace Components
         End Sub
 
         Private Shadows Sub OnDisposed() Handles Me.Disposed
-            For Each hook In _hooks
-                Contract.Assume(hook IsNot Nothing)
-                hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
-            Next hook
+            _hooks.DisposeAllAsync()
         End Sub
     End Class
 End Namespace
