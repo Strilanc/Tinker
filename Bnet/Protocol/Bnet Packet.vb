@@ -60,10 +60,10 @@ Namespace Bnet.Protocol
             Contract.Requires(sourceName IsNot Nothing)
         End Sub
 
-        Public Overloads Function AddLogger(ByVal packetDefinition As Packets.Definition) As IDisposable
+        Public Overloads Function IncludeLogger(ByVal packetDefinition As Packets.Definition) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return AddLogger(packetDefinition.Id, packetDefinition.Jar)
+            Return IncludeLogger(packetDefinition.Id, packetDefinition.Jar)
         End Function
 
         Public Overrides ReadOnly Property HeaderSize As Integer

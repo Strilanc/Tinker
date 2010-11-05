@@ -40,8 +40,8 @@ Namespace Bnet
             Me._client = client
             Me._control = New BnetClientControl(Me)
 
-            Me._hooks.Add(client.QueueAddPacketHandler(Protocol.Packets.ServerToClient.ChatEvent,
-                                                       Function(pickle) OnReceivedChatEvent(pickle.Value)))
+            Me._hooks.Add(client.QueueIncludePacketHandler(Protocol.Packets.ServerToClient.ChatEvent,
+                                                           Function(pickle) OnReceivedChatEvent(pickle.Value)))
 
             client.ChainEventualDisposalTo(Me)
         End Sub

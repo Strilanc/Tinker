@@ -26,7 +26,7 @@ Public Class PacketHandlerTest
     Public Sub ValueTest()
         Dim flag = 0UI
         Dim p = New TestPacketHandler()
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(data) TaskedAction(Sub() flag = data.SubView(0, 4).touint32))
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
         WaitUntilTaskSucceeds(result)
@@ -38,9 +38,9 @@ Public Class PacketHandlerTest
         Dim flag1 = True
         Dim flag2 = False
         Dim p = New TestPacketHandler()
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(data) TaskedAction(Sub() flag1 = False))
-        p.AddHandler(key:=2,
+        p.IncludeHandler(key:=2,
                      handler:=Function(data) TaskedAction(Sub() flag2 = True))
         Dim result = p.HandlePacket(New Byte() {2, &H12, &H34, &H56, &H78}.AsReadableList)
         WaitUntilTaskSucceeds(result)
@@ -53,9 +53,9 @@ Public Class PacketHandlerTest
         Dim flag1 = False
         Dim flag2 = False
         Dim p = New TestPacketHandler()
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag2 = True))
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
         WaitUntilTaskSucceeds(result)
@@ -66,7 +66,7 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub HandleFailTest()
         Dim p = New TestPacketHandler()
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(pickle)
                                   Throw New InvalidOperationException("Mock Exception")
                               End Function)
@@ -77,7 +77,7 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub HandleFutureFailTest()
         Dim p = New TestPacketHandler()
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() Throw New InvalidOperationException("Mock Exception")))
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
         WaitUntilTaskFails(result)
@@ -87,7 +87,7 @@ Public Class PacketHandlerTest
     Public Sub ExtractKeyFailTest()
         Dim flag = True
         Dim p = New TestPacketHandler()
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag = False))
         Dim result = p.HandlePacket(New Byte() {255, &H12, &H34, &H56, &H78}.AsReadableList)
         WaitUntilTaskFails(result)
@@ -104,7 +104,7 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub DisposedHandlerTest()
         Dim p = New TestPacketHandler()
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub()
                                                             End Sub)
                      ).Dispose()
@@ -117,9 +117,9 @@ Public Class PacketHandlerTest
         Dim flag1 = False
         Dim flag2 = True
         Dim p = New TestPacketHandler()
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
-        p.AddHandler(key:=1,
+        p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag2 = False)
                      ).Dispose()
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)

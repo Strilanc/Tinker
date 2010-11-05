@@ -298,7 +298,7 @@ Namespace WC3
 
         Private Function AddPacketLogger(ByVal packetDefinition As Protocol.Packets.Definition) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
-            Return _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
+            Return _packetHandler.IncludeLogger(packetDefinition.Id, packetDefinition.Jar)
         End Function
         Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                            ByVal handler As Action(Of T)) As IDisposable
@@ -306,7 +306,7 @@ Namespace WC3
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim ld = AddPacketLogger(packetDefinition)
-            Dim hd = _packetHandler.AddHandler(packetDefinition.Id, Function(data) _inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data).Value)))
+            Dim hd = _packetHandler.IncludeHandler(packetDefinition.Id, Function(data) _inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data).Value)))
             Return New DelegatedDisposable(Sub()
                                                ld.Dispose()
                                                hd.Dispose()
@@ -317,7 +317,7 @@ Namespace WC3
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data).Value))
+            Return _packetHandler.IncludeHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data).Value))
         End Function
         Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                     ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _

@@ -108,11 +108,11 @@ Public Class DownloadManagerTest
                                                      ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _
                                                      Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
             SyncLock Me
-                Return _handler.AddHandler(packetDefinition.Id, Function(data)
-                                                                    Dim result = handler(packetDefinition.Jar.Parse(data).Value)
-                                                                    result.Catch(Sub(ex) _failFuture.TrySetException(ex.InnerExceptions))
-                                                                    Return result
-                                                                End Function).AsTask
+                Return _handler.IncludeHandler(packetDefinition.Id, Function(data)
+                                                                        Dim result = handler(packetDefinition.Jar.Parse(data).Value)
+                                                                        result.Catch(Sub(ex) _failFuture.TrySetException(ex.InnerExceptions))
+                                                                        Return result
+                                                                    End Function).AsTask
             End SyncLock
         End Function
         Public Function QueueSendPacket(ByVal packet As Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket

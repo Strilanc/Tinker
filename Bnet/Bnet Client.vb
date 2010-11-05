@@ -207,22 +207,22 @@ Namespace Bnet
             Me._futureConnected.IgnoreExceptions()
             Me._futureLoggedIn.IgnoreExceptions()
 
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationFinish, AddressOf ReceiveUserAuthenticationFinish)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ChatEvent, AddressOf ReceiveChatEvent)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.EnterChat, AddressOf ReceiveEnterChat)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.MessageBox, AddressOf ReceiveMessageBox)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Ping, AddressOf ReceivePing)
-            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.Null)
-            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.GetFileTime)
-            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.GetIconData)
-            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.QueryGamesList)
-            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
-            _packetHandler.AddLogger(Protocol.Packets.ServerToClient.RequiredWork)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationFinish, AddressOf ReceiveUserAuthenticationFinish)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.ChatEvent, AddressOf ReceiveChatEvent)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.EnterChat, AddressOf ReceiveEnterChat)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.MessageBox, AddressOf ReceiveMessageBox)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.Ping, AddressOf ReceivePing)
+            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.Null)
+            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.GetFileTime)
+            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.GetIconData)
+            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.QueryGamesList)
+            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
+            _packetHandler.IncludeLogger(Protocol.Packets.ServerToClient.RequiredWork)
         End Sub
 
         Public ReadOnly Property Profile As Bot.ClientProfile
@@ -248,25 +248,25 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() _state)
         End Function
 
-        Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                           ByVal handler As Action(Of IPickle(Of T))) As IDisposable
+        Private Function IncludeQueuedPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                          ByVal handler As Action(Of IPickle(Of T))) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Dim ld = _packetHandler.AddLogger(packetDefinition)
-            Dim hd = _packetHandler.AddHandler(packetDefinition.Id, Function(data) inQueue.QueueAction(Sub() handler(packetDefinition.Jar.ParsePickle(data))))
+            Dim ld = _packetHandler.IncludeLogger(packetDefinition)
+            Dim hd = _packetHandler.IncludeHandler(packetDefinition.Id, Function(data) inQueue.QueueAction(Sub() handler(packetDefinition.Jar.ParsePickle(data))))
             Return New DelegatedDisposable(Sub()
                                                ld.Dispose()
                                                hd.Dispose()
                                            End Sub)
         End Function
 
-        Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                    ByVal handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable)
+        Public Function QueueIncludePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                        ByVal handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable)
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.ParsePickle(data))))
+            Return inQueue.QueueFunc(Function() _packetHandler.IncludeHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.ParsePickle(data))))
         End Function
 
         Private Sub SendText(ByVal text As String)
