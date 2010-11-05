@@ -4,7 +4,7 @@ Namespace Bnet
     <ContractVerification(False)>
     Public Class BnetClientControl
         Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
-        Private ReadOnly _manager As Bnet.ClientManager
+        Private ReadOnly _manager As Bnet.ClientComponent
         Private ReadOnly _client As Bnet.Client
         Private ReadOnly _hooks As New List(Of IDisposable)
         Private numPrimaryStates As Integer
@@ -20,7 +20,7 @@ Namespace Bnet
             If Me.Parent IsNot Nothing Then inQueue.Start()
         End Sub
 
-        Public Sub New(ByVal manager As Bnet.ClientManager)
+        Public Sub New(ByVal manager As Bnet.ClientComponent)
             Contract.Assert(manager IsNot Nothing)
             InitializeComponent()
 

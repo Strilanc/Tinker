@@ -3,14 +3,14 @@ Imports Tinker.Commands
 
 Namespace Bnet.Commands
     Public NotInheritable Class CommandBot
-        Inherits BaseCommand(Of Bnet.ClientManager)
+        Inherits BaseCommand(Of Bnet.ClientComponent)
         Public Sub New()
             MyBase.New(Name:="Bot",
                        Format:="...",
                        Description:="Forwards commands to the main bot.",
                        Permissions:="root:1")
         End Sub
-        Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Contract.Assume(target IsNot Nothing)
             Return target.Bot.InvokeCommand(user, argument)
         End Function
@@ -172,13 +172,13 @@ Namespace Bnet.Commands
     End Class
 
     Public NotInheritable Class CommandAuto
-        Inherits TemplatedCommand(Of Bnet.ClientManager)
+        Inherits TemplatedCommand(Of Bnet.ClientComponent)
         Public Sub New()
             MyBase.New(Name:="Auto",
                        template:="On|Off",
                        Description:="Causes the client to automatically advertise any games on any server when 'On'.")
         End Sub
-        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Contract.Assume(target IsNot Nothing)
             Select Case New InvariantString(argument.RawValue(0))
                 Case "On"
@@ -211,7 +211,7 @@ Namespace Bnet.Commands
     End Class
 
     Public NotInheritable Class CommandHost
-        Inherits TemplatedCommand(Of Bnet.ClientManager)
+        Inherits TemplatedCommand(Of Bnet.ClientComponent)
         Public Sub New()
             MyBase.New(Name:="Host",
                         template:=Concat({"name=<game name>", "map=<search query>"},
@@ -222,7 +222,7 @@ Namespace Bnet.Commands
                         extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
                                           WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
-        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Contract.Assume(target IsNot Nothing)
             Dim server = Await target.Bot.QueueGetOrConstructGameServer()
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
@@ -256,13 +256,13 @@ Namespace Bnet.Commands
     End Class
 
     Public NotInheritable Class CommandGame
-        Inherits PartialCommand(Of Bnet.ClientManager)
+        Inherits PartialCommand(Of Bnet.ClientComponent)
         Public Sub New()
             MyBase.New(Name:="Game",
                        headType:="InstanceName",
                        Description:="Forwards commands to an instance in your hosted game. By default game instances are numbered, starting with 0.")
         End Sub
-        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
             Contract.Assume(target IsNot Nothing)
             If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
             Dim gameName = argumentHead
@@ -298,14 +298,14 @@ Namespace Bnet.Commands
     End Class
 
     Public NotInheritable Class CommandCancelHost
-        Inherits TemplatedCommand(Of Bnet.ClientManager)
+        Inherits TemplatedCommand(Of Bnet.ClientComponent)
         Public Sub New()
             MyBase.New(Name:="CancelHost",
             template:="",
             Description:="Cancels a host command if it was issued by you, and unlinks the attached server.",
             Permissions:="")
         End Sub
-        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Contract.Assume(target IsNot Nothing)
             If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
 
@@ -318,14 +318,14 @@ Namespace Bnet.Commands
     End Class
 
     Public NotInheritable Class CommandAdminCode
-        Inherits TemplatedCommand(Of Bnet.ClientManager)
+        Inherits TemplatedCommand(Of Bnet.ClientComponent)
         Public Sub New()
             MyBase.New(Name:="AdminCode",
                        template:="",
                        Description:="Returns the admin code for a game you have hosted.",
                        Permissions:="")
         End Sub
-        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Contract.Assume(target IsNot Nothing)
             If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
 
@@ -369,14 +369,14 @@ Namespace Bnet.Commands
     End Class
 
     Public NotInheritable Class CommandElevate
-        Inherits TemplatedCommand(Of Bnet.ClientManager)
+        Inherits TemplatedCommand(Of Bnet.ClientComponent)
         Public Sub New()
             MyBase.New(Name:="Elevate",
                        template:="-player=name",
                        Description:="Elevates you or a specified player to admin in your hosted game.",
                        Permissions:="games:1")
         End Sub
-        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(ByVal target As Bnet.ClientComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Contract.Assume(target IsNot Nothing)
             If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
 

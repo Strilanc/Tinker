@@ -3,11 +3,14 @@ Imports Tinker.Components
 Imports Tinker.Bot
 
 Namespace Bnet
-    Public NotInheritable Class ClientManager
+    ''' <summary>
+    ''' Exposes a <see cref="Bnet.Client" /> as an <see cref="IBotComponent" />.
+    ''' </summary>
+    Public NotInheritable Class ClientComponent
         Inherits DisposableWithTask
         Implements IBotComponent
 
-        Private ReadOnly _commands As New CommandSet(Of ClientManager)()
+        Private ReadOnly _commands As New CommandSet(Of ClientComponent)()
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _name As InvariantString
@@ -45,10 +48,10 @@ Namespace Bnet
         Public Shared Function FromProfileAsync(ByVal clientName As InvariantString,
                                                 ByVal profileName As InvariantString,
                                                 ByVal clock As IClock,
-                                                ByVal bot As Bot.MainBot) As Task(Of ClientManager)
+                                                ByVal bot As Bot.MainBot) As Task(Of ClientComponent)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of ClientManager))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of ClientComponent))() IsNot Nothing)
 
             Dim profile = (From p In bot.Settings.ClientProfiles Where p.name = profileName).FirstOrDefault
             If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
@@ -64,7 +67,7 @@ Namespace Bnet
             End If
 
             Dim client = New Bnet.Client(profile, New CachedWC3InfoProvider, authenticator, clock, logger)
-            Return New Bnet.ClientManager(clientName, bot, client).AsTask
+            Return New Bnet.ClientComponent(clientName, bot, client).AsTask
         End Function
 
         Public ReadOnly Property Client As Bnet.Client
@@ -73,9 +76,9 @@ Namespace Bnet
                 Return _client
             End Get
         End Property
-        Public ReadOnly Property Bot As Bot.MainBot
+        Public ReadOnly Property Bot As MainBot
             Get
-                Contract.Ensures(Contract.Result(Of Bot.MainBot)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
                 Return _bot
             End Get
         End Property
@@ -221,7 +224,7 @@ Namespace Bnet
         Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
             Return IncludeCommand(command)
         End Function
-        Public Function IncludeCommand(ByVal command As ICommand(Of ClientManager)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of ClientComponent)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return _commands.IncludeCommand(command).AsTask()

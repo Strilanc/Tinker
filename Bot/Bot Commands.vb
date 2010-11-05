@@ -15,7 +15,7 @@ Namespace Bot.Commands
             If profileNames.None Then Throw New ArgumentException("No profiles specified.")
 
             'Attempt to connect to each listed profile
-            Dim allClients = New List(Of Task(Of Bnet.ClientManager))()
+            Dim allClients = New List(Of Task(Of Bnet.ClientComponent))()
             For Each profileName In profileNames
                 Contract.Assume(profileName IsNot Nothing)
                 allClients.Add(CreateLoggedOnClientManagerAsync(target, profileName))
@@ -33,24 +33,24 @@ Namespace Bot.Commands
             Return "Connected"
         End Function
 
-        Private Async Function CreateLoggedOnClientManagerAsync(ByVal parent As MainBot, ByVal profileName As String) As Task(Of Bnet.ClientManager)
+        Private Async Function CreateLoggedOnClientManagerAsync(ByVal parent As MainBot, ByVal profileName As String) As Task(Of Bnet.ClientComponent)
             Contract.Requires(parent IsNot Nothing)
             Contract.Requires(profileName IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of Bnet.ClientManager))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of Bnet.ClientComponent))() IsNot Nothing)
 
             Dim clock = New SystemClock()
-            Dim manager = Await Bnet.ClientManager.FromProfileAsync(profileName, profileName, clock, parent)
+            Dim clientComponent = Await Bnet.ClientComponent.FromProfileAsync(profileName, profileName, clock, parent)
             Try
-                manager.QueueSetAutomatic(True)
-                Await parent.Components.QueueAddComponent(manager)
-                Dim client = manager.Client
+                clientComponent.QueueSetAutomatic(True)
+                Await parent.Components.QueueAddComponent(clientComponent)
+                Dim client = clientComponent.Client
                 Dim profile = client.Profile
                 Await client.QueueConnect(remoteHost:=profile.server.Split(" "c).First,
                                           remotePort:=Bnet.Client.BnetServerPort)
                 Await client.QueueLogOn(Bnet.ClientAuthenticator.GeneratedFrom(profile.userName, profile.password))
-                Return manager
+                Return clientComponent
             Catch ex As Exception
-                manager.Dispose()
+                clientComponent.Dispose()
                 Throw
             End Try
         End Function
@@ -118,13 +118,13 @@ Namespace Bot.Commands
             Dim clientName = argument.RawValue(0).ToInvariant
 
             Dim clock = New SystemClock()
-            Dim manager = Await Bnet.ClientManager.FromProfileAsync(clientName, profileName, clock, target)
+            Dim clientComponent = Await Bnet.ClientComponent.FromProfileAsync(clientName, profileName, clock, target)
             Try
-                Await target.Components.QueueAddComponent(manager)
-                If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
+                Await target.Components.QueueAddComponent(clientComponent)
+                If argument.HasOptionalSwitch("auto") Then clientComponent.QueueSetAutomatic(True)
                 Return "Created Client"
             Catch ex As Exception
-                manager.Dispose()
+                clientComponent.Dispose()
                 Throw
             End Try
         End Function

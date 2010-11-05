@@ -219,12 +219,12 @@ Namespace Bot
         Public Function IncludeBasicBnetClientCommands(ByVal this As MainBot) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Dim conv = Function(x As Bnet.ClientManager) x.Client
-            Return this.IncludeCommandsInAllComponentsOfType(Of Bnet.ClientManager)(
+            Dim conv = Function(x As Bnet.ClientComponent) x.Client
+            Return this.IncludeCommandsInAllComponentsOfType(Of Bnet.ClientComponent)(
                 Concat(
-                    New ICommand(Of Bnet.ClientManager)() {
-                        New Bot.GenericCommands.CommandFindMaps(Of Bnet.ClientManager),
-                        New Bot.GenericCommands.CommandDownloadMap(Of Bnet.ClientManager),
+                    New ICommand(Of Bnet.ClientComponent)() {
+                        New Bot.GenericCommands.CommandFindMaps(Of Bnet.ClientComponent),
+                        New Bot.GenericCommands.CommandDownloadMap(Of Bnet.ClientComponent),
                         New Bnet.Commands.CommandBot,
                         New Bnet.Commands.CommandAdminCode,
                         New Bnet.Commands.CommandCancelHost,
