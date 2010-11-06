@@ -216,7 +216,7 @@ Namespace WC3
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _viewGameSets.BeginSync(adder:=Sub(sender, item) adder(Me, item),
+            Return _viewGameSets.Observe(adder:=Sub(sender, item) adder(Me, item),
                                            remover:=Sub(sender, item) remover(Me, item))
         End Function
         Public Function QueueCreateGameSetsAsyncView(ByVal adder As Action(Of GameServer, GameSet),
@@ -232,7 +232,7 @@ Namespace WC3
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _viewActiveGameSets.BeginSync(adder:=Sub(sender, item) adder(Me, item),
+            Return _viewActiveGameSets.Observe(adder:=Sub(sender, item) adder(Me, item),
                                                  remover:=Sub(sender, item) remover(Me, item))
         End Function
         Public Function QueueCreateActiveGameSetsAsyncView(ByVal adder As Action(Of GameServer, GameSet),
@@ -248,7 +248,7 @@ Namespace WC3
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _viewGames.BeginSync(adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2),
+            Return _viewGames.Observe(adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2),
                                         remover:=Sub(sender, item) remover(Me, item.Item1, item.Item2))
         End Function
         Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of GameServer, GameSet, Game),
@@ -264,7 +264,7 @@ Namespace WC3
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _viewPlayers.BeginSync(adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2, item.Item3),
+            Return _viewPlayers.Observe(adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2, item.Item3),
                                           remover:=Sub(sender, item) remover(Me, item.Item1, item.Item2, item.Item3))
         End Function
         Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of GameServer, GameSet, Game, Player),

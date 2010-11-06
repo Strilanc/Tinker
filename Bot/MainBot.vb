@@ -98,7 +98,7 @@ Namespace Bot
 
             Dim inQueue = New TaskedCallQueue(initiallyStarted:=False)
             Dim hooks = New List(Of Task(Of IDisposable))
-            Dim viewHook = this.Components.QueueCreateAsyncView(Of WC3.GameServerManager)(
+            Dim viewHook = this.Components.QueueObserveComponentsOfType(Of WC3.GameServerManager)(
                 adder:=Sub(sender, manager) inQueue.QueueAction(
                     Sub()
                         If hooks Is Nothing Then Return
@@ -138,7 +138,7 @@ Namespace Bot
             Dim commandDisposers = New Dictionary(Of T, Task(Of IDisposable))()
 
             'Include commands
-            Dim view = this.Components.QueueCreateAsyncView(Of T)(
+            Dim view = this.Components.QueueObserveComponentsOfType(Of T)(
                 adder:=Sub(bot, component) inQueue.QueueAction(
                     Sub()
                         If commandDisposers Is Nothing Then Return
@@ -170,7 +170,7 @@ Namespace Bot
             Dim commandDisposers = New Dictionary(Of T, Task(Of IDisposable))()
 
             'Include commands
-            Dim view = this.Components.QueueCreateAsyncView(Of T)(
+            Dim view = this.Components.QueueObserveComponentsOfType(Of T)(
                 adder:=Sub(bot, component) inQueue.QueueAction(
                     Sub()
                         If commandDisposers Is Nothing Then Return

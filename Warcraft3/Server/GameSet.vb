@@ -103,7 +103,7 @@
                     End Sub)
 
             'SetAdvertiserOptions(private:=False)
-            Dim playerLink = game.QueueCreatePlayersAsyncView(
+            Dim playerLink = game.QueueObservePlayers(
                     adder:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Add(Tuple.Create(game, player))),
                     remover:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(Tuple.Create(game, player))))
 
@@ -161,7 +161,7 @@
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _games.BeginSync(adder:=Sub(sender, item) adder(Me, item),
+            Return _games.Observe(adder:=Sub(sender, item) adder(Me, item),
                                     remover:=Sub(sender, item) remover(Me, item))
         End Function
         Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of GameSet, Game),
@@ -181,7 +181,7 @@
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _viewPlayers.BeginSync(adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2),
+            Return _viewPlayers.Observe(adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2),
                                           remover:=Sub(sender, item) remover(Me, item.Item1, item.Item2))
         End Function
         Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of GameSet, Game, Player),

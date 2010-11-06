@@ -78,8 +78,8 @@ Public Class AsyncViewableCollection(Of T)
     ''' <param name="remover">A callback for items removed from the collection. Never called concurrently, but calls may migrate across threads.</param>
     ''' <returns>An IDisposable which, when disposed, begins unregistering 'adder' and 'remover'.</returns>
     ''' <remarks>The 'never called concurrently' clause applies between adder and remover (eg. adder will not be called during remover).</remarks>
-    Public Function BeginSync(ByVal adder As AddedEventHandler,
-                              ByVal remover As RemovedEventHandler) As IDisposable
+    Public Function Observe(ByVal adder As AddedEventHandler,
+                            ByVal remover As RemovedEventHandler) As IDisposable
         Contract.Requires(adder IsNot Nothing)
         Contract.Requires(remover IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)

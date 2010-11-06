@@ -19,7 +19,7 @@ Namespace Components
             InitializeComponent()
 
             _botComponentTabs = New Components.TabManager(tabsComponents)
-            _hooks.Add(bot.Components.QueueCreateAsyncView(
+            _hooks.Add(bot.Components.QueueObserveComponents(
                                 adder:=Sub(sender, component) inQueue.QueueAction(Sub() OnBotAddedComponent(component)),
                                 remover:=Sub(sender, component) inQueue.QueueAction(Sub() OnBotRemovedComponent(component))))
         End Sub

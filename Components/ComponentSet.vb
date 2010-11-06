@@ -187,13 +187,13 @@ Namespace Components
         ''' </summary>
         ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
         ''' <param name="remover">Asynchronously called with components as they are removed.</param>
-        Private Function CreateAsyncView(ByVal adder As Action(Of ComponentSet, IBotComponent),
-                                         ByVal remover As Action(Of ComponentSet, IBotComponent)) As IDisposable
+        Private Function ObserveComponents(ByVal adder As Action(Of ComponentSet, IBotComponent),
+                                           ByVal remover As Action(Of ComponentSet, IBotComponent)) As IDisposable
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _components.BeginSync(adder:=Sub(sender, item) adder(Me, item),
-                                         remover:=Sub(sender, item) remover(Me, item))
+            Return _components.Observe(adder:=Sub(sender, item) adder(Me, item),
+                                       remover:=Sub(sender, item) remover(Me, item))
         End Function
         ''' <summary>
         ''' Asychronously registers methods to be used for syncing with components in the set.
@@ -201,12 +201,12 @@ Namespace Components
         ''' </summary>
         ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
         ''' <param name="remover">Asynchronously called with components as they are removed.</param>
-        Public Function QueueCreateAsyncView(ByVal adder As Action(Of ComponentSet, IBotComponent),
-                                             ByVal remover As Action(Of ComponentSet, IBotComponent)) As Task(Of IDisposable)
+        Public Function QueueObserveComponents(ByVal adder As Action(Of ComponentSet, IBotComponent),
+                                               ByVal remover As Action(Of ComponentSet, IBotComponent)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() CreateAsyncView(adder, remover))
+            Return inQueue.QueueFunc(Function() ObserveComponents(adder, remover))
         End Function
         ''' <summary>
         ''' Asychronously registers methods to be used for syncing with components of a type in the set.
@@ -214,12 +214,12 @@ Namespace Components
         ''' </summary>
         ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
         ''' <param name="remover">Asynchronously called with components as they are removed.</param>
-        Public Function QueueCreateAsyncView(Of T As IBotComponent)(ByVal adder As Action(Of ComponentSet, T),
-                                                                    ByVal remover As Action(Of ComponentSet, T)) As Task(Of IDisposable)
+        Public Function QueueObserveComponentsOfType(Of T As IBotComponent)(ByVal adder As Action(Of ComponentSet, T),
+                                                                            ByVal remover As Action(Of ComponentSet, T)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return Me.QueueCreateAsyncView(
+            Return Me.QueueObserveComponents(
                     adder:=Sub(sender, component) If TypeOf component Is T Then adder(sender, DirectCast(component, T)),
                     remover:=Sub(sender, component) If TypeOf component Is T Then remover(sender, DirectCast(component, T)))
         End Function
