@@ -62,8 +62,8 @@ Namespace WC3
             'map.MapChecksumSHA1.ToHexString)
             'txtInfo.Text = info
 
-            _hooks.Add(_server.QueueCreateGameSetsAsyncView(AddressOf OnAddedGameSet, AddressOf OnRemovedGameSet))
-            _hooks.Add(_server.QueueCreateGamesAsyncView(AddressOf OnAddedGame, AddressOf OnRemovedGame))
+            _hooks.Add(_server.ObserveGameSets(AddressOf OnAddedGameSet, AddressOf OnRemovedGameSet))
+            _hooks.Add(_server.ObserveGames(AddressOf OnAddedGame, AddressOf OnRemovedGame))
 
             BeginUpdateStateDisplay()
         End Sub

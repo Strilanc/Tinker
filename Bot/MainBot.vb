@@ -102,7 +102,7 @@ Namespace Bot
                 adder:=Sub(sender, manager) inQueue.QueueAction(
                     Sub()
                         If hooks Is Nothing Then Return
-                        Dim gameSetLink = manager.Server.QueueCreateActiveGameSetsAsyncView(
+                        Dim gameSetLink = manager.Server.ObserveActiveGameSets(
                                  adder:=Sub(sender2, gameSet) adder(this, sender2, gameSet),
                                  remover:=Sub(sender2, gameSet) remover(this, sender2, gameSet))
                         'async remove when view is disposed
