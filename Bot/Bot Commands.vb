@@ -144,7 +144,7 @@ Namespace Bot.Commands
             Dim remoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
             Dim auto = Not argument.HasOptionalSwitch("manual")
 
-            Dim advertiser = New Lan.Advertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
+            Dim advertiser = New Lan.Advertiser(New CachedWC3InfoProvider(), New SystemClock(), remoteHost)
             Dim advertiserComponent = New Lan.AdvertiserComponent(name, target, advertiser)
             Try
                 If auto Then advertiserComponent.QueueSetAutomatic(auto)

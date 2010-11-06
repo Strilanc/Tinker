@@ -14,6 +14,7 @@ Namespace Lan
         Private ReadOnly _socket As New UdpClient
         Private ReadOnly _logger As Logger
         Private ReadOnly _defaultTargetHost As String
+        Private ReadOnly _infoProvider As IProductInfoProvider
 
         Private ReadOnly refreshTimer As New System.Timers.Timer(3000)
 
@@ -25,6 +26,7 @@ Namespace Lan
             Contract.Invariant(_socket IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_defaultTargetHost IsNot Nothing)
+            Contract.Invariant(_infoProvider IsNot Nothing)
             Contract.Invariant(refreshTimer IsNot Nothing)
         End Sub
 
@@ -59,10 +61,13 @@ Namespace Lan
             End Property
         End Class
 
-        Public Sub New(Optional ByVal defaultTargetHost As String = "localhost",
+        Public Sub New(ByVal infoProvider As IProductInfoProvider,
+                       Optional ByVal defaultTargetHost As String = "localhost",
                        Optional ByVal logger As Logger = Nothing)
+            Contract.Assume(infoProvider IsNot Nothing)
             Contract.Assume(defaultTargetHost IsNot Nothing)
 
+            Me._infoProvider = infoProvider
             Me._logger = If(logger, New Logger)
             Me._defaultTargetHost = defaultTargetHost
 
@@ -150,7 +155,7 @@ Namespace Lan
         End Sub
         Private Sub RefreshGame(ByVal game As LanGame)
             Contract.Requires(game IsNot Nothing)
-            Dim pk = WC3.Protocol.MakeLanGameDetails(New CachedWC3InfoProvider().MajorVersion, game.GameDescription)
+            Dim pk = WC3.Protocol.MakeLanGameDetails(_infoProvider.MajorVersion, game.GameDescription)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host
