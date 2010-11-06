@@ -604,7 +604,13 @@ Namespace WC3
             SendLobbyState(randomSeed.UnsignedValue)
 
             If Settings.ShouldRecordReplay Then
-                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _kernel.Players.Cache, _lobby.Slots, randomSeed.UnsignedValue)
+                Replay.ReplayManager.StartRecordingFrom(
+                    defaultFileName:=Settings.DefaultReplayFileName,
+                    game:=Me,
+                    players:=_kernel.Players.Cache,
+                    slots:=_lobby.Slots,
+                    randomSeed:=randomSeed.UnsignedValue,
+                    infoProvider:=New CachedWC3InfoProvider())
             End If
 
             _kernel.State = GameState.Loading

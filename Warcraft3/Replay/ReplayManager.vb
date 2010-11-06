@@ -7,17 +7,22 @@
 
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _writer As ReplayWriter
+        Private ReadOnly _infoProvider As IProductInfoProvider
         Private ReadOnly _hooks As New List(Of IDisposable)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_writer IsNot Nothing)
+            Contract.Invariant(_infoProvider IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal writer As ReplayWriter)
+        Private Sub New(ByVal writer As ReplayWriter,
+                        ByVal infoProvider As IProductInfoProvider)
             Contract.Requires(writer IsNot Nothing)
+            Contract.Requires(infoProvider IsNot Nothing)
             Me._writer = writer
+            Me._infoProvider = infoProvider
         End Sub
 
         Private Sub Wire(ByVal game As Game)
@@ -49,7 +54,8 @@
                                                   ByVal game As Game,
                                                   ByVal players As IEnumerable(Of Player),
                                                   ByVal slots As IEnumerable(Of Slot),
-                                                  ByVal randomSeed As UInt32) As ReplayManager
+                                                  ByVal randomSeed As UInt32,
+                                                  ByVal infoProvider As IProductInfoProvider) As ReplayManager
             Contract.Requires(game IsNot Nothing)
             Contract.Requires(players IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
@@ -80,7 +86,7 @@
             Contract.Assume(file.CanSeek)
             Dim writer = New Replay.ReplayWriter(stream:=file.AsRandomWritableStream,
                                                  settings:=ReplaySettings.Online,
-                                                 wc3Version:=New CachedWC3InfoProvider().MajorVersion,
+                                                 wc3Version:=infoProvider.MajorVersion,
                                                  replayVersion:=My.Settings.ReplayBuildNumber)
 
             Dim playerCount = CUInt(players.Count)
@@ -110,7 +116,7 @@
             writer.WriteEntry(MakeLoadStarted2())
 
             'Construct
-            Dim result = New ReplayManager(writer)
+            Dim result = New ReplayManager(writer, infoProvider)
             result.Wire(game)
             Return result
         End Function
