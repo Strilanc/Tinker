@@ -4,17 +4,17 @@ Imports Tinker.Bot
 
 Namespace Lan
     ''' <summary>
-    ''' Exposes a <see cref="Lan.Advertiser" /> as an <see cref="IBotComponent" />.
+    ''' Exposes a <see cref="Lan.UDPAdvertiser" /> as an <see cref="IBotComponent" />.
     ''' </summary>
-    Public Class AdvertiserComponent
+    Public Class UDPAdvertiserComponent
         Inherits DisposableWithTask
         Implements IBotComponent
 
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
-        Private ReadOnly _commands As New CommandSet(Of AdvertiserComponent)
+        Private ReadOnly _commands As New CommandSet(Of UDPAdvertiserComponent)
         Private ReadOnly _name As InvariantString
         Private ReadOnly _bot As Bot.MainBot
-        Private ReadOnly _advertiser As Lan.Advertiser
+        Private ReadOnly _advertiser As Lan.UDPAdvertiser
         Private ReadOnly _control As Control
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -27,14 +27,14 @@ Namespace Lan
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal bot As Bot.MainBot,
-                       ByVal advertiser As Lan.Advertiser)
+                       ByVal advertiser As Lan.UDPAdvertiser)
             Contract.Requires(advertiser IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)
 
             Me._bot = bot
             Me._name = name
             Me._advertiser = advertiser
-            Me._control = New LanAdvertiserControl(Me)
+            Me._control = New UDPAdvertiserControl(Me)
         End Sub
 
         Public ReadOnly Property Name As InvariantString Implements IBotComponent.Name
@@ -58,9 +58,9 @@ Namespace Lan
                 Return _control
             End Get
         End Property
-        Public ReadOnly Property Advertiser As Lan.Advertiser
+        Public ReadOnly Property Advertiser As Lan.UDPAdvertiser
             Get
-                Contract.Ensures(Contract.Result(Of Lan.Advertiser)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Lan.UDPAdvertiser)() IsNot Nothing)
                 Return _advertiser
             End Get
         End Property
@@ -106,7 +106,7 @@ Namespace Lan
         Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
             Return IncludeCommand(command)
         End Function
-        Public Function IncludeCommand(ByVal command As ICommand(Of AdvertiserComponent)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of UDPAdvertiserComponent)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return _commands.IncludeCommand(command).AsTask()

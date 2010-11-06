@@ -278,7 +278,7 @@
     <Compile Include="Components\Component Extensions.vb" />
     <Compile Include="Components\IBotComponent.vb" />
     <Compile Include="Bnet\Bnet Client Component.vb" />
-    <Compile Include="Lan\Lan Advertiser Manager.vb" />
+    <Compile Include="Lan\UDPAdvertiserComponent.vb" />
     <Compile Include="Components\ComponentSet.vb" />
     <Compile Include="Plugins\Plugin Interfaces.vb" />
     <Compile Include="Bot\Plugin Profile.vb" />
@@ -289,10 +289,10 @@
     <Compile Include="Interface\CommandControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Lan\LanAdvertiserControl.Designer.vb">
-      <DependentUpon>LanAdvertiserControl.vb</DependentUpon>
+    <Compile Include="Lan\UDPAdvertiserControl.Designer.vb">
+      <DependentUpon>UDPAdvertiserControl.vb</DependentUpon>
     </Compile>
-    <Compile Include="Lan\LanAdvertiserControl.vb">
+    <Compile Include="Lan\UDPAdvertiserControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\GenericBotComponentControl.Designer.vb">
@@ -333,7 +333,7 @@
     <Compile Include="Commands\BaseCommand.vb" />
     <Compile Include="Commands\CommandArgument.vb" />
     <Compile Include="Commands\HelpCommand.vb" />
-    <Compile Include="Lan\Lan Commands.vb" />
+    <Compile Include="Lan\UDPAdvertiserCommands.vb" />
     <Compile Include="CKL\CKL Client.vb" />
     <Compile Include="CKL\CKL Keys.vb" />
     <Compile Include="Interface\ProfileSettingsControl.Designer.vb">
@@ -343,7 +343,7 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Warcraft3\W3DummyPlayer.vb" />
-    <Compile Include="Lan\LanAdvertiser.vb" />
+    <Compile Include="Lan\UDPAdvertiser.vb" />
     <Compile Include="Bot\Bot Commands.vb" />
     <Compile Include="Bnet\Bnet Client Commands.vb" />
     <Compile Include="Warcraft3\Game\Game Commands.vb" />
@@ -427,8 +427,8 @@
       <DependentUpon>ExceptionForm.vb</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Lan\LanAdvertiserControl.resx">
-      <DependentUpon>LanAdvertiserControl.vb</DependentUpon>
+    <EmbeddedResource Include="Lan\UDPAdvertiserControl.resx">
+      <DependentUpon>UDPAdvertiserControl.vb</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\GenericBotComponentControl.resx">

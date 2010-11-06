@@ -59,6 +59,7 @@
             Contract.Requires(game IsNot Nothing)
             Contract.Requires(players IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
+            Contract.Requires(infoProvider IsNot Nothing)
 
             'Choose location
             Dim folder = GetDataFolderPath("Replays")

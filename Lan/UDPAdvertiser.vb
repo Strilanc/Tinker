@@ -2,7 +2,8 @@
 Imports Tinker.Pickling
 
 Namespace Lan
-    Public NotInheritable Class Advertiser
+
+    Public NotInheritable Class UDPAdvertiser
         Inherits DisposableWithTask
         Public Shared ReadOnly LanTargetPort As UShort = 6112
         Private Shared ReadOnly RefreshPeriod As TimeSpan = 3.Seconds
@@ -65,9 +66,9 @@ Namespace Lan
                        ByVal clock As IClock,
                        Optional ByVal defaultTargetHost As String = "localhost",
                        Optional ByVal logger As Logger = Nothing)
-            Contract.Assume(infoProvider IsNot Nothing)
-            Contract.Assume(clock IsNot Nothing)
-            Contract.Assume(defaultTargetHost IsNot Nothing)
+            Contract.Requires(infoProvider IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(defaultTargetHost IsNot Nothing)
 
             Me._infoProvider = infoProvider
             Me._logger = If(logger, New Logger)
@@ -134,6 +135,7 @@ Namespace Lan
             Next id
         End Sub
         Public Function QueueClearGames() As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(AddressOf ClearGames)
         End Function
 
@@ -159,7 +161,7 @@ Namespace Lan
 
                 'Log
                 _logger.Log(Function() "Sending to {0}: {1}".Frmt(targetHost, data.ToHexString), LogMessageType.DataRaw)
-                _logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, targetHost), LogMessageType.DataEvent)
+                _logger.Log(Function() "Sending {0} to {1}".Frmt(pk.Id, targetHost), LogMessageType.DataEvent)
                 _logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(pk.Id, targetHost, pk.Payload.Description), LogMessageType.DataParsed)
 
                 'Send
@@ -174,16 +176,16 @@ Namespace Lan
             End Try
         End Sub
 
-        Private Function CreateGamesAsyncView(ByVal adder As Action(Of Lan.Advertiser, LanGame),
-                                              ByVal remover As Action(Of Lan.Advertiser, LanGame)) As IDisposable
+        Private Function CreateGamesAsyncView(ByVal adder As Action(Of Lan.UDPAdvertiser, LanGame),
+                                              ByVal remover As Action(Of Lan.UDPAdvertiser, LanGame)) As IDisposable
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return _viewGames.BeginSync(adder:=Sub(sender, game) adder(Me, game),
                                         remover:=Sub(sender, game) remover(Me, game))
         End Function
-        Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of Lan.Advertiser, LanGame),
-                                                  ByVal remover As Action(Of Lan.Advertiser, LanGame)) As Task(Of IDisposable)
+        Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of Lan.UDPAdvertiser, LanGame),
+                                                  ByVal remover As Action(Of Lan.UDPAdvertiser, LanGame)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)

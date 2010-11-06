@@ -1,11 +1,11 @@
 Namespace Lan
     <Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
-    Partial Class LanAdvertiserControl
+    Partial Class UDPAdvertiserControl
         Inherits System.Windows.Forms.UserControl
 
         'UserControl overrides dispose to clean up the component list.
         <System.Diagnostics.DebuggerNonUserCode()> _
-            Protected Overrides Sub Dispose(ByVal disposing As Boolean)
+        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
             If disposing AndAlso components IsNot Nothing Then
                 components.Dispose()
             End If
@@ -19,7 +19,7 @@ Namespace Lan
         'It can be modified using the Windows Form Designer.  
         'Do not modify it using the code editor.
         <System.Diagnostics.DebuggerStepThrough()> _
-            Private Sub InitializeComponent()
+        Private Sub InitializeComponent()
             Me.lstState = New System.Windows.Forms.ListBox()
             Me.logClient = New Tinker.LoggerControl()
             Me.comLanAdvertiser = New Tinker.CommandControl()

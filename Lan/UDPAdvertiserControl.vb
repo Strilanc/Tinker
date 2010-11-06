@@ -1,16 +1,16 @@
 Namespace Lan
     <ContractVerification(False)>
-    Public Class LanAdvertiserControl
+    Public Class UDPAdvertiserControl
         Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
-        Private ReadOnly _component As Lan.AdvertiserComponent
-        Private ReadOnly _lanAdvertiser As Lan.Advertiser
+        Private ReadOnly _component As Lan.UDPAdvertiserComponent
+        Private ReadOnly _udpAdvertiser As Lan.UDPAdvertiser
         Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
-        Private ReadOnly _syncedGames As New List(Of Lan.Advertiser.LanGame)
+        Private ReadOnly _syncedGames As New List(Of Lan.UDPAdvertiser.LanGame)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_component IsNot Nothing)
-            Contract.Invariant(_lanAdvertiser IsNot Nothing)
+            Contract.Invariant(_udpAdvertiser IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_syncedGames IsNot Nothing)
         End Sub
@@ -19,15 +19,15 @@ Namespace Lan
             If Me.Parent IsNot Nothing Then inQueue.Start()
         End Sub
 
-        Public Sub New(ByVal component As Lan.AdvertiserComponent)
+        Public Sub New(ByVal component As Lan.UDPAdvertiserComponent)
             Contract.Assert(component IsNot Nothing)
             InitializeComponent()
 
             Me._component = component
-            Me._lanAdvertiser = component.Advertiser
-            logClient.SetLogger(Me._lanAdvertiser.Logger, "Lan")
+            Me._udpAdvertiser = component.Advertiser
+            logClient.SetLogger(Me._udpAdvertiser.Logger, "Lan")
 
-            _hooks.Add(Me._lanAdvertiser.QueueCreateGamesAsyncView(
+            _hooks.Add(Me._udpAdvertiser.QueueCreateGamesAsyncView(
                                     adder:=Sub(sender, game) inQueue.QueueAction(Sub() OnAddedGame(game)),
                                     remover:=Sub(sender, game) inQueue.QueueAction(Sub() OnRemovedGame(game))))
         End Sub
@@ -39,11 +39,11 @@ Namespace Lan
             _hooks.DisposeAllAsync()
         End Sub
 
-        Private Sub OnAddedGame(ByVal game As Lan.Advertiser.LanGame)
+        Private Sub OnAddedGame(ByVal game As Lan.UDPAdvertiser.LanGame)
             Me._syncedGames.Add(game)
             RefreshGamesLists()
         End Sub
-        Private Sub OnRemovedGame(ByVal game As Lan.Advertiser.LanGame)
+        Private Sub OnRemovedGame(ByVal game As Lan.UDPAdvertiser.LanGame)
             Me._syncedGames.Remove(game)
             RefreshGamesLists()
         End Sub

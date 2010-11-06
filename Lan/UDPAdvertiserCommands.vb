@@ -3,14 +3,14 @@ Imports Tinker.Bot
 
 Namespace Lan.Commands
     Public Class CommandAuto
-        Inherits TemplatedCommand(Of AdvertiserComponent)
+        Inherits TemplatedCommand(Of UDPAdvertiserComponent)
         Public Sub New()
             MyBase.New(Name:="Auto",
                        template:="On|Off",
                        Description:="Causes the advertiser to automatically advertise all games on any server when 'On'.")
         End Sub
         <ContractVerification(False)>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As AdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Select Case New InvariantString(argument.RawValue(0))
                 Case "On"
                     Await target.QueueSetAutomatic(True)
@@ -25,14 +25,14 @@ Namespace Lan.Commands
     End Class
 
     Public Class CommandAdd
-        Inherits TemplatedCommand(Of Advertiser)
+        Inherits TemplatedCommand(Of UDPAdvertiser)
         Public Sub New()
             MyBase.New(Name:="Add",
                        template:="id=# name=<game name> map=<search query>",
                        Description:="Adds a game to be advertised, but doesn't create a new server to go with it.")
         End Sub
         <ContractVerification(False)>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim id = UInt32.Parse(argument.NamedValue("id"))
             Dim name = argument.NamedValue("name")
             Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
@@ -46,14 +46,14 @@ Namespace Lan.Commands
     End Class
 
     Public Class CommandRemove
-        Inherits TemplatedCommand(Of Advertiser)
+        Inherits TemplatedCommand(Of UDPAdvertiser)
         Public Sub New()
             MyBase.New(Name:="Remove",
                        template:="id",
                        Description:="Removes a game being advertised.")
         End Sub
         <ContractVerification(False)>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim id As UInteger
             If Not UInteger.TryParse(argument.RawValue(0), id) Then Throw New InvalidOperationException("Invalid game id.")
 
@@ -65,7 +65,7 @@ Namespace Lan.Commands
     End Class
 
     Public Class CommandHost
-        Inherits TemplatedCommand(Of AdvertiserComponent)
+        Inherits TemplatedCommand(Of UDPAdvertiserComponent)
         Public Sub New()
             MyBase.New(Name:="Host",
                        template:=Concat({"name=<game name>", "map=<search query>"},
@@ -76,7 +76,7 @@ Namespace Lan.Commands
                        extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
         <ContractVerification(False)>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As AdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim server = Await target.Bot.QueueGetOrConstructGameServer()
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
             Try
