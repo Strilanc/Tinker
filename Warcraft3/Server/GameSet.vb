@@ -156,40 +156,28 @@
             Return inQueue.QueueFunc(Function() AsyncTryFindPlayerGame(userName)).Unwrap.AssumeNotNull
         End Function
 
-        Private Function CreateGameAsyncView(ByVal adder As Action(Of GameSet, Game),
-                                             ByVal remover As Action(Of GameSet, Game)) As IDisposable
-            Contract.Requires(adder IsNot Nothing)
-            Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _games.Observe(adder:=Sub(sender, item) adder(Me, item),
-                                    remover:=Sub(sender, item) remover(Me, item))
-        End Function
-        Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of GameSet, Game),
-                                                  ByVal remover As Action(Of GameSet, Game)) As Task(Of IDisposable)
+        Public Function ObserveGames(ByVal adder As Action(Of GameSet, Game),
+                                     ByVal remover As Action(Of GameSet, Game)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() CreateGameAsyncView(adder, remover))
+            Return inQueue.QueueFunc(Function() _games.Observe(
+                adder:=Sub(sender, item) adder(Me, item),
+                remover:=Sub(sender, item) remover(Me, item)))
         End Function
         Public Function QueueTryFindGame(ByVal gameName As InvariantString) As Task(Of Game)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() (From game In _games Where game.Name = gameName).FirstOrDefault)
         End Function
 
-        Private Function CreatePlayersAsyncView(ByVal adder As Action(Of GameSet, Game, Player),
-                                                ByVal remover As Action(Of GameSet, Game, Player)) As IDisposable
-            Contract.Requires(adder IsNot Nothing)
-            Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _viewPlayers.Observe(adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2),
-                                          remover:=Sub(sender, item) remover(Me, item.Item1, item.Item2))
-        End Function
-        Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of GameSet, Game, Player),
-                                                    ByVal remover As Action(Of GameSet, Game, Player)) As Task(Of IDisposable)
+        Public Function ObservePlayers(ByVal adder As Action(Of GameSet, Game, Player),
+                                       ByVal remover As Action(Of GameSet, Game, Player)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() CreatePlayersAsyncView(adder, remover))
+            Return inQueue.QueueFunc(Function() _viewPlayers.Observe(
+                adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2),
+                remover:=Sub(sender, item) remover(Me, item.Item1, item.Item2)))
         End Function
     End Class
 End Namespace

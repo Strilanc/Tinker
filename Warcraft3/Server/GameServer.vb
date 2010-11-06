@@ -153,10 +153,10 @@ Namespace WC3
                 End Sub)
             AddHandler gameSet.StateChanged, activeAdder
 
-            Dim gameLink = gameSet.QueueCreateGamesAsyncView(
+            Dim gameLink = gameSet.ObserveGames(
                     adder:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Add(Tuple.Create(gameSet, game))),
                     remover:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Remove(Tuple.Create(gameSet, game))))
-            Dim playerLink = gameSet.QueueCreatePlayersAsyncView(
+            Dim playerLink = gameSet.ObservePlayers(
                     adder:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Add(Tuple.Create(gameSet, game, player))),
                     remover:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(Tuple.Create(gameSet, game, player))))
 
