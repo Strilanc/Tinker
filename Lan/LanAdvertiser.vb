@@ -5,6 +5,7 @@ Namespace Lan
     Public NotInheritable Class Advertiser
         Inherits DisposableWithTask
         Public Shared ReadOnly LanTargetPort As UShort = 6112
+        Private Shared ReadOnly RefreshPeriod As TimeSpan = 3.Seconds
 
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
         Private ReadOnly outQueue As CallQueue = New TaskedCallQueue()
@@ -14,9 +15,8 @@ Namespace Lan
         Private ReadOnly _socket As New UdpClient
         Private ReadOnly _logger As Logger
         Private ReadOnly _defaultTargetHost As String
+        Private ReadOnly _refreshStopper As IDisposable
         Private ReadOnly _infoProvider As IProductInfoProvider
-
-        Private ReadOnly refreshTimer As New System.Timers.Timer(3000)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
@@ -26,8 +26,8 @@ Namespace Lan
             Contract.Invariant(_socket IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_defaultTargetHost IsNot Nothing)
+            Contract.Invariant(_refreshStopper IsNot Nothing)
             Contract.Invariant(_infoProvider IsNot Nothing)
-            Contract.Invariant(refreshTimer IsNot Nothing)
         End Sub
 
         Public NotInheritable Class LanGame
@@ -62,17 +62,18 @@ Namespace Lan
         End Class
 
         Public Sub New(ByVal infoProvider As IProductInfoProvider,
+                       ByVal clock As IClock,
                        Optional ByVal defaultTargetHost As String = "localhost",
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(infoProvider IsNot Nothing)
+            Contract.Assume(clock IsNot Nothing)
             Contract.Assume(defaultTargetHost IsNot Nothing)
 
             Me._infoProvider = infoProvider
             Me._logger = If(logger, New Logger)
             Me._defaultTargetHost = defaultTargetHost
 
-            Me.refreshTimer.Start()
-            AddHandler refreshTimer.Elapsed, Sub() inQueue.QueueAction(Sub() RefreshAll())
+            Me._refreshStopper = clock.AsyncRepeat(RefreshPeriod, Sub() inQueue.QueueAction(Sub() RefreshAll()))
         End Sub
 
         Public ReadOnly Property Logger() As Logger
@@ -81,17 +82,6 @@ Namespace Lan
                 Return _logger
             End Get
         End Property
-
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
-            If finalizing Then Return Nothing
-            Return inQueue.QueueAction(
-                Sub()
-                    refreshTimer.Stop()
-                    refreshTimer.Dispose()
-                    ClearGames()
-                    _socket.Close()
-                End Sub)
-        End Function
 
         Private Sub AddGame(ByVal gameDescription As WC3.LocalGameDescription,
                             Optional ByVal targets As IEnumerable(Of String) = Nothing)
@@ -198,6 +188,16 @@ Namespace Lan
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() CreateGamesAsyncView(adder, remover))
+        End Function
+
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+            If finalizing Then Return Nothing
+            Return inQueue.QueueAction(
+                Sub()
+                    ClearGames()
+                    _refreshStopper.Dispose()
+                    _socket.Close()
+                End Sub)
         End Function
     End Class
 End Namespace
