@@ -7,18 +7,16 @@ Namespace Lan
         Inherits DisposableWithTask
         Implements IBotComponent
 
-        Private ReadOnly _commands As New CommandSet(Of AdvertiserManager)
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly _commands As New CommandSet(Of AdvertiserManager)
         Private ReadOnly _name As InvariantString
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _advertiser As Lan.Advertiser
-        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
         Private ReadOnly _control As Control
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_advertiser IsNot Nothing)
-            Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_bot IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
             Contract.Invariant(_commands IsNot Nothing)
@@ -84,13 +82,6 @@ Namespace Lan
             End Get
         End Property
 
-        Protected Overrides Async Function PerformDispose(ByVal finalizing As Boolean) As Task
-            _advertiser.Dispose()
-            _control.DisposeControlAsync()
-            QueueSetAutomatic(False)
-            Await _hooks.DisposeAllAsync()
-        End Function
-
         Private _autoHook As Task(Of IDisposable)
         Private Sub SetAutomatic(ByVal slaved As Boolean)
             If slaved = (_autoHook IsNot Nothing) Then Return
@@ -116,6 +107,15 @@ Namespace Lan
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return _commands.IncludeCommand(command).AsTask()
+        End Function
+
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+            If finalizing Then Return Nothing
+            _advertiser.Dispose()
+            Return TaskEx.WhenAll({
+                _control.DisposeControlAsync(),
+                QueueSetAutomatic(False)
+            })
         End Function
     End Class
 End Namespace
