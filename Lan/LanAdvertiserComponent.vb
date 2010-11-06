@@ -3,12 +3,15 @@ Imports Tinker.Components
 Imports Tinker.Bot
 
 Namespace Lan
-    Public Class AdvertiserManager
+    ''' <summary>
+    ''' Exposes a <see cref="Lan.Advertiser" /> as an <see cref="IBotComponent" />.
+    ''' </summary>
+    Public Class AdvertiserComponent
         Inherits DisposableWithTask
         Implements IBotComponent
 
         Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
-        Private ReadOnly _commands As New CommandSet(Of AdvertiserManager)
+        Private ReadOnly _commands As New CommandSet(Of AdvertiserComponent)
         Private ReadOnly _name As InvariantString
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _advertiser As Lan.Advertiser
@@ -103,7 +106,7 @@ Namespace Lan
         Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
             Return IncludeCommand(command)
         End Function
-        Public Function IncludeCommand(ByVal command As ICommand(Of AdvertiserManager)) As Task(Of IDisposable)
+        Public Function IncludeCommand(ByVal command As ICommand(Of AdvertiserComponent)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return _commands.IncludeCommand(command).AsTask()

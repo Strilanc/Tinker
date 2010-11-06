@@ -253,10 +253,10 @@ Namespace Bot
         Public Function IncludeBasicLanAdvertiserCommands(ByVal this As MainBot) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Dim conv = Function(x As Lan.AdvertiserManager) x.Advertiser
-            Return this.IncludeCommandsInAllComponentsOfType(Of Lan.AdvertiserManager)(
+            Dim conv = Function(x As Lan.AdvertiserComponent) x.Advertiser
+            Return this.IncludeCommandsInAllComponentsOfType(Of Lan.AdvertiserComponent)(
                 Concat(
-                    New ICommand(Of Lan.AdvertiserManager)() {
+                    New ICommand(Of Lan.AdvertiserComponent)() {
                         New Lan.Commands.CommandAuto,
                         New Lan.Commands.CommandHost
                     },

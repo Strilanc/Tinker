@@ -3,14 +3,14 @@ Imports Tinker.Bot
 
 Namespace Lan.Commands
     Public Class CommandAuto
-        Inherits TemplatedCommand(Of AdvertiserManager)
+        Inherits TemplatedCommand(Of AdvertiserComponent)
         Public Sub New()
             MyBase.New(Name:="Auto",
                        template:="On|Off",
                        Description:="Causes the advertiser to automatically advertise all games on any server when 'On'.")
         End Sub
         <ContractVerification(False)>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As AdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Select Case New InvariantString(argument.RawValue(0))
                 Case "On"
                     Await target.QueueSetAutomatic(True)
@@ -65,7 +65,7 @@ Namespace Lan.Commands
     End Class
 
     Public Class CommandHost
-        Inherits TemplatedCommand(Of AdvertiserManager)
+        Inherits TemplatedCommand(Of AdvertiserComponent)
         Public Sub New()
             MyBase.New(Name:="Host",
                        template:=Concat({"name=<game name>", "map=<search query>"},
@@ -76,7 +76,7 @@ Namespace Lan.Commands
                        extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
         <ContractVerification(False)>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As AdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim server = Await target.Bot.QueueGetOrConstructGameServer()
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
             Try

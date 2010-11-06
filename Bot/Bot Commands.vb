@@ -145,13 +145,13 @@ Namespace Bot.Commands
             Dim auto = Not argument.HasOptionalSwitch("manual")
 
             Dim advertiser = New Lan.Advertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
-            Dim manager = New Lan.AdvertiserManager(name, target, advertiser)
+            Dim advertiserComponent = New Lan.AdvertiserComponent(name, target, advertiser)
             Try
-                If auto Then manager.QueueSetAutomatic(auto)
-                Await target.Components.QueueAddComponent(manager)
+                If auto Then advertiserComponent.QueueSetAutomatic(auto)
+                Await target.Components.QueueAddComponent(advertiserComponent)
                 Return "Created lan advertiser."
             Catch ex As Exception
-                manager.Dispose()
+                advertiserComponent.Dispose()
                 Throw
             End Try
         End Function
