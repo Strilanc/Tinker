@@ -103,7 +103,7 @@
                     End Sub)
 
             'SetAdvertiserOptions(private:=False)
-            Dim playerLink = game.QueueObservePlayers(
+            Dim playerLink = game.ObservePlayers(
                     adder:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Add(Tuple.Create(game, player))),
                     remover:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(Tuple.Create(game, player))))
 

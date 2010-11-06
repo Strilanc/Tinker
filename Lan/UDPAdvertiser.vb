@@ -176,20 +176,14 @@ Namespace Lan
             End Try
         End Sub
 
-        Private Function ObserveGames(ByVal adder As Action(Of Lan.UDPAdvertiser, LanGame),
-                                      ByVal remover As Action(Of Lan.UDPAdvertiser, LanGame)) As IDisposable
-            Contract.Requires(adder IsNot Nothing)
-            Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _viewGames.Observe(adder:=Sub(sender, game) adder(Me, game),
-                                      remover:=Sub(sender, game) remover(Me, game))
-        End Function
-        Public Function QueueObserveGames(ByVal adder As Action(Of Lan.UDPAdvertiser, LanGame),
-                                          ByVal remover As Action(Of Lan.UDPAdvertiser, LanGame)) As Task(Of IDisposable)
+        Public Function ObserveGames(ByVal adder As Action(Of Lan.UDPAdvertiser, LanGame),
+                                     ByVal remover As Action(Of Lan.UDPAdvertiser, LanGame)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() ObserveGames(adder, remover))
+            Return inQueue.QueueFunc(Function() _viewGames.Observe(
+                adder:=Sub(sender, game) adder(Me, game),
+                remover:=Sub(sender, game) remover(Me, game)))
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task

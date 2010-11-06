@@ -508,20 +508,14 @@ Namespace WC3
         End Function
 #End Region
 
-        Private Function ObservePlayers(ByVal adder As Action(Of Game, Player),
-                                        ByVal remover As Action(Of Game, Player)) As IDisposable
-            Contract.Requires(adder IsNot Nothing)
-            Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _kernel.Players.Observe(adder:=Sub(sender, item) adder(Me, item),
-                                           remover:=Sub(sender, item) remover(Me, item))
-        End Function
-        Public Function QueueObservePlayers(ByVal adder As Action(Of Game, Player),
-                                            ByVal remover As Action(Of Game, Player)) As Task(Of IDisposable)
+        Public Function ObservePlayers(ByVal adder As Action(Of Game, Player),
+                                       ByVal remover As Action(Of Game, Player)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return _kernel.InQueue.QueueFunc(Function() ObservePlayers(adder, remover))
+            Return _kernel.InQueue.QueueFunc(Function() _kernel.Players.Observe(
+                adder:=Sub(sender, item) adder(Me, item),
+                remover:=Sub(sender, item) remover(Me, item)))
         End Function
 
 #Region "Advancing State"

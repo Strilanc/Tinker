@@ -27,7 +27,7 @@ Namespace Lan
             Me._udpAdvertiser = component.Advertiser
             logClient.SetLogger(Me._udpAdvertiser.Logger, "Lan")
 
-            _hooks.Add(Me._udpAdvertiser.QueueObserveGames(
+            _hooks.Add(Me._udpAdvertiser.ObserveGames(
                                     adder:=Sub(sender, game) inQueue.QueueAction(Sub() OnAddedGame(game)),
                                     remover:=Sub(sender, game) inQueue.QueueAction(Sub() OnRemovedGame(game))))
         End Sub

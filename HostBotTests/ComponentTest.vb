@@ -129,10 +129,10 @@ Public Class ComponentTest
         Dim removedItemsLock = New Threading.AutoResetEvent(initialState:=False)
         Dim c = New ComponentSet()
         c.QueueAddComponent(t1)
-        c.QueueObserveComponents(Sub(sender, item)
-                                     addedItems.Add(item)
-                                     If addedItems.Count = 2 Then addedItemsLock.Set()
-                                 End Sub,
+        c.ObserveComponents(Sub(sender, item)
+                                addedItems.Add(item)
+                                If addedItems.Count = 2 Then addedItemsLock.Set()
+                            End Sub,
                                Sub(sender, item)
                                    removedItems.Add(item)
                                    If removedItems.Count = 1 Then removedItemsLock.Set()
@@ -156,10 +156,10 @@ Public Class ComponentTest
         Dim removedItemsLock = New Threading.AutoResetEvent(initialState:=False)
         Dim c = New ComponentSet()
         c.QueueAddComponent(t2)
-        c.QueueObserveComponentsOfType(Of TestComponent1)(Sub(sender, item)
-                                                              addedItems.Add(item)
-                                                              If addedItems.Count = 2 Then addedItemsLock.Set()
-                                                          End Sub,
+        c.ObserveComponentsOfType(Of TestComponent1)(Sub(sender, item)
+                                                         addedItems.Add(item)
+                                                         If addedItems.Count = 2 Then addedItemsLock.Set()
+                                                     End Sub,
                                                   Sub(sender, item)
                                                       removedItems.Add(item)
                                                       If removedItems.Count = 1 Then removedItemsLock.Set()
