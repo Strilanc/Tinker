@@ -88,9 +88,9 @@ Namespace Bot
                 factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer(New SystemClock()), this))
         End Function
         <Extension()>
-        Public Async Function QueueCreateActiveGameSetsAsyncView(ByVal this As MainBot,
-                                                                 ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
-                                                                 ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
+        Public Async Function ObserveGameSets(ByVal this As MainBot,
+                                              ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
+                                              ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
             Contract.Assume(this IsNot Nothing)
             Contract.Assume(adder IsNot Nothing)
             Contract.Assume(remover IsNot Nothing)

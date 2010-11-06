@@ -162,7 +162,7 @@ Namespace Bnet
             End If
 
             If slaved Then
-                _autoHook = _bot.QueueCreateActiveGameSetsAsyncView(
+                _autoHook = _bot.ObserveGameSets(
                     adder:=Sub(sender, server, gameSet)
                                If gameSet.GameSettings.IsAdminGame Then Return
                                _client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
