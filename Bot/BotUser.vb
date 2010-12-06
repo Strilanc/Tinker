@@ -182,9 +182,8 @@ Public NotInheritable Class BotUser
         Contract.Requires(user2 IsNot Nothing)
         If Not user1 <= user2 Then Return False
 
-        For Each user As BotUser In New BotUser() {user1, user2}
-            Contract.Assume(user IsNot Nothing)
-            For Each key In user.permissionMap.Keys
+        For Each user In {user1, user2}
+            For Each key In user.PermissionMap.Keys
                 If user1.Permission(key) < user2.Permission(key) Then Return True
             Next key
         Next user
@@ -200,7 +199,6 @@ Public NotInheritable Class BotUser
         Contract.Requires(user1 IsNot Nothing)
         Contract.Requires(user2 IsNot Nothing)
         For Each user In {user1, user2}
-            Contract.Assume(user IsNot Nothing)
             For Each key In user.permissionMap.Keys
                 If user1.Permission(key) > user2.Permission(key) Then Return False
             Next key

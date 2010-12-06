@@ -424,7 +424,6 @@ Namespace WC3
 
         Private Shared Function NormalizeMapStringKey(ByVal key As InvariantString) As InvariantString
             For Each prefix In {"TRIGSTR_", "STRING "}
-                Contract.Assume(prefix IsNot Nothing)
                 If key.StartsWith(prefix) Then
                     Contract.Assume(prefix.Length <= key.Length)
                     Return NormalizeMapStringKey(key.Substring(prefix.Length))
