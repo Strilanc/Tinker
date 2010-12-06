@@ -608,7 +608,7 @@ Namespace Bnet
         End Function
 
 #Region "Networking (Connect)"
-        Private Sub ReceiveProgramAuthenticationBegin(ByVal value As IPickle(Of NamedValueMap))
+        Private Async Sub ReceiveProgramAuthenticationBegin(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
@@ -627,17 +627,16 @@ Namespace Bnet
 
             'Async Enter Keys
             ChangeState(ClientState.EnterCDKeys)
-            _productAuthenticator.AsyncAuthenticate(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).QueueContinueWithAction(inQueue,
-                Sub(keys) EnterKeys(keys:=keys,
-                                    revisionCheckSeed:=vals.ItemAs(Of String)("revision check seed"),
-                                    revisionCheckInstructions:=vals.ItemAs(Of String)("revision check challenge"),
-                                    clientCdKeySalt:=clientCdKeySalt)
-            ).Catch(
-                Sub(exception)
-                    exception.RaiseAsUnexpected("Error Handling {0}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin))
-                    QueueDisconnect(expected:=False, reason:="Error handling {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin, exception.Summarize))
-                End Sub
-            )
+            Try
+                Await _productAuthenticator.AsyncAuthenticate(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).QueueContinueWithAction(inQueue,
+                    Sub(keys) EnterKeys(keys:=keys,
+                                        revisionCheckSeed:=vals.ItemAs(Of String)("revision check seed"),
+                                        revisionCheckInstructions:=vals.ItemAs(Of String)("revision check challenge"),
+                                        clientCdKeySalt:=clientCdKeySalt))
+            Catch ex As Exception
+                ex.RaiseAsUnexpected("Error Handling {0}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin))
+                QueueDisconnect(expected:=False, reason:="Error handling {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin, ex.Summarize))
+            End Try
         End Sub
         Private Sub EnterKeys(ByVal keys As ProductCredentialPair,
                               ByVal revisionCheckSeed As String,
