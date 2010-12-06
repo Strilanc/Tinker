@@ -100,7 +100,7 @@ Namespace Bnet.Protocol
         End Function
         Public Overrides Function Parse(ByVal text As String) As QueryGamesListResponse
             Dim lines = SplitListDescription(text)
-            If lines.Count <> 2 Then Throw New PicklingException("Incorrect number of lines.")
+            If lines.LazyCount <> 2 Then Throw New PicklingException("Incorrect number of lines.")
             Return New QueryGamesListResponse(queryResultJar.Parse(lines.First.AssumeNotNull),
                                               ParseRawGameDescriptions(gameDataJar.Parse(lines.Last.AssumeNotNull), _clock))
         End Function

@@ -33,7 +33,7 @@ Namespace Bnet.Protocol
         Public Overrides Function Parse(ByVal text As String) As Net.IPEndPoint
             Try
                 Dim words = text.Split(":"c)
-                If words.Count <> 2 Then Throw New ArgumentException("Expected address:port format.", "text")
+                If words.Length <> 2 Then Throw New ArgumentException("Expected address:port format.", "text")
                 Return New Net.IPEndPoint(Net.IPAddress.Parse(words.First),
                                           UInt16.Parse(words.Last, NumberStyles.Integer, CultureInfo.InvariantCulture))
             Catch ex As Exception When TypeOf ex Is FormatException OrElse

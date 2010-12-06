@@ -292,7 +292,7 @@ Namespace Bnet
             End Select
 
             Dim lines = SplitText(text, maxLineLength:=Protocol.Packets.ClientToServer.MaxChatCommandTextLength)
-            If isBnetCommand AndAlso lines.Count > 1 Then
+            If isBnetCommand AndAlso lines.LazyCount > 1 Then
                 Throw New InvalidOperationException("Can't send multi-line commands or commands larger than {0} characters.".Frmt(Protocol.Packets.ClientToServer.MaxChatCommandTextLength))
             End If
             For Each line In lines

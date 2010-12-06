@@ -99,7 +99,7 @@ Public Module PoorlyCategorizedFunctions
     Public Function ToUValue(ByVal data As IEnumerable(Of Byte),
                              Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian) As UInt64
         Contract.Requires(data IsNot Nothing)
-        If data.Count > 8 Then Throw New ArgumentException("Too many bytes.", "data")
+        If data.LazyCount > 8 Then Throw New ArgumentException("Too many bytes.", "data")
         Dim padding = CByte(0).Repeated(8 - data.Count)
         Select Case byteOrder
             Case Strilbrary.Values.ByteOrder.LittleEndian

@@ -411,7 +411,7 @@ Namespace Bnet.Commands
             Dim port = Bnet.Client.BnetServerPort
             If remoteHost.Contains(":"c) Then
                 Dim parts = remoteHost.Split(":"c)
-                If parts.Count <> 2 OrElse Not UShort.TryParse(parts.Last, NumberStyles.Integer, CultureInfo.InvariantCulture, port) Then
+                If parts.Length <> 2 OrElse Not UShort.TryParse(parts.Last, NumberStyles.Integer, CultureInfo.InvariantCulture, port) Then
                     Throw New ArgumentException("Invalid hostname.")
                 End If
                 remoteHost = parts.First.AssumeNotNull
