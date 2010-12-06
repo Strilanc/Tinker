@@ -151,8 +151,8 @@ Public NotInheritable Class PacketSocket
         Disconnect(expected:=False, reason:="Connection went idle.")
     End Sub
 
-    Public Function AsyncReadPacket() As Task(Of IReadableList(Of Byte))
-        Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Byte)))() IsNot Nothing)
+    Public Function AsyncReadPacket() As Task(Of IRist(Of Byte))
+        Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Byte)))() IsNot Nothing)
         'Read
         Dim result = packetStreamer.AsyncReadPacket().AssumeNotNull()
         'Handle

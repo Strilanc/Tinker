@@ -8,7 +8,7 @@ Namespace WC3.Protocol
             Return value.AllocatedId.Bytes.Concat(value.CounterId.Bytes)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of GameObjectId)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of GameObjectId)
             If data.Count < 8 Then Throw New PicklingNotEnoughDataException("A GameObjectId requires 8 bytes.")
             Dim value = New GameObjectId(data.SubView(0, 4).ToUInt32,
                                          data.SubView(4, 4).ToUInt32)

@@ -29,9 +29,9 @@
 
     <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")>
     Public Function Raise(ByVal key As TKey,
-                          ByVal value As TArg) As IReadableList(Of Task)
+                          ByVal value As TArg) As IRist(Of Task)
         Contract.Requires(key IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of Task))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IRist(Of Task))() IsNot Nothing)
         SyncLock lock
             If Not handlers.ContainsKey(key) Then Return New Task() {}.AsReadableList
             Contract.Assume(handlers(key) IsNot Nothing)

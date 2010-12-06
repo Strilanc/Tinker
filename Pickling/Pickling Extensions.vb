@@ -16,7 +16,7 @@
             Return New Pickle(Of T)(jar, value, jar.Pack(value).ToReadableList)
         End Function
         <Extension()> <Pure()>
-        Public Function ParsePickle(Of T)(ByVal jar As IJar(Of T), ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+        Public Function ParsePickle(Of T)(ByVal jar As IJar(Of T), ByVal data As IRist(Of Byte)) As IPickle(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
@@ -24,7 +24,7 @@
             Return New Pickle(Of T)(jar, parsed.Value, data.SubView(0, parsed.UsedDataCount))
         End Function
         <Extension()> <Pure()>
-        Public Function ParsePickle(ByVal jar As ISimpleJar, ByVal data As IReadableList(Of Byte)) As ISimplePickle
+        Public Function ParsePickle(ByVal jar As ISimpleJar, ByVal data As IRist(Of Byte)) As ISimplePickle
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)

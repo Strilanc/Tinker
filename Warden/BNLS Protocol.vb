@@ -105,7 +105,7 @@ Namespace Warden
                     {"password", New Byte() {}.AsReadableList},
                     {"unspecified", New Byte() {}.AsReadableList}})))
         End Function
-        Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As IReadableList(Of Byte)) As ClientPacket
+        Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As IRist(Of Byte)) As ClientPacket
             Contract.Ensures(Contract.Result(Of ClientPacket)() IsNot Nothing)
             Return New ClientPacket(WardenPacketId.FullServiceHandleWardenPacket,
                                     ClientPackets.FullServiceHandleWardenPacket.PackPickle(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
@@ -127,8 +127,8 @@ Namespace Warden
         Private ReadOnly _id As WardenPacketId
         Private ReadOnly _cookie As UInt32
         Private ReadOnly _result As Byte
-        Private ReadOnly _responseData As IReadableList(Of Byte)
-        Private ReadOnly _unspecifiedData As IReadableList(Of Byte)
+        Private ReadOnly _responseData As IRist(Of Byte)
+        Private ReadOnly _unspecifiedData As IRist(Of Byte)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_responseData IsNot Nothing)
@@ -138,8 +138,8 @@ Namespace Warden
         Public Sub New(ByVal id As WardenPacketId,
                        ByVal cookie As UInt32,
                        ByVal result As Byte,
-                       ByVal responseData As IReadableList(Of Byte),
-                       ByVal unspecifiedData As IReadableList(Of Byte))
+                       ByVal responseData As IRist(Of Byte),
+                       ByVal unspecifiedData As IRist(Of Byte))
             Contract.Requires(responseData IsNot Nothing)
             Contract.Requires(unspecifiedData IsNot Nothing)
             Me._id = id
@@ -149,15 +149,15 @@ Namespace Warden
             Me._unspecifiedData = unspecifiedData
         End Sub
 
-        Public Shared Function FromData(ByVal packetData As IReadableList(Of Byte)) As ServerPacket
+        Public Shared Function FromData(ByVal packetData As IRist(Of Byte)) As ServerPacket
             Contract.Requires(packetData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ServerPacket)() IsNot Nothing)
             Dim vals = dataJar.Parse(packetData).Value
             Return New ServerPacket(Id:=vals.ItemAs(Of WardenPacketId)("type"),
                                     Cookie:=vals.ItemAs(Of UInt32)("cookie"),
                                     Result:=vals.ItemAs(Of Byte)("result"),
-                                    ResponseData:=vals.ItemAs(Of IReadableList(Of Byte))("data"),
-                                    UnspecifiedData:=vals.ItemAs(Of IReadableList(Of Byte))("unspecified"))
+                                    ResponseData:=vals.ItemAs(Of IRist(Of Byte))("data"),
+                                    UnspecifiedData:=vals.ItemAs(Of IRist(Of Byte))("unspecified"))
         End Function
 
         Public ReadOnly Property Id As WardenPacketId
@@ -175,15 +175,15 @@ Namespace Warden
                 Return _result
             End Get
         End Property
-        Public ReadOnly Property ResponseData As IReadableList(Of Byte)
+        Public ReadOnly Property ResponseData As IRist(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
                 Return _responseData
             End Get
         End Property
-        Public ReadOnly Property UnspecifiedData As IReadableList(Of Byte)
+        Public ReadOnly Property UnspecifiedData As IRist(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
                 Return _unspecifiedData
             End Get
         End Property

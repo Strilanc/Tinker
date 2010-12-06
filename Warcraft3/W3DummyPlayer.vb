@@ -120,7 +120,7 @@ Namespace WC3
                                      pickle.Value.ItemAs(Of UInt32)("size"),
                                      pickle.Value.ItemAs(Of UInt32)("crc32"),
                                      pickle.Value.ItemAs(Of UInt32)("xoro checksum"),
-                                     pickle.Value.ItemAs(Of IReadableList(Of Byte))("sha1 checksum"))
+                                     pickle.Value.ItemAs(Of IRist(Of Byte))("sha1 checksum"))
                 socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, 0))
             Else
                 socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, pickle.Value.ItemAs(Of UInt32)("size")))
@@ -180,7 +180,7 @@ Namespace WC3
             Contract.Requires(vals IsNot Nothing)
             If dl Is Nothing OrElse dl.file Is Nothing Then Throw New InvalidOperationException()
             Dim position = CInt(vals.ItemAs(Of UInt32)("file position"))
-            Dim fileData = vals.ItemAs(Of IReadableList(Of Byte))("file data")
+            Dim fileData = vals.ItemAs(Of IRist(Of Byte))("file data")
             Contract.Assume(position > 0)
             Contract.Assume(fileData IsNot Nothing)
 

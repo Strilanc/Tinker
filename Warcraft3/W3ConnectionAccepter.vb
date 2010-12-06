@@ -97,7 +97,7 @@ Namespace WC3
             Return True
         End Function
 
-        Protected MustOverride Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As ISimplePickle
+        Protected MustOverride Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
         <ContractClassFor(GetType(W3ConnectionAccepterBase))>
         Public MustInherit Class ContractClass
             Inherits W3ConnectionAccepterBase
@@ -105,7 +105,7 @@ Namespace WC3
                 MyBase.New(Nothing, Nothing)
                 Throw New NotSupportedException
             End Sub
-            Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As ISimplePickle
+            Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
                 Contract.Requires(socket IsNot Nothing)
                 Contract.Requires(packetData IsNot Nothing)
                 Contract.Requires(packetData.Count >= 4)
@@ -128,7 +128,7 @@ Namespace WC3
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As ISimplePickle
+        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
             If packetData(1) <> Protocol.PacketId.Knock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
             End If
@@ -155,7 +155,7 @@ Namespace WC3
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As ISimplePickle
+        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
             If packetData(1) <> Protocol.PacketId.PeerKnock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))
             End If

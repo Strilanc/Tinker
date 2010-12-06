@@ -266,26 +266,26 @@ Public Module PoorlyCategorizedFunctions
     <Pure()> <Extension()>
     Public Function ConvertFromBaseToBase(ByVal digits As IEnumerable(Of Byte),
                                           ByVal inputBase As UInteger,
-                                          ByVal outputBase As UInteger) As IReadableList(Of Byte)
+                                          ByVal outputBase As UInteger) As IRist(Of Byte)
         Contract.Requires(digits IsNot Nothing)
         Contract.Requires(inputBase >= 2)
         Contract.Requires(inputBase <= 256)
         Contract.Requires(outputBase >= 2)
         Contract.Requires(outputBase <= 256)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
         Return digits.ToUnsignedBigInteger(inputBase).UnsignedDigits(outputBase).ToReadableList
     End Function
     ''' <summary>
     ''' Determines a list starting with the elements of the given list but padded with default values to meet a minimum length.
     ''' </summary>
     <Pure()> <Extension()>
-    Public Function PaddedTo(Of T)(ByVal this As IReadableList(Of T),
+    Public Function PaddedTo(Of T)(ByVal this As IRist(Of T),
                                    ByVal minimumLength As Integer,
-                                   Optional ByVal paddingValue As T = Nothing) As IReadableList(Of T)
+                                   Optional ByVal paddingValue As T = Nothing) As IRist(Of T)
         Contract.Requires(this IsNot Nothing)
         Contract.Requires(minimumLength >= 0)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of T))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of T))().Count = Math.Max(this.Count, minimumLength))
+        Contract.Ensures(Contract.Result(Of IRist(Of T))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IRist(Of T))().Count = Math.Max(this.Count, minimumLength))
         If this.Count >= minimumLength Then Return this
         Dim result = this.Concat(paddingValue.Repeated(minimumLength - this.Count)).ToReadableList
         Contract.Assume(result.Count = Math.Max(this.Count, minimumLength))
@@ -318,9 +318,9 @@ Public Module PoorlyCategorizedFunctions
     End Function
     <Pure()> <Extension()>
     <ContractVerification(False)>
-    Public Function ToUnsignedBytes(ByVal value As BigInteger) As IReadableList(Of Byte)
+    Public Function ToUnsignedBytes(ByVal value As BigInteger) As IRist(Of Byte)
         Contract.Requires(value >= 0)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
         Dim result = value.ToByteArray.ToReadableList
         If result.Count > 0 AndAlso result.Last = 0 Then
             Return result.SubView(0, result.Count - 1)
@@ -337,10 +337,10 @@ Public Module PoorlyCategorizedFunctions
 
     '''<summary>Determines the SHA-1 hash of a sequence of bytes.</summary>
     <Extension()> <Pure()>
-    Public Function SHA1(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)
+    Public Function SHA1(ByVal data As IEnumerable(Of Byte)) As IRist(Of Byte)
         Contract.Requires(data IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
+        Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
         Using sha = New System.Security.Cryptography.SHA1Managed()
             Dim result = sha.ComputeHash(data.AsReadableStream.AsStream).AsReadableList
             Contract.Assume(result.Count = 20)

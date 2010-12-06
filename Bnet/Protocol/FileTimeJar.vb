@@ -14,7 +14,7 @@ Namespace Bnet.Protocol
             End Get
         End Property
         <ContractVerification(False)>
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As DateTime
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As DateTime
             Return DateTime.FromFileTime(data.ToUInt64.BitwiseToInt64)
         End Function
 

@@ -42,7 +42,7 @@ Namespace WC3.Protocol
         Public Overrides Function Pack(ByVal value As GameStats) As IEnumerable(Of Byte)
             Return EncodeStatStringData(DataJar.Pack(PackDataValue(value))).Append(0)
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of GameStats)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of GameStats)
             'null-terminated
             Dim usedDataCount = data.IndexOf(0) + 1
             If usedDataCount <= 0 Then Throw New PicklingException("No null terminator on game statstring.")
@@ -154,7 +154,7 @@ Namespace WC3.Protocol
             Dim playableWidth = vals.ItemAs(Of UInt16)("playable width")
             Dim playableHeight = vals.ItemAs(Of UInt16)("playable height")
             Dim xoroChecksum = vals.ItemAs(Of UInt32)("xoro checksum")
-            Dim sha1Checksum = vals.ItemAs(Of Maybe(Of IReadableList(Of Byte)))("sha1 checksum")
+            Dim sha1Checksum = vals.ItemAs(Of Maybe(Of IRist(Of Byte)))("sha1 checksum")
             Dim relativePath = vals.ItemAs(Of String)("relative path").ToInvariant
             Dim hostName = vals.ItemAs(Of String)("host name").ToInvariant
             If sha1Checksum.HasValue AndAlso sha1Checksum.Value.AssumeNotNull.Count <> 20 Then

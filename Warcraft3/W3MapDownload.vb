@@ -7,7 +7,7 @@
         Public ReadOnly size As UInteger
         Private ReadOnly fileChecksumCRC32 As UInt32
         Private ReadOnly mapChecksumXORO As UInt32
-        Private ReadOnly mapChecksumSHA1 As IReadableList(Of Byte)
+        Private ReadOnly mapChecksumSHA1 As IRist(Of Byte)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(downloadPath IsNot Nothing)
@@ -24,7 +24,7 @@
                        ByVal size As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
                        ByVal mapChecksumXORO As UInt32,
-                       ByVal mapChecksumSHA1 As IReadableList(Of Byte))
+                       ByVal mapChecksumSHA1 As IRist(Of Byte))
             Contract.Requires(path IsNot Nothing)
             Contract.Requires(size > 0)
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
@@ -55,7 +55,7 @@
 
         <ContractVerification(False)>
         Public Function ReceiveChunk(ByVal pos As Integer,
-                                     ByVal data As IReadableList(Of Byte)) As Boolean
+                                     ByVal data As IRist(Of Byte)) As Boolean
             Contract.Requires(pos >= 0)
             Contract.Requires(data IsNot Nothing)
             If file Is Nothing Then Throw New InvalidOperationException("File is closed.")

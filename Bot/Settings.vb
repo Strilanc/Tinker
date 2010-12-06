@@ -1,7 +1,7 @@
 Namespace Bot
     Public Class Settings
-        Private _clientProfiles As IReadableList(Of ClientProfile) = New List(Of ClientProfile)().AsReadableList
-        Private _pluginProfiles As IReadableList(Of PluginProfile) = New List(Of PluginProfile)().AsReadableList
+        Private _clientProfiles As IRist(Of ClientProfile) = New List(Of ClientProfile)().AsReadableList
+        Private _pluginProfiles As IRist(Of PluginProfile) = New List(Of PluginProfile)().AsReadableList
         Private ReadOnly lock As New Object()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -19,16 +19,16 @@ Namespace Bot
             End SyncLock
         End Sub
         <Pure()>
-        Public ReadOnly Property ClientProfiles() As IReadableList(Of Bot.ClientProfile)
+        Public ReadOnly Property ClientProfiles() As IRist(Of Bot.ClientProfile)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Bot.ClientProfile))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Bot.ClientProfile))() IsNot Nothing)
                 Return _clientProfiles
             End Get
         End Property
         <Pure()>
-        Public ReadOnly Property PluginProfiles() As IReadableList(Of Bot.PluginProfile)
+        Public ReadOnly Property PluginProfiles() As IRist(Of Bot.PluginProfile)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Bot.PluginProfile))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Bot.PluginProfile))() IsNot Nothing)
                 Return _pluginProfiles
             End Get
         End Property

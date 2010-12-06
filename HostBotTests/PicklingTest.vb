@@ -323,7 +323,7 @@ Public Class PicklingTest
     <TestMethod()>
     Public Sub DataJarTest()
         Dim jar = New DataJar()
-        Dim equater As Func(Of IReadableList(Of Byte), IReadableList(Of Byte), Boolean) = Function(x, y) x.SequenceEqual(y)
+        Dim equater As Func(Of IRist(Of Byte), IRist(Of Byte), Boolean) = Function(x, y) x.SequenceEqual(y)
         JarTest(jar, equater, New Byte() {}.AsReadableList, {}, appendSafe:=False)
         JarTest(jar, equater, New Byte() {1}.AsReadableList, {1}, appendSafe:=False)
         JarTest(jar, equater, New Byte() {1, 2, 3}.AsReadableList, {1, 2, 3}, appendSafe:=False)
@@ -333,7 +333,7 @@ Public Class PicklingTest
     <TestMethod()>
     Public Sub ItemCountPrefixedFramingJarTest()
         Dim jar = New ItemCountPrefixedFramingJar(Of UInt16)(New UInt16Jar(), prefixSize:=1)
-        Dim equater As Func(Of IReadableList(Of UInt16), IReadableList(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
+        Dim equater As Func(Of IRist(Of UInt16), IRist(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
         JarTest(jar, equater, New UShort() {}.ToReadableList, {0})
         JarTest(jar, equater, New UShort() {0}.ToReadableList, {1, 0, 0})
         JarTest(jar, equater, New UShort() {1}.ToReadableList, {1, 1, 0})
@@ -352,7 +352,7 @@ Public Class PicklingTest
     <TestMethod()>
     Public Sub RepeatedFramingJarTest()
         Dim jar = New RepeatedFramingJar(Of UInt16)(New UInt16Jar())
-        Dim equater As Func(Of IReadableList(Of UInt16), IReadableList(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
+        Dim equater As Func(Of IRist(Of UInt16), IRist(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
         JarTest(jar, equater, New UInt16() {}.AsReadableList, {}, appendSafe:=False)
         JarTest(jar, equater, New UInt16() {0}.AsReadableList, {0, 0}, appendSafe:=False)
         JarTest(jar, equater, New UInt16() {1}.AsReadableList, {1, 0}, appendSafe:=False)

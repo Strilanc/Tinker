@@ -44,9 +44,9 @@
         Private ReadOnly _initialInstanceCount As Integer
         Private ReadOnly _isAutoStarted As Boolean
         Private ReadOnly _adminPassword As String
-        Private ReadOnly _teamSizes As IReadableList(Of Integer)
-        Private ReadOnly _reservations As IReadableList(Of InvariantString)
-        Private ReadOnly _observerReservations As IReadableList(Of InvariantString)
+        Private ReadOnly _teamSizes As IRist(Of Integer)
+        Private ReadOnly _reservations As IRist(Of InvariantString)
+        Private ReadOnly _observerReservations As IRist(Of InvariantString)
         Private ReadOnly _observerCount As Integer
         Private ReadOnly _usePermanent As Boolean
         Private ReadOnly _defaultSlotLockState As Slot.LockState
@@ -82,9 +82,9 @@
                        ByVal initialInstanceCount As Integer,
                        ByVal isAutoStarted As Boolean,
                        ByVal adminPassword As String,
-                       ByVal teamSizes As IReadableList(Of Integer),
-                       ByVal reservations As IReadableList(Of InvariantString),
-                       ByVal observerReservations As IReadableList(Of InvariantString),
+                       ByVal teamSizes As IRist(Of Integer),
+                       ByVal reservations As IRist(Of InvariantString),
+                       ByVal observerReservations As IRist(Of InvariantString),
                        ByVal observerCount As Integer,
                        ByVal usePermanent As Boolean,
                        ByVal defaultSlotLockState As Slot.LockState,
@@ -175,9 +175,9 @@
                 Return My.Settings.DefaultGameGreet.AssumeNotNull
             End If
         End Function
-        Private Shared Function ExtractTeamSizes(ByVal argument As Commands.CommandArgument) As IReadableList(Of Integer)
+        Private Shared Function ExtractTeamSizes(ByVal argument As Commands.CommandArgument) As IRist(Of Integer)
             Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Integer))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of Integer))() IsNot Nothing)
             Dim teamArg = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
             If teamArg IsNot Nothing Then
                 Return TeamVersusStringToTeamSizes(teamArg).AsReadableList
@@ -199,9 +199,9 @@
                 Return 0
             End If
         End Function
-        Private Shared Function ExtractObserverReservations(ByVal argument As Commands.CommandArgument) As IReadableList(Of InvariantString)
+        Private Shared Function ExtractObserverReservations(ByVal argument As Commands.CommandArgument) As IRist(Of InvariantString)
             Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of InvariantString))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of InvariantString))() IsNot Nothing)
             If argument.HasOptionalNamedValue("obs") AndAlso Not Integer.TryParse(argument.OptionalNamedValue("obs"), NumberStyles.None, CultureInfo.InvariantCulture, 0) Then
                 Return (From name In argument.OptionalNamedValue("obs").Split(" "c)
                         Select New InvariantString(name)
@@ -211,10 +211,10 @@
             End If
         End Function
         Private Shared Function ExtractReservations(ByVal argument As Commands.CommandArgument,
-                                                    ByVal gameDescription As GameDescription) As IReadableList(Of InvariantString)
+                                                    ByVal gameDescription As GameDescription) As IRist(Of InvariantString)
             Contract.Requires(argument IsNot Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of InvariantString))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of InvariantString))() IsNot Nothing)
             Dim result = New List(Of InvariantString)
             If argument.HasOptionalSwitch("Reserve") OrElse argument.HasOptionalSwitch("r") Then
                 result.Add(gameDescription.GameStats.HostName)
@@ -310,15 +310,15 @@
                 Return _adminPassword
             End Get
         End Property
-        Public ReadOnly Property TeamSizes As IReadableList(Of Integer)
+        Public ReadOnly Property TeamSizes As IRist(Of Integer)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Integer))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Integer))() IsNot Nothing)
                 Return _teamSizes
             End Get
         End Property
-        Public ReadOnly Property Reservations As IReadableList(Of InvariantString)
+        Public ReadOnly Property Reservations As IRist(Of InvariantString)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of InvariantString))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of InvariantString))() IsNot Nothing)
                 Return _reservations
             End Get
         End Property
@@ -371,9 +371,9 @@
                 Return _observerCount
             End Get
         End Property
-        Public ReadOnly Property ObserverReservations As IReadableList(Of InvariantString)
+        Public ReadOnly Property ObserverReservations As IRist(Of InvariantString)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of InvariantString))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of InvariantString))() IsNot Nothing)
                 Return _observerReservations
             End Get
         End Property

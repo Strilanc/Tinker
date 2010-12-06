@@ -36,7 +36,7 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeAuthenticationFinish(ByVal version As IReadableList(Of Byte),
+        Public Function MakeAuthenticationFinish(ByVal version As IRist(Of Byte),
                                                  ByVal revisionCheckResponse As UInt32,
                                                  ByVal clientCDKeySalt As UInt32,
                                                  ByVal cdKeyOwner As String,
@@ -83,7 +83,7 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeAccountLogOnFinish(ByVal clientPasswordProof As IReadableList(Of Byte)) As Packet
+        Public Function MakeAccountLogOnFinish(ByVal clientPasswordProof As IRist(Of Byte)) As Packet
             Contract.Requires(clientPasswordProof IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.UserAuthenticationFinish, clientPasswordProof)
@@ -168,7 +168,7 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeWarden(ByVal encryptedData As IReadableList(Of Byte)) As Packet
+        Public Function MakeWarden(ByVal encryptedData As IRist(Of Byte)) As Packet
             Contract.Requires(encryptedData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.Warden, encryptedData)

@@ -10,7 +10,7 @@ Namespace WC3.Protocol
         Private ReadOnly _listenPort As UInt16
         Private ReadOnly _peerKey As UInt32
         Private ReadOnly _name As InvariantString
-        Private ReadOnly _peerData As IReadableList(Of Byte)
+        Private ReadOnly _peerData As IRist(Of Byte)
         Private ReadOnly _internalEndPoint As Net.IPEndPoint
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -22,7 +22,7 @@ Namespace WC3.Protocol
         Public Sub New(ByVal name As InvariantString,
                        ByVal gameId As UInt32,
                        ByVal peerKey As UInt32,
-                       ByVal peerData As IReadableList(Of Byte),
+                       ByVal peerData As IRist(Of Byte),
                        ByVal entryKey As UInt32,
                        ByVal listenPort As UInt16,
                        ByVal internalEndPoint As Net.IPEndPoint,
@@ -51,9 +51,9 @@ Namespace WC3.Protocol
                 Return _peerKey
             End Get
         End Property
-        Public ReadOnly Property PeerData As IReadableList(Of Byte)
+        Public ReadOnly Property PeerData As IRist(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
                 Return _peerData
             End Get
         End Property
@@ -150,7 +150,7 @@ Namespace WC3.Protocol
                                  ListenPort:=value.ItemAs(Of UInt16)("listen port"),
                                  PeerKey:=value.ItemAs(Of UInt32)("peer key"),
                                  Name:=value.ItemAs(Of String)("name"),
-                                 PeerData:=value.ItemAs(Of IReadableList(Of Byte))("peer data"),
+                                 PeerData:=value.ItemAs(Of IRist(Of Byte))("peer data"),
                                  InternalEndPoint:=value.ItemAs(Of Net.IPEndPoint)("internal address"))
         End Function
     End Class

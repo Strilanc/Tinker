@@ -137,7 +137,7 @@ Namespace Bnet
         Private _bnetRemoteHostPort As UInt16
         Private _userCredentials As ClientAuthenticator
         Private _clientCdKeySalt As UInt32
-        Private _expectedServerPasswordProof As IReadableList(Of Byte)
+        Private _expectedServerPasswordProof As IRist(Of Byte)
         Private _allowRetryConnect As Boolean
         Private _connectResultAsync As New TaskCompletionSource(Of NoValue)
         Private _logOnResultAsync As New TaskCompletionSource(Of NoValue)
@@ -726,8 +726,8 @@ Namespace Bnet
                     Throw New IO.InvalidDataException("User authentication failed with error: {0}".Frmt(result))
                 End If
 
-                Dim accountPasswordSalt = vals.ItemAs(Of IReadableList(Of Byte))("account password salt")
-                Dim serverPublicKey = vals.ItemAs(Of IReadableList(Of Byte))("server public key")
+                Dim accountPasswordSalt = vals.ItemAs(Of IRist(Of Byte))("account password salt")
+                Dim serverPublicKey = vals.ItemAs(Of IRist(Of Byte))("server public key")
 
                 If Me._userCredentials Is Nothing Then Throw New InvalidStateException("Received AccountLogOnBegin before credentials specified.")
                 Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
@@ -748,7 +748,7 @@ Namespace Bnet
             Try
                 Dim vals = value.Value
                 Dim result = vals.ItemAs(Of Protocol.UserAuthenticationFinishResult)("result")
-                Dim serverProof = vals.ItemAs(Of IReadableList(Of Byte))("server password proof")
+                Dim serverProof = vals.ItemAs(Of IRist(Of Byte))("server password proof")
 
                 'validate
                 If _state <> ClientState.WaitingForUserAuthenticationFinish Then
@@ -791,13 +791,13 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Warden)"
-        Private Sub ReceiveWarden(ByVal pickle As IPickle(Of IReadableList(Of Byte)))
+        Private Sub ReceiveWarden(ByVal pickle As IPickle(Of IRist(Of Byte)))
             Contract.Requires(pickle IsNot Nothing)
             If _state < ClientState.WaitingForEnterChat Then Throw New IO.InvalidDataException("Warden packet in unexpected place.")
             Dim encryptedData = pickle.Value
             _wardenClient.QueueSendWardenData(encryptedData).IgnoreExceptions()
         End Sub
-        Private Sub OnWardenReceivedResponseData(ByVal sender As Warden.Client, ByVal data As IReadableList(Of Byte)) Handles _wardenClient.ReceivedWardenData
+        Private Sub OnWardenReceivedResponseData(ByVal sender As Warden.Client, ByVal data As IRist(Of Byte)) Handles _wardenClient.ReceivedWardenData
             Contract.Requires(data IsNot Nothing)
             inQueue.QueueAction(Sub() SendPacket(Protocol.MakeWarden(data)))
         End Sub

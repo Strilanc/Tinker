@@ -296,7 +296,7 @@ Namespace WC3.Protocol
             End Sub
 
             '''<summary>Sent from server in ladder games. Exact contents not known, but probably wraps things like <see cref="LobbyState"/>/<see cref="HostMapInfo"/>.</summary>
-            Public Shared ReadOnly EncryptedServerMeleeData As Definition(Of IReadableList(Of Byte)) = Define(PacketId.EncryptedServerMeleeData,
+            Public Shared ReadOnly EncryptedServerMeleeData As Definition(Of IRist(Of Byte)) = Define(PacketId.EncryptedServerMeleeData,
                     New DataJar().Named("encrypted data"))
             '''<summary>Sent at end of ladder games. (? check again)</summary>
             Public Shared ReadOnly GameEnd As Definition(Of NoValue) = Define(PacketId.GameEnd)
@@ -359,7 +359,7 @@ Namespace WC3.Protocol
             Public Shared ReadOnly LobbyState As Definition(Of NamedValueMap) = Define(PacketId.LobbyState,
                     LobbyStateTupleJar.DataSizePrefixed(prefixSize:=2))
             '''<summary>Sent from server in ladder games before <see cref="StartCountdown"/>.</summary>
-            Public Shared ReadOnly MeleePlayerInfo As Definition(Of IReadableList(Of NamedValueMap)) = Define(PacketId.MeleePlayerInfo,
+            Public Shared ReadOnly MeleePlayerInfo As Definition(Of IRist(Of NamedValueMap)) = Define(PacketId.MeleePlayerInfo,
                     New TupleJar(
                             New PlayerIdJar().Named("player"),
                             New DataJar().DataSizePrefixed(prefixSize:=1).Named("info")
@@ -398,7 +398,7 @@ Namespace WC3.Protocol
             ''' <summary>
             ''' Sent by the server when one or more players have stopped responding in a timely fashion.
             ''' </summary>
-            Public Shared ReadOnly PlayersLagging As Definition(Of IReadableList(Of NamedValueMap)) = Define(PacketId.PlayersLagging,
+            Public Shared ReadOnly PlayersLagging As Definition(Of IRist(Of NamedValueMap)) = Define(PacketId.PlayersLagging,
                     New TupleJar(True,
                             New PlayerIdJar().Named("id"),
                             New UInt32Jar().Named("initial milliseconds used")
@@ -493,7 +493,7 @@ Namespace WC3.Protocol
                     New EnumByteJar(Of MapTransferState)().Named("transfer state"),
                     New UInt32Jar().Named("total downloaded"))
             '''<summary>Response to <see cref="ServerPackets.EncryptedServerMeleeData"/>.</summary>
-            Public Shared ReadOnly EncryptedClientMeleeData As Definition(Of IReadableList(Of Byte)) = Define(PacketId.EncryptedClientMeleeData,
+            Public Shared ReadOnly EncryptedClientMeleeData As Definition(Of IRist(Of Byte)) = Define(PacketId.EncryptedClientMeleeData,
                     New DataJar().Named("encrypted data"))
             ''' <summary>
             ''' Sent by clients when they perform game actions such as orders, alliance changes, trigger events, etc.
@@ -501,7 +501,7 @@ Namespace WC3.Protocol
             ''' Clients don't perform an action until it shows up in the <see cref="ServerPackets.Tick"/> packet.
             ''' If the <see cref="ServerPackets.Tick"/> packet's actions disagree with the client's actions, the client will disconnect.
             ''' </summary>
-            Public Shared ReadOnly GameAction As Definition(Of IReadableList(Of GameAction)) = Define(PacketId.GameAction,
+            Public Shared ReadOnly GameAction As Definition(Of IRist(Of GameAction)) = Define(PacketId.GameAction,
                     New GameActionJar().Repeated.CRC32ChecksumPrefixed.Named("actions"))
             '''<summary>First thing sent by clients upon connection. Requests entry into the game.</summary>
             Public Shared ReadOnly Knock As Definition(Of KnockData) = Define(PacketId.Knock,

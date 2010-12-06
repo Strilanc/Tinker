@@ -19,7 +19,7 @@ Namespace WC3
         Private ReadOnly _id As PlayerId
         Private ReadOnly _name As InvariantString
         Private ReadOnly _peerKey As UInt32
-        Private ReadOnly _peerData As IReadableList(Of Byte)
+        Private ReadOnly _peerData As IRist(Of Byte)
         Private ReadOnly _listenEndPoint As Net.IPEndPoint
 
         Private ReadOnly _isFake As Boolean
@@ -73,7 +73,7 @@ Namespace WC3
                        ByVal isFake As Boolean,
                        ByVal logger As Logger,
                        ByVal peerKey As UInt32,
-                       ByVal peerData As IReadableList(Of Byte),
+                       ByVal peerData As IRist(Of Byte),
                        ByVal packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId),
                        ByVal listenEndPoint As Net.IPEndPoint,
                        ByVal taskTestCanHost As Task,
@@ -209,9 +209,9 @@ Namespace WC3
                 Return _peerKey
             End Get
         End Property
-        Public ReadOnly Property PeerData As IReadableList(Of Byte)
+        Public ReadOnly Property PeerData As IRist(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
                 Return _peerData
             End Get
         End Property
@@ -454,7 +454,7 @@ Namespace WC3
         End Function
 
         Private Sub SendTick(ByVal record As TickRecord,
-                             ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet)))
+                             ByVal actionStreaks As IEnumerable(Of IRist(Of Protocol.PlayerActionSet)))
             Contract.Requires(actionStreaks IsNot Nothing)
             Contract.Requires(record IsNot Nothing)
             If IsFake Then Return
@@ -471,7 +471,7 @@ Namespace WC3
             End If
         End Sub
         Public Function QueueSendTick(ByVal record As TickRecord,
-                                      ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet))) As Task
+                                      ByVal actionStreaks As IEnumerable(Of IRist(Of Protocol.PlayerActionSet))) As Task
             Contract.Requires(record IsNot Nothing)
             Contract.Requires(actionStreaks IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)

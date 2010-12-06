@@ -9,7 +9,7 @@ Namespace WC3.Download
         Private ReadOnly _player As IPlayerDownloadAspect
         Private ReadOnly _clock As IClock
         Private ReadOnly _links As New List(Of TransferClient)
-        Private ReadOnly _hooks As IReadableList(Of Task(Of IDisposable))
+        Private ReadOnly _hooks As IRist(Of Task(Of IDisposable))
 
         Private _hasReported As Boolean
         Private _reportedPosition As UInt32

@@ -59,8 +59,8 @@ Namespace Components
         End Function
 
         ''' <summary>Asynchronously determines a list of all components in the set.</summary>
-        Public Function QueueGetAllComponents() As Task(Of IReadableList(Of IBotComponent))
-            Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of IBotComponent)))() IsNot Nothing)
+        Public Function QueueGetAllComponents() As Task(Of IRist(Of IBotComponent))
+            Contract.Ensures(Contract.Result(Of Task(Of IRist(Of IBotComponent)))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _components.ToReadableList)
         End Function
 
@@ -73,8 +73,8 @@ Namespace Components
                    Select DirectCast(component, T)
         End Function
         ''' <summary>Asynchronously determines a list of all components of a type in the set.</summary>
-        Public Function QueueGetAllComponents(Of T As IBotComponent)() As Task(Of IReadableList(Of T))
-            Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of T)))() IsNot Nothing)
+        Public Function QueueGetAllComponents(Of T As IBotComponent)() As Task(Of IRist(Of T))
+            Contract.Ensures(Contract.Result(Of Task(Of IRist(Of T)))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() EnumComponents(Of T)().ToReadableList)
         End Function
 

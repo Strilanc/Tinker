@@ -79,9 +79,9 @@
             End If
         End Sub
         <ContractVerification(False)>
-        Private Shared Function InitCreateSlots(ByVal settings As GameSettings) As IReadableList(Of Slot)
+        Private Shared Function InitCreateSlots(ByVal settings As GameSettings) As IRist(Of Slot)
             Contract.Requires(settings IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)
             Dim result = New List(Of Slot)
 
             'Create player slots

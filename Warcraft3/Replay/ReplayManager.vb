@@ -123,7 +123,7 @@
         End Function
 
         Private Sub OnTick(ByVal duration As UShort,
-                           ByVal visibleActionStreaks As IReadableList(Of IReadableList(Of Protocol.PlayerActionSet)))
+                           ByVal visibleActionStreaks As IRist(Of IRist(Of Protocol.PlayerActionSet)))
             Contract.Requires(visibleActionStreaks IsNot Nothing)
             For Each visibleActionStreak In visibleActionStreaks.SkipLast(1)
                 Contract.Assume(visibleActionStreak IsNot Nothing)

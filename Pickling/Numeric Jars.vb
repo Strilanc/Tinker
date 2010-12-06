@@ -18,7 +18,7 @@
             End Get
         End Property
         <ContractVerification(False)>
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Byte
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Byte
             Return data.Single
         End Function
 
@@ -79,7 +79,7 @@
             End Get
         End Property
         <ContractVerification(False)>
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInt16
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInt16
             Return data.ToUInt16(byteOrder)
         End Function
 
@@ -140,7 +140,7 @@
             End Get
         End Property
         <ContractVerification(False)>
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInt32
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInt32
             Return data.ToUInt32(byteOrder)
         End Function
 
@@ -201,7 +201,7 @@
             End Get
         End Property
         <ContractVerification(False)>
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInt64
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInt64
             Return data.ToUInt64(byteOrder)
         End Function
 
@@ -239,7 +239,7 @@
             End Get
         End Property
         <ContractVerification(False)>
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Single
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Single
             Return BitConverter.ToSingle(data.ToArray, 0)
         End Function
 
@@ -271,7 +271,7 @@
             End Get
         End Property
         <ContractVerification(False)>
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Double
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Double
             Return BitConverter.ToDouble(data.ToArray, 0)
         End Function
 

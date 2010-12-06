@@ -25,7 +25,7 @@
             Return _subJar.Pack(value)
         End Function
 
-        Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of TEnum)
+        Public NotOverridable Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of TEnum)
             Dim parsed = _subJar.Parse(data)
             Dim value = DirectCast(parsed.Value, TEnum).AssumeNotNull
             If _checkDefined AndAlso Not IsDefined(value) Then

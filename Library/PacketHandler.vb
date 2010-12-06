@@ -74,7 +74,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
             End Sub)
     End Function
 
-    Public Function HandlePacket(ByVal packetData As IReadableList(Of Byte)) As Task
+    Public Function HandlePacket(ByVal packetData As IRist(Of Byte)) As Task
         Contract.Requires(packetData IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         If packetData.Count < _handler.HeaderSize Then Throw New ArgumentException("Not enough data.")
@@ -84,8 +84,8 @@ End Class
 
 Public NotInheritable Class PacketHandlerRaw(Of TKey)
     Private ReadOnly _headerSize As Integer
-    Private ReadOnly _keyExtractor As Func(Of IReadableList(Of Byte), TKey)
-    Private ReadOnly _handlers As New KeyedEvent(Of TKey, IReadableList(Of Byte))
+    Private ReadOnly _keyExtractor As Func(Of IRist(Of Byte), TKey)
+    Private ReadOnly _handlers As New KeyedEvent(Of TKey, IRist(Of Byte))
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(_headerSize >= 0)
@@ -93,7 +93,7 @@ Public NotInheritable Class PacketHandlerRaw(Of TKey)
         Contract.Invariant(_handlers IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal headerSize As Integer, ByVal keyExtractor As Func(Of IReadableList(Of Byte), TKey))
+    Public Sub New(ByVal headerSize As Integer, ByVal keyExtractor As Func(Of IRist(Of Byte), TKey))
         Contract.Requires(headerSize >= 0)
         Contract.Requires(keyExtractor IsNot Nothing)
         Contract.Ensures(Me.HeaderSize = _headerSize)
@@ -108,14 +108,14 @@ Public NotInheritable Class PacketHandlerRaw(Of TKey)
         End Get
     End Property
 
-    Public Function IncludeHandler(ByVal key As TKey, ByVal handler As Func(Of IReadableList(Of Byte), Task)) As IDisposable
+    Public Function IncludeHandler(ByVal key As TKey, ByVal handler As Func(Of IRist(Of Byte), Task)) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Return _handlers.AddHandler(key, handler)
     End Function
 
-    Public Async Function HandlePacket(ByVal packetData As IReadableList(Of Byte)) As Task
+    Public Async Function HandlePacket(ByVal packetData As IRist(Of Byte)) As Task
         Contract.Assume(packetData IsNot Nothing)
         Contract.Assume(packetData.Count >= HeaderSize)
         'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)

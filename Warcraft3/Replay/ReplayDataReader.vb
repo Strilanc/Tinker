@@ -85,7 +85,7 @@
         Private ReadOnly _blockInfoTable As New List(Of BlockInfo)()
 
         Private _position As Long
-        Private _loadedBlockData As IReadableList(Of Byte)
+        Private _loadedBlockData As IRist(Of Byte)
         Private _loadedBlockIndex As Integer
 
         <ContractInvariantMethod()> Private Shadows Sub ObjectInvariant()
@@ -161,11 +161,11 @@
         ''' Determines the block data for the given block, filling the block info table as necessary.
         ''' </summary>
         <ContractVerification(False)>
-        Private Function ReadBlockData(ByVal blockIndex As Integer) As IReadableList(Of Byte)
+        Private Function ReadBlockData(ByVal blockIndex As Integer) As IRist(Of Byte)
             Contract.Requires(blockIndex >= 0)
             Contract.Requires(blockIndex < _blockCount)
             Contract.Ensures(_blockInfoTable.Count > blockIndex)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
 
             Dim blockInfo = ReadBlockInfo(blockIndex)
             'Checksum
@@ -180,7 +180,7 @@
             If checksum <> blockInfo.Checksum Then Throw New IO.InvalidDataException("Block data didn't match checksum.")
             'Retrieve
             _stream.Position = blockInfo.BlockPosition + Format.BlockHeaderSize
-            Dim dataStream = New ZLibStream(_stream.AsStream, IO.Compression.CompressionMode.Decompress)
+            Dim dataStream = MakeZLibStream(_stream.AsStream, IO.Compression.CompressionMode.Decompress)
             Contract.Assume(dataStream.CanRead)
             Return dataStream.ReadBytesExact(length:=CInt(blockInfo.DataLength)).AsReadableList
         End Function
@@ -220,7 +220,7 @@
             Throw New UnreachableException("A valid position was not contained in any block.")
         End Function
 
-        Public Function Read(ByVal maxCount As Integer) As IReadableList(Of Byte) Implements IReadableStream.Read
+        Public Function Read(ByVal maxCount As Integer) As IRist(Of Byte) Implements IReadableStream.Read
             Dim result = New List(Of Byte)
             If _blockCount = 0 Then Return result.AsReadableList
 

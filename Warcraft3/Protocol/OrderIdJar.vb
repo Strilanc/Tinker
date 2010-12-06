@@ -9,7 +9,7 @@ Namespace WC3.Protocol
         Public Overrides Function Pack(ByVal value As OrderId) As IEnumerable(Of Byte)
             Return DataJar.Pack(value)
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of OrderId)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of OrderId)
             Return DataJar.Parse(data)
         End Function
 

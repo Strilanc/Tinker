@@ -31,11 +31,11 @@
         Private _lagClock As RelativeClock
         Private ReadOnly _init As New OnetimeLock
 
-        Public Event ReceivedPlayerActions(ByVal sender As GameMotor, ByVal player As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
+        Public Event ReceivedPlayerActions(ByVal sender As GameMotor, ByVal player As Player, ByVal actions As IRist(Of Protocol.GameAction))
         Public Event Tick(ByVal sender As GameMotor,
                           ByVal timeSpan As UShort,
-                          ByVal actualActionStreaks As IReadableList(Of IReadableList(Of Protocol.SpecificPlayerActionSet)),
-                          ByVal visibleActionStreaks As IReadableList(Of IReadableList(Of Protocol.PlayerActionSet)))
+                          ByVal actualActionStreaks As IRist(Of IRist(Of Protocol.SpecificPlayerActionSet)),
+                          ByVal visibleActionStreaks As IRist(Of IRist(Of Protocol.PlayerActionSet)))
         Public Event RemovePlayer(ByVal sender As GameMotor, ByVal player As Player, ByVal wasExpected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -96,7 +96,7 @@
         End Function
 
         Private _asyncWaitTriggered As Boolean
-        Private Sub OnReceiveGameActions(ByVal sender As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
+        Private Sub OnReceiveGameActions(ByVal sender As Player, ByVal actions As IRist(Of Protocol.GameAction))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(actions IsNot Nothing)
             _actionsForNextTick.Add(New Protocol.SpecificPlayerActionSet(sender, actions))
@@ -187,11 +187,11 @@
         <CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", justification:="The analyzer doesn't see the maxDataSize parameter from within the lambda.")>
         Private Function SplitSequenceByDataSize(Of TValue)(ByVal sequence As IEnumerable(Of TValue),
                                                             ByVal measure As Func(Of TValue, Int32),
-                                                            ByVal maxDataSize As Int32) As IReadableList(Of IReadableList(Of TValue))
+                                                            ByVal maxDataSize As Int32) As IRist(Of IRist(Of TValue))
             Contract.Requires(sequence IsNot Nothing)
             Contract.Requires(maxDataSize > 0)
             Contract.Requires(measure IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of IReadableList(Of TValue)))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of IRist(Of TValue)))() IsNot Nothing)
 
             Dim result = sequence.ZipWithPartialAggregates(
                     seed:=New With {.sequenceDataCount = 0,

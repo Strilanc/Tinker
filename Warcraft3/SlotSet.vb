@@ -1,7 +1,7 @@
 ﻿Namespace WC3
     Public NotInheritable Class SlotSet
         Implements IEnumerable(Of Slot)
-        Private ReadOnly _slots As IReadableList(Of Slot)
+        Private ReadOnly _slots As IRist(Of Slot)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_slots IsNot Nothing)
@@ -12,9 +12,9 @@
             Me._slots = slots.ToReadableList
         End Sub
 
-        Public ReadOnly Property Slots As IReadableList(Of Slot)
+        Public ReadOnly Property Slots As IRist(Of Slot)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)
                 Return _slots
             End Get
         End Property

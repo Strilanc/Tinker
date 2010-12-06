@@ -83,7 +83,7 @@ Namespace WC3
             Return inQueue.QueueAction(Sub() AcceptSocket(socket))
         End Function
         <ContractVerification(False)>
-        Private Sub HandleFirstPacket(ByVal socket As W3Socket, ByVal data As IReadableList(Of Byte))
+        Private Sub HandleFirstPacket(ByVal socket As W3Socket, ByVal data As IRist(Of Byte))
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             If data.Count < 4 OrElse data(0) <> Protocol.Packets.PacketPrefix OrElse data(1) <> Protocol.PacketId.Knock Then

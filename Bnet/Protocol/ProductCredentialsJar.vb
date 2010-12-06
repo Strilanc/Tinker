@@ -16,7 +16,7 @@ Namespace Bnet.Protocol
         End Function
         <ContractVerification(False)>
         Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As ProductCredentials
-            Dim proof = value.ItemAs(Of IReadableList(Of Byte))("proof")
+            Dim proof = value.ItemAs(Of IRist(Of Byte))("proof")
             If proof.Count <> 20 Then Throw New PicklingException("Proof must have 20 bytes.")
             Return New ProductCredentials(
                     product:=value.ItemAs(Of ProductType)("product"),

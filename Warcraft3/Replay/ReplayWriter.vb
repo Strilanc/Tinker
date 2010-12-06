@@ -54,7 +54,7 @@ Namespace WC3.Replay
         Private Sub StartBlock()
             _blockSizeRemaining = BlockSize
             _blockDataBuffer.SetLength(0)
-            _dataCompressor = New ZLibStream(_blockDataBuffer, IO.Compression.CompressionMode.Compress, leaveOpen:=True).AsWritableStream
+            _dataCompressor = MakeZLibStream(_blockDataBuffer, IO.Compression.CompressionMode.Compress, leaveOpen:=True).AsWritableStream
         End Sub
         Private Sub EndBlock()
             If _blockSizeRemaining = BlockSize Then Return
@@ -91,7 +91,7 @@ Namespace WC3.Replay
             _blockCount += 1UI
         End Sub
 
-        Public Sub WriteData(ByVal data As IReadableList(Of Byte))
+        Public Sub WriteData(ByVal data As IRist(Of Byte))
             Contract.Requires(data IsNot Nothing)
             If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
 
@@ -115,9 +115,9 @@ Namespace WC3.Replay
         End Sub
 
         <ContractVerification(False)>
-        Private Function GenerateHeader() As IReadableList(Of Byte)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = Format.HeaderSize)
+        Private Function GenerateHeader() As IRist(Of Byte)
+            Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = Format.HeaderSize)
 
             Using header = New IO.MemoryStream().AsRandomAccessStream
                 header.WriteNullTerminatedString(Format.HeaderMagicValue)

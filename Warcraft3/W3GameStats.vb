@@ -34,7 +34,7 @@
         Private ReadOnly _playableWidth As UInt16
         Private ReadOnly _playableHeight As UInt16
         Private ReadOnly _mapChecksumXORO As UInt32
-        Private ReadOnly _mapChecksumSHA1 As Maybe(Of IReadableList(Of Byte))
+        Private ReadOnly _mapChecksumSHA1 As Maybe(Of IRist(Of Byte))
         Private ReadOnly _advertisedPath As InvariantString
         Private ReadOnly _hostName As InvariantString
 
@@ -50,10 +50,10 @@
             End Get
         End Property
         <ContractVerification(False)>
-        Public ReadOnly Property MapChecksumSHA1 As Maybe(Of IReadableList(Of Byte))
+        Public ReadOnly Property MapChecksumSHA1 As Maybe(Of IRist(Of Byte))
             Get
-                Contract.Ensures(Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().Value IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().Value.Count = 20)
+                Contract.Ensures(Contract.Result(Of Maybe(Of IRist(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IRist(Of Byte)))().Value IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Maybe(Of IRist(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IRist(Of Byte)))().Value.Count = 20)
                 Return _mapChecksumSHA1
             End Get
         End Property
@@ -130,7 +130,7 @@
                        ByVal playableWidth As UInt16,
                        ByVal playableHeight As UInt16,
                        ByVal mapChecksumXORO As UInt32,
-                       ByVal mapChecksumSHA1 As Maybe(Of IReadableList(Of Byte)),
+                       ByVal mapChecksumSHA1 As Maybe(Of IRist(Of Byte)),
                        ByVal advertisedPath As InvariantString,
                        ByVal hostName As InvariantString)
             Contract.Requires(Not mapChecksumSHA1.HasValue OrElse mapChecksumSHA1.Value IsNot Nothing)

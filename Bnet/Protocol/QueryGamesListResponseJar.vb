@@ -4,7 +4,7 @@ Namespace Bnet.Protocol
     Public Class QueryGamesListResponse
         Implements IEquatable(Of QueryGamesListResponse)
 
-        Private ReadOnly _games As IReadableList(Of WC3.RemoteGameDescription)
+        Private ReadOnly _games As IRist(Of WC3.RemoteGameDescription)
         Private ReadOnly _result As QueryGameResponse
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -17,9 +17,9 @@ Namespace Bnet.Protocol
             Me._result = result
         End Sub
 
-        Public ReadOnly Property Games As IReadableList(Of WC3.RemoteGameDescription)
+        Public ReadOnly Property Games As IRist(Of WC3.RemoteGameDescription)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of WC3.RemoteGameDescription))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of WC3.RemoteGameDescription))() IsNot Nothing)
                 Return _games
             End Get
         End Property
@@ -46,7 +46,7 @@ Namespace Bnet.Protocol
         Inherits BaseJar(Of QueryGamesListResponse)
 
         Private Shared ReadOnly queryResultJar As INamedJar(Of QueryGameResponse) = New EnumUInt32Jar(Of QueryGameResponse)().Named("result")
-        Private Shared ReadOnly gameDataJar As INamedJar(Of IReadableList(Of NamedValueMap)) = New TupleJar(
+        Private Shared ReadOnly gameDataJar As INamedJar(Of IRist(Of NamedValueMap)) = New TupleJar(
                 New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type"),
                 New UInt32Jar().Named("language id"),
                 New IPEndPointJar().Named("host address"),
@@ -79,7 +79,7 @@ Namespace Bnet.Protocol
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of QueryGamesListResponse)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of QueryGamesListResponse)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException("A QueryGamesListResponse requires at least 4 bytes.")
             If data.SubView(0, 4).ToUInt32 = 0 Then
                 'result of a single-game query
@@ -105,16 +105,16 @@ Namespace Bnet.Protocol
                                               ParseRawGameDescriptions(gameDataJar.Parse(lines.Last.AssumeNotNull), _clock))
         End Function
 
-        Private Shared Function PackRawGameDescriptions(ByVal games As IEnumerable(Of WC3.RemoteGameDescription)) As IReadableList(Of NamedValueMap)
+        Private Shared Function PackRawGameDescriptions(ByVal games As IEnumerable(Of WC3.RemoteGameDescription)) As IRist(Of NamedValueMap)
             Contract.Requires(games IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of NamedValueMap))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of NamedValueMap))() IsNot Nothing)
             Return (From game In games Select PackRawGameDescription(game)).ToReadableList
         End Function
         Private Shared Function ParseRawGameDescriptions(ByVal games As IEnumerable(Of NamedValueMap),
-                                                         ByVal clock As IClock) As IReadableList(Of WC3.RemoteGameDescription)
+                                                         ByVal clock As IClock) As IRist(Of WC3.RemoteGameDescription)
             Contract.Requires(games IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of WC3.RemoteGameDescription))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of WC3.RemoteGameDescription))() IsNot Nothing)
             Return (From game In games Select ParseRawGameDescription(game, clock)).ToReadableList
         End Function
 

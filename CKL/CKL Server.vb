@@ -95,7 +95,7 @@ Namespace CKL
             End Try
         End Sub
         <ContractVerification(False)>
-        Private Sub HandlePacket(ByVal socket As PacketSocket, ByVal packetData As IReadableList(Of Byte))
+        Private Sub HandlePacket(ByVal socket As PacketSocket, ByVal packetData As IRist(Of Byte))
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(packetData IsNot Nothing)
             Contract.Assume(packetData.Count >= 4)

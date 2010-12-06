@@ -2,7 +2,7 @@
     '''<summary>Holds an object, a description of the object, and a serialization of the object.</summary>
     <ContractClass(GetType(ISimplePickle.ContractClass))>
     Public Interface ISimplePickle
-        ReadOnly Property Data As IReadableList(Of Byte)
+        ReadOnly Property Data As IRist(Of Byte)
         ReadOnly Property Value As Object
         ReadOnly Property Jar As ISimpleJar
 
@@ -15,9 +15,9 @@
                     Throw New NotSupportedException
                 End Get
             End Property
-            Public ReadOnly Property Data As IReadableList(Of Byte) Implements ISimplePickle.Data
+            Public ReadOnly Property Data As IRist(Of Byte) Implements ISimplePickle.Data
                 Get
-                    Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
                     Throw New NotSupportedException
                 End Get
             End Property
@@ -40,7 +40,7 @@
     '''<summary>Parses data into simple pickles and packs objects into pickles.</summary>
     <ContractClass(GetType(ISimpleJar.ContractClass))>
     Public Interface ISimpleJar
-        Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object)
+        Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Object)
         Function Pack(ByVal value As Object) As IEnumerable(Of Byte)
         Function MakeControl() As ISimpleValueEditor
         Function Describe(ByVal value As Object) As String
@@ -60,7 +60,7 @@
                 Contract.Ensures(Contract.Result(Of ISimpleValueEditor)() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
-            Public Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
+            Public Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
                 Contract.Requires(data IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of ParsedValue(Of Object))() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of ParsedValue(Of Object))().UsedDataCount <= data.Count)
@@ -86,7 +86,7 @@
     Public Interface IJar(Of T)
         Inherits ISimpleJar
         Shadows Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-        Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+        Shadows Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
         Shadows Function MakeControl() As IValueEditor(Of T)
         Shadows Function Describe(ByVal value As T) As String
         Shadows Function Parse(ByVal text As String) As T
@@ -158,7 +158,7 @@
                 Throw New NotSupportedException
             End Get
         End Property
-        Private ReadOnly Property SimpleData As IReadableList(Of Byte) Implements ISimplePickle.Data
+        Private ReadOnly Property SimpleData As IRist(Of Byte) Implements ISimplePickle.Data
             Get
                 Throw New NotSupportedException
             End Get
@@ -191,7 +191,7 @@
             Throw New NotSupportedException
         End Function
         <Pure()>
-        Public Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
+        Public Shadows Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ParsedValue(Of T))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ParsedValue(Of T))().UsedDataCount <= data.Count)
@@ -209,7 +209,7 @@
         Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
             Throw New NotSupportedException
         End Function
-        Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
+        Private Function SimpleParse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
             Throw New NotSupportedException()
         End Function
         Private Function SimplePack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack

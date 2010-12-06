@@ -41,8 +41,8 @@ Namespace WC3
 
         Public Event Tick(ByVal sender As Game,
                           ByVal timeSpan As UShort,
-                          ByVal actualActionStreaks As IReadableList(Of IReadableList(Of Protocol.SpecificPlayerActionSet)),
-                          ByVal visibleActionStreaks As IReadableList(Of IReadableList(Of Protocol.PlayerActionSet)))
+                          ByVal actualActionStreaks As IRist(Of IRist(Of Protocol.SpecificPlayerActionSet)),
+                          ByVal visibleActionStreaks As IRist(Of IRist(Of Protocol.PlayerActionSet)))
         Public Event Updated(ByVal sender As Game,
                              ByVal slots As SlotSet)
         Public Event PlayerLeft(ByVal sender As Game,
@@ -60,7 +60,7 @@ Namespace WC3
         Public Event RecordGameStarted(ByVal sender As Game)
         Public Event ReceivedPlayerActions(ByVal sender As Game,
                                            ByVal player As Player,
-                                           ByVal actions As IReadableList(Of Protocol.GameAction))
+                                           ByVal actions As IRist(Of Protocol.GameAction))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_kernel IsNot Nothing)
@@ -188,8 +188,8 @@ Namespace WC3
             AddHandler _loadScreen.EmptyTick, Sub(sender) _kernel.OutQueue.QueueAction(
                 Sub() RaiseEvent Tick(sender:=Me,
                                       TimeSpan:=0,
-                                      actualActionStreaks:=New IReadableList(Of Protocol.SpecificPlayerActionSet)() {}.AsReadableList,
-                                      visibleActionStreaks:=New IReadableList(Of Protocol.PlayerActionSet)() {}.AsReadableList))
+                                      actualActionStreaks:=New IRist(Of Protocol.SpecificPlayerActionSet)() {}.AsReadableList,
+                                      visibleActionStreaks:=New IRist(Of Protocol.PlayerActionSet)() {}.AsReadableList))
             AddHandler _loadScreen.Finished, Sub(sender) _motor.QueueStart()
         End Sub
         Private Sub InitMotor()
@@ -292,8 +292,8 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return _kernel.InQueue.QueueFunc(Function() _lobby.FakeHostPlayer)
         End Function
-        Public Function QueueGetPlayers() As Task(Of IReadableList(Of Player))
-            Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Player)))() IsNot Nothing)
+        Public Function QueueGetPlayers() As Task(Of IRist(Of Player))
+            Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Player)))() IsNot Nothing)
             Return _kernel.InQueue.QueueFunc(Function() _kernel.Players.ToReadableList)
         End Function
         Public Function QueueGetState() As Task(Of GameState)
@@ -318,7 +318,7 @@ Namespace WC3
                                   ByVal text As String,
                                   ByVal type As Protocol.ChatType,
                                   ByVal receivingGroup As Protocol.ChatGroup?,
-                                  ByVal requestedReceivers As IReadableList(Of PlayerId))
+                                  ByVal requestedReceivers As IRist(Of PlayerId))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(requestedReceivers IsNot Nothing)
@@ -358,7 +358,7 @@ Namespace WC3
                     Dim message = value.ItemAs(Of String)("message")
                     Dim chatType = Protocol.ChatType.Game
                     Dim receivingGroup = value.ItemAs(Of Protocol.ChatGroup)("receiving group")
-                    Dim requestedReceivers = vals.ItemAs(Of IReadableList(Of PlayerId))("requested receivers")
+                    Dim requestedReceivers = vals.ItemAs(Of IRist(Of PlayerId))("requested receivers")
                     OnReceiveChat(sender, message, chatType, receivingGroup, requestedReceivers)
 
                 Case Protocol.NonGameActionType.LobbyChat
@@ -366,7 +366,7 @@ Namespace WC3
                     Dim message = value.ItemAs(Of String)("message")
                     Dim chatType = Protocol.ChatType.Lobby
                     Dim receivingGroup = [Default](Of Protocol.ChatGroup?)()
-                    Dim requestedReceivers = vals.ItemAs(Of IReadableList(Of PlayerId))("requested receivers")
+                    Dim requestedReceivers = vals.ItemAs(Of IRist(Of PlayerId))("requested receivers")
                     OnReceiveChat(sender, message, chatType, receivingGroup, requestedReceivers)
 
                 Case Protocol.NonGameActionType.SetTeam

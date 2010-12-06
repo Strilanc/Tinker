@@ -35,8 +35,8 @@ Public NotInheritable Class PacketStreamer
         End Get
     End Property
 
-    Public Async Function AsyncReadPacket() As Task(Of IReadableList(Of Byte))
-        'Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Byte)))() IsNot Nothing)
+    Public Async Function AsyncReadPacket() As Task(Of IRist(Of Byte))
+        'Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Byte)))() IsNot Nothing)
 
         Dim header = Await _subStream.ReadExactAsync(FullHeaderSize)
         Dim totalSize = CInt(header.Skip(_preheaderLength).Take(_sizeHeaderLength).ToUValue)

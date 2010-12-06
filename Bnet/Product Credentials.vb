@@ -14,7 +14,7 @@
         Private ReadOnly _length As UInt32
         Private ReadOnly _product As ProductType
         Private ReadOnly _publicKey As UInteger
-        Private ReadOnly _proof As IReadableList(Of Byte)
+        Private ReadOnly _proof As IRist(Of Byte)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_proof IsNot Nothing)
@@ -24,7 +24,7 @@
         Public Sub New(ByVal length As UInt32,
                        ByVal product As ProductType,
                        ByVal publicKey As UInteger,
-                       ByVal proof As IReadableList(Of Byte))
+                       ByVal proof As IRist(Of Byte))
             Contract.Requires(proof IsNot Nothing)
             Contract.Requires(proof.Count = 20)
             Me._product = product
@@ -52,10 +52,10 @@
             End Get
         End Property
         '''<summary>A stored response to an authentication challenge.</summary>
-        Public ReadOnly Property AuthenticationProof() As IReadableList(Of Byte)
+        Public ReadOnly Property AuthenticationProof() As IRist(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
                 Return _proof
             End Get
         End Property
@@ -218,12 +218,12 @@
         '''<remarks>This transformation is reversible if and only if the factor is coprime to the number of items.</remarks>
         <Extension()> <Pure()>
         <ContractVerification(False)>
-        Private Function Permute(Of T)(ByVal items As IIndexedEnumerable(Of T), ByVal offset As Integer, ByVal factor As Integer) As IReadableList(Of T)
+        Private Function Permute(Of T)(ByVal items As IIndexedEnumerable(Of T), ByVal offset As Integer, ByVal factor As Integer) As IRist(Of T)
             Contract.Requires(items IsNot Nothing)
             Contract.Requires(offset >= 0)
             Contract.Requires(factor > 0)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of T))() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of T))().Count = items.Count)
+            Contract.Ensures(Contract.Result(Of IRist(Of T))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of T))().Count = items.Count)
             Return (From i In items.Count.Range
                     Select items((offset + factor * i) Mod items.Count)
                     ).ToReadableList

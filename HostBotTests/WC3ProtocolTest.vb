@@ -446,7 +446,7 @@ Public Class WC3ProtocolTest
                              {"initial milliseconds used", 25UI}
                          })
         JarTest(ServerPackets.PlayersLagging.Jar,
-                equater:=Function(e1 As IReadableList(Of NamedValueMap), e2 As IReadableList(Of NamedValueMap)) ObjectEqual(e1, e2),
+                equater:=Function(e1 As IRist(Of NamedValueMap), e2 As IRist(Of NamedValueMap)) ObjectEqual(e1, e2),
                 data:={2,
                        2, 25, 0, 0, 0,
                        2, 25, 0, 0, 0},
@@ -513,7 +513,7 @@ Public Class WC3ProtocolTest
                 data:={100, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 100US},
-                        {"player action sets", New Maybe(Of IReadableList(Of PlayerActionSet))()}})
+                        {"player action sets", New Maybe(Of IRist(Of PlayerActionSet))()}})
     End Sub
     <TestMethod()>
     Public Sub TockTest()

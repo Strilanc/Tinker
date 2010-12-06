@@ -13,7 +13,7 @@ Namespace Bnet.Protocol
                 Return 4
             End Get
         End Property
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Net.IPAddress
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Net.IPAddress
             Return New Net.IPAddress(data.ToArray)
         End Function
 

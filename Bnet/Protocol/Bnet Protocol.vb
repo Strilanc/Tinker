@@ -348,7 +348,7 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly Null As Definition(Of NoValue) = Define(PacketId.Null)
             Public Shared ReadOnly Ping As Definition(Of UInt32) = Define(PacketId.Ping,
                     New UInt32Jar(showHex:=True).Named("salt"))
-            Public Shared ReadOnly Warden As Definition(Of IReadableList(Of Byte)) = Define(PacketId.Warden,
+            Public Shared ReadOnly Warden As Definition(Of IRist(Of Byte)) = Define(PacketId.Warden,
                     New DataJar().Named("encrypted data"))
 
             Public Shared ReadOnly GetFileTime As Definition(Of NamedValueMap) = Define(PacketId.GetFileTime,
@@ -394,7 +394,7 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly UserAuthenticationBegin As Definition(Of NamedValueMap) = Define(PacketId.UserAuthenticationBegin,
                     New DataJar().Fixed(exactDataCount:=32).Named("client public key"),
                     New UTF8Jar().NullTerminated.Named("username"))
-            Public Shared ReadOnly UserAuthenticationFinish As Definition(Of IReadableList(Of Byte)) = Define(PacketId.UserAuthenticationFinish,
+            Public Shared ReadOnly UserAuthenticationFinish As Definition(Of IRist(Of Byte)) = Define(PacketId.UserAuthenticationFinish,
                     New DataJar().Fixed(exactDataCount:=20).Named("client password proof"))
 
             Public Const MaxSerializedChatCommandTextLength As Integer = 223
@@ -436,7 +436,7 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly Null As Definition(Of NoValue) = Define(PacketId.Null)
             Public Shared ReadOnly Ping As Definition(Of UInt32) = Define(PacketId.Ping,
                     New UInt32Jar(showhex:=True).Named("salt"))
-            Public Shared ReadOnly Warden As Definition(Of IReadableList(Of Byte)) = Define(PacketId.Warden,
+            Public Shared ReadOnly Warden As Definition(Of IRist(Of Byte)) = Define(PacketId.Warden,
                     New DataJar().Named("encrypted data"))
 
             Public Shared ReadOnly GetFileTime As Definition(Of NamedValueMap) = Define(PacketId.GetFileTime,

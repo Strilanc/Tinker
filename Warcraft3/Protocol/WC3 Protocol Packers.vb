@@ -79,7 +79,7 @@ Namespace WC3.Protocol
         Public Function MakeOtherPlayerJoined(ByVal name As InvariantString,
                                               ByVal joiner As PlayerId,
                                               ByVal peerKey As UInt32,
-                                              ByVal peerData As IReadableList(Of Byte),
+                                              ByVal peerData As IRist(Of Byte),
                                               ByVal listenAddress As Net.IPEndPoint) As Packet
             Contract.Requires(peerData IsNot Nothing)
             Contract.Requires(listenAddress IsNot Nothing)
@@ -147,7 +147,7 @@ Namespace WC3.Protocol
             Return Packet.FromValue(ServerPackets.HostConfirmHostLeaving, New NoValue)
         End Function
         <Pure()>
-        Public Function MakeTickPreOverflow(ByVal actions As IReadableList(Of PlayerActionSet),
+        Public Function MakeTickPreOverflow(ByVal actions As IRist(Of PlayerActionSet),
                                             Optional ByVal timeSpan As UShort = 0) As Packet
             Contract.Requires(actions IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
@@ -157,7 +157,7 @@ Namespace WC3.Protocol
         End Function
         <Pure()>
         Public Function MakeTick(ByVal timeSpan As UShort,
-                                 Optional ByVal actions As Maybe(Of IReadableList(Of PlayerActionSet)) = Nothing) As Packet
+                                 Optional ByVal actions As Maybe(Of IRist(Of PlayerActionSet)) = Nothing) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(ServerPackets.Tick, New Dictionary(Of InvariantString, Object) From {
                     {"time span", timeSpan},
@@ -166,7 +166,7 @@ Namespace WC3.Protocol
 
         <Pure()>
         Public Function MakeMapFileData(ByVal filePosition As UInt32,
-                                        ByVal fileData As IReadableList(Of Byte),
+                                        ByVal fileData As IRist(Of Byte),
                                         ByVal downloader As PlayerId,
                                         ByVal uploader As PlayerId,
                                         Optional ByVal mapTransferKey As UInt32 = 1) As Packet

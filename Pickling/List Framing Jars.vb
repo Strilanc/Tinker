@@ -1,7 +1,7 @@
 ﻿Namespace Pickling
     '''<summary>Pickles values which may be included side-by-side in the data multiple times (including 0 times).</summary>
     Public NotInheritable Class RepeatedFramingJar(Of T)
-        Inherits BaseJar(Of IReadableList(Of T))
+        Inherits BaseJar(Of IRist(Of T))
         Private ReadOnly _subJar As IJar(Of T)
         Private ReadOnly _useSingleLineDescription As Boolean
 
@@ -17,13 +17,13 @@
         End Sub
 
         <ContractVerification(False)>
-        Public Overrides Function Pack(ByVal value As IReadableList(Of T)) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As IRist(Of T)) As IEnumerable(Of Byte)
             Return Concat(From item In value Select _subJar.Pack(item))
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of IReadableList(Of T))
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of IRist(Of T))
             Dim values = New List(Of T)
             Dim usedDataCount = 0
             While usedDataCount < data.Count
@@ -36,23 +36,23 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Describe(ByVal value As IReadableList(Of T)) As String
+        Public Overrides Function Describe(ByVal value As IRist(Of T)) As String
             Return (From item In value Select _subJar.Describe(item)).MakeListDescription(_useSingleLineDescription)
         End Function
-        Public Overrides Function Parse(ByVal text As String) As IReadableList(Of T)
+        Public Overrides Function Parse(ByVal text As String) As IRist(Of T)
             Return (From line In text.SplitListDescription(_useSingleLineDescription)
                     Select _subJar.Parse(line)
                     ).ToReadableList
         End Function
 
-        Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
+        Public Overrides Function MakeControl() As IValueEditor(Of IRist(Of T))
             Return New ListValueEditor(Of T)(_subJar)
         End Function
     End Class
 
     '''<summary>Pickles lists of values, where the serialized form is prefixed by the number of items.</summary>
     Public NotInheritable Class ItemCountPrefixedFramingJar(Of T)
-        Inherits BaseJar(Of IReadableList(Of T))
+        Inherits BaseJar(Of IRist(Of T))
 
         Private ReadOnly _subJar As IJar(Of T)
         Private ReadOnly _prefixSize As Integer
@@ -76,13 +76,13 @@
         End Sub
 
         <ContractVerification(False)>
-        Public Overrides Function Pack(ByVal value As IReadableList(Of T)) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As IRist(Of T)) As IEnumerable(Of Byte)
             Dim sizeData = CULng(value.Count).Bytes.Take(_prefixSize)
             Dim itemData = Concat(From item In value Select _subJar.Pack(item))
             Return sizeData.Concat(itemData)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of IReadableList(Of T))
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of IRist(Of T))
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The count prefix requires {0} bytes.".Frmt(_prefixSize))
             Dim elementCount = data.Take(_prefixSize).ToUValue
 
@@ -99,23 +99,23 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Describe(ByVal value As IReadableList(Of T)) As String
+        Public Overrides Function Describe(ByVal value As IRist(Of T)) As String
             Return (From item In value Select _subJar.Describe(item)).MakeListDescription(_useSingleLineDescription)
         End Function
-        Public Overrides Function Parse(ByVal text As String) As IReadableList(Of T)
+        Public Overrides Function Parse(ByVal text As String) As IRist(Of T)
             Return (From line In text.SplitListDescription(_useSingleLineDescription)
                     Select _subJar.Parse(line)
                     ).ToReadableList
         End Function
 
-        Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
+        Public Overrides Function MakeControl() As IValueEditor(Of IRist(Of T))
             Return New ListValueEditor(Of T)(_subJar)
         End Function
     End Class
 
     Public NotInheritable Class ListValueEditor(Of T)
         Inherits DisposableWithTask
-        Implements IValueEditor(Of IReadableList(Of T))
+        Implements IValueEditor(Of IRist(Of T))
 
         Private ReadOnly subControls As New List(Of Entry)
         Private ReadOnly mainControl As New Panel()
@@ -123,7 +123,7 @@
         Private ReadOnly _subJar As IJar(Of T)
         Private _ignoreValueChanged As Boolean
 
-        Public Event ValueChanged(ByVal sender As IValueEditor(Of IReadableList(Of T))) Implements IValueEditor(Of IReadableList(Of T)).ValueChanged
+        Public Event ValueChanged(ByVal sender As IValueEditor(Of IRist(Of T))) Implements IValueEditor(Of IRist(Of T)).ValueChanged
         Public Event ValueChangedSimple(ByVal sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -279,12 +279,12 @@
             Return entry
         End Function
 
-        Public Property Value As IReadableList(Of T) Implements IValueEditor(Of IReadableList(Of T)).Value
+        Public Property Value As IRist(Of T) Implements IValueEditor(Of IRist(Of T)).Value
             Get
                 Return (From e In subControls Select (e.SubControl.Value)).ToReadableList
             End Get
             <ContractVerification(False)>
-            Set(ByVal value As IReadableList(Of T))
+            Set(ByVal value As IRist(Of T))
                 Dim needLayout = False
                 Try
                     _ignoreValueChanged = True
@@ -322,7 +322,7 @@
                 Return Me.Value.AssumeNotNull
             End Get
             Set(ByVal value As Object)
-                Me.Value = DirectCast(value, IReadableList(Of T))
+                Me.Value = DirectCast(value, IRist(Of T))
             End Set
         End Property
 

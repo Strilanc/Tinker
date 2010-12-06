@@ -52,7 +52,7 @@ Namespace CKL
             End Try
         End Function
 
-        Private Shared Function ParseResponse(ByVal packetData As IReadableList(Of Byte)) As ProductCredentialPair
+        Private Shared Function ParseResponse(ByVal packetData As IRist(Of Byte)) As ProductCredentialPair
             Contract.Requires(packetData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ProductCredentialPair)() IsNot Nothing)
 

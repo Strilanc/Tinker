@@ -192,7 +192,7 @@ Public Class BnetProtocolTest
     Public Sub ClientUserAuthenticationFinishTest()
         Dim proof = CByte(20).Range.ToReadableList
         JarTest(Packets.ClientToServer.UserAuthenticationFinish.Jar,
-                equater:=Function(e1 As IReadableList(Of Byte), e2 As IReadableList(Of Byte)) e1.SequenceEqual(e2),
+                equater:=Function(e1 As IRist(Of Byte), e2 As IRist(Of Byte)) e1.SequenceEqual(e2),
                 data:=proof,
                 value:=proof)
     End Sub
@@ -200,7 +200,7 @@ Public Class BnetProtocolTest
     Public Sub ClientWardenTest()
         Dim data = CByte(50).Range.ToReadableList
         JarTest(Packets.ClientToServer.Warden.Jar,
-                equater:=Function(e1 As IReadableList(Of Byte), e2 As IReadableList(Of Byte)) e1.SequenceEqual(e2),
+                equater:=Function(e1 As IRist(Of Byte), e2 As IRist(Of Byte)) e1.SequenceEqual(e2),
                 data:=data,
                 value:=data,
                 appendSafe:=False,
@@ -420,7 +420,7 @@ Public Class BnetProtocolTest
     Public Sub ServerWardenTest()
         Dim data = CByte(50).Range.ToReadableList
         JarTest(Packets.ServerToClient.Warden.Jar,
-                equater:=Function(e1 As IReadableList(Of Byte), e2 As IReadableList(Of Byte)) e1.SequenceEqual(e2),
+                equater:=Function(e1 As IRist(Of Byte), e2 As IRist(Of Byte)) e1.SequenceEqual(e2),
                 data:=data,
                 value:=data,
                 appendSafe:=False,

@@ -5,11 +5,11 @@ Namespace WC3.Protocol
         Implements IEquatable(Of PlayerActionSet)
 
         Private ReadOnly _id As PlayerId
-        Private ReadOnly _actions As IReadableList(Of GameAction)
+        Private ReadOnly _actions As IRist(Of GameAction)
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_actions IsNot Nothing)
         End Sub
-        Public Sub New(ByVal id As PlayerId, ByVal actions As IReadableList(Of GameAction))
+        Public Sub New(ByVal id As PlayerId, ByVal actions As IRist(Of GameAction))
             Contract.Requires(actions IsNot Nothing)
             Me._id = id
             Me._actions = actions
@@ -19,9 +19,9 @@ Namespace WC3.Protocol
                 Return _id
             End Get
         End Property
-        Public ReadOnly Property Actions As IReadableList(Of GameAction)
+        Public ReadOnly Property Actions As IRist(Of GameAction)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of GameAction))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of GameAction))() IsNot Nothing)
                 Return _actions
             End Get
         End Property
@@ -49,7 +49,7 @@ Namespace WC3.Protocol
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_player IsNot Nothing)
         End Sub
-        Public Sub New(ByVal player As Player, ByVal actions As IReadableList(Of GameAction))
+        Public Sub New(ByVal player As Player, ByVal actions As IRist(Of GameAction))
             MyBase.New(player.Id, actions)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(actions IsNot Nothing)
@@ -91,7 +91,7 @@ Namespace WC3.Protocol
         <ContractVerification(False)>
         Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As PlayerActionSet
             Return New PlayerActionSet(value.ItemAs(Of PlayerId)("source"),
-                                       value.ItemAs(Of IReadableList(Of GameAction))("actions"))
+                                       value.ItemAs(Of IRist(Of GameAction))("actions"))
         End Function
     End Class
 End Namespace

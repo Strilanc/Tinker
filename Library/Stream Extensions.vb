@@ -34,7 +34,7 @@ Public Module StreamExtensions
     <DebuggerDisplay("{ToString}")>
     Private Class StreamAsList
         Inherits DisposableWithTask
-        Implements IReadableList(Of Byte)
+        Implements IRist(Of Byte)
 
         Private ReadOnly _stream As IRandomReadableStream
         Private ReadOnly _offset As Long
@@ -69,10 +69,10 @@ Public Module StreamExtensions
         End Property
 
         <ContractVerification(False)>
-        Public Function IndexOf(ByVal item As Byte) As Integer Implements IReadableList(Of Byte).IndexOf
+        Public Function IndexOf(ByVal item As Byte) As Integer Implements IRist(Of Byte).IndexOf
             Return (From i In Count.Range Where Me.Item(i) = item).OffsetBy(1).FirstOrDefault - 1
         End Function
-        Default Public ReadOnly Property Item(ByVal index As Integer) As Byte Implements IReadableList(Of Byte).Item
+        Default Public ReadOnly Property Item(ByVal index As Integer) As Byte Implements IRist(Of Byte).Item
             <ContractVerification(False)>
             Get
                 If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.FullName)

@@ -1,20 +1,20 @@
 Namespace Pickling
     '''<summary>The identity jar. Pickles data as itself.</summary>
     Public Class DataJar
-        Inherits BaseJar(Of IReadableList(Of Byte))
+        Inherits BaseJar(Of IRist(Of Byte))
 
-        Public Overrides Function Pack(ByVal value As IReadableList(Of Byte)) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As IRist(Of Byte)) As IEnumerable(Of Byte)
             Return value.AssumeNotNull
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of IReadableList(Of Byte))
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of IRist(Of Byte))
             Return data.ParsedWithDataCount(data.Count)
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Describe(ByVal value As IReadableList(Of Byte)) As String
+        Public Overrides Function Describe(ByVal value As IRist(Of Byte)) As String
             Return "[{0}]".Frmt(value.ToHexString)
         End Function
-        Public Overrides Function Parse(ByVal text As String) As IReadableList(Of Byte)
+        Public Overrides Function Parse(ByVal text As String) As IRist(Of Byte)
             Try
                 Dim byteText = text
                 If byteText.StartsWith("[", StringComparison.Ordinal) Then byteText = byteText.Substring(1)

@@ -6,7 +6,7 @@ Namespace Pickling
         Public Overrides Function Pack(ByVal value As NoValue) As IEnumerable(Of Byte)
             Return New Byte() {}
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of NoValue)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of NoValue)
             Return New NoValue().ParsedWithDataCount(0)
         End Function
         <ContractVerification(False)>

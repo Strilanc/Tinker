@@ -36,7 +36,7 @@ Namespace Bnet.Protocol
             End Get
         End Property
         <ContractVerification(False)>
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInteger
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInteger
             Return CUInt(data.ToAsciiChars.FromHexToUInt64(_byteOrder))
         End Function
 

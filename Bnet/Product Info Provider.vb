@@ -1,6 +1,6 @@
 ﻿<ContractClass(GetType(IProductInfoProvider.ContractClass))>
 Public Interface IProductInfoProvider
-    ReadOnly Property ExeVersion As IReadableList(Of Byte)
+    ReadOnly Property ExeVersion As IRist(Of Byte)
     ReadOnly Property FileSize As UInt32
     ReadOnly Property LastModifiedTime As Date
     Function GenerateRevisionCheck(ByVal folder As String, ByVal challengeSeed As String, ByVal challengeInstructions As String) As UInt32
@@ -16,10 +16,10 @@ Public Interface IProductInfoProvider
             Throw New NotSupportedException
         End Function
 
-        Public ReadOnly Property ExeVersion As IReadableList(Of Byte) Implements IProductInfoProvider.ExeVersion
+        Public ReadOnly Property ExeVersion As IRist(Of Byte) Implements IProductInfoProvider.ExeVersion
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 4)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 4)
                 Throw New NotSupportedException
             End Get
         End Property
@@ -52,7 +52,7 @@ Public Class CachedWC3InfoProvider
     Implements IProductInfoProvider
 
     Private Shared _cached As Boolean = False
-    Private Shared _exeVersion As IReadableList(Of Byte)
+    Private Shared _exeVersion As IRist(Of Byte)
     Private Shared _exeLastModifiedTime As Date
     Private Shared _exeSize As UInt32
 
@@ -82,7 +82,7 @@ Public Class CachedWC3InfoProvider
         Return True
     End Function
 
-    Public ReadOnly Property ExeVersion As IReadableList(Of Byte) Implements IProductInfoProvider.ExeVersion
+    Public ReadOnly Property ExeVersion As IRist(Of Byte) Implements IProductInfoProvider.ExeVersion
         <ContractVerification(False)>
         Get
             Return _exeVersion

@@ -117,10 +117,10 @@ Namespace Bnet
             End Get
         End Property
         '''<summary>The 32 byte representation of the public key used for authentication.</summary>
-        Public ReadOnly Property PublicKeyBytes As IReadableList(Of Byte)
+        Public ReadOnly Property PublicKeyBytes As IRist(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 32)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 32)
                 Dim result = _publicKey.ToUnsignedBytes.PaddedTo(minimumLength:=32)
                 Contract.Assume(result.Count = 32)
                 Return result
@@ -157,12 +157,12 @@ Namespace Bnet
 
         '''<summary>A shared secret value, which can be computed by both the client and server.</summary>
         Private ReadOnly Property SharedSecret(ByVal accountSalt As IEnumerable(Of Byte),
-                                               ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IReadableList(Of Byte)
+                                               ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IRist(Of Byte)
             Get
                 Contract.Requires(serverPublicKeyBytes IsNot Nothing)
                 Contract.Requires(accountSalt IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 40)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 40)
 
                 Dim userIdAuthData = "{0}:{1}".Frmt(Me._userName.ToUpperInvariant, Me._password.ToUpperInvariant).ToAsciiBytes
                 Dim passwordKey = Concat(accountSalt, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
@@ -184,12 +184,12 @@ Namespace Bnet
         End Property
         '''<summary>A proof for the server that the client knows the password.</summary>
         Public ReadOnly Property ClientPasswordProof(ByVal accountSalt As IEnumerable(Of Byte),
-                                                     ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IReadableList(Of Byte)
+                                                     ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IRist(Of Byte)
             Get
                 Contract.Requires(serverPublicKeyBytes IsNot Nothing)
                 Contract.Requires(accountSalt IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
 
                 Return Concat(FixedSalt,
                               UserName.ToUpperInvariant.ToAsciiBytes.SHA1,
@@ -202,12 +202,12 @@ Namespace Bnet
         End Property
         '''<summary>An expected proof of knowing the shared secret from the server.</summary>
         Public ReadOnly Property ServerPasswordProof(ByVal accountSalt As IEnumerable(Of Byte),
-                                                     ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IReadableList(Of Byte)
+                                                     ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IRist(Of Byte)
             Get
                 Contract.Requires(serverPublicKeyBytes IsNot Nothing)
                 Contract.Requires(accountSalt IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
 
                 Return Concat(PublicKeyBytes,
                               ClientPasswordProof(accountSalt, serverPublicKeyBytes),

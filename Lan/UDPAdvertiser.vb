@@ -33,7 +33,7 @@ Namespace Lan
 
         Public NotInheritable Class LanGame
             Private ReadOnly _gameDescription As WC3.LocalGameDescription
-            Private ReadOnly _targetHosts As IReadableList(Of String)
+            Private ReadOnly _targetHosts As IRist(Of String)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_gameDescription IsNot Nothing)

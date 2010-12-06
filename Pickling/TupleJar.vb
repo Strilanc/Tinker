@@ -30,7 +30,7 @@ Namespace Pickling
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of NamedValueMap)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of NamedValueMap)
             Dim vals = New Dictionary(Of InvariantString, Object)
             Dim usedDataCount = 0
             For Each subjar In _subJars

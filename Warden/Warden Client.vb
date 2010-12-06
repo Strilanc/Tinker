@@ -2,7 +2,7 @@
     Public NotInheritable Class Client
         Inherits DisposableWithTask
 
-        Public Event ReceivedWardenData(ByVal sender As Warden.Client, ByVal wardenData As IReadableList(Of Byte))
+        Public Event ReceivedWardenData(ByVal sender As Warden.Client, ByVal wardenData As IRist(Of Byte))
         Public Event Failed(ByVal sender As Warden.Client, ByVal exception As Exception)
         Public Event Disconnected(ByVal sender As Warden.Client, ByVal expected As Boolean, ByVal reason As String)
 
@@ -65,9 +65,9 @@
                                                   cookie:=cookie,
                                                   logger:=logger)
             socket.Catch(
-                Sub(exception)
-                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, exception.Summarize), LogMessageType.Problem)
-                    exception.RaiseAsUnexpected("Connecting to bnls server.")
+                Sub(ex)
+                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, ex.Summarize), LogMessageType.Problem)
+                    ex.RaiseAsUnexpected("Connecting to bnls server.")
                 End Sub
             )
 
@@ -111,7 +111,7 @@
             End Get
         End Property
 
-        Public Async Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As Task
+        Public Async Function QueueSendWardenData(ByVal wardenData As IRist(Of Byte)) As Task
             Contract.Assume(wardenData IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             _activated.TrySetResult(Nothing)

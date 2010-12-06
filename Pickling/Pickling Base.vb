@@ -22,7 +22,7 @@
         Implements IPickle(Of T)
 
         Private ReadOnly _jar As ISimpleJar
-        Private ReadOnly _data As IReadableList(Of Byte)
+        Private ReadOnly _data As IRist(Of Byte)
         Private ReadOnly _value As T
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -33,7 +33,7 @@
 
         Public Sub New(ByVal jar As ISimpleJar,
                        ByVal value As T,
-                       ByVal data As IReadableList(Of Byte))
+                       ByVal data As IRist(Of Byte))
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
@@ -43,9 +43,9 @@
             Me._value = value
         End Sub
 
-        Public ReadOnly Property Data As IReadableList(Of Byte) Implements ISimplePickle.Data
+        Public ReadOnly Property Data As IRist(Of Byte) Implements ISimplePickle.Data
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() Is _data)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() Is _data)
                 Return _data
             End Get
         End Property
@@ -112,7 +112,7 @@
         Implements IJar(Of T)
 
         Public MustOverride Function Pack(ByVal value As T) As IEnumerable(Of Byte) Implements IJar(Of T).Pack
-        Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
+        Public MustOverride Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
         Public MustOverride Function Parse(ByVal text As String) As T Implements IJar(Of T).Parse
         Public Overridable Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
             Return value.ToString()
@@ -138,7 +138,7 @@
         Private Function SimplePack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
             Return Pack(DirectCast(value, T).AssumeNotNull)
         End Function
-        Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
+        Private Function SimpleParse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
             Dim result = Parse(data)
             Return New ParsedValue(Of Object)(result.Value, result.UsedDataCount)
         End Function
@@ -155,9 +155,9 @@
     Public MustInherit Class BaseFixedSizeJar(Of T)
         Inherits BaseJar(Of T)
         Protected MustOverride ReadOnly Property DataSize As UInt16
-        Protected MustOverride Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As T
+        Protected MustOverride Function FixedSizeParse(ByVal data As IRist(Of Byte)) As T
         <ContractVerification(False)>
-        Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+        Public NotOverridable Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < DataSize Then Throw New PicklingNotEnoughDataException("{0} requires {1} bytes.".Frmt(Me.GetType.Name, DataSize))
             Return FixedSizeParse(data.SubView(0, DataSize)).ParsedWithDataCount(DataSize)
         End Function
@@ -170,7 +170,7 @@
                 Throw New NotSupportedException
             End Get
         End Property
-        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As T
+        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As T
             Contract.Requires(data IsNot Nothing)
             Contract.Requires(data.Count = DataSize)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
@@ -195,7 +195,7 @@
         Public NotOverridable Overrides Function Pack(ByVal value As TExposed) As IEnumerable(Of Byte)
             Return SubJar.Pack(PackRaw(value))
         End Function
-        Public NotOverridable Overloads Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of TExposed)
+        Public NotOverridable Overloads Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of TExposed)
             Dim parsed = SubJar.Parse(data)
             Return parsed.WithValue(ParseRaw(parsed.Value))
         End Function

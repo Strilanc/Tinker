@@ -5,7 +5,7 @@ Namespace WC3.Replay
         <Pure()>
         Public Function MakeStartOfReplay(ByVal primaryPlayerId As PlayerId,
                                           ByVal primaryPlayerName As InvariantString,
-                                          ByVal primaryPlayerPeerData As IReadableList(Of Byte),
+                                          ByVal primaryPlayerPeerData As IRist(Of Byte),
                                           ByVal gameName As InvariantString,
                                           ByVal gameStats As GameStats,
                                           ByVal playerCount As UInt32,
@@ -31,7 +31,7 @@ Namespace WC3.Replay
         <Pure()>
         Public Function MakePlayerJoined(ByVal id As PlayerId,
                                          ByVal name As InvariantString,
-                                         ByVal peerData As IReadableList(Of Byte)) As ReplayEntry
+                                         ByVal peerData As IRist(Of Byte)) As ReplayEntry
             Contract.Requires(peerData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
             Return ReplayEntry.FromDefinitionAndValue(Format.ReplayEntryPlayerJoined, New Dictionary(Of InvariantString, Object) From {
@@ -111,7 +111,7 @@ Namespace WC3.Replay
                         {"message", message}})}})
         End Function
         <Pure()>
-        Public Function MakeTickPreOverflow(ByVal actions As IReadableList(Of Protocol.PlayerActionSet),
+        Public Function MakeTickPreOverflow(ByVal actions As IRist(Of Protocol.PlayerActionSet),
                                             Optional ByVal duration As UInt16 = Nothing) As ReplayEntry
             Contract.Requires(actions IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
@@ -121,7 +121,7 @@ Namespace WC3.Replay
         End Function
         <Pure()>
         Public Function MakeTick(ByVal duration As UInt16,
-                                 ByVal actions As IReadableList(Of Protocol.PlayerActionSet)) As ReplayEntry
+                                 ByVal actions As IRist(Of Protocol.PlayerActionSet)) As ReplayEntry
             Contract.Requires(actions IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
             Return ReplayEntry.FromDefinitionAndValue(Format.ReplayEntryTick, New Dictionary(Of InvariantString, Object) From {

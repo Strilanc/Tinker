@@ -4,7 +4,7 @@ Namespace Warden
     Public NotInheritable Class Socket
         Inherits DisposableWithTask
 
-        Public Event ReceivedWardenData(ByVal sender As Warden.Socket, ByVal wardenData As IReadableList(Of Byte))
+        Public Event ReceivedWardenData(ByVal sender As Warden.Socket, ByVal wardenData As IRist(Of Byte))
         Public Event Failed(ByVal sender As Warden.Socket, ByVal exception As Exception)
         Public Event Disconnected(ByVal sender As Warden.Socket, ByVal expected As Boolean, ByVal reason As String)
 
@@ -106,7 +106,7 @@ Namespace Warden
                 Throw
             End Try
         End Sub
-        Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As Task
+        Public Function QueueSendWardenData(ByVal wardenData As IRist(Of Byte)) As Task
             Contract.Requires(wardenData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() WritePacket(ClientPacket.MakeFullServiceHandleWardenPacket(_cookie, wardenData)))

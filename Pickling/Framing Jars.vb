@@ -18,7 +18,7 @@
         Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
             Return _subJar.Pack(value)
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             Return _subJar.Parse(data)
         End Function
         Public Overrides Function Describe(ByVal value As T) As String
@@ -55,7 +55,7 @@
             Return data
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < _dataSize Then Throw New PicklingNotEnoughDataException("The fixed-size data requires {0} bytes.".Frmt(_dataSize))
             Dim result = SubJar.Parse(data.SubView(0, _dataSize))
             If result.UsedDataCount <> _dataSize Then Throw New PicklingException("Parsed value did not use exactly {0} bytes.".Frmt(_dataSize))
@@ -88,7 +88,7 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             Return SubJar.Parse(data.SubView(0, Math.Min(data.Count, _maxDataCount)))
         End Function
     End Class
@@ -121,7 +121,7 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The size prefix requires {0} bytes.".Frmt(_prefixSize))
             Dim dataSize = data.SubView(0, _prefixSize).ToUValue
             If data.Count < _prefixSize + dataSize Then Throw New PicklingNotEnoughDataException("The size-prefixed data requires the {0} bytes specified by the prefix.".Frmt(dataSize))
@@ -145,7 +145,7 @@
             Return SubJar.Pack(value).Append(0)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             'Find terminator
             Dim p = data.IndexOf(0)
             If p < 0 Then Throw New PicklingException("No null terminator found.")
@@ -181,7 +181,7 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Maybe(Of T))
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Maybe(Of T))
             If data.Count > 0 Then
                 Dim parsed = _subJar.Parse(data)
                 Return parsed.WithValue(Of Maybe(Of T))(parsed.Value)
@@ -233,7 +233,7 @@
     Public NotInheritable Class ChecksumPrefixedFramingJar(Of T)
         Inherits BaseFramingJar(Of T)
 
-        Private ReadOnly _checksumFunction As Func(Of IReadableList(Of Byte), IReadableList(Of Byte))
+        Private ReadOnly _checksumFunction As Func(Of IRist(Of Byte), IRist(Of Byte))
         Private ReadOnly _checksumSize As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -243,7 +243,7 @@
 
         Public Sub New(ByVal subJar As IJar(Of T),
                        ByVal checksumSize As Integer,
-                       ByVal checksumFunction As Func(Of IReadableList(Of Byte), IReadableList(Of Byte)))
+                       ByVal checksumFunction As Func(Of IRist(Of Byte), IRist(Of Byte)))
             MyBase.new(subJar)
             Contract.Requires(checksumSize > 0)
             Contract.Requires(subJar IsNot Nothing)
@@ -261,7 +261,7 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < _checksumSize Then Throw New PicklingNotEnoughDataException("The checksum requires {0} bytes.".Frmt(_checksumSize))
             Dim checksum = data.SubView(0, _checksumSize)
             Dim parsed = SubJar.Parse(data.SubView(_checksumSize))
@@ -286,7 +286,7 @@
             Return SubJar.Pack(value).Reverse
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             Dim parsed = SubJar.Parse(data.Reverse.ToReadableList)
             If parsed.UsedDataCount <> data.Count Then Throw New PicklingException("Leftover reversed data.")
             Return parsed

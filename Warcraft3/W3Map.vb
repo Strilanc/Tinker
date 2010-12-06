@@ -11,9 +11,9 @@ Namespace WC3
         '''<summary>A custom checksum of some of the map archive's files' data.</summary>
         Private ReadOnly _mapChecksumXORO As UInt32
         '''<summary>The sha1 hash of some of the map archive's files' data.</summary>
-        Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
+        Private ReadOnly _mapChecksumSHA1 As IRist(Of Byte)
         '''<summary>The slot layout used for game lobbies.</summary>
-        Private ReadOnly _lobbySlots As IReadableList(Of Slot)
+        Private ReadOnly _lobbySlots As IRist(Of Slot)
         '''<summary>The width of the map's playable area.</summary>
         Private ReadOnly _playableWidth As UInt16
         '''<summary>The height of the map's playable area.</summary>
@@ -45,8 +45,8 @@ Namespace WC3
                        ByVal fileSize As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
                        ByVal mapChecksumXORO As UInt32,
-                       ByVal mapChecksumSHA1 As IReadableList(Of Byte),
-                       ByVal lobbySlots As IReadableList(Of Slot),
+                       ByVal mapChecksumSHA1 As IRist(Of Byte),
+                       ByVal lobbySlots As IRist(Of Slot),
                        ByVal playableWidth As UInt16,
                        ByVal playableHeight As UInt16,
                        ByVal isMelee As Boolean,
@@ -125,7 +125,7 @@ Namespace WC3
             Dim size = vals.ItemAs(Of UInt32)("size")
             Dim crc32 = vals.ItemAs(Of UInt32)("crc32")
             Dim xoro = vals.ItemAs(Of UInt32)("xoro checksum")
-            Dim sha1 = vals.ItemAs(Of IReadableList(Of Byte))("sha1 checksum")
+            Dim sha1 = vals.ItemAs(Of IRist(Of Byte))("sha1 checksum")
             Contract.Assume(sha1.Count = 20)
             If Not path.StartsWith("Maps\") Then Throw New IO.InvalidDataException("Invalid map path.")
             If size <= 0 Then Throw New IO.InvalidDataException("Invalid file size.")
@@ -214,18 +214,18 @@ Namespace WC3
                 Return _mapChecksumXORO
             End Get
         End Property
-        Public ReadOnly Property MapChecksumSHA1 As IReadableList(Of Byte)
+        Public ReadOnly Property MapChecksumSHA1 As IRist(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
                 Return _mapChecksumSHA1
             End Get
         End Property
-        Public ReadOnly Property LobbySlots As IReadableList(Of Slot)
+        Public ReadOnly Property LobbySlots As IRist(Of Slot)
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count > 0)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count <= 12)
+                Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Slot))().Count > 0)
+                Contract.Ensures(Contract.Result(Of IRist(Of Slot))().Count <= 12)
                 Return _lobbySlots
             End Get
         End Property
@@ -318,11 +318,11 @@ Namespace WC3
 
 #Region "Read"
         <ContractVerification(False)>
-        Public Function ReadChunk(ByVal pos As Int64, ByVal size As UInt32) As IReadableList(Of Byte)
+        Public Function ReadChunk(ByVal pos As Int64, ByVal size As UInt32) As IRist(Of Byte)
             Contract.Requires(pos >= 0)
             Contract.Requires(size > 0)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count <= size)
+            Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count <= size)
             If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
             If Not FileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
             Contract.Assume(_streamFactory IsNot Nothing)
@@ -370,11 +370,11 @@ Namespace WC3
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
         <ContractVerification(False)>
         Private Shared Function ComputeMapSha1Checksum(ByVal mapArchive As MPQ.Archive,
-                                                       ByVal war3PatchArchive As MPQ.Archive) As IReadableList(Of Byte)
+                                                       ByVal war3PatchArchive As MPQ.Archive) As IRist(Of Byte)
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
+            Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
             Using sha = New Security.Cryptography.SHA1Managed(),
                   stream = New ConcatStream(Concat(MapChecksumOverridableFileStreams(mapArchive, war3PatchArchive),
                                                    {New IO.MemoryStream(&H3F1379EUI.Bytes).AsReadableStream},
@@ -506,7 +506,7 @@ Namespace WC3
             Public ReadOnly playableWidth As UInt16
             Public ReadOnly playableHeight As UInt16
             Public ReadOnly options As MapOptions
-            Public ReadOnly slots As IReadableList(Of Slot)
+            Public ReadOnly slots As IRist(Of Slot)
             Public ReadOnly name As InvariantString
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -521,7 +521,7 @@ Namespace WC3
                            ByVal playableWidth As UInt16,
                            ByVal playableHeight As UInt16,
                            ByVal options As MapOptions,
-                           ByVal slots As IReadableList(Of Slot))
+                           ByVal slots As IRist(Of Slot))
                 Contract.Requires(playableWidth > 0)
                 Contract.Requires(playableHeight > 0)
                 Contract.Requires(slots IsNot Nothing)
@@ -608,11 +608,11 @@ Namespace WC3
         End Function
         <ContractVerification(False)>
         Private Shared Function ReadMapInfoLobbySlots(ByVal stream As IReadableStream,
-                                                      ByVal options As MapOptions) As IReadableList(Of Slot)
+                                                      ByVal options As MapOptions) As IRist(Of Slot)
             Contract.Requires(stream IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count > 0)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count <= 12)
+            Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of Slot))().Count > 0)
+            Contract.Ensures(Contract.Result(Of IRist(Of Slot))().Count <= 12)
 
             'Read Slots
             Dim rawSlotCount = stream.ReadUInt32()
@@ -671,12 +671,12 @@ Namespace WC3
         End Function
         <ContractVerification(False)>
         Private Shared Function ReadMapInfoForces(ByVal stream As IReadableStream,
-                                                  ByVal lobbySlots As IReadableList(Of Slot),
-                                                  ByVal options As MapOptions) As IReadableList(Of Slot)
+                                                  ByVal lobbySlots As IRist(Of Slot),
+                                                  ByVal options As MapOptions) As IRist(Of Slot)
             Contract.Requires(stream IsNot Nothing)
             Contract.Requires(LobbySlots IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count = LobbySlots.Count)
+            Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of Slot))().Count = LobbySlots.Count)
 
             'Read Forces
             Dim forceCount = stream.ReadUInt32()

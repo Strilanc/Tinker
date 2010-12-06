@@ -15,7 +15,7 @@ Public Class BnetClientTest
             Return 0
         End Function
 
-        Public ReadOnly Property WC3ExeVersion As IReadableList(Of Byte) Implements IProductInfoProvider.ExeVersion
+        Public ReadOnly Property WC3ExeVersion As IRist(Of Byte) Implements IProductInfoProvider.ExeVersion
             Get
                 Return New Byte() {1, 2, 3, 4}.AsReadableList
             End Get
@@ -115,7 +115,7 @@ Public Class BnetClientTest
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.UserAuthenticationBegin)
         body = Protocol.Packets.ClientToServer.UserAuthenticationBegin.Jar.Parse(packet.Skip(4).ToReadableList)
-        Assert.IsTrue(body.Value.ItemAs(Of IReadableList(Of Byte))("client public key").SequenceEqual(credentials.PublicKeyBytes))
+        Assert.IsTrue(body.Value.ItemAs(Of IRist(Of Byte))("client public key").SequenceEqual(credentials.PublicKeyBytes))
         Assert.IsTrue(body.Value.ItemAs(Of String)("username") = profile.userName)
 
         'user auth begin (S->C)

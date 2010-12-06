@@ -25,7 +25,7 @@ Namespace WC3
 
         Private Sub OnPlayerAction(ByVal sender As WC3.Game,
                                    ByVal player As WC3.Player,
-                                   ByVal actions As IReadableList(Of WC3.Protocol.GameAction)) Handles game.ReceivedPlayerActions
+                                   ByVal actions As IRist(Of WC3.Protocol.GameAction)) Handles game.ReceivedPlayerActions
             Dim mode = actionMode
             If mode = CallbackMode.Off Then Return
             For Each action In actions
