@@ -1,7 +1,8 @@
 '''<summary>Wraps a substream so that it has asynchronously throttled writes.</summary>
 Public NotInheritable Class ThrottledWriteStream
-    Inherits WrappedStream
+    Inherits IO.Stream
 
+    Private ReadOnly _substream As IO.Stream
     Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
     Private ReadOnly _queuedWrites As New Queue(Of Byte())
     Private ReadOnly _costEstimator As Func(Of Byte(), Integer)
@@ -14,6 +15,7 @@ Public NotInheritable Class ThrottledWriteStream
     Private _throttled As Boolean
 
     <ContractInvariantMethod()> Private Shadows Sub ObjectInvariant()
+        Contract.Invariant(_substream IsNot Nothing)
         Contract.Invariant(_queuedWrites IsNot Nothing)
         Contract.Invariant(_costEstimator IsNot Nothing)
         Contract.Invariant(inQueue IsNot Nothing)
@@ -30,7 +32,6 @@ Public NotInheritable Class ThrottledWriteStream
                    Optional ByVal initialSlack As Double = 0,
                    Optional ByVal costLimit As Double = 0,
                    Optional ByVal costRecoveredPerMillisecond As Double = 1)
-        MyBase.New(subStream)
         Contract.Requires(clock IsNot Nothing)
         Contract.Requires(subStream IsNot Nothing)
         Contract.Requires(initialSlack >= 0)
@@ -38,6 +39,7 @@ Public NotInheritable Class ThrottledWriteStream
         Contract.Requires(costLimit >= 0)
         Contract.Requires(costRecoveredPerMillisecond > 0)
 
+        Me._substream = subStream
         Me._timer = clock.Restarted
         Me._availableSlack = initialSlack
         Me._costEstimator = costEstimator
@@ -81,21 +83,39 @@ Public NotInheritable Class ThrottledWriteStream
             Dim data = _queuedWrites.Dequeue()
             Contract.Assume(data IsNot Nothing)
             _usedCost += _costEstimator(data)
-            substream.Write(data, 0, data.Length)
+            _substream.Write(data, 0, data.Length)
         End While
     End Sub
 
     Public Overrides Function BeginRead(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult
-        Return substream.BeginRead(buffer, offset, count, callback, state)
+        Return _substream.BeginRead(buffer, offset, count, callback, state)
     End Function
     Public Overrides Function EndRead(ByVal asyncResult As System.IAsyncResult) As Integer
-        Return substream.EndRead(asyncResult)
+        Return _substream.EndRead(asyncResult)
     End Function
 
 #Region "Not Supported"
-    Public Overrides Function BeginWrite(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult
-        Throw New NotSupportedException
+    Public Overrides Function Read(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer) As Integer
+        Return _substream.Read(buffer, offset, count)
     End Function
+    Public Overrides Sub Flush()
+        _substream.Flush()
+    End Sub
+    Public Overrides ReadOnly Property Length As Long
+        Get
+            Return _substream.Length
+        End Get
+    End Property
+    Public Overrides ReadOnly Property CanWrite As Boolean
+        Get
+            Return _substream.CanWrite
+        End Get
+    End Property
+    Public Overrides ReadOnly Property CanRead As Boolean
+        Get
+            Return _substream.CanRead
+        End Get
+    End Property
     Public Overrides ReadOnly Property CanSeek() As Boolean
         Get
             Return False
@@ -115,5 +135,8 @@ Public NotInheritable Class ThrottledWriteStream
     Public Overrides Sub SetLength(ByVal value As Long)
         Throw New NotSupportedException
     End Sub
+    Public Overrides Function BeginWrite(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult
+        Throw New NotSupportedException
+    End Function
 #End Region
 End Class
