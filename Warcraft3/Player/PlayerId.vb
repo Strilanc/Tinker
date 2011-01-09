@@ -2,7 +2,7 @@
 
 Namespace WC3
     ''' <summary>Stores a unique-per-game-per-instant player index in [1, 12].</summary>
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public Structure PlayerId
         Implements IEquatable(Of PlayerId)
 

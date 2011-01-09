@@ -356,7 +356,6 @@ Namespace WC3
             Dim record = _tickQueue.Dequeue()
             Contract.Assume(record IsNot Nothing)
             _totalTockTime += record.length
-            Contract.Assume(_totalTockTime >= 0)
         End Sub
 
         Private Sub OnSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reasonDescription As String)

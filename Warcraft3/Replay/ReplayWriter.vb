@@ -45,7 +45,6 @@ Namespace WC3.Replay
             Me._settings = settings
             Me._providedDuration = duration
 
-            Contract.Assume(CInt(Format.HeaderSize) >= 0)
             _stream.WriteAt(_startPosition, CByte(0).Repeated(CInt(Format.HeaderSize)).ToReadableList)
             StartBlock()
         End Sub

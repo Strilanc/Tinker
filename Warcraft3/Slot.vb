@@ -1,5 +1,5 @@
 ﻿Namespace WC3
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public Structure Slot
         Implements IEquatable(Of Slot)
 

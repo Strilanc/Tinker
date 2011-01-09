@@ -2,7 +2,7 @@ Namespace Commands
     ''' <summary>
     ''' A template which text command arguments can be matched against.
     ''' </summary>
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public NotInheritable Class CommandTemplate
         Private ReadOnly template As CommandArgument
         Private ReadOnly rawMinCount As Integer

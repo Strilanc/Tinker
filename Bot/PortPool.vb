@@ -91,7 +91,7 @@
         End SyncLock
     End Function
 
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public NotInheritable Class PortHandle
         Inherits DisposableWithTask
         Private ReadOnly _pool As PortPool

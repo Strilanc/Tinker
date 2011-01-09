@@ -115,7 +115,7 @@ Namespace Warden
         End Function
     End Class
 
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public Class ServerPacket
         Private Shared ReadOnly DataJar As New TupleJar(
                     New EnumByteJar(Of WardenPacketId)().Named("type"),

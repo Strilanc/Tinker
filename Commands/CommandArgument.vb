@@ -2,7 +2,7 @@ Namespace Commands
     ''' <summary>
     ''' A parsed case-insensitive text command argument.
     ''' </summary>
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public NotInheritable Class CommandArgument
         Private Shared ReadOnly Delimiters As New Dictionary(Of Char, Char) From {
             {"("c, ")"c},

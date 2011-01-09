@@ -1,4 +1,4 @@
-﻿<DebuggerDisplay("{ToString}")>
+﻿<DebuggerDisplay("{ToString()}")>
 Public Structure Maybe(Of T)
     Implements IEquatable(Of Maybe(Of T))
 

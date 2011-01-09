@@ -17,7 +17,7 @@
     End Class
 
     '''<summary>Holds a value, a description of the value, and a serialization of the value.</summary>
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public NotInheritable Class Pickle(Of T)
         Implements IPickle(Of T)
 
@@ -71,7 +71,7 @@
         End Function
     End Class
 
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public NotInheritable Class ParsedValue(Of T)
         Private ReadOnly _value As T
         Private ReadOnly _usedDataCount As Int32

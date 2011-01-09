@@ -1,7 +1,7 @@
 ﻿''' <summary>
 ''' A class which raises an event if it is armed and not continuously reset.
 ''' </summary>
-<DebuggerDisplay("{ToString}")>
+<DebuggerDisplay("{ToString()}")>
 Public NotInheritable Class DeadManSwitch
     Private ReadOnly _period As TimeSpan
     Private _isArmed As Boolean

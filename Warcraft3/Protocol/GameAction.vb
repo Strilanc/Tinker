@@ -1,7 +1,7 @@
 ﻿Imports Tinker.Pickling
 
 Namespace WC3.Protocol
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public NotInheritable Class GameAction
         Implements IEquatable(Of GameAction)
 

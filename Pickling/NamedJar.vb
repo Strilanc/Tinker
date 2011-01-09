@@ -1,5 +1,5 @@
 Namespace Pickling
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public NotInheritable Class NamedJar(Of T)
         Inherits BaseFramingJar(Of T)
         Implements INamedJar(Of T)

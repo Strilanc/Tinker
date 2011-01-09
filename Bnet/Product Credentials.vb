@@ -7,7 +7,7 @@
     ''' <summary>
     ''' Precomputed credentials used for answering a challenge to prove ownership of a product.
     ''' </summary>
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public NotInheritable Class ProductCredentials
         Implements IEquatable(Of ProductCredentials)
 

@@ -1,7 +1,7 @@
 ﻿Imports Tinker.Pickling
 
 Namespace WC3.Download
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Friend Class TransferClient
         Inherits DisposableWithTask
 

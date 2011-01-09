@@ -31,7 +31,7 @@ Public Module StreamExtensions
         Loop
     End Function
 
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Private Class StreamAsList
         Inherits DisposableWithTask
         Implements IRist(Of Byte)

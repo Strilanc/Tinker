@@ -1,7 +1,7 @@
 ﻿Imports Tinker.Pickling
 
 Namespace WC3.Replay
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public NotInheritable Class ReplayEntry
         Implements IEquatable(Of ReplayEntry)
 

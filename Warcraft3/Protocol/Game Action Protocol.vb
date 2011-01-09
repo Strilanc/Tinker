@@ -186,7 +186,7 @@ Namespace WC3.Protocol
         '... many many more ...
     End Enum
 
-    <DebuggerDisplay("{ToString}")>
+    <DebuggerDisplay("{ToString()}")>
     Public Structure GameObjectId
         Implements IEquatable(Of GameObjectId)
 
@@ -535,7 +535,7 @@ Namespace WC3.Protocol
         '''<summary>Occurs when a player has finished performing a save game.</summary>
         Public Shared ReadOnly SaveGameFinished As Definition(Of UInt32) = Define(GameActionId.SaveGameFinished,
                     New UInt32Jar().Named("unknown"))
-        '''<summary>Occurs when a player initiate a save game.</summary>
+        '''<summary>Occurs when a player initiates a save game.</summary>
         Public Shared ReadOnly SaveGameStarted As Definition(Of String) = Define(GameActionId.SaveGameStarted,
                     New UTF8Jar().NullTerminated.Named("filename"))
         '''<summary>Occurs when a player selects an item (or doodad?) on the ground.</summary>
