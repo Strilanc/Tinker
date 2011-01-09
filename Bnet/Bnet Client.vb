@@ -180,8 +180,8 @@ Namespace Bnet
             Me._productAuthenticator = productAuthenticator
             Me._clock = clock
             Me._logger = If(logger, New Logger)
-            Me.inQueue = New TaskedCallQueue
-            Me.outQueue = New TaskedCallQueue
+            Me.inQueue = MakeTaskedCallQueue
+            Me.outQueue = MakeTaskedCallQueue
             Me._packetHandlerLogger = Protocol.MakeBnetPacketHandlerLogger(Me._logger)
         End Sub
         <Pure()>
@@ -609,7 +609,7 @@ Namespace Bnet
 
 #Region "Networking (Connect)"
         Private Async Sub ReceiveProgramAuthenticationBegin(ByVal value As IPickle(Of NamedValueMap))
-            Contract.Requires(value IsNot Nothing)
+            Contract.Assume(value IsNot Nothing)
             Dim vals = value.Value
             If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
                 Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin))

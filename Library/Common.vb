@@ -168,24 +168,25 @@ Public Module PoorlyCategorizedFunctions
         End Select
     End Function
 
-    <CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")>
     <Extension()> <Pure()>
     Public Function Summarize(ByVal ex As Exception) As String
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        If ex Is Nothing Then
-            Return "Null Exception"
-        ElseIf TypeOf ex Is AggregateException Then
-            Dim ax = DirectCast(ex, AggregateException)
+
+        If ex Is Nothing Then Return "Null Exception"
+
+        Dim ax = TryCast(ex, AggregateException)
+        If ax IsNot Nothing Then
             Contract.Assume(ax.InnerExceptions IsNot Nothing)
             Select Case ax.InnerExceptions.Count
                 Case 0 : Return "Empty AggregateException"
-                Case 1 : Return ax.InnerExceptions.Single.Summarize()
-                Case Else : Return "{0} Exceptions Occured: {1}".Frmt(ax.InnerExceptions.Count,
-                                                                      Environment.NewLine + ax.InnerExceptions.StringJoin(Environment.NewLine))
+                Case 1 : Return ax.InnerExceptions.Single().Summarize()
             End Select
-        Else
-            Return "({0}) {1}".Frmt(ex.GetType.Name, ex.Message)
+            Return "{0} Exceptions Occured: {1}".Frmt(
+                ax.InnerExceptions.Count,
+                Environment.NewLine + ax.InnerExceptions.StringJoin(Environment.NewLine))
         End If
+
+        Return "({0}) {1}".Frmt(ex.GetType.Name, ex.Message)
     End Function
 
     <ContractVerification(False)>

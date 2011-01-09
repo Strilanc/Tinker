@@ -9,8 +9,8 @@ Public NotInheritable Class PacketSocket
     Public Property Name As InvariantString
     Public Property Logger As Logger
 
-    Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
-    Private ReadOnly outQueue As CallQueue = New TaskedCallQueue()
+    Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
+    Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue()
 
     Public Const DefaultBufferSize As Integer = 1460 '[sending more data in a packet causes wc3 clients to disc; happens to be maximum ethernet header size]
     Public ReadOnly bufferSize As Integer

@@ -49,7 +49,7 @@ Namespace WC3
             Me.name = name
             Me.mode = mode
             Me.listenPort = listenPort
-            Me.inQueue = New TaskedCallQueue
+            Me.inQueue = MakeTaskedCallQueue
             Me.logger = If(logger, New Logger)
             If listenPort <> 0 Then accepter.Accepter.OpenPort(listenPort)
             Me._packetHandlerLogger = Protocol.MakeW3PacketHandlerLogger("?", Me.logger)

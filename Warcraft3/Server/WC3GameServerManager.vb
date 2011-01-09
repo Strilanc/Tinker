@@ -9,7 +9,7 @@ Namespace WC3
         Public Shared ReadOnly TypeName As String = "Server"
 
         Private ReadOnly _commands As New CommandSet(Of GameServerManager)
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
         Private ReadOnly _name As InvariantString
         Private ReadOnly _gameServer As WC3.GameServer
         Private ReadOnly _hooks As New List(Of IDisposable)

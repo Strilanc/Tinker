@@ -6,8 +6,8 @@ Namespace CKL
         Private Shared ReadOnly jar As New Bnet.Protocol.ProductCredentialsJar()
         Public Const PacketPrefixValue As Byte = 1
 
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
+        Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue
 
         Public ReadOnly name As InvariantString
         Private WithEvents _accepter As New ConnectionAccepter()

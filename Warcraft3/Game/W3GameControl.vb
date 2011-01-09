@@ -1,7 +1,7 @@
 Namespace WC3
     <ContractVerification(False)>
     Public Class W3GameControl
-        Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
+        Private ReadOnly inQueue As CallQueue = MakeControlCallQueue(Me)
         Private ReadOnly _manager As WC3.GameManager
         Private ReadOnly _game As WC3.Game
         Private ReadOnly _hooks As New List(Of IDisposable)
@@ -13,9 +13,6 @@ Namespace WC3
             Contract.Invariant(_hooks IsNot Nothing)
         End Sub
 
-        Private Shadows Sub OnParentChanged() Handles Me.ParentChanged
-            If Me.Parent IsNot Nothing Then inQueue.Start()
-        End Sub
         Private Shadows Sub OnDisposed() Handles Me.Disposed
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)

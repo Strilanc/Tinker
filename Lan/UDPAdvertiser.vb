@@ -8,8 +8,8 @@ Namespace Lan
         Public Shared ReadOnly LanTargetPort As UShort = 6112
         Private Shared ReadOnly RefreshPeriod As TimeSpan = 3.Seconds
 
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
-        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue()
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
+        Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue()
 
         Private ReadOnly _games As New Dictionary(Of UInt32, LanGame)
         Private ReadOnly _viewGames As New AsyncViewableCollection(Of LanGame)(outQueue:=outQueue)

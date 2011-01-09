@@ -5,7 +5,7 @@
     Private ReadOnly _timeoutCount As Integer
     Private ReadOnly _pingQueue As New Queue(Of Tuple(Of UInt32, IClock))
     Private ReadOnly _rng As New Random()
-    Private ReadOnly inQueue As New TaskedCallQueue()
+    Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
     Private ReadOnly _clock As IClock
     Private ReadOnly _ticker As IDisposable
 

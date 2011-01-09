@@ -11,7 +11,7 @@ Namespace Bnet
         Implements IBotComponent
 
         Private ReadOnly _commands As New CommandSet(Of ClientComponent)()
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _name As InvariantString
         Private ReadOnly _client As Bnet.Client

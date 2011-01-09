@@ -16,7 +16,7 @@ Namespace WC3.Download
         Private ReadOnly _map As Map
         Private ReadOnly _logger As Logger
         Private ReadOnly _hooks As New List(Of Task(Of IDisposable))()
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
         Private ReadOnly _allowDownloads As Boolean
         Private ReadOnly _allowUploads As Boolean
         Private ReadOnly _playerClients As New Dictionary(Of IPlayerDownloadAspect, TransferClient)

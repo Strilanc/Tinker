@@ -101,8 +101,8 @@ Namespace WC3
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Game)() IsNot Nothing)
 
-            Dim inQueue = New TaskedCallQueue
-            Dim outQueue = New TaskedCallQueue
+            Dim inQueue = MakeTaskedCallQueue
+            Dim outQueue = MakeTaskedCallQueue
             Dim kernel = New GameKernel(clock, inQueue, outQueue, logger)
             Dim startPlayerHoldPoint = New HoldPoint(Of Player)
             Dim downloadManager = New Download.Manager(clock:=clock,
@@ -403,7 +403,7 @@ Namespace WC3
             If slot IsNot Nothing Then
                 If slot.Value.Contents.EnumPlayers.Contains(player) Then
                     slot = slot.Value.With(contents:=slot.Value.Contents.WithoutPlayer(player))
-                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.Value)
+                    _lobby.Slots = _lobby.Slots.WithSlotsUpdatedByIndex(slot.Value)
                 End If
             End If
 
@@ -487,18 +487,18 @@ Namespace WC3
 
             Dim target = (From player In slot.Contents.EnumPlayers Where player.Name = slotQuery).FirstOrDefault
             If target IsNot Nothing Then
-                _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.With(contents:=slot.Contents.WithoutPlayer(target)))
+                _lobby.Slots = _lobby.Slots.WithSlotsUpdatedByIndex(slot.With(contents:=slot.Contents.WithoutPlayer(target)))
                 RemovePlayer(target, True, Protocol.PlayerLeaveReason.Disconnect, "Booted")
             Else
                 For Each player In slot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
-                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.With(contents:=slot.Contents.WithoutPlayer(player)))
+                    _lobby.Slots = _lobby.Slots.WithSlotsUpdatedByIndex(slot.With(contents:=slot.Contents.WithoutPlayer(player)))
                     RemovePlayer(player, True, Protocol.PlayerLeaveReason.Disconnect, "Booted")
                 Next player
             End If
 
             If shouldCloseEmptiedSlot AndAlso slot.Contents.ContentType = SlotContents.Type.Empty Then
-                _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.With(contents:=New SlotContentsClosed))
+                _lobby.Slots = _lobby.Slots.WithSlotsUpdatedByIndex(slot.With(contents:=New SlotContentsClosed))
                 _lobby.ThrowChangedPublicState()
             End If
         End Sub

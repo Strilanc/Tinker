@@ -20,8 +20,8 @@ Namespace Components
     Public NotInheritable Class ComponentSet
         Inherits DisposableWithTask
 
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
+        Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue
         Private ReadOnly _components As New AsyncViewableCollection(Of IBotComponent)(outQueue:=outQueue)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()

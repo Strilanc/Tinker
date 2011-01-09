@@ -104,8 +104,8 @@ Namespace WC3
             Me._listenEndPoint = listenEndPoint
             Me._taskTestCanHost = taskTestCanHost
             Me._downloadManager = downloadManager
-            Me._inQueue = If(inQueue, New TaskedCallQueue)
-            Me._outQueue = If(outQueue, New TaskedCallQueue)
+            Me._inQueue = If(inQueue, MakeTaskedCallQueue)
+            Me._outQueue = If(outQueue, MakeTaskedCallQueue)
         End Sub
 
         <ContractVerification(False)>

@@ -96,9 +96,9 @@ Namespace Bot
             Contract.Assume(remover IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
 
-            Dim inQueue = New TaskedCallQueue(initiallyStarted:=False)
+            Dim inQueue = MakeTaskedCallQueue()
             Dim hooks = New List(Of Task(Of IDisposable))
-            Dim viewHook = this.Components.ObserveComponentsOfType(Of WC3.GameServerManager)(
+            Dim viewHook = Await this.Components.ObserveComponentsOfType(Of WC3.GameServerManager)(
                 adder:=Sub(sender, manager) inQueue.QueueAction(
                     Sub()
                         If hooks Is Nothing Then Return
@@ -113,13 +113,11 @@ Namespace Bot
                 remover:=Sub(sender, server)
                              'no action needed
                          End Sub)
-            hooks.Add(viewHook)
 
-            inQueue.Start()
-            Await viewHook
             Return New DelegatedDisposable(Sub() inQueue.QueueAction(
                 Sub()
                     hooks.DisposeAllAsync()
+                    viewHook.Dispose()
                     hooks = Nothing
                 End Sub))
         End Function
@@ -134,7 +132,7 @@ Namespace Bot
             Contract.Requires(command IsNot Nothing)
             Dim weakCommand = command.ProjectedFrom(Function(x As IBotComponent) DirectCast(x, T))
 
-            Dim inQueue = New TaskedCallQueue()
+            Dim inQueue = MakeTaskedCallQueue()
             Dim commandDisposers = New Dictionary(Of T, Task(Of IDisposable))()
 
             'Include commands
@@ -166,7 +164,7 @@ Namespace Bot
                                 Select command.ProjectedFrom(Function(x As IBotComponent) DirectCast(x, T))
                                 ).ToArray()
 
-            Dim inQueue = New TaskedCallQueue()
+            Dim inQueue = MakeTaskedCallQueue()
             Dim commandDisposers = New Dictionary(Of T, Task(Of IDisposable))()
 
             'Include commands

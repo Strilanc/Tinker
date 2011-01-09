@@ -1,7 +1,7 @@
 Namespace Lan
     <ContractVerification(False)>
     Public Class UDPAdvertiserControl
-        Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
+        Private ReadOnly inQueue As CallQueue = MakeControlCallQueue(Me)
         Private ReadOnly _component As Lan.UDPAdvertiserComponent
         Private ReadOnly _udpAdvertiser As Lan.UDPAdvertiser
         Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
@@ -13,10 +13,6 @@ Namespace Lan
             Contract.Invariant(_udpAdvertiser IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_syncedGames IsNot Nothing)
-        End Sub
-
-        Private Shadows Sub OnParentChanged() Handles Me.ParentChanged
-            If Me.Parent IsNot Nothing Then inQueue.Start()
         End Sub
 
         Public Sub New(ByVal component As Lan.UDPAdvertiserComponent)

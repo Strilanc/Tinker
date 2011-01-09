@@ -3,7 +3,7 @@ Imports Tinker.Bnet.Protocol
 Namespace Bnet
     <ContractVerification(False)>
     Public Class BnetClientControl
-        Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
+        Private ReadOnly inQueue As CallQueue = MakeControlCallQueue(Me)
         Private ReadOnly _component As Bnet.ClientComponent
         Private ReadOnly _client As Bnet.Client
         Private ReadOnly _hooks As New List(Of IDisposable)
@@ -14,10 +14,6 @@ Namespace Bnet
             Contract.Invariant(_component IsNot Nothing)
             Contract.Invariant(_client IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
-        End Sub
-
-        Private Shadows Sub OnParentChanged() Handles Me.ParentChanged
-            If Me.Parent IsNot Nothing Then inQueue.Start()
         End Sub
 
         Public Sub New(ByVal component As Bnet.ClientComponent)

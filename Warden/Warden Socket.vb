@@ -8,8 +8,8 @@ Namespace Warden
         Public Event Failed(ByVal sender As Warden.Socket, ByVal exception As Exception)
         Public Event Disconnected(ByVal sender As Warden.Socket, ByVal expected As Boolean, ByVal reason As String)
 
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
+        Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue
         Private ReadOnly _socket As PacketSocket
         Private ReadOnly _logger As Logger
         Private ReadOnly _cookie As UInt32

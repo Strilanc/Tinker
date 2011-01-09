@@ -5,7 +5,7 @@
     Public Class ReplayManager
         Inherits DisposableWithTask
 
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
         Private ReadOnly _writer As ReplayWriter
         Private ReadOnly _infoProvider As IProductInfoProvider
         Private ReadOnly _hooks As New List(Of IDisposable)

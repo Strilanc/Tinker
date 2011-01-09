@@ -2,8 +2,8 @@
     Public Class GameSet
         Inherits DisposableWithTask
 
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
+        Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue
         Private ReadOnly _logger As Logger
         Private ReadOnly _gameSettings As GameSettings
         Private ReadOnly _games As New AsyncViewableCollection(Of Game)(outQueue:=outQueue)

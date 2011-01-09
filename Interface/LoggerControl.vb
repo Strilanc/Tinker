@@ -3,7 +3,7 @@ Public Class LoggerControl
     Private callbackModeMap As New Dictionary(Of LogMessageType, CallbackMode)
     Private callbackColorMap As New Dictionary(Of LogMessageType, Color)
     Private WithEvents _logger As Logger
-    Private ReadOnly uiRef As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
+    Private ReadOnly uiRef As CallQueue = MakeControlCallQueue(Me)
     Private lastQueuedMessage As New QueuedMessage(Nothing, Color.Black)
     Private nextQueuedMessage As QueuedMessage
     Private numQueuedMessages As Integer
@@ -19,10 +19,6 @@ Public Class LoggerControl
         Contract.Invariant(lastQueuedMessage.NextMessage Is Nothing)
         Contract.Invariant((_logger Is Nothing) = (_logFilename Is Nothing))
         Contract.Invariant((nextQueuedMessage IsNot Nothing) = (numQueuedMessages > 0))
-    End Sub
-
-    Private Sub LoggerControl_HandleCreated(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.HandleCreated
-        uiRef.Start()
     End Sub
 
     Private NotInheritable Class QueuedMessage

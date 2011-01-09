@@ -6,8 +6,8 @@ Namespace WC3
 
         Private Shared ReadOnly InitialConnectionTimeout As TimeSpan = 5.Seconds
 
-        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
+        Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue
 
         Private ReadOnly _clock As IClock
         Private ReadOnly _logger As Logger

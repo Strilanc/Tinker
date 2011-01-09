@@ -19,9 +19,9 @@ Public Class AsyncViewableCollection(Of T)
     ''' <summary>
     ''' Constructs an AsyncViewableCollection which queues synchronizing events on an action queue.
     ''' </summary>
-    ''' <param name="outQueue">The action queue async events are queued on. Uses a new TaskedCallQueue if null.</param>
+    ''' <param name="outQueue">The action queue async events are queued on. Uses a MakeTaskedCallQueue if null.</param>
     Public Sub New(Optional ByVal outQueue As CallQueue = Nothing)
-        Me.outQueue = If(outQueue, New TaskedCallQueue())
+        Me.outQueue = If(outQueue, MakeTaskedCallQueue())
     End Sub
 
     'verification disabled due to stupid verifier (1.2.30118.5)

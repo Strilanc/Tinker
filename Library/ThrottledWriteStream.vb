@@ -3,7 +3,7 @@ Public NotInheritable Class ThrottledWriteStream
     Inherits IO.Stream
 
     Private ReadOnly _substream As IO.Stream
-    Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
+    Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
     Private ReadOnly _queuedWrites As New Queue(Of Byte())
     Private ReadOnly _costEstimator As Func(Of Byte(), Integer)
     Private ReadOnly _costLimit As Double

@@ -6,7 +6,7 @@ Namespace Components
     Public Class TabControl
         Private ReadOnly _botComponentTabs As Components.TabManager
         Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
-        Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
+        Private ReadOnly inQueue As CallQueue = MakeControlCallQueue(Me)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_botComponentTabs IsNot Nothing)
@@ -22,10 +22,6 @@ Namespace Components
             _hooks.Add(bot.Components.ObserveComponents(
                                 adder:=Sub(sender, component) inQueue.QueueAction(Sub() OnBotAddedComponent(component)),
                                 remover:=Sub(sender, component) inQueue.QueueAction(Sub() OnBotRemovedComponent(component))))
-        End Sub
-
-        Private Shadows Sub OnParentChanged() Handles Me.ParentChanged
-            If Me.Parent IsNot Nothing Then inQueue.Start()
         End Sub
 
         Private Sub OnBotAddedComponent(ByVal component As Components.IBotComponent)

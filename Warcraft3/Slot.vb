@@ -157,7 +157,6 @@
                    Me._raceUnlocked = other._raceUnlocked AndAlso
                    Me._locked = other._locked AndAlso
                    Me._contents Is other._contents
-            Return True
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             Return TypeOf obj Is Slot AndAlso Me.Equals(DirectCast(obj, Slot))

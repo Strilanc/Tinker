@@ -7,7 +7,7 @@ Public NotInheritable Class DeadManSwitch
     Private _isArmed As Boolean
     Private _timer As RelativeClock
     Private _waitRunning As Boolean
-    Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
+    Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
 
     Public Event Triggered(ByVal sender As DeadManSwitch)
 

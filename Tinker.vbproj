@@ -13,8 +13,8 @@
     <MyType>WindowsForms</MyType>
     <OptionStrict>On</OptionStrict>
     <ApplicationIcon>Resources\Tinker.ico</ApplicationIcon>
-    <ManifestCertificateThumbprint>44861DEB0459065EBA325FB227211313B619975F</ManifestCertificateThumbprint>
-    <ManifestKeyFile>HostBot_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestCertificateThumbprint>3D0C131C664C312AC654C0D7437792521312FEED</ManifestCertificateThumbprint>
+    <ManifestKeyFile>Tinker_TemporaryKey.pfx</ManifestKeyFile>
     <GenerateManifests>true</GenerateManifests>
     <SignManifests>true</SignManifests>
     <IsWebBootstrapper>false</IsWebBootstrapper>
@@ -77,7 +77,7 @@
     </CodeContractsLibPaths>
     <CodeContractsPlatformPath>
     </CodeContractsPlatformPath>
-    <CodeContractsExtraAnalysisOptions>-show:progress -trace cache</CodeContractsExtraAnalysisOptions>
+    <CodeContractsExtraAnalysisOptions>-show:progress</CodeContractsExtraAnalysisOptions>
     <CodeContractsBaseLineFile>
     </CodeContractsBaseLineFile>
     <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
@@ -140,7 +140,7 @@
   <ItemGroup>
     <Reference Include="AsyncCtpLibrary, Version=1.0.3951.36518, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Microsoft Visual Studio Async CTP\Samples\AsyncCtpLibrary.dll</HintPath>
+      <HintPath>..\..\..\..\..\Documents\Microsoft Visual Studio Async CTP\Samples\AsyncCtpLibrary.dll</HintPath>
     </Reference>
     <Reference Include="MpqLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=08060530187cdd8c, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
@@ -150,8 +150,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Strilbrary\Strilbrary\bin\Release\Strilbrary.dll</HintPath>
     </Reference>
-    <Reference Include="StrilbraryUnchecked">
-      <HintPath>..\..\..\Documents\Visual Studio 10\Projects\Strilbrary\StrilbraryUnchecked\bin\Release\StrilbraryUnchecked.dll</HintPath>
+    <Reference Include="StrilbraryUnchecked, Version=1.0.0.0, Culture=neutral, PublicKeyToken=08060530187cdd8c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Strilbrary\StrilbraryUnchecked\bin\Release\StrilbraryUnchecked.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -480,6 +481,7 @@
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
     <None Include="StrilancWeak.snk" />
+    <None Include="Tinker_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">

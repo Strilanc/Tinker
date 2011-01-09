@@ -20,7 +20,7 @@
         End Property
 
         '''<summary>Creates a SlotSet with the same slots, except any slot matching a replacement slot (by index) is replaced by the new slot.</summary>
-        Public Function WithSlotsReplaced(ByVal ParamArray replacementSlots() As Slot) As SlotSet
+        Public Function WithSlotsUpdatedByIndex(ByVal ParamArray replacementSlots() As Slot) As SlotSet
             Contract.Requires(replacementSlots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
             Return Me.WithSlotsReplaced(replacementSlots.AsEnumerable)

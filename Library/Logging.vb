@@ -18,7 +18,7 @@ Public NotInheritable Class Logger
     End Sub
 
     Public Sub New(Optional ByVal outQueue As CallQueue = Nothing)
-        Me.outQueue = If(outQueue, New TaskedCallQueue())
+        Me.outQueue = If(outQueue, MakeTaskedCallQueue())
     End Sub
 
     Public Sub FutureLog(ByVal placeholder As String, ByVal message As Task(Of String))
