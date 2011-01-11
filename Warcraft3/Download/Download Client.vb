@@ -116,13 +116,11 @@ Namespace WC3.Download
                 Return _hasReported
             End Get
         End Property
-        <ContractVerification(False)>
         Public Property ReportedState As Protocol.MapTransferState
             Get
                 Contract.Requires(HasReported)
                 Return _reportedState
             End Get
-            <ContractVerification(False)>
             Set(ByVal value As Protocol.MapTransferState)
                 Contract.Requires(HasReported)
                 _reportedState = value
@@ -133,7 +131,6 @@ Namespace WC3.Download
                 Contract.Requires(HasReported)
                 Return _reportedPosition
             End Get
-            <ContractVerification(False)>
             Set(ByVal value As UInt32)
                 Contract.Requires(HasReported)
                 _reportedPosition = value

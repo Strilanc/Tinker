@@ -16,13 +16,11 @@
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As IRist(Of T)) As IEnumerable(Of Byte)
+            Contract.Assume(value IsNot Nothing)
             Return Concat(From item In value Select _subJar.Pack(item))
         End Function
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of IRist(Of T))
             Dim values = New List(Of T)
             Dim usedDataCount = 0
@@ -32,11 +30,13 @@
                 usedDataCount += subParsed.UsedDataCount
             End While
 
-            Return values.ToReadableList.ParsedWithDataCount(usedDataCount)
+            Dim result = values.ToReadableList.ParsedWithDataCount(usedDataCount)
+            Contract.Assume(result.UsedDataCount <= data.Count)
+            Return result
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As IRist(Of T)) As String
+            Contract.Assume(value IsNot Nothing)
             Return (From item In value Select _subJar.Describe(item)).MakeListDescription(_useSingleLineDescription)
         End Function
         Public Overrides Function Parse(ByVal text As String) As IRist(Of T)
@@ -98,8 +98,8 @@
             Return values.ToReadableList.ParsedWithDataCount(usedDataCount)
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As IRist(Of T)) As String
+            Contract.Assume(value IsNot Nothing)
             Return (From item In value Select _subJar.Describe(item)).MakeListDescription(_useSingleLineDescription)
         End Function
         Public Overrides Function Parse(ByVal text As String) As IRist(Of T)

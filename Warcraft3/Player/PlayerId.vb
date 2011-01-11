@@ -63,7 +63,7 @@ Namespace WC3
             Return New PlayerId(data.First).ParsedWithDataCount(1)
         End Function
 
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-100")>
         Public Overrides Function Parse(ByVal text As String) As PlayerId
             Dim index As Byte
             If text.StartsWith("pid", StringComparison.Ordinal) Then

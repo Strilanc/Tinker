@@ -43,13 +43,9 @@ Public Class AsyncViewableCollection(Of T)
         Return result
     End Function
 
-    'verification disabled due to stupid verifier (1.2.30118.5)
-    <ContractVerification(False)>
     Public Function Contains(ByVal item As T) As Boolean Implements ICollection(Of T).Contains
         Return _items.Contains(item)
     End Function
-    'verification disabled due to stupid verifier (1.2.30118.5)
-    <ContractVerification(False)>
     Public Sub CopyTo(ByVal array() As T, ByVal arrayIndex As Integer) Implements ICollection(Of T).CopyTo
         _items.CopyTo(array, arrayIndex)
     End Sub

@@ -118,7 +118,6 @@ Namespace Bnet.Protocol
             Return (From game In games Select ParseRawGameDescription(game, clock)).ToReadableList
         End Function
 
-        <ContractVerification(False)>
         Private Shared Function PackRawGameDescription(ByVal game As WC3.RemoteGameDescription) As NamedValueMap
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)

@@ -21,8 +21,9 @@ Namespace Pickling
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As KeyValuePair(Of TKey, Object)) As IEnumerable(Of Byte)
+            If value.Key Is Nothing Then Throw New ArgumentNullException("value.Key")
+            If value.Value Is Nothing Then Throw New ArgumentNullException("value.Value")
             If Not _valueJars.ContainsKey(value.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(value.Key))
             Dim keyData = _keyJar.Pack(value.Key)
             Dim valueData = _valueJars(value.Key).Value.Pack(value.Value)
@@ -38,8 +39,9 @@ Namespace Pickling
             Return value.ParsedWithDataCount(parsedKey.UsedDataCount + parsedValue.UsedDataCount)
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As KeyValuePair(Of TKey, Object)) As String
+            If value.Key Is Nothing Then Throw New ArgumentNullException("value.Key")
+            If value.Value Is Nothing Then Throw New ArgumentNullException("value.Value")
             Dim keyDesc = _keyJar.Describe(value.Key)
             Dim valueDesc = _valueJars(value.Key).Value.Describe(value.Value)
             Return If(_useSingleLineDescription,

@@ -55,8 +55,6 @@ Namespace Plugins
         End Function
 
         Public ReadOnly Property Control As Control Implements IBotComponent.Control
-            'verification disabled due to stupid verifier (1.2.30118.5)
-            <ContractVerification(False)>
             Get
                 Return _socket.Plugin.Control
             End Get

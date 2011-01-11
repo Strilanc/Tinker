@@ -39,8 +39,6 @@ Public Interface IProductInfoProvider
 End Interface
 
 Public Module WC3InfoProviderExtensions
-    'verification disabled due to stupid verifier (1.2.30118.5)
-    <ContractVerification(False)>
     <Extension()> <Pure()>
     Public Function MajorVersion(ByVal provider As IProductInfoProvider) As Byte
         Contract.Requires(provider IsNot Nothing)

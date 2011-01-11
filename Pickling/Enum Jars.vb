@@ -37,7 +37,7 @@
         Public Overrides Function Describe(ByVal value As TEnum) As String
             Return If(_isFlagEnum, value.EnumFlagsToString(), value.ToString)
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-211")>
         Public Overrides Function Parse(ByVal text As String) As TEnum
             Dim result As TEnum
             If _isFlagEnum Then

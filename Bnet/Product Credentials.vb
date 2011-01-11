@@ -156,11 +156,13 @@
             Me._tftKey = cdKeyTFT
         End Sub
 
-        <ContractVerification(False)>
         Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
                                           ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
-            Return New ProductCredentialPair(_rocKey.ToWC3CDKeyCredentials(clientSalt, serverSalt),
-                                             _tftKey.ToWC3CDKeyCredentials(clientSalt, serverSalt)).AsTask
+            Dim rocCreds = _rocKey.ToWC3CDKeyCredentials(clientSalt, serverSalt)
+            Dim tftCreds = _tftKey.ToWC3CDKeyCredentials(clientSalt, serverSalt)
+            Contract.Assume(rocCreds.Product = ProductType.Warcraft3ROC)
+            Contract.Assume(tftCreds.Product = ProductType.Warcraft3TFT)
+            Return New ProductCredentialPair(rocCreds, tftCreds).AsTask
         End Function
     End Class
 
@@ -217,7 +219,7 @@
         '''<summary>Permutes the items in a list by assigning items to positions which have been offset and scaled.</summary>
         '''<remarks>This transformation is reversible if and only if the factor is coprime to the number of items.</remarks>
         <Extension()> <Pure()>
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IRist(Of T))().Count = items.Count")>
         Private Function Permute(Of T)(ByVal items As IIndexedEnumerable(Of T), ByVal offset As Integer, ByVal factor As Integer) As IRist(Of T)
             Contract.Requires(items IsNot Nothing)
             Contract.Requires(offset >= 0)
@@ -231,7 +233,6 @@
 
         '''<summary>Generates product credentials using a wc3 cd key.</summary>
         <Extension()> <Pure()>
-        <ContractVerification(False)>
         Public Function ToWC3CDKeyCredentials(ByVal key As String,
                                               ByVal clientSalt As IEnumerable(Of Byte),
                                               ByVal serverSalt As IEnumerable(Of Byte)) As ProductCredentials

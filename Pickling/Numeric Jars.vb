@@ -17,7 +17,7 @@
                 Return 1
             End Get
         End Property
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-47-6")>
         Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Byte
             Return data.Single
         End Function
@@ -27,10 +27,11 @@
                       "0x" + value.ToString("X4", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-164")>
         Public Overrides Function Parse(ByVal text As String) As Byte
             Try
                 If New InvariantString(text).StartsWith("0x") Then
+                    Contract.Assume(text.Length >= 2)
                     Return Byte.Parse(text.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
                 Else
                     Return Byte.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture)
@@ -88,10 +89,11 @@
                       "0x" + value.ToString("X4", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-164")>
         Public Overrides Function Parse(ByVal text As String) As UInt16
             Try
                 If New InvariantString(text).StartsWith("0x") Then
+                    Contract.Assume(text.Length >= 2)
                     Return UInt16.Parse(text.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
                 Else
                     Return UInt16.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture)
@@ -139,8 +141,9 @@
                 Return 4
             End Get
         End Property
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-47-26")>
         Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInt32
+            Contract.Assume(data.Count = 4)
             Return data.ToUInt32(byteOrder)
         End Function
 
@@ -149,10 +152,11 @@
                       "0x" + value.ToString("X8", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-164")>
         Public Overrides Function Parse(ByVal text As String) As UInt32
             Try
                 If New InvariantString(text).StartsWith("0x") Then
+                    Contract.Assume(text.Length >= 2)
                     Return UInt32.Parse(text.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
                 Else
                     Return UInt32.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture)
@@ -210,10 +214,11 @@
                       "0x" + value.ToString("X16", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-164")>
         Public Overrides Function Parse(ByVal text As String) As UInt64
             Try
                 If New InvariantString(text).StartsWith("0x") Then
+                    Contract.Assume(text.Length >= 2)
                     Return UInt64.Parse(text.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
                 Else
                     Return UInt64.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture)
@@ -246,7 +251,7 @@
         Public Overrides Function Describe(ByVal value As Single) As String
             Return value.ToString("r", CultureInfo.InvariantCulture)
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-94")>
         Public Overrides Function Parse(ByVal text As String) As Single
             Try
                 Return Single.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)
@@ -278,7 +283,7 @@
         Public Overrides Function Describe(ByVal value As Double) As String
             Return value.ToString("r", CultureInfo.InvariantCulture)
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-94")>
         Public Overrides Function Parse(ByVal text As String) As Double
             Try
                 Return Double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)

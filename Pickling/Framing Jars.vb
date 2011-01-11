@@ -87,7 +87,6 @@
             Return data
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             Return SubJar.Parse(data.SubView(0, Math.Min(data.Count, _maxDataCount)))
         End Function
@@ -120,12 +119,13 @@
             Return sizeBytes.Concat(subData)
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The size prefix requires {0} bytes.".Frmt(_prefixSize))
             Dim dataSize = data.SubView(0, _prefixSize).ToUValue
             If data.Count < _prefixSize + dataSize Then Throw New PicklingNotEnoughDataException("The size-prefixed data requires the {0} bytes specified by the prefix.".Frmt(dataSize))
 
+            Contract.Assume(CInt(dataSize) >= 0)
+            Contract.Assume(_prefixSize + CInt(dataSize) <= data.Count)
             Dim parsed = SubJar.Parse(data.SubView(_prefixSize, CInt(dataSize)))
             If parsed.UsedDataCount < dataSize Then Throw New PicklingException("Fragmented data.")
             Return parsed.Value.ParsedWithDataCount(_prefixSize + parsed.UsedDataCount)
@@ -180,7 +180,6 @@
             End If
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Maybe(Of T))
             If data.Count > 0 Then
                 Dim parsed = _subJar.Parse(data)
@@ -190,12 +189,13 @@
             End If
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As Maybe(Of T)) As String
             If Not value.HasValue Then Return "[Not Included]"
+            If value.Value Is Nothing Then Throw New ArgumentNullException("value.Value")
             Return _subJar.Describe(value.Value)
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-16")>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-34")>
         Public Overrides Function Parse(ByVal text As String) As Maybe(Of T)
             If text = "[Not Included]" Then Return Nothing
             Return _subJar.Parse(text)
@@ -260,12 +260,12 @@
             Return checksum.Concat(subData)
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < _checksumSize Then Throw New PicklingNotEnoughDataException("The checksum requires {0} bytes.".Frmt(_checksumSize))
             Dim checksum = data.SubView(0, _checksumSize)
             Dim parsed = SubJar.Parse(data.SubView(_checksumSize))
             Dim expectedChecksum = _checksumFunction(data.SubView(_checksumSize, parsed.UsedDataCount))
+            Contract.Assume(expectedChecksum IsNot Nothing)
             If Not expectedChecksum.SequenceEqual(checksum) Then
                 Throw New PicklingException("Checksum didn't match. Should be [{0}], not [{1}].".Frmt(expectedChecksum.ToHexString, checksum.ToHexString))
             End If

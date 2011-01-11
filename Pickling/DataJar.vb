@@ -10,8 +10,8 @@ Namespace Pickling
             Return data.ParsedWithDataCount(data.Count)
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As IRist(Of Byte)) As String
+            Contract.Assume(value IsNot Nothing)
             Return "[{0}]".Frmt(value.ToHexString)
         End Function
         Public Overrides Function Parse(ByVal text As String) As IRist(Of Byte)

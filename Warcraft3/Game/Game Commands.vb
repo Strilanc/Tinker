@@ -87,7 +87,7 @@ Namespace WC3
                            template:="Name/Color -close",
                            Description:="Kicks a player from the game. Closes their slot if -close is specified.")
             End Sub
-            <ContractVerification(False)>
+            <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
             Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Dim slotQuery = argument.RawValue(0)
                 Dim shouldClose = argument.HasOptionalSwitch("close")
@@ -104,7 +104,7 @@ Namespace WC3
                            Format:="subcommand...",
                            Description:="Forwards commands to the bot.")
             End Sub
-            <ContractVerification(False)>
+            <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
             Protected Overrides Async Function PerformInvoke(ByVal target As GameManager, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
                 Dim botManagers = Await target.Bot.Components.QueueGetAllComponents(Of Bot.MainBotManager)()
                 Return Await botManagers.Single().InvokeCommand(user, argument)
@@ -118,7 +118,7 @@ Namespace WC3
                            template:="",
                            Description:="Closes this game instance.")
             End Sub
-            <ContractVerification(False)>
+            <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
             Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 target.Dispose()
                 Await target.DisposalTask
@@ -292,7 +292,6 @@ Namespace WC3
                            template:="",
                            Description:="Returns estimated network round trip times for each player.")
             End Sub
-            <ContractVerification(False)>
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Return From players In target.QueueGetPlayers()
@@ -347,8 +346,9 @@ Namespace WC3
                            template:="setting value",
                            Description:="Sets the value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
-            <ContractVerification(False)>
+            <ContractVerification(False = False)>
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim val_us As UShort
                 Dim vald As Double
                 Dim isShort = UShort.TryParse(argument.RawValue(1), val_us)

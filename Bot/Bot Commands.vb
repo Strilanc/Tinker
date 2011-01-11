@@ -316,7 +316,7 @@ Namespace Bot.Commands
                        Description:="Forwards commands to the named component.",
                        Permissions:="root:3")
         End Sub
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-53-89")>
         Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
             'parse
             Dim args = argumentHead.Split(":"c)
