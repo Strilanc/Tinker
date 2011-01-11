@@ -1,3 +1,4 @@
+'Verification disabled because of many warnings in generated code
 <ContractVerification(False)>
 Public Class LoggerControl
     Private callbackModeMap As New Dictionary(Of LogMessageType, CallbackMode)

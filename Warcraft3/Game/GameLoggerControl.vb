@@ -1,6 +1,7 @@
 ﻿Imports Tinker.Pickling
 
 Namespace WC3
+    'Verification disabled because of many warnings in generated code
     <ContractVerification(False)>
     Public Class GameLoggerControl
         Private WithEvents game As WC3.Game

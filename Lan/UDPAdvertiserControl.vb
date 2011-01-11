@@ -1,4 +1,5 @@
 Namespace Lan
+    'Verification disabled because of many warnings in generated code
     <ContractVerification(False)>
     Public Class UDPAdvertiserControl
         Private ReadOnly inQueue As CallQueue = MakeControlCallQueue(Me)

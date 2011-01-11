@@ -70,7 +70,6 @@ Namespace Commands
         ''' Splits text into tokens separated by spaces and fused by brackets.
         ''' </summary>
         <Pure()>
-        <ContractVerification(False)>
         Public Shared Function Tokenize(ByVal text As String) As IEnumerable(Of String) 'verification disabled due to stupid verifier
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)

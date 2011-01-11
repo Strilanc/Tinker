@@ -61,7 +61,6 @@ Namespace Bnet
         ''' <param name="username">The client's username.</param>
         ''' <param name="password">The client's password.</param>
         ''' <param name="privateKey">The privateKey used for authentication.</param>
-        <ContractVerification(False)>
         Public Sub New(ByVal userName As String,
                        ByVal password As String,
                        ByVal privateKey As BigInteger)
@@ -73,6 +72,8 @@ Namespace Bnet
             Me._password = password
             Me._privateKey = privateKey
             Me._publicKey = BigInteger.ModPow(G, _privateKey, N)
+            Contract.Assume(_publicKey >= 0)
+            Contract.Assume(Me.UserName = _userName)
         End Sub
         ''' <summary>Creates client credentials for the given username and password, with a public/private key pair generated using the given random number generator.</summary>
         ''' <param name="username">The client's username.</param>
@@ -140,7 +141,6 @@ Namespace Bnet
         End Function
 
         '''<summary>Creates credentials for the same client, but with a new key pair generated using the given random number generator.</summary>
-        <ContractVerification(False)>
         Public Function WithNewGeneratedKeys(ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientAuthenticator
             Contract.Requires(randomNumberGenerator IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
@@ -148,7 +148,6 @@ Namespace Bnet
             Return GeneratedFrom(Me.UserName, Me._password, randomNumberGenerator)
         End Function
         '''<summary>Creates credentials for the same client, but with a new key pair generated using a new Cryptography.RNGCryptoServiceProvider.</summary>
-        <ContractVerification(False)>
         Public Function WithNewGeneratedKeys() As ClientAuthenticator
             Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = Me.UserName)

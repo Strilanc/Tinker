@@ -1,3 +1,4 @@
+'Verification disabled because of many warnings in generated code
 <ContractVerification(False)>
 Public Class SettingsForm
     Private ReadOnly _clientProfiles As List(Of Bot.ClientProfile)

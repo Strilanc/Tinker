@@ -9,7 +9,7 @@ Namespace Lan.Commands
                        template:="On|Off",
                        Description:="Causes the advertiser to automatically advertise all games on any server when 'On'.")
         End Sub
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Select Case New InvariantString(argument.RawValue(0))
                 Case "On"
@@ -31,7 +31,7 @@ Namespace Lan.Commands
                        template:="id=# name=<game name> map=<search query>",
                        Description:="Adds a game to be advertised, but doesn't create a new server to go with it.")
         End Sub
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim id = UInt32.Parse(argument.NamedValue("id"))
             Dim name = argument.NamedValue("name")
@@ -75,7 +75,7 @@ Namespace Lan.Commands
                        Permissions:="games:1",
                        extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim server = Await target.Bot.QueueGetOrConstructGameServer()
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)

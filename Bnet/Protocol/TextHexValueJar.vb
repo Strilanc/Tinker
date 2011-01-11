@@ -35,7 +35,7 @@ Namespace Bnet.Protocol
                 Return _digitCount
             End Get
         End Property
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-47-18")>
         Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInteger
             Return CUInt(data.ToAsciiChars.FromHexToUInt64(_byteOrder))
         End Function

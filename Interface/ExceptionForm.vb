@@ -1,3 +1,4 @@
+'Verification disabled because of many warnings in generated code
 <ContractVerification(False)>
 Public Class ExceptionForm
     Private _exceptions As New List(Of Tuple(Of String, Exception))()

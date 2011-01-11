@@ -1,4 +1,5 @@
 ﻿Namespace Components
+    'Verification disabled because of many warnings in generated code
     <ContractVerification(False)>
     Public Class GenericBotComponentControl
         Private ReadOnly _component As Components.IBotComponent

@@ -77,7 +77,7 @@
     </CodeContractsLibPaths>
     <CodeContractsPlatformPath>
     </CodeContractsPlatformPath>
-    <CodeContractsExtraAnalysisOptions>-show:progress</CodeContractsExtraAnalysisOptions>
+    <CodeContractsExtraAnalysisOptions>-show:progress -outputwarnmasks -maxWarnings 10000</CodeContractsExtraAnalysisOptions>
     <CodeContractsBaseLineFile>
     </CodeContractsBaseLineFile>
     <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
@@ -176,6 +176,7 @@
     <Import Include="System" />
     <Import Include="System.Collections.Generic" />
     <Import Include="System.Data" />
+    <Import Include="System.Diagnostics.CodeAnalysis" />
     <Import Include="System.Diagnostics.Contracts" />
     <Import Include="System.Drawing" />
     <Import Include="System.Diagnostics" />

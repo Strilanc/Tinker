@@ -1,6 +1,7 @@
 Imports Tinker.Bnet.Protocol
 
 Namespace Bnet
+    'Verification disabled because of many warnings in generated code
     <ContractVerification(False)>
     Public Class BnetClientControl
         Private ReadOnly inQueue As CallQueue = MakeControlCallQueue(Me)

@@ -1,4 +1,5 @@
-﻿<ContractVerification(False)>
+﻿'Verification disabled because of many warnings in generated code
+<ContractVerification(False)>
 Public Class ProfileSettingsControl
     Public lastLoadedProfile As Bot.ClientProfile
     Public Event Delete(ByVal sender As ProfileSettingsControl)

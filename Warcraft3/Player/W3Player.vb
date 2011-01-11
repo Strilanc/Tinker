@@ -252,7 +252,6 @@ Namespace WC3
                 Return _pinger.QueueGetLatency
             End If
         End Function
-        <ContractVerification(False)>
         Public Function QueueGetLatencyDescription() As Task(Of String)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return (From latency In QueueGetLatency()
@@ -368,7 +367,6 @@ Namespace WC3
         End Function
 
         <Pure()>
-        <ContractVerification(False)>
         Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements Download.IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
             Return Protocol.MakeOtherPlayerJoined(Name, Id, PeerKey, PeerData, listenEndPoint)

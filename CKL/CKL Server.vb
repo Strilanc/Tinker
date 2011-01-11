@@ -71,7 +71,6 @@ Namespace CKL
             )
         End Function
 
-        <ContractVerification(False)>
         Private Async Sub OnAcceptedConnection(ByVal sender As ConnectionAccepter,
                                                ByVal acceptedClient As Net.Sockets.TcpClient) Handles _accepter.AcceptedConnection
             Contract.Assume(sender IsNot Nothing)

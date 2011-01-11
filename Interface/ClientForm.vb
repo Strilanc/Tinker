@@ -1,5 +1,6 @@
 Imports System.Threading
 
+'Verification disabled because of many warnings in generated code
 <ContractVerification(False)>
 Public Class ClientForm
     Private _bot As Bot.MainBot

@@ -14,8 +14,8 @@ Namespace Bnet.Protocol
         Public Overrides Function SubJar() As IJar(Of NamedValueMap)
             Return DataJar
         End Function
-        <ContractVerification(False)>
         Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As ProductCredentials
+            Contract.Assume(value IsNot Nothing)
             Dim proof = value.ItemAs(Of IRist(Of Byte))("proof")
             If proof.Count <> 20 Then Throw New PicklingException("Proof must have 20 bytes.")
             Return New ProductCredentials(
@@ -24,8 +24,8 @@ Namespace Bnet.Protocol
                     length:=value.ItemAs(Of UInt32)("length"),
                     proof:=proof)
         End Function
-        <ContractVerification(False)>
         Public Overrides Function PackRaw(ByVal value As ProductCredentials) As NamedValueMap
+            Contract.Assume(value IsNot Nothing)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"length", value.Length},
                     {"product", value.Product},

@@ -4,8 +4,8 @@ Namespace Bnet.Protocol
     Public Class IPAddressJar
         Inherits BaseFixedSizeJar(Of Net.IPAddress)
 
-        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As Net.IPAddress) As IEnumerable(Of Byte)
+            Contract.Assume(value IsNot Nothing)
             Return value.GetAddressBytes()
         End Function
         Protected Overrides ReadOnly Property DataSize As UInt16
@@ -17,7 +17,7 @@ Namespace Bnet.Protocol
             Return New Net.IPAddress(data.ToArray)
         End Function
 
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-84")>
         Public Overrides Function Parse(ByVal text As String) As Net.IPAddress
             Try
                 Return Net.IPAddress.Parse(text)

@@ -76,6 +76,7 @@ Public NotInheritable Class BotUser
             Dim value As UInteger
             If Not UInteger.TryParse(pair(1), value) Then Continue For
             value = value.Between(MIN_PERMISSION_VALUE, MAX_PERMISSION_VALUE)
+            Contract.Assume(pair(0) IsNot Nothing)
             permissionMap(Unpack(pair(0))) = value
         Next key
         Return permissionMap
@@ -89,6 +90,7 @@ Public NotInheritable Class BotUser
             Contract.Assume(key IsNot Nothing)
             Dim pair = key.Split("="c, ":"c)
             If pair.Length <> 2 Then Continue For
+            Contract.Assume(pair(0) IsNot Nothing)
             Contract.Assume(pair(1) IsNot Nothing)
             settingMap(Unpack(pair(0))) = Unpack(pair(1))
         Next key
@@ -150,7 +152,6 @@ Public NotInheritable Class BotUser
             writer.Write(pair.Value)
         Next pair
     End Sub
-    <ContractVerification(False)>
     Public Sub New(ByVal reader As IO.BinaryReader)
         Contract.Requires(reader IsNot Nothing)
         Me._name = reader.ReadString()
@@ -302,7 +303,6 @@ Public NotInheritable Class BotUserSet
         _userMap(user.Name) = user
     End Sub
 
-    <ContractVerification(False)>
     Public Sub Load(ByVal reader As IO.BinaryReader)
         Contract.Requires(reader IsNot Nothing)
         Dim userCount = reader.ReadUInt16()

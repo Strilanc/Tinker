@@ -24,7 +24,6 @@
             Contract.Invariant(_settings IsNot Nothing)
         End Sub
 
-        <ContractVerification(False)>
         Public Sub New(ByVal startPlayerHoldPoint As HoldPoint(Of Player),
                        ByVal downloadManager As Download.Manager,
                        ByVal kernel As GameKernel,
@@ -78,7 +77,6 @@
                 Next remainingObsSlot
             End If
         End Sub
-        <ContractVerification(False)>
         Private Shared Function InitCreateSlots(ByVal settings As GameSettings) As IRist(Of Slot)
             Contract.Requires(settings IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)

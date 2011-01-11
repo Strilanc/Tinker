@@ -1,4 +1,5 @@
-﻿<ContractVerification(False)>
+﻿'Verification disabled because of many warnings in generated code
+<ContractVerification(False)>
 Public Class CommandControl
     Private _historyPointer As Integer
     Private ReadOnly _history As New List(Of String) From {""}

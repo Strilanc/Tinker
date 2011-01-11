@@ -180,8 +180,8 @@ Namespace Bnet
             Me._productAuthenticator = productAuthenticator
             Me._clock = clock
             Me._logger = If(logger, New Logger)
-            Me.inQueue = MakeTaskedCallQueue
-            Me.outQueue = MakeTaskedCallQueue
+            Me.inQueue = MakeTaskedCallQueue()
+            Me.outQueue = MakeTaskedCallQueue()
             Me._packetHandlerLogger = Protocol.MakeBnetPacketHandlerLogger(Me._logger)
         End Sub
         <Pure()>
@@ -802,6 +802,7 @@ Namespace Bnet
             inQueue.QueueAction(Sub() SendPacket(Protocol.MakeWarden(data)))
         End Sub
         Private Sub OnWardenFail(ByVal sender As Warden.Client, ByVal exception As Exception) Handles _wardenClient.Failed
+            Contract.Requires(sender IsNot Nothing)
             Contract.Requires(exception IsNot Nothing)
             sender.Activated.ContinueWithAction(Sub()
                                                     QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(exception.Summarize))

@@ -109,7 +109,6 @@ Namespace Bnet
             Return _commands.Invoke(Me, user, argument)
         End Function
 
-        <ContractVerification(False)>
         Private Async Function OnReceivedChatEvent(ByVal vals As NamedValueMap) As Task
             Contract.Assume(vals IsNot Nothing)
 
