@@ -156,10 +156,12 @@
         Inherits BaseJar(Of T)
         Protected MustOverride ReadOnly Property DataSize As UInt16
         Protected MustOverride Function FixedSizeParse(ByVal data As IRist(Of Byte)) As T
-        <ContractVerification(False)>
         Public NotOverridable Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < DataSize Then Throw New PicklingNotEnoughDataException("{0} requires {1} bytes.".Frmt(Me.GetType.Name, DataSize))
-            Return FixedSizeParse(data.SubView(0, DataSize)).ParsedWithDataCount(DataSize)
+            Dim usedDataCount = CInt(DataSize)
+            Contract.Assume(usedDataCount >= 0)
+            Contract.Assume(usedDataCount <= data.Count)
+            Return FixedSizeParse(data.SubView(0, usedDataCount)).ParsedWithDataCount(usedDataCount)
         End Function
     End Class
     <ContractClassFor(GetType(BaseFixedSizeJar(Of )))>

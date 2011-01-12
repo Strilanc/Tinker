@@ -29,7 +29,7 @@ Namespace CKL
             Me._logger = If(logger, New Logger)
         End Sub
 
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-35-74")>
         Public Async Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
                                                 ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
 

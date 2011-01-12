@@ -40,6 +40,7 @@ Namespace WC3.Protocol
         Public Function MakeW3PacketHandlerLogger(ByVal sourceName As String, ByVal logger As Logger) As PacketHandlerLogger(Of PacketId)
             Contract.Requires(sourceName IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of PacketHandlerLogger(Of PacketId))() IsNot Nothing)
             Dim handler = New PacketHandlerRaw(Of PacketId)(
                 HeaderSize:=4,
                 keyExtractor:=Function(header)

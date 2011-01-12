@@ -75,8 +75,8 @@
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As IRist(Of T)) As IEnumerable(Of Byte)
+            Contract.Assume(value IsNot Nothing)
             Dim sizeData = CULng(value.Count).Bytes.Take(_prefixSize)
             Dim itemData = Concat(From item In value Select _subJar.Pack(item))
             Return sizeData.Concat(itemData)
@@ -283,8 +283,8 @@
             Get
                 Return (From e In subControls Select (e.SubControl.Value)).ToReadableList
             End Get
-            <ContractVerification(False)>
             Set(ByVal value As IRist(Of T))
+                Contract.Assume(value IsNot Nothing)
                 Dim needLayout = False
                 Try
                     _ignoreValueChanged = True
@@ -297,10 +297,12 @@
 
                     'Fill existing controls, adding new ones as necessary
                     For Each pair In value.AssumeNotNull.ZipWithIndexes
+                        Contract.Assume(pair IsNot Nothing)
                         Dim v = pair.Item1.AssumeNotNull
                         Dim i = pair.Item2
+                        Contract.Assume(i >= 0)
                         If i < subControls.Count Then
-                            Dim c = subControls(i).SubControl
+                            Dim c = subControls(i).AssumeNotNull().SubControl
                             If Not v.Equals(c.Value) Then
                                 c.Value = v
                                 needLayout = True

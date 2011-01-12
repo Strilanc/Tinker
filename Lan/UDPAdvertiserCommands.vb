@@ -52,7 +52,7 @@ Namespace Lan.Commands
                        template:="id",
                        Description:="Removes a game being advertised.")
         End Sub
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim id As UInteger
             If Not UInteger.TryParse(argument.RawValue(0), id) Then Throw New InvalidOperationException("Invalid game id.")

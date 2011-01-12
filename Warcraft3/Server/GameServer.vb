@@ -82,7 +82,6 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() AcceptSocket(socket))
         End Function
-        <ContractVerification(False)>
         Private Sub HandleFirstPacket(ByVal socket As W3Socket, ByVal data As IRist(Of Byte))
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(data IsNot Nothing)

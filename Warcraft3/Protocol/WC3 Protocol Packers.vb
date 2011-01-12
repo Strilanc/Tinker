@@ -268,8 +268,6 @@ Namespace WC3.Protocol
             Return Packet.FromValue(ServerPackets.LanDestroyGame, gameId)
         End Function
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
         <Pure()>
         Public Function MakeKnock(ByVal name As InvariantString,
                                   ByVal listenPort As UShort,
@@ -290,7 +288,7 @@ Namespace WC3.Protocol
                     peerKey:=peerKey,
                     name:=name,
                     peerData:=New Byte() {0}.AsReadableList,
-                    internalEndPoint:=New Net.IPEndPoint(internalAddress, sendingPort)))
+                    internalEndPoint:=internalAddress.WithPort(sendingPort)))
         End Function
         <Pure()>
         Public Function MakeReady() As Packet

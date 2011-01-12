@@ -37,7 +37,7 @@ Friend Module SharedTestObjects
     Friend ReadOnly TestDesc As New RemoteGameDescription(
             name:="test",
             GameStats:=TestStats,
-            location:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+            location:=Net.IPAddress.Loopback.WithPort(6112),
             gameid:=42,
             entrykey:=0,
             totalslotcount:=12,

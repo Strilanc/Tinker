@@ -21,7 +21,7 @@ Namespace Bnet.Protocol
         Public Overrides Function Describe(ByVal value As Date) As String
             Return value.ToString(CultureInfo.InvariantCulture)
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-90")>
         Public Overrides Function Parse(ByVal text As String) As DateTime
             Try
                 Return DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.None)

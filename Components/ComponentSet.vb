@@ -83,31 +83,28 @@ Namespace Components
         ''' Returns null if there is no such component.
         ''' </summary>
         <Pure()>
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Name = name")>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Type = type")>
         Private Function TryFindComponent(ByVal type As InvariantString,
                                           ByVal name As InvariantString) As IBotComponent
-            'verification disabled due to stupid verifier (1.2.30118.5)
             Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Name = name)
             Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Type = type)
-            Dim result = (From c In _components Where c.Type = type AndAlso c.Name = name).FirstOrDefault
-            Contract.Assume(result Is Nothing OrElse result.Name = name)
-            Contract.Assume(result Is Nothing OrElse result.Type = type)
-            Return result
+            Return (From c In _components Where c.Type = type AndAlso c.Name = name).FirstOrDefault
         End Function
         ''' <summary>
         ''' Determines a component, from the set, with the given type and name identifiers.
         ''' Throws an InvalidOperationException if there is no such component.
         ''' </summary>
         <Pure()>
-        <ContractVerification(False)>
         Private Function FindComponent(ByVal type As InvariantString,
                                        ByVal name As InvariantString) As IBotComponent
-            'verification disabled due to stupid verifier (1.2.30118.5)
             Contract.Ensures(Contract.Result(Of IBotComponent)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IBotComponent)().Name = name)
             Contract.Ensures(Contract.Result(Of IBotComponent)().Type = type)
             Dim result = TryFindComponent(type, name)
             If result Is Nothing Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(type, name))
+            Contract.Assume(result.Name = name)
+            Contract.Assume(result.Type = type)
             Return result
         End Function
         ''' <summary>
@@ -125,9 +122,8 @@ Namespace Components
         ''' Returns null if there is no such component.
         ''' </summary>
         <Pure()>
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of T)() Is Nothing OrElse Contract.Result(Of T).Name = name")>
         Private Function TryFindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As T
-            'verification disabled due to stupid verifier (1.2.30118.5)
             Contract.Ensures(Contract.Result(Of T)() Is Nothing OrElse Contract.Result(Of T).Name = name)
             Dim result = (From c In Me.EnumComponents(Of T)() Where c.Name = name).FirstOrDefault
             Contract.Assume(result Is Nothing OrElse result.Name = name)

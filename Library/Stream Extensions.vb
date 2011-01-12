@@ -7,8 +7,6 @@ Public Module StreamExtensions
         Contract.Requires(data IsNot Nothing)
         bw.Write(data.ToAsciiBytes.Append(0).ToReadableList)
     End Sub
-    'verification disabled due to stupid verifier (1.2.30118.5)
-    <ContractVerification(False)>
     <Extension()>
     Public Function ReadNullTerminatedString(ByVal reader As IReadableStream,
                                              ByVal maxLength As Integer) As String
@@ -22,7 +20,9 @@ Public Module StreamExtensions
             Contract.Assert(data.Count <= maxLength)
             Dim b = reader.ReadByte()
             If b = 0 Then
-                Return data.ToAsciiChars.AsString
+                Dim result = data.ToAsciiChars.AsString
+                Contract.Assume(result.Length <= maxLength)
+                Return result
             ElseIf data.Count < maxLength Then
                 data.Add(b)
             Else
@@ -57,7 +57,7 @@ Public Module StreamExtensions
             Me._takeOwnershipofStream = takeOwnershipOfStream
         End Sub
 
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-26-37")>
         Public Function Contains(ByVal item As Byte) As Boolean Implements IReadableCollection(Of Byte).Contains
             Return (From e In Me Where item = e).Any
         End Function
@@ -68,14 +68,15 @@ Public Module StreamExtensions
             End Get
         End Property
 
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-19-62")>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-41-62")>
         Public Function IndexOf(ByVal item As Byte) As Integer Implements IRist(Of Byte).IndexOf
             Return (From i In Count.Range Where Me.Item(i) = item).OffsetBy(1).FirstOrDefault - 1
         End Function
         Default Public ReadOnly Property Item(ByVal index As Integer) As Byte Implements IRist(Of Byte).Item
-            <ContractVerification(False)>
             Get
                 If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.FullName)
+                Contract.Assume(_offset + index + 1 <= _stream.Length)
                 Return _stream.ReadExactAt(position:=_offset + index, exactCount:=1)(0)
             End Get
         End Property
@@ -103,7 +104,7 @@ Public Module StreamExtensions
     End Class
 
     <Extension()>
-    <ContractVerification(False)>
+    <SuppressMessage("Microsoft.Contracts", "Ensures-76-188")>
     Public Function ReadPickle(ByVal stream As IRandomReadableStream, ByVal jar As ISimpleJar) As ISimplePickle
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
@@ -113,6 +114,7 @@ Public Module StreamExtensions
             Dim oldPosition = stream.Position
             Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
                 Dim parsed = jar.Parse(view)
+                Contract.Assume(oldPosition + parsed.UsedDataCount <= stream.Length)
                 Return jar.ParsePickle(stream.ReadExactAt(oldPosition, parsed.UsedDataCount))
             End Using
         Catch ex As PicklingException
@@ -120,7 +122,7 @@ Public Module StreamExtensions
         End Try
     End Function
     <Extension()>
-    <ContractVerification(False)>
+    <SuppressMessage("Microsoft.Contracts", "Ensures-76-188")>
     Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IJar(Of T)) As IPickle(Of T)
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
@@ -130,6 +132,7 @@ Public Module StreamExtensions
             Dim oldPosition = stream.Position
             Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
                 Dim parsed = jar.Parse(view)
+                Contract.Assume(oldPosition + parsed.UsedDataCount <= stream.Length)
                 Return jar.ParsePickle(stream.ReadExactAt(oldPosition, parsed.UsedDataCount))
             End Using
         Catch ex As PicklingException
@@ -138,7 +141,6 @@ Public Module StreamExtensions
     End Function
 
     <Extension()>
-    <ContractVerification(False)>
     Public Function WritePickle(Of T)(ByVal stream As IWritableStream, ByVal jar As IJar(Of T), ByVal value As T) As IPickle(Of T)
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)

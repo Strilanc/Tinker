@@ -67,6 +67,14 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
 
+    <Pure()> <Extension()>
+    Public Function WithPort(ByVal address As Net.IPAddress, ByVal port As UShort) As Net.IPEndPoint
+        Contract.Requires(address IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Address Is address)
+        Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Port = port)
+        Return New Net.IPEndPoint(address, port)
+    End Function
     'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
     <Pure()>

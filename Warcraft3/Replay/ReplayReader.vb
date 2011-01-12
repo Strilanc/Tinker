@@ -46,7 +46,6 @@ Namespace WC3.Replay
             Contract.Ensures(Contract.Result(Of ReplayReader)() IsNot Nothing)
             Return ReplayReader.FromStreamFactory(Function() New IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream)
         End Function
-        <ContractVerification(False)>
         Public Shared Function FromStreamFactory(ByVal streamFactory As Func(Of IRandomReadableStream)) As ReplayReader
             Contract.Requires(streamFactory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayReader)() IsNot Nothing)
@@ -119,7 +118,6 @@ Namespace WC3.Replay
                 Return _settings
             End Get
         End Property
-        <ContractVerification(False)>
         Public ReadOnly Property GameDuration As TimeSpan
             Get
                 Contract.Ensures(Contract.Result(Of TimeSpan)().Ticks >= 0)

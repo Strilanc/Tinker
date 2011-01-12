@@ -126,7 +126,6 @@
         End Function
 
         '''<summary>Advances game time</summary>
-        <ContractVerification(False)>
         Private Sub OnTick()
             If _tickClock Is Nothing Then Return 'stopped
 
@@ -140,6 +139,7 @@
             End If
 
             'Schedule next tick
+            Contract.Assume(_tickClock IsNot Nothing)
             Dim measuredTickDuration = _tickClock.StartingTimeOnParentClock
             Dim expectedTickDuration = _tickPeriod
             _leftoverTickDurations += measuredTickDuration - expectedTickDuration
@@ -215,7 +215,6 @@
                     Select subSequence.ToReadableList
                     ).ToReadableList
         End Function
-        <ContractVerification(False)>
         Private Sub SendQueuedGameData(ByVal record As TickRecord)
             Contract.Requires(record IsNot Nothing)
             'Include all the data we can fit in a packet
@@ -237,6 +236,7 @@
                                   ).ToReadableList
 
             For Each player In _kernel.Players
+                Contract.Assume(player IsNot Nothing)
                 player.QueueSendTick(record, visibleActions)
             Next player
 
@@ -261,7 +261,6 @@
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _tickPeriod = value)
         End Function
-        <ContractVerification(False)>
         Public Function QueueSetSpeedFactor(ByVal value As Double) As Task
             Contract.Requires(value > 0)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)

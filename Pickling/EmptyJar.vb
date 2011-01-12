@@ -9,7 +9,7 @@ Namespace Pickling
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of NoValue)
             Return New NoValue().ParsedWithDataCount(0)
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-36")>
         Public Overrides Function Parse(ByVal text As String) As NoValue
             If text <> "[No Data]" Then Throw New PicklingException("Not [No Data].")
             Return New NoValue()

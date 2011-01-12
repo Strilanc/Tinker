@@ -82,14 +82,14 @@ Namespace WC3.Protocol
         Public Overrides Function SubJar() As IJar(Of NamedValueMap)
             Return DataJar
         End Function
-        <ContractVerification(False)>
         Public Overrides Function PackRaw(ByVal value As PlayerActionSet) As NamedValueMap
+            Contract.Assume(value IsNot Nothing)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"source", value.Id},
                     {"actions", value.Actions}}
         End Function
-        <ContractVerification(False)>
         Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As PlayerActionSet
+            Contract.Assume(value IsNot Nothing)
             Return New PlayerActionSet(value.ItemAs(Of PlayerId)("source"),
                                        value.ItemAs(Of IRist(Of GameAction))("actions"))
         End Function

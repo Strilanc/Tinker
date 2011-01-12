@@ -10,9 +10,9 @@ Namespace Bnet.Protocol
                     New IPAddressJar().Named("ip"),
                     New DataJar().Fixed(exactDataCount:=8).Named("unknown"))
 
-        <ContractVerification(False)>
-        Public Overrides Function Pack(ByVal value As System.Net.IPEndPoint) As IEnumerable(Of Byte)
-            Dim addrBytes = value.Address.GetAddressBytes
+        Public Overrides Function Pack(ByVal value As Net.IPEndPoint) As IEnumerable(Of Byte)
+            Contract.Assume(value IsNot Nothing)
+            Dim addrBytes = value.Address.AssumeNotNull().GetAddressBytes
             Dim vals = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"protocol", If(addrBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0US, 2US)},
                     {"ip", value.Address},
@@ -21,12 +21,11 @@ Namespace Bnet.Protocol
             Return DataJar.Pack(vals)
         End Function
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Net.IPEndPoint)
             Dim parsed = DataJar.Parse(data)
-            Return parsed.WithValue(New Net.IPEndPoint(parsed.Value.ItemAs(Of Net.IPAddress)("ip"),
-                                                       parsed.Value.ItemAs(Of UInt16)("port")))
+            Dim address = parsed.Value.ItemAs(Of Net.IPAddress)("ip")
+            Dim port = parsed.Value.ItemAs(Of UInt16)("port")
+            Return parsed.WithValue(address.WithPort(port))
         End Function
 
         <ContractVerification(False)>

@@ -271,7 +271,6 @@
                 Contract.Assume(_position <= Length)
                 Return _position
             End Get
-            <ContractVerification(False)>
             Set(ByVal value As Long)
                 If value < _length Then
                     Dim newBlockIndex = FindBlockIndexAt(value)
@@ -281,6 +280,7 @@
                     End If
                 End If
                 _position = value
+                Contract.Assume(_position <= _length)
             End Set
         End Property
 

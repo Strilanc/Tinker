@@ -26,7 +26,6 @@
             Me._activated = activated
             Me._logger = logger
         End Sub
-        <ContractVerification(False)>
         Public Shared Function MakeMock(ByVal logger As Logger) As Warden.Client
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Warden.Client)() IsNot Nothing)
@@ -34,6 +33,8 @@
             Dim activated = New TaskCompletionSource(Of NoValue)()
             failedSocket.SetException(New ArgumentException("No remote host specified for bnls server."))
             failedSocket.IgnoreExceptions()
+            Contract.Assume(activated.Task IsNot Nothing)
+            Contract.Assume(failedSocket.Task IsNot Nothing)
             activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem))
             Return New Warden.Client(failedSocket.Task, activated, logger)
         End Function
@@ -52,8 +53,8 @@
             'Initiate connection
             Dim socket = From tcpClient In AsyncTcpConnect(remoteHost, remotePort)
                          Select packetSocket = New PacketSocket(stream:=tcpClient.GetStream,
-                                                                localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                                                remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                                localendpoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                                remoteendpoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                                                 timeout:=5.Minutes,
                                                                 preheaderLength:=0,
                                                                 sizeHeaderLength:=2,

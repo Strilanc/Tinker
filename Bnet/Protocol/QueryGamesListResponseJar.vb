@@ -69,8 +69,8 @@ Namespace Bnet.Protocol
             Me._clock = clock
         End Sub
 
-        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As QueryGamesListResponse) As IEnumerable(Of Byte)
+            Contract.Assume(value IsNot Nothing)
             If value.Games.Count = 0 Then
                 Return 0UI.Bytes.Concat(queryResultJar.Pack(value.Result))
             Else
@@ -93,8 +93,8 @@ Namespace Bnet.Protocol
             End If
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As QueryGamesListResponse) As String
+            Contract.Assume(value IsNot Nothing)
             Return MakeListDescription({queryResultJar.Describe(value.Result),
                                         gameDataJar.Describe(PackRawGameDescriptions(value.Games))})
         End Function
@@ -133,7 +133,6 @@ Namespace Bnet.Protocol
                     {"game id", game.GameId},
                     {"game statstring", game.GameStats}}
         End Function
-        <ContractVerification(False)>
         Private Shared Function ParseRawGameDescription(ByVal vals As NamedValueMap, ByVal clock As IClock) As WC3.RemoteGameDescription
             Contract.Requires(vals IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)

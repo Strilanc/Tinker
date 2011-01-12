@@ -29,7 +29,7 @@ Namespace WC3.Protocol
                        ByVal unknown As Byte)
             Contract.Requires(peerData IsNot Nothing)
             Contract.Requires(internalEndPoint IsNot Nothing)
-            Contract.Requires(internalEndPoint.Address IsNot Nothing)
+            Contract.Assume(internalEndPoint.Address IsNot Nothing)
             Me._name = name
             Me._peerKey = peerKey
             Me._peerData = peerData
@@ -130,8 +130,8 @@ Namespace WC3.Protocol
         Public Overrides Function SubJar() As Pickling.IJar(Of NamedValueMap)
             Return DataJar
         End Function
-        <ContractVerification(False)>
         Public Overrides Function PackRaw(ByVal value As KnockData) As NamedValueMap
+            Contract.Assume(value IsNot Nothing)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"game id", value.GameId},
                     {"entry key", value.EntryKey},
@@ -142,8 +142,8 @@ Namespace WC3.Protocol
                     {"peer data", value.PeerData},
                     {"internal address", value.InternalEndPoint}}
         End Function
-        <ContractVerification(False)>
         Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As KnockData
+            Contract.Assume(value IsNot Nothing)
             Return New KnockData(GameId:=value.ItemAs(Of UInt32)("game id"),
                                  EntryKey:=value.ItemAs(Of UInt32)("entry key"),
                                  Unknown:=value.ItemAs(Of Byte)("unknown value"),

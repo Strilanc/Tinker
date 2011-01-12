@@ -24,10 +24,9 @@ Namespace CKL
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_portHandle IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
+            Contract.Invariant(_keyIndex >= 0)
         End Sub
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
         Public Sub New(ByVal name As InvariantString,
                        ByVal listenPort As PortPool.PortHandle,
                        ByVal clock As IClock)
@@ -36,7 +35,7 @@ Namespace CKL
             Me.name = name
             Me._clock = clock
             Me._portHandle = listenPort
-            Me._accepter.OpenPort(listenPort.Port)
+            Me._accepter.AssumeNotNull().OpenPort(listenPort.Port)
         End Sub
 
         Public ReadOnly Property Logger As Logger

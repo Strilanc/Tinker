@@ -47,8 +47,6 @@ Public NotInheritable Class PacketStreamer
         Return Concat(header, body).ToReadableList()
     End Function
 
-    'verification disabled due to stupid verifier (1.2.30118.5)
-    <ContractVerification(False)>
     Public Function WritePacket(ByVal preheader As IEnumerable(Of Byte), ByVal payload As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
         Contract.Requires(preheader IsNot Nothing)
         Contract.Requires(payload IsNot Nothing)

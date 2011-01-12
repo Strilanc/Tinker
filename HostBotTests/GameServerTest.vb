@@ -23,8 +23,8 @@ Public Class GameServerTest
             Dim testStream = New TestStream()
             Dim socket = New WC3.W3Socket(New PacketSocket(
                             stream:=testStream,
-                            localEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
-                            remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+                            localEndPoint:=Net.IPAddress.Loopback.WithPort(6112),
+                            remoteEndPoint:=Net.IPAddress.Loopback.WithPort(6112),
                             clock:=clock))
 
             server.QueueAcceptSocket(socket)
@@ -40,8 +40,8 @@ Public Class GameServerTest
             Dim testStream = New TestStream()
             Dim socket = New WC3.W3Socket(New PacketSocket(
                                     stream:=testStream,
-                                    localEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
-                                    remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+                                    localEndPoint:=Net.IPAddress.Loopback.WithPort(6112),
+                                    remoteEndPoint:=Net.IPAddress.Loopback.WithPort(6112),
                                     clock:=clock))
 
             WaitUntilTaskSucceeds(server.QueueAcceptSocket(socket))
@@ -82,8 +82,8 @@ Public Class GameServerTest
             'Connect
             Dim socket = New WC3.W3Socket(New PacketSocket(
                             stream:=testStream,
-                            localEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
-                            remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+                            localEndPoint:=Net.IPAddress.Loopback.WithPort(6112),
+                            remoteEndPoint:=Net.IPAddress.Loopback.WithPort(6112),
                             clock:=clock))
             server.QueueAcceptSocket(socket)
             'Try read Greet

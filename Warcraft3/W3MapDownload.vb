@@ -19,7 +19,6 @@
             Contract.Invariant(destinationPath.Length > 0)
         End Sub
 
-        <ContractVerification(False)>
         Public Sub New(ByVal path As String,
                        ByVal size As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
@@ -30,9 +29,9 @@
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
 
-            If Not IO.Directory.Exists(IO.Path.Combine(My.Settings.mapPath, Application.ProductName)) Then
-                IO.Directory.CreateDirectory(IO.Path.Combine(My.Settings.mapPath, Application.ProductName))
-            End If
+            Dim dirPath = IO.Path.Combine(My.Settings.mapPath.AssumeNotNull(), Application.ProductName.AssumeNotNull())
+            If dirPath.Length = 0 Then Throw New InvalidStateException()
+            If Not IO.Directory.Exists(dirPath) Then IO.Directory.CreateDirectory(dirPath)
             Dim filename = path.Split("\"c).Last
             Dim filenameWithoutExtension = IO.Path.GetFileNameWithoutExtension(filename)
             Dim fileExtension = IO.Path.GetExtension(filename)

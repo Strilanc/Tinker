@@ -92,7 +92,7 @@ Public Class DownloadManagerTest
                                          ID,
                                          0,
                                          New Byte() {0}.AsReadableList,
-                                         New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
+                                         Net.IPAddress.Loopback.WithPort(6112))
         End Function
         Public ReadOnly Property Name As InvariantString Implements Download.IPlayerDownloadAspect.Name
             Get

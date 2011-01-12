@@ -101,7 +101,6 @@ Namespace WC3.Download
             _lastActivityClock = _lastActivityClock.Restarted()
         End Sub
 
-        <ContractVerification(False)>
         Public Sub Dispose() Implements IDisposable.Dispose
             If Downloader.Transfer Is Me Then Downloader.ClearTransfer()
             If Uploader.Transfer Is Me Then Uploader.ClearTransfer()

@@ -132,7 +132,6 @@ Namespace WC3
             Return player
         End Function
 
-        <ContractVerification(False)>
         Public Shared Function MakeRemote(ByVal id As PlayerId,
                                           ByVal knockData As Protocol.KnockData,
                                           ByVal socket As W3Socket,
@@ -147,8 +146,8 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             socket.Logger = logger
-            Dim listenEndPoint = New Net.IPEndPoint(socket.RemoteEndPoint.Address, knockData.ListenPort)
-            Dim taskTestCanHost = AsyncTcpConnect(listenEndPoint.Address, CUShort(listenEndPoint.Port))
+            Dim listenEndPoint = socket.RemoteEndPoint.Address.WithPort(knockData.ListenPort)
+            Dim taskTestCanHost = AsyncTcpConnect(listenEndPoint.Address.AssumeNotNull(), CUShort(listenEndPoint.Port))
             taskTestCanHost.ContinueWithAction(Sub(value) value.Close()).IgnoreExceptions()
             Dim pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
 
@@ -165,7 +164,7 @@ Namespace WC3
                                     socket:=socket,
                                     downloadManager:=downloadManager)
 
-            player.AddRemotePacketHandler(Protocol.ClientPackets.Pong, AddressOf player._pinger.QueueReceivedPong)
+            player.AddRemotePacketHandler(Protocol.ClientPackets.Pong, AddressOf player._pinger.AssumeNotNull().QueueReceivedPong)
             AddHandler socket.Disconnected, AddressOf player.OnSocketDisconnected
             AddHandler pinger.SendPing, Sub(sender, salt) player.QueueSendPacket(Protocol.MakePing(salt))
             AddHandler pinger.Timeout, Sub(sender) player.QueueDisconnect(expected:=False,

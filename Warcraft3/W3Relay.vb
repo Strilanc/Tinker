@@ -18,12 +18,12 @@
                 Me._remoteGame = remoteGame
                 Me._localGame = localGame
             End Sub
-            <ContractVerification(False)>
             Public Sub Update(ByVal game As RemoteGameDescription)
                 Contract.Requires(game IsNot Nothing)
+                Contract.Assume(game.Age.Ticks >= 0)
                 Me._remoteGame = New RemoteGameDescription(_remoteGame.Name,
                                                            _remoteGame.GameStats,
-                                                           New Net.IPEndPoint(_remoteGame.Address, _remoteGame.Port),
+                                                           _remoteGame.Address.WithPort(_remoteGame.Port),
                                                            _remoteGame.GameId,
                                                            _remoteGame.EntryKey,
                                                            game.TotalSlotCount,
@@ -80,10 +80,10 @@
             Me._accepter = New W3ConnectionAccepter(clock)
             Me._accepter.Accepter.OpenPort(portHandle.Port)
         End Sub
-        <ContractVerification(False)>
         Public Function AddGame(ByVal game As RemoteGameDescription) As UInteger
             Contract.Requires(game IsNot Nothing)
             _gameCount += 1UI
+            Contract.Assume(game.Age.Ticks >= 0)
             Dim localGame = New LocalGameDescription(name:=game.Name,
                                                      GameStats:=game.GameStats,
                                                      hostport:=_portHandle.Port,
@@ -159,14 +159,13 @@
         Private Sub New()
         End Sub
 
-        <ContractVerification(False)>
         Public Shared Function InterShunt(ByVal stream1 As IO.Stream, ByVal stream2 As IO.Stream) As DisposableWithTask
             Contract.Requires(stream1 IsNot Nothing)
             Contract.Requires(stream2 IsNot Nothing)
             Contract.Ensures(Contract.Result(Of DisposableWithTask)() IsNot Nothing)
             Dim result = New DisposableWithTask
-            Shunt(stream1, stream2).ContinueWithAction(Sub() result.Dispose())
-            Shunt(stream2, stream1).ContinueWithAction(Sub() result.Dispose())
+            Shunt(stream1, stream2).AssumeNotNull().ContinueWithAction(Sub() result.Dispose())
+            Shunt(stream2, stream1).AssumeNotNull().ContinueWithAction(Sub() result.Dispose())
             result.ChainEventualDisposalTo(stream1)
             result.ChainEventualDisposalTo(stream2)
             Return result
@@ -174,7 +173,7 @@
         Private Shared Async Function Shunt(ByVal src As IO.Stream, ByVal dst As IO.Stream) As Task
             Contract.Assume(src IsNot Nothing)
             Contract.Assume(dst IsNot Nothing)
-            'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing) 'AsyncCTP causes code contracts to fail in this case
             Try
                 Dim buffer(0 To 4096 - 1) As Byte
                 Do

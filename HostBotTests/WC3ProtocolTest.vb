@@ -44,7 +44,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"lobby state", [Default](Of Maybe(Of NamedValueMap))()},
                         {"assigned id", New PlayerId(2)},
-                        {"external address", New Net.IPEndPoint(Net.IPAddress.Loopback, 6113)}
+                        {"external address", Net.IPAddress.Loopback.WithPort(6113)}
                     })
     End Sub
     <TestMethod()>
@@ -89,7 +89,7 @@ Public Class WC3ProtocolTest
                                      peerkey:=16UI,
                                      name:="test",
                                      peerdata:=New Byte() {0}.AsReadableList,
-                                     internalEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6113)))
+                                     internalEndPoint:=Net.IPAddress.Loopback.WithPort(6113)))
     End Sub
     <TestMethod()>
     Public Sub LanCreateGameTest()
@@ -320,8 +320,8 @@ Public Class WC3ProtocolTest
                         {"joiner id", New PlayerId(1)},
                         {"name", "test"},
                         {"peer data", New Byte() {42}.AsReadableList},
-                        {"external address", New Net.IPEndPoint(Net.IPAddress.Loopback, 6112)},
-                        {"internal address", New Net.IPEndPoint(Net.IPAddress.Loopback, 6113)}
+                        {"external address", Net.IPAddress.Loopback.WithPort(6112)},
+                        {"internal address", Net.IPAddress.Loopback.WithPort(6113)}
                     })
     End Sub
     <TestMethod()>

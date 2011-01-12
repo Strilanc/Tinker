@@ -48,7 +48,6 @@
             Return best.slot
         End Function
 
-        <ContractVerification(False)>
         Public Function WithEncodeHCL(ByVal settings As GameSettings) As SlotSet
             Contract.Requires(settings IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)

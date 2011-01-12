@@ -52,13 +52,12 @@ Namespace WC3
         End Property
 
         '''<summary>Handles new connections.</summary>
-        <ContractVerification(False)>
         Private Async Sub OnAcceptConnection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
             Contract.Assume(sender IsNot Nothing)
             Contract.Assume(client IsNot Nothing)
             Dim socket = New W3Socket(New PacketSocket(stream:=client.GetStream,
-                                                       localendpoint:=CType(client.Client.LocalEndPoint, Net.IPEndPoint),
-                                                       remoteendpoint:=CType(client.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                       localendpoint:=DirectCast(client.Client.LocalEndPoint, Net.IPEndPoint),
+                                                       remoteendpoint:=DirectCast(client.Client.RemoteEndPoint, Net.IPEndPoint),
                                                        timeout:=60.Seconds,
                                                        Logger:=_logger,
                                                        clock:=_clock))
@@ -126,8 +125,6 @@ Namespace WC3
             Contract.Assume(clock IsNot Nothing)
         End Sub
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
             If packetData(1) <> Protocol.PacketId.Knock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
@@ -153,8 +150,6 @@ Namespace WC3
             Contract.Assume(clock IsNot Nothing)
         End Sub
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
             If packetData(1) <> Protocol.PacketId.PeerKnock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))

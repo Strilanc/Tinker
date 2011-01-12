@@ -15,7 +15,7 @@ Namespace WC3.Protocol
             Return value.ParsedWithDataCount(8)
         End Function
 
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-84")>
         Public Overrides Function Parse(ByVal text As String) As GameObjectId
             Try
                 Return GameObjectId.Parse(text)

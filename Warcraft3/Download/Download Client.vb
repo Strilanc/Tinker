@@ -32,6 +32,7 @@ Namespace WC3.Download
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_transfer Is Nothing OrElse HasReported)
             Contract.Invariant(_lastActivityClock IsNot Nothing)
+            Contract.Invariant(_reportedPosition <= _map.FileSize)
         End Sub
 
         Public Sub New(ByVal player As IPlayerDownloadAspect,
@@ -129,10 +130,12 @@ Namespace WC3.Download
         Public Property ReportedPosition As UInt32
             Get
                 Contract.Requires(HasReported)
+                Contract.Ensures(Contract.Result(Of UInt32)() <= Map.FileSize)
                 Return _reportedPosition
             End Get
             Set(ByVal value As UInt32)
                 Contract.Requires(HasReported)
+                Contract.Requires(value <= Map.FileSize)
                 _reportedPosition = value
             End Set
         End Property
@@ -154,7 +157,11 @@ Namespace WC3.Download
                 Return dp / dt * expansionFactor
             End Get
         End Property
-        <ContractVerification(False)>
+        <Pure()>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().HasReported")>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().Transfer Is Nothing")>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().ReportedHasFile")>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().IsSteady")>
         Public Function FindBestAvailableUploader() As TransferClient
             Contract.Ensures(Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().HasReported)
             Contract.Ensures(Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().Transfer Is Nothing)
@@ -166,6 +173,7 @@ Namespace WC3.Download
                                      Where client.Transfer Is Nothing
                                      Where client.IsSteady
             If availableUploaders.None Then Return Nothing
+            Contract.Assume(availableUploaders.Any())
             Return availableUploaders.Max(
                 Function(e1, e2) (From sign In {If(LastTransferPartner Is e1, 0, 1) - If(LastTransferPartner Is e2, 0, 1),
                                                 Math.Sign(e1.EstimatedBandwidthPerSecond - e2.EstimatedBandwidthPerSecond),
@@ -173,7 +181,6 @@ Namespace WC3.Download
                                   Where sign <> 0).FirstOrDefault)
         End Function
 
-        <ContractVerification(False)>
         Public Shared Function StartTransfer(ByVal downloader As TransferClient, ByVal uploader As TransferClient) As Transfer
             Contract.Requires(downloader IsNot Nothing)
             Contract.Requires(uploader IsNot Nothing)
@@ -192,11 +199,12 @@ Namespace WC3.Download
             Contract.Ensures(Contract.Result(Of Transfer)().Downloader Is downloader)
             Contract.Ensures(Contract.Result(Of Transfer)().Uploader Is uploader)
 
+            Contract.Assume(downloader.ReportedPosition <= downloader.Map.FileSize)
             Dim transfer = New Transfer(downloader:=downloader,
                                         uploader:=uploader,
                                         startingPosition:=downloader.ReportedPosition,
-                                        Clock:=downloader._clock,
-                                        FileSize:=downloader._map.FileSize)
+                                        Clock:=downloader._clock.AssumeNotNull(),
+                                        FileSize:=downloader.Map.FileSize)
             downloader._pastTransferCount += 1
             downloader._transfer = transfer
             downloader._expectedState = Protocol.MapTransferState.Downloading
@@ -207,6 +215,8 @@ Namespace WC3.Download
             uploader._expectedState = Protocol.MapTransferState.Uploading
             uploader._lastTransferPartner = downloader
 
+            Contract.Assume(downloader.Transfer Is transfer)
+            Contract.Assume(uploader.Transfer Is transfer)
             Return transfer
         End Function
         Public Sub ClearTransfer()
@@ -218,11 +228,11 @@ Namespace WC3.Download
             _transfer = Nothing
         End Sub
 
-        <ContractVerification(False)>
         Public Sub MarkReported()
             Contract.Ensures(HasReported)
             _lastActivityClock = _lastActivityClock.Restarted
             _hasReported = True
+            Contract.Assume(HasReported)
         End Sub
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task

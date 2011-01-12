@@ -33,8 +33,6 @@ Namespace WC3
             Contract.Invariant(_commands IsNot Nothing)
         End Sub
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
         Public Sub New(ByVal name As InvariantString,
                        ByVal gameServer As WC3.GameServer,
                        ByVal bot As Bot.MainBot)
@@ -49,7 +47,7 @@ Namespace WC3
             Dim control = New WC3.W3ServerControl(Me)
             Me._control = control
             Me._bot = bot
-            Me._listener = New Net.Sockets.TcpListener(New Net.IPEndPoint(Net.IPAddress.Any, Me._portHandle.Port))
+            Me._listener = New Net.Sockets.TcpListener(Net.IPAddress.Any.WithPort(Me._portHandle.Port))
             Me._listener.Start()
 
             AddHandler _gameServer.PlayerTalked, AddressOf OnPlayerTalked
@@ -74,8 +72,8 @@ Namespace WC3
                     Dim tcpClient = Await listener.AsyncAcceptConnection()
                     Dim socket = New WC3.W3Socket(New PacketSocket(
                                                       stream:=tcpClient.GetStream,
-                                                      localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                                      remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                      localendpoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                      remoteendpoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                                       timeout:=60.Seconds,
                                                       Logger:=Logger,
                                                       clock:=_gameServer.Clock))
@@ -88,15 +86,13 @@ Namespace WC3
             End Try
         End Sub
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
         Private Sub ChangeListenPort(ByVal portHandle As PortPool.PortHandle)
             Contract.Requires(portHandle IsNot Nothing)
             If portHandle.Port = Me._portHandle.Port Then Return
 
             'Try new port before disposing the old one
             Dim oldListener = Me._listener
-            Dim newListener = New Net.Sockets.TcpListener(New Net.IPEndPoint(Net.IPAddress.Any, portHandle.Port))
+            Dim newListener = New Net.Sockets.TcpListener(Net.IPAddress.Any.WithPort(portHandle.Port))
             newListener.Start()
 
             'Switch handles

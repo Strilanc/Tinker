@@ -49,7 +49,7 @@ Namespace WC3
             Me.name = name
             Me.mode = mode
             Me.listenPort = listenPort
-            Me.inQueue = MakeTaskedCallQueue
+            Me.inQueue = MakeTaskedCallQueue()
             Me.logger = If(logger, New Logger)
             If listenPort <> 0 Then accepter.Accepter.OpenPort(listenPort)
             Me._packetHandlerLogger = Protocol.MakeW3PacketHandlerLogger("?", Me.logger)
@@ -85,8 +85,8 @@ Namespace WC3
             Dim tcp = New Net.Sockets.TcpClient()
             tcp.Connect(hostName, port)
             socket = New W3Socket(New PacketSocket(stream:=tcp.GetStream,
-                                                   localendpoint:=CType(tcp.Client.LocalEndPoint, Net.IPEndPoint),
-                                                   remoteendpoint:=CType(tcp.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                   localendpoint:=DirectCast(tcp.Client.LocalEndPoint, Net.IPEndPoint),
+                                                   remoteendpoint:=DirectCast(tcp.Client.RemoteEndPoint, Net.IPEndPoint),
                                                    timeout:=60.Seconds,
                                                    logger:=Me.logger,
                                                    clock:=New SystemClock))
@@ -112,9 +112,11 @@ Namespace WC3
             End Try
         End Sub
         Private Sub OnReceiveGreet(ByVal pickle As IPickle(Of NamedValueMap))
-            index = New PlayerId(pickle.Value.ItemAs(Of Byte)("player index"))
+            Contract.Requires(pickle IsNot Nothing)
+            Me.index = pickle.Value.ItemAs(Of PlayerId)("player index")
         End Sub
         Private Sub OnReceiveHostMapInfo(ByVal pickle As IPickle(Of NamedValueMap))
+            Contract.Requires(pickle IsNot Nothing)
             If mode = DummyPlayerMode.DownloadMap Then
                 dl = New MapDownload(pickle.Value.ItemAs(Of String)("path"),
                                      pickle.Value.ItemAs(Of UInt32)("size"),
@@ -127,9 +129,11 @@ Namespace WC3
             End If
         End Sub
         Private Sub OnReceivePing(ByVal pickle As IPickle(Of UInt32))
+            Contract.Requires(pickle IsNot Nothing)
             socket.SendPacket(Protocol.MakePong(pickle.Value))
         End Sub
         Private Sub OnReceiveOtherPlayerJoined(ByVal pickle As IPickle(Of NamedValueMap))
+            Contract.Requires(pickle IsNot Nothing)
             Dim ext_addr = pickle.Value.ItemAs(Of Net.IPEndPoint)("external address")
             Dim player = New W3Peer(pickle.Value.ItemAs(Of String)("name"),
                                     pickle.Value.ItemAs(Of PlayerId)("joiner id"),
@@ -149,8 +153,8 @@ Namespace WC3
             Dim player = (From p In otherPlayers Where p.Id = pickle.Value.ItemAs(Of PlayerId)("leaver")).FirstOrDefault
             If player IsNot Nothing Then
                 otherPlayers.Remove(player)
-                For Each e In _playerHooks(player)
-                    e.Dispose()
+                For Each e In _playerHooks(player).AssumeNotNull()
+                    e.AssumeNotNull().Dispose()
                 Next e
                 _playerHooks.Remove(player)
             End If
@@ -163,11 +167,13 @@ Namespace WC3
             End If
         End Sub
         Private Sub OnReceiveTick(ByVal pickle As IPickle(Of NamedValueMap))
+            Contract.Requires(pickle IsNot Nothing)
             If pickle.Value.ItemAs(Of UInt16)("time span") > 0 Then
                 socket.SendPacket(Protocol.MakeTock(0, 0))
             End If
         End Sub
         Private Sub OnReceiveMapFileData(ByVal pickle As IPickle(Of NamedValueMap))
+            Contract.Requires(pickle IsNot Nothing)
             Dim pos = CUInt(dl.file.Position)
             If ReceiveDLMapChunk(pickle.Value) Then
                 Disconnect(expected:=True, reason:="Download finished.")

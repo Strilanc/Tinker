@@ -25,7 +25,7 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeGreetTest()
-        MakeGreet(New Net.IPEndPoint(Net.IPAddress.Loopback, 6112), New PlayerId(1))
+        MakeGreet(Net.IPAddress.Loopback.WithPort(6112), New PlayerId(1))
     End Sub
     <TestMethod()>
     Public Sub MakeRejectTest()
@@ -41,7 +41,7 @@ Public Class WC3ProtocolPackersTest
                               New PlayerId(1),
                               1,
                               New Byte() {0}.AsReadableList,
-                              New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
+                              Net.IPAddress.Loopback.WithPort(6112))
     End Sub
     <TestMethod()>
     Public Sub MakePingTest()

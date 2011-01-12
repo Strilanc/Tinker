@@ -49,8 +49,8 @@ Public Class BnetClientTest
         client.Init()
         Dim stream = New TestStream()
         Dim socket = New PacketSocket(stream,
-                                      New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
-                                      New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+                                      Net.IPAddress.Loopback.WithPort(6112),
+                                      Net.IPAddress.Loopback.WithPort(6112),
                                       clock)
         Dim clientCdKeySalt = 13UI
         Dim fConnect = client.QueueConnectWith(socket, clientCdKeySalt)

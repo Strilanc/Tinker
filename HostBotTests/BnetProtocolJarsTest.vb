@@ -40,8 +40,8 @@ Public Class BnetProtocolJarsTest
     Public Sub IPEndPointTest()
         Dim jar = New IPEndPointJar()
         Dim equater = Function(a1 As Net.IPEndPoint, a2 As Net.IPEndPoint) a1.Address.GetAddressBytes.SequenceEqual(a1.Address.GetAddressBytes) AndAlso a1.Port = a2.Port
-        JarTest(jar, equater, New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0), {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-        JarTest(jar, equater, New Net.IPEndPoint(Net.IPAddress.Loopback, 6112), {2, 0, &H17, &HE0, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, equater, New Net.IPAddress({0, 0, 0, 0}).WithPort(0), {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, equater, Net.IPAddress.Loopback.WithPort(6112), {2, 0, &H17, &HE0, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0})
     End Sub
     <TestMethod()>
     Public Sub QueryGamesListResponseJarTest()

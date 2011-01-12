@@ -62,7 +62,6 @@
             Return If(_isFlagEnum, value.EnumFlagsAreDefined(), value.EnumValueIsDefined())
         End Function
 
-        <ContractVerification(False)>
         Private Function MakeFlagsControl() As IValueEditor(Of TEnum)
             Contract.Requires(_isFlagEnum)
             Contract.Ensures(Contract.Result(Of IValueEditor(Of TEnum))() IsNot Nothing)
@@ -70,9 +69,10 @@
             Dim flags = EnumAllFlags(Of TEnum)(onlyDefined:=_checkDefined).ZipWithIndexes()
             Dim control = New CheckedListBox()
             For Each e In flags
-                control.Items.Add(e.Item1.EnumFlagsToString())
+                Contract.Assume(e IsNot Nothing)
+                control.Items.AssumeNotNull().Add(e.Item1.EnumFlagsToString())
             Next e
-            control.Height = control.GetItemHeight(0) * Math.Min(10, control.Items.Count)
+            control.Height = control.GetItemHeight(0) * Math.Min(10, control.Items.AssumeNotNull().Count)
 
             Return New DelegatedValueEditor(Of TEnum)(
                 control:=control,
