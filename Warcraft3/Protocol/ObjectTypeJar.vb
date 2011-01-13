@@ -20,13 +20,15 @@ Namespace WC3.Protocol
                 Return "0x{0}".Frmt(value.ToString("X", CultureInfo.InvariantCulture))
             End If
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-263")>
         Public Overrides Function Parse(ByVal text As String) As UInt32
             Try
                 If text Like New InvariantString("type '????'") Then
+                    Contract.Assume(text.Length >= "type '".Length + "????".Length)
                     Dim bytes = System.Text.Encoding.ASCII.GetBytes(text.Substring("type '".Length, "????".Length))
                     Return bytes.ToUInt32(ByteOrder.BigEndian)
                 ElseIf text Like New InvariantString("0x*") Then
+                    Contract.Assume(text.Length >= "0x".Length)
                     Return UInt32.Parse(text.Substring("0x".Length), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
                 Else
                     Return UInt32.Parse(text, NumberStyles.Number, CultureInfo.InvariantCulture)

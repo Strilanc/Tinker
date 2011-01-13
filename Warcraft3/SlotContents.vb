@@ -161,9 +161,8 @@
         Public Overrides Function EnumPlayers() As IEnumerable(Of Player)
             Return New Player() {_player}
         End Function
-        <ContractVerification(False)>
         Public Overrides Function AsyncGenerateDescription() As Task(Of String)
-            Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.Id.Index).AsTask, _player.AsyncDescription)
+            Return If(_player.IsFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.Id.Index).AsTask, _player.AsyncDescription.AssumeNotNull())
         End Function
         Public Overrides ReadOnly Property PlayerIndex() As PlayerId?
             Get
@@ -226,7 +225,7 @@
             Contract.Requires(player IsNot Nothing)
             Me._coveredSlotId = coveredSlotId
         End Sub
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-11-60")>
         Public Overrides Async Function AsyncGenerateDescription() As Task(Of String)
             Dim desc = Await MyBase.AsyncGenerateDescription
             Return "[Covering {0}] {1}".Frmt(CoveredSlotId, desc)

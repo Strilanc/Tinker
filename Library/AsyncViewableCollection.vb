@@ -24,8 +24,7 @@ Public Class AsyncViewableCollection(Of T)
         Me.outQueue = If(outQueue, MakeTaskedCallQueue())
     End Sub
 
-    'verification disabled due to stupid verifier (1.2.30118.5)
-    <ContractVerification(False)>
+    <SuppressMessage("Microsoft.Contracts", "Ensures-28-62")>
     Public Sub Add(ByVal item As T) Implements ICollection(Of T).Add
         _items.Add(item)
         outQueue.QueueAction(Sub() RaiseEvent Added(Me, item))

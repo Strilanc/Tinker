@@ -79,8 +79,9 @@
                 Return 2
             End Get
         End Property
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-47-26")>
         Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInt16
+            Contract.Assume(data.Count = 2)
             Return data.ToUInt16(byteOrder)
         End Function
 

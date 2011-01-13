@@ -48,7 +48,6 @@
                 Return _hostName
             End Get
         End Property
-        <ContractVerification(False)>
         Public ReadOnly Property MapChecksumSHA1 As Maybe(Of IRist(Of Byte))
             Get
                 Contract.Ensures(Contract.Result(Of Maybe(Of IRist(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IRist(Of Byte)))().Value.Count = 20)
