@@ -5,7 +5,13 @@ Public Structure Maybe(Of T)
     Private ReadOnly _value As T
     Private ReadOnly _hasValue As Boolean
 
+    <ContractInvariantMethod()>
+    Private Sub ObjectInvariant()
+        Contract.Invariant(_hasValue OrElse _value IsNot Nothing)
+    End Sub
+
     Public Sub New(ByVal value As T)
+        Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Me.HasValue)
         Me._hasValue = True
         Me._value = value
@@ -19,22 +25,20 @@ Public Structure Maybe(Of T)
     Public ReadOnly Property Value As T
         Get
             Contract.Requires(HasValue)
+            Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Return _value
         End Get
     End Property
 
     Public Shared Widening Operator CType(ByVal value As T) As Maybe(Of T)
+        Contract.Requires(value IsNot Nothing)
         Return New Maybe(Of T)(value)
     End Operator
 
     Public Overloads Function Equals(ByVal other As Maybe(Of T)) As Boolean Implements IEquatable(Of Maybe(Of T)).Equals
         If Me.HasValue <> other.HasValue Then Return False
         If Not Me.HasValue Then Return True
-        If Me.Value Is Nothing Then
-            Return other.Value Is Nothing
-        Else
-            Return Me.Value.Equals(other.Value)
-        End If
+        Return Me.Value.Equals(other.Value)
     End Function
     Public Overrides Function Equals(ByVal obj As Object) As Boolean
         Return TypeOf obj Is Maybe(Of T) AndAlso Me.Equals(DirectCast(obj, Maybe(Of T)))

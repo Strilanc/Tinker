@@ -157,7 +157,7 @@ Namespace WC3.Protocol
             Dim sha1Checksum = vals.ItemAs(Of Maybe(Of IRist(Of Byte)))("sha1 checksum")
             Dim relativePath = vals.ItemAs(Of String)("relative path").ToInvariant
             Dim hostName = vals.ItemAs(Of String)("host name").ToInvariant
-            If sha1Checksum.HasValue AndAlso sha1Checksum.Value.AssumeNotNull.Count <> 20 Then
+            If sha1Checksum.HasValue AndAlso sha1Checksum.Value.Count <> 20 Then
                 Throw New PicklingException("sha1 checksum must have have 20 bytes.")
             End If
 

@@ -173,7 +173,6 @@
 
         Public Overrides Function Pack(ByVal value As Maybe(Of T)) As IEnumerable(Of Byte)
             If value.HasValue Then
-                Contract.Assume(value.Value IsNot Nothing)
                 Return _subJar.Pack(value.Value)
             Else
                 Return New Byte() {}
@@ -191,7 +190,6 @@
 
         Public Overrides Function Describe(ByVal value As Maybe(Of T)) As String
             If Not value.HasValue Then Return "[Not Included]"
-            If value.Value Is Nothing Then Throw New ArgumentNullException("value.Value")
             Return _subJar.Describe(value.Value)
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-16")>

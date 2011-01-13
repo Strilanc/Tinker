@@ -39,7 +39,6 @@
         Private ReadOnly _hostName As InvariantString
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(Not _mapChecksumSHA1.HasValue OrElse _mapChecksumSHA1.Value IsNot Nothing)
             Contract.Invariant(Not _mapChecksumSHA1.HasValue OrElse _mapChecksumSHA1.Value.Count = 20)
         End Sub
 
@@ -52,7 +51,6 @@
         <ContractVerification(False)>
         Public ReadOnly Property MapChecksumSHA1 As Maybe(Of IRist(Of Byte))
             Get
-                Contract.Ensures(Contract.Result(Of Maybe(Of IRist(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IRist(Of Byte)))().Value IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Maybe(Of IRist(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IRist(Of Byte)))().Value.Count = 20)
                 Return _mapChecksumSHA1
             End Get
@@ -133,7 +131,6 @@
                        ByVal mapChecksumSHA1 As Maybe(Of IRist(Of Byte)),
                        ByVal advertisedPath As InvariantString,
                        ByVal hostName As InvariantString)
-            Contract.Requires(Not mapChecksumSHA1.HasValue OrElse mapChecksumSHA1.Value IsNot Nothing)
             Contract.Requires(Not mapChecksumSHA1.HasValue OrElse mapChecksumSHA1.Value.Count = 20)
 
             Me._randomHero = randomHero
@@ -273,7 +270,7 @@
             If Me.LockTeams <> other.LockTeams Then Return False
             If Me.MapChecksumSHA1.HasValue <> other.MapChecksumSHA1.HasValue Then Return False
             If Me.MapChecksumSHA1.HasValue Then
-                If Not Me.MapChecksumSHA1.Value.AssumeNotNull.SequenceEqual(other.MapChecksumSHA1.Value.AssumeNotNull) Then Return False
+                If Not Me.MapChecksumSHA1.Value.SequenceEqual(other.MapChecksumSHA1.Value) Then Return False
             End If
             If Me.MapChecksumXORO <> other.MapChecksumXORO Then Return False
             If Me.Observers <> other.Observers Then Return False
