@@ -346,7 +346,6 @@ Namespace WC3
                            template:="setting value",
                            Description:="Sets the value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
-            <ContractVerification(False = False)>
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim val_us As UShort
@@ -356,13 +355,18 @@ Namespace WC3
                 Dim argSetting = argument.RawValue(0).ToInvariant
                 Select Case argSetting
                     Case "TickPeriod"
-                        If Not isShort Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
-                        target.Motor.QueueSetTickPeriod(CInt(val_us).Milliseconds)
+                        If Not isShort OrElse val_us < 1 OrElse val_us > 20000 Then Throw New ArgumentException("Invalid value")
+                        Dim t = CInt(val_us).Milliseconds
+                        Contract.Assume(t.Ticks >= 0)
+                        target.Motor.QueueSetTickPeriod(t)
                     Case "LagLimit"
-                        If Not isShort Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
-                        target.Motor.QueueSetLagLimit(CInt(val_us).Milliseconds)
+                        If Not isShort OrElse val_us < 1 OrElse val_us > 20000 Then Throw New ArgumentException("Invalid value")
+                        Dim t = CInt(val_us).Milliseconds
+                        Contract.Assume(t.Ticks >= 0)
+                        target.Motor.QueueSetLagLimit(t)
                     Case "GameRate"
-                        If Not isDouble Or vald < 0.01 Or vald > 10 Then Throw New ArgumentException("Invalid value")
+                        If Not isDouble OrElse vald < 0.01 OrElse vald > 10 Then Throw New ArgumentException("Invalid value")
+                        Contract.Assume(vald > 0)
                         target.Motor.QueueSetSpeedFactor(vald)
                     Case Else
                         Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argument.RawValue(0)))

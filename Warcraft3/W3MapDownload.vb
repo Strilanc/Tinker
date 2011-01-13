@@ -52,7 +52,6 @@
             Me.file = New IO.FileStream(Me.downloadPath, IO.FileMode.OpenOrCreate, IO.FileAccess.Write, IO.FileShare.None)
         End Sub
 
-        <ContractVerification(False)>
         Public Function ReceiveChunk(ByVal pos As Integer,
                                      ByVal data As IRist(Of Byte)) As Boolean
             Contract.Requires(pos >= 0)
@@ -60,13 +59,14 @@
             If file Is Nothing Then Throw New InvalidOperationException("File is closed.")
             If pos <> file.Position Then Return False
             If file.Position + data.Count > size Then Throw New IO.InvalidDataException("Data runs past end of file.")
-            file.Write(data.ToArray, 0, data.Count)
+            Dim buffer = data.ToArray()
+            file.Write(buffer, 0, buffer.Length)
 
             If file.Position = size Then
                 'Finished Download
                 file.Close()
                 file = Nothing
-                Dim map = WC3.Map.FromFile(downloadPath, My.Settings.mapPath, My.Settings.war3path)
+                Dim map = WC3.Map.FromFile(downloadPath, My.Settings.mapPath.AssumeNotNull(), My.Settings.war3path.AssumeNotNull())
                 If Not map.MapChecksumSHA1.SequenceEqual(mapChecksumSHA1) Then Throw New IO.InvalidDataException("Completed map doesn't match reported SHA1 checksum.")
                 If map.MapChecksumXORO <> mapChecksumXORO Then Throw New IO.InvalidDataException("Completed map doesn't match reported XORO checksum.")
                 If map.FileChecksumCRC32 <> fileChecksumCRC32 Then Throw New IO.InvalidDataException("Completed map doesn't match reported CRC32 checksum.")

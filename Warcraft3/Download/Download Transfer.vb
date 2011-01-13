@@ -20,7 +20,6 @@ Namespace WC3.Download
             Contract.Invariant(_startingPosition <= _fileSize)
         End Sub
 
-        <ContractVerification(False)>
         Public Sub New(ByVal downloader As TransferClient,
                            ByVal uploader As TransferClient,
                            ByVal startingPosition As UInt32,
@@ -39,6 +38,7 @@ Namespace WC3.Download
             Me._durationClock = clock.Restarted()
             Me._lastActivityClock = clock.Restarted()
             Me._startingPosition = startingPosition
+            Contract.Assume(Me.Downloader Is downloader)
         End Sub
 
         Public ReadOnly Property Downloader As TransferClient

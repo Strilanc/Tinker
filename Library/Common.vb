@@ -68,6 +68,8 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
+    <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Net.IPEndPoint)().Address Is address")>
+    <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Net.IPEndPoint)().Port = port")>
     Public Function WithPort(ByVal address As Net.IPAddress, ByVal port As UShort) As Net.IPEndPoint
         Contract.Requires(address IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
@@ -75,8 +77,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Port = port)
         Return New Net.IPEndPoint(address, port)
     End Function
-    'verification disabled due to stupid verifier (1.2.30118.5)
-    <ContractVerification(False)>
+
     <Pure()>
     Public Function BuildDictionaryFromString(Of T)(ByVal text As String,
                                                     ByVal parser As Func(Of String, T),
@@ -108,6 +109,7 @@ Public Module PoorlyCategorizedFunctions
                              Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian) As UInt64
         Contract.Requires(data IsNot Nothing)
         If data.LazyCount > 8 Then Throw New ArgumentException("Too many bytes.", "data")
+        Contract.Assume(8 - data.Count > 0)
         Dim padding = CByte(0).Repeated(8 - data.Count)
         Select Case byteOrder
             Case Strilbrary.Values.ByteOrder.LittleEndian
@@ -197,7 +199,6 @@ Public Module PoorlyCategorizedFunctions
         Return "({0}) {1}".Frmt(ex.GetType.Name, ex.Message)
     End Function
 
-    <ContractVerification(False)>
     Public Function FindFilesMatching(ByVal fileQuery As String,
                                       ByVal likeQuery As InvariantString,
                                       ByVal directory As InvariantString,
@@ -245,7 +246,6 @@ Public Module PoorlyCategorizedFunctions
         End Try
     End Function
 
-    <ContractVerification(False)>
     <Pure()> <Extension()>
     Public Function ToUnsignedBigInteger(ByVal digits As IEnumerable(Of Byte),
                                          ByVal base As UInt32) As BigInteger
@@ -253,7 +253,9 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(base >= 2)
         Contract.Requires(base <= 256)
         Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
-        Return digits.Reverse.Aggregate(New BigInteger, Function(acc, e) acc * base + e)
+        Dim result = digits.Reverse.Aggregate(New BigInteger, Function(acc, e) acc * base + e)
+        Contract.Assume(result >= 0)
+        Return result
     End Function
     <Pure()> <Extension()>
     Public Function UnsignedDigits(ByVal value As BigInteger,
@@ -326,11 +328,10 @@ Public Module PoorlyCategorizedFunctions
         End If
     End Function
     <Pure()> <Extension()>
-    <ContractVerification(False)>
     Public Function ToUnsignedBytes(ByVal value As BigInteger) As IRist(Of Byte)
         Contract.Requires(value >= 0)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
-        Dim result = value.ToByteArray.ToReadableList
+        Dim result = value.ToByteArray.AssumeNotNull().ToReadableList
         If result.Count > 0 AndAlso result.Last = 0 Then
             Return result.SubView(0, result.Count - 1)
         Else
@@ -379,7 +380,7 @@ Public Module PoorlyCategorizedFunctions
     End Function
     '''<summary>Reads all remaining data from a stream, computing its CRC32 checksum.</summary>
     <Extension()>
-    Public Function readCRC32(ByVal data As IReadableStream,
+    Public Function ReadCRC32(ByVal data As IReadableStream,
                               Optional ByVal poly As UInteger = &H4C11DB7,
                               Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
         Contract.Requires(data IsNot Nothing)
@@ -403,7 +404,7 @@ Public Module PoorlyCategorizedFunctions
                           Optional ByVal poly As UInteger = &H4C11DB7,
                           Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
         Contract.Requires(data IsNot Nothing)
-        Return data.AsReadableStream.readCRC32(poly, polyAlreadyReversed)
+        Return data.AsReadableStream.ReadCRC32(poly, polyAlreadyReversed)
     End Function
 
     '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>
@@ -532,7 +533,8 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    <ContractVerification(False)>
+    <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value >= startIndex + substring.Length")>
+    <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value <= text.Length")>
     Public Function IndexAfter(ByVal text As String,
                                ByVal substring As String,
                                ByVal startIndex As Integer,

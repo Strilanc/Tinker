@@ -81,8 +81,9 @@ Namespace WC3.Replay
         Public Overrides Function SubJar() As IJar(Of KeyValuePair(Of ReplayEntryId, Object))
             Return DataJar
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-33-18")>
         Public Overrides Function PackRaw(ByVal value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
+            Contract.Assume(value IsNot Nothing)
             Return value
         End Function
         Public Overrides Function ParseRaw(ByVal value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry

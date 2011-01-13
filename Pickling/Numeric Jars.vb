@@ -204,8 +204,9 @@
                 Return 8
             End Get
         End Property
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-47-26")>
         Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInt64
+            Contract.Assume(data.Count = 8)
             Return data.ToUInt64(byteOrder)
         End Function
 
@@ -243,9 +244,11 @@
                 Return 4
             End Get
         End Property
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-47-25")>
         Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Single
-            Return BitConverter.ToSingle(data.ToArray, 0)
+            Dim buffer = data.ToArray()
+            Contract.Assume(buffer.Length = 4)
+            Return BitConverter.ToSingle(buffer, 0)
         End Function
 
         Public Overrides Function Describe(ByVal value As Single) As String
@@ -275,9 +278,11 @@
                 Return 8
             End Get
         End Property
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-47-25")>
         Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Double
-            Return BitConverter.ToDouble(data.ToArray, 0)
+            Dim buffer = data.ToArray()
+            Contract.Assume(buffer.Length = 8)
+            Return BitConverter.ToDouble(buffer, 0)
         End Function
 
         Public Overrides Function Describe(ByVal value As Double) As String

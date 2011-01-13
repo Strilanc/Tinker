@@ -13,9 +13,12 @@ Namespace Bnet.Protocol
                 Return 8
             End Get
         End Property
-        <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As DateTime
-            Return DateTime.FromFileTime(data.ToUInt64.BitwiseToInt64)
+            Contract.Assume(data.Count = 8)
+            Dim fileTime = data.ToUInt64.BitwiseToInt64
+            Contract.Assume(fileTime >= 0)
+            If fileTime > &H24C85A5ED1C03FFFL Then Throw New PicklingException("Invalid time.")
+            Return DateTime.FromFileTime(fileTime)
         End Function
 
         Public Overrides Function Describe(ByVal value As Date) As String

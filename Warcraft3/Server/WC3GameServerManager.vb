@@ -189,8 +189,6 @@ Namespace WC3
             If _gameIdCount > 1000 Then _gameIdCount = 1
             Return _gameIdCount * 10000UI + CUInt(_gameIdGenerator.Next(1000))
         End Function
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
         Private Function AsyncAddGameFromArguments(ByVal argument As Commands.CommandArgument,
                                                    ByVal user As BotUser) As Task(Of WC3.GameSet)
             Contract.Requires(argument IsNot Nothing)

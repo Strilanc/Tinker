@@ -316,7 +316,6 @@ Namespace WC3
 #End Region
 
 #Region "Read"
-        <ContractVerification(False)>
         Public Function ReadChunk(ByVal pos As Int64, ByVal size As UInt32) As IRist(Of Byte)
             Contract.Requires(pos >= 0)
             Contract.Requires(size > 0)
@@ -327,7 +326,8 @@ Namespace WC3
             Contract.Assume(_streamFactory IsNot Nothing)
 
             Using stream = _streamFactory().Value
-                If stream Is Nothing Then Throw New InvalidStateException("Invalid steam factory.")
+                If stream Is Nothing Then Throw New InvalidStateException("Invalid stream factory.")
+                If Me.FileSize <> stream.Length Then Throw New InvalidStateException("Modified map file.")
                 stream.Position = pos
                 Return stream.Read(CInt(size))
             End Using
@@ -535,11 +535,11 @@ Namespace WC3
         End Class
         '''<summary>Reads map information from the "war3map.w3i" file in the map mpq archive.</summary>
         '''<source>war3map.w3i format found at http://www.wc3campaigns.net/tools/specs/index.html by Zepir/PitzerMike</source>
-        <ContractVerification(False)>
         Private Shared Function ReadMapInfo(ByVal mapArchive As MPQ.Archive) As ReadMapInfoResult
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
 
+            Contract.Assume(mapArchive IsNot Nothing)
             Using stream = mapArchive.OpenFileByName("war3map.w3i")
                 Dim fileFormat = CType(stream.ReadUInt32(), MapInfoFormatVersion)
                 If Not fileFormat.EnumValueIsDefined Then
@@ -602,6 +602,10 @@ Namespace WC3
 
                 '... more data in the file but it isn't needed ...
 
+                Contract.Assume(CUShort(playableWidth) > 0)
+                Contract.Assume(CUShort(playableHeight) > 0)
+                Contract.Assume(teamedSlots.Count > 0)
+                Contract.Assume(teamedSlots.Count <= 12)
                 Return New ReadMapInfoResult(mapName, CUShort(playableWidth), CUShort(playableHeight), options, teamedSlots)
             End Using
         End Function

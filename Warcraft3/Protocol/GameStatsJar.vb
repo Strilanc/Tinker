@@ -111,7 +111,6 @@ Namespace WC3.Protocol
                     {"unknown1", CByte(0)},
                     {"unknown2", CByte(0)}}
         End Function
-        <ContractVerification(False)>
         Private Shared Function ParseDataValue(ByVal vals As NamedValueMap) As GameStats
             Contract.Requires(vals IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)

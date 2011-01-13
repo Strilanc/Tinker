@@ -27,7 +27,7 @@ Namespace Bot
                            Description:="Downloads a map directly from a supported web site.",
                            Permissions:="root:2")
             End Sub
-            <ContractVerification(False)>
+            <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
             Protected Overrides Async Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Dim site = argument.NamedValue("site").ToInvariant
                 Dim mapId = argument.RawValue(0)

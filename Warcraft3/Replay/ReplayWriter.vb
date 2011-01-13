@@ -25,6 +25,7 @@ Namespace WC3.Replay
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_stream IsNot Nothing)
             Contract.Invariant(_startPosition >= 0)
+            Contract.Invariant(_startPosition <= _stream.Length)
             Contract.Invariant(_blockDataBuffer IsNot Nothing)
             Contract.Invariant(_dataCompressor IsNot Nothing)
             Contract.Invariant(_blockSizeRemaining >= 0)
@@ -49,11 +50,12 @@ Namespace WC3.Replay
             StartBlock()
         End Sub
 
-        <ContractVerification(False)>
         Private Sub StartBlock()
             _blockSizeRemaining = BlockSize
             _blockDataBuffer.SetLength(0)
-            _dataCompressor = MakeZLibStream(_blockDataBuffer, IO.Compression.CompressionMode.Compress, leaveOpen:=True).AsWritableStream
+            Dim s = MakeZLibStream(_blockDataBuffer, IO.Compression.CompressionMode.Compress, leaveOpen:=True)
+            Contract.Assume(s.CanWrite)
+            _dataCompressor = s.AsWritableStream
         End Sub
         Private Sub EndBlock()
             If _blockSizeRemaining = BlockSize Then Return
@@ -113,12 +115,15 @@ Namespace WC3.Replay
             WriteData(entryJar.Pack(entry).ToReadableList)
         End Sub
 
-        <ContractVerification(False)>
         Private Function GenerateHeader() As IRist(Of Byte)
             Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = Format.HeaderSize)
 
-            Using header = New IO.MemoryStream().AsRandomAccessStream
+            Using m = New IO.MemoryStream()
+                Contract.Assume(m.CanRead)
+                Contract.Assume(m.CanWrite)
+                Contract.Assume(m.CanSeek)
+                Dim header = m.AsRandomAccessStream()
                 header.WriteNullTerminatedString(Format.HeaderMagicValue)
                 header.Write(Format.HeaderSize)
                 header.Write(_compressedSize)

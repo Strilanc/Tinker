@@ -108,7 +108,6 @@ Namespace WC3
             Me._outQueue = If(outQueue, MakeTaskedCallQueue)
         End Sub
 
-        <ContractVerification(False)>
         Public Shared Function MakeFake(ByVal id As PlayerId,
                                         ByVal name As InvariantString,
                                         ByVal logger As Logger) As Player
@@ -118,6 +117,7 @@ Namespace WC3
             Dim hostFail = New TaskCompletionSource(Of NoValue)
             hostFail.IgnoreExceptions()
             hostFail.SetException(New ArgumentException("Fake players can't host."))
+            Contract.Assume(hostFail.Task IsNot Nothing)
 
             Dim player = New Player(id:=id,
                                     name:=name,
@@ -126,7 +126,7 @@ Namespace WC3
                                     PeerKey:=0,
                                     PeerData:=New Byte() {0}.AsReadableList,
                                     PacketHandlerLogger:=Protocol.MakeW3PacketHandlerLogger(name, logger),
-                                    ListenEndPoint:=New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0),
+                                    ListenEndPoint:=New Net.IPAddress({0, 0, 0, 0}).WithPort(0),
                                     taskTestCanHost:=hostFail.Task)
             player._ready = True
             Return player

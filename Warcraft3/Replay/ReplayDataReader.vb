@@ -121,8 +121,10 @@
         ''' </summary>
         ''' <param name="blockPosition">The starting position of the block, as determined by the previous block's end.</param>
         ''' <param name="dataPosition">The logical starting position of the data stored in the block.</param>
-        <ContractVerification(False)>
         Private Sub LoadNextBlockInfo(ByVal blockPosition As Long, ByVal dataPosition As Long)
+            Contract.Requires(blockPosition >= 0)
+            Contract.Requires(blockPosition <= _stream.Length)
+            Contract.Requires(dataPosition >= 0)
             Contract.Requires(_blockInfoTable.Count < _blockCount)
             Contract.Ensures(_blockInfoTable.Count = Contract.OldValue(_blockInfoTable.Count) + 1)
             'Read block header
@@ -130,7 +132,9 @@
             Dim compressedDataSize = _stream.ReadUInt16()
             Dim decompressedDataSize = _stream.ReadUInt16()
             Dim checksum = _stream.ReadUInt32()
+            If decompressedDataSize <= 0 Then Throw New IO.IOException("Invalid block info.")
             'Remember
+            Contract.Assume(CLng(Format.BlockHeaderSize + compressedDataSize) > 0)
             Dim block = New BlockInfo(blockPosition:=blockPosition,
                                       blockLength:=Format.BlockHeaderSize + compressedDataSize,
                                       dataPosition:=dataPosition,
@@ -152,6 +156,7 @@
             'Add to table until it contains the desired block
             While _blockInfoTable.Count <= blockIndex
                 Dim prev = _blockInfoTable.Last
+                Contract.Assume(prev.NextBlockPosition <= _stream.Length)
                 LoadNextBlockInfo(prev.NextBlockPosition, prev.NextDataPosition)
             End While
             'Retrieve from table

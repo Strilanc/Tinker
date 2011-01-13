@@ -78,12 +78,12 @@ Namespace Bnet.Protocol
             End If
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of QueryGamesListResponse)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException("A QueryGamesListResponse requires at least 4 bytes.")
             If data.SubView(0, 4).ToUInt32 = 0 Then
                 'result of a single-game query
                 Dim parsed = queryResultJar.Parse(data.SubView(4))
+                Contract.Assume(data.Count >= 8)
                 Return New QueryGamesListResponse(parsed.Value, {}).ParsedWithDataCount(8)
             Else
                 'result of a game search

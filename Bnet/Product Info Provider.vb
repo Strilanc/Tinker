@@ -81,7 +81,6 @@ Public Class CachedWC3InfoProvider
     End Function
 
     Public ReadOnly Property ExeVersion As IRist(Of Byte) Implements IProductInfoProvider.ExeVersion
-        <ContractVerification(False = False)>
         Get
             Contract.Assume(_exeVersion.Count = 4)
             Return _exeVersion

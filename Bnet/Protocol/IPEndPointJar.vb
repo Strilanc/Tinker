@@ -28,13 +28,13 @@ Namespace Bnet.Protocol
             Return parsed.WithValue(address.WithPort(port))
         End Function
 
-        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As Net.IPEndPoint
             Try
                 Dim words = text.Split(":"c)
                 If words.Length <> 2 Then Throw New ArgumentException("Expected address:port format.", "text")
-                Return New Net.IPEndPoint(Net.IPAddress.Parse(words.First),
-                                          UInt16.Parse(words.Last, NumberStyles.Integer, CultureInfo.InvariantCulture))
+                Dim address = Net.IPAddress.Parse(words.First).AssumeNotNull()
+                Dim port = UInt16.Parse(words.Last.AssumeNotNull(), NumberStyles.Integer, CultureInfo.InvariantCulture)
+                Return address.WithPort(port)
             Catch ex As Exception When TypeOf ex Is FormatException OrElse
                                        TypeOf ex Is ArgumentException
                 Throw New PicklingException("'{0}' is not a Net.IPEndPoint".Frmt(text), ex)
