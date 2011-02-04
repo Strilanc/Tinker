@@ -20,7 +20,6 @@
             End Sub
             Public Sub Update(ByVal game As RemoteGameDescription)
                 Contract.Requires(game IsNot Nothing)
-                Contract.Assume(game.Age.Ticks >= 0)
                 Me._remoteGame = New RemoteGameDescription(_remoteGame.Name,
                                                            _remoteGame.GameStats,
                                                            _remoteGame.Address.WithPort(_remoteGame.Port),
@@ -30,8 +29,7 @@
                                                            game.GameType,
                                                            game.GameState,
                                                            game.UsedSlotCount,
-                                                           clock:=New SystemClock(),
-                                                           baseage:=game.Age)
+                                                           ageClock:=New SystemClock().StartingAt(game.AgeClock.ElapsedTime))
                 Me._localGame = New LocalGameDescription(_localGame.Name,
                                                          _localGame.GameStats,
                                                          _localGame.Port,
@@ -41,8 +39,7 @@
                                                          game.GameType,
                                                          game.GameState,
                                                          game.UsedSlotCount,
-                                                         baseage:=game.Age,
-                                                         clock:=New SystemClock())
+                                                         ageClock:=New SystemClock().StartingAt(game.AgeClock.ElapsedTime))
             End Sub
             Public ReadOnly Property RemoteGame As RemoteGameDescription
                 Get
@@ -83,7 +80,6 @@
         Public Function AddGame(ByVal game As RemoteGameDescription) As UInteger
             Contract.Requires(game IsNot Nothing)
             _gameCount += 1UI
-            Contract.Assume(game.Age.Ticks >= 0)
             Dim localGame = New LocalGameDescription(name:=game.Name,
                                                      GameStats:=game.GameStats,
                                                      hostport:=_portHandle.Port,
@@ -93,8 +89,7 @@
                                                      gametype:=game.GameType,
                                                      state:=game.GameState,
                                                      usedSlotCount:=game.UsedSlotCount,
-                                                     baseage:=game.Age,
-                                                     clock:=New SystemClock())
+                                                     ageClock:=New SystemClock().StartingAt(game.AgeClock.ElapsedTime))
             _games(_gameCount) = New GamePair(game, localGame)
             Return _gameCount
         End Function

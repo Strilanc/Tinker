@@ -126,7 +126,7 @@ Namespace Bnet.Protocol
                     {"language id", 0UI},
                     {"host address", New Net.IPEndPoint(game.Address, game.Port)},
                     {"game state", game.GameState},
-                    {"elapsed seconds", CUInt(game.Age.TotalSeconds)},
+                    {"elapsed seconds", CUInt(game.AgeClock.ElapsedTime.TotalSeconds)},
                     {"game name", game.Name.ToString},
                     {"game password", ""},
                     {"num free slots", CUInt(game.TotalSlotCount - game.UsedSlotCount)},
@@ -152,8 +152,7 @@ Namespace Bnet.Protocol
                                                  gameType:=vals.ItemAs(Of WC3.Protocol.GameTypes)("game type"),
                                                  state:=vals.ItemAs(Of GameStates)("game state"),
                                                  usedSlotCount:=usedSlots,
-                                                 baseAge:=vals.ItemAs(Of UInt32)("elapsed seconds").Seconds,
-                                                 clock:=clock)
+                                                 ageClock:=clock.StartingAt(vals.ItemAs(Of UInt32)("elapsed seconds").Seconds))
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of QueryGamesListResponse)

@@ -361,7 +361,7 @@
             Dim best = (From slot In _slots
                         Let match = slot.Matches(query)
                         Let content = slot.Contents.ContentType
-                        ).MaxRelativeTo(Function(item) item.match * 10 - item.content)
+                        ).MaxBy(Function(item) item.match * 10 - item.content)
             If best.match = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
             Return best.slot
         End Function

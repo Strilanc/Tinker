@@ -68,6 +68,22 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
+    Public Function StartingAt(ByVal clock As IClock, ByVal time As TimeSpan) As IClock
+        Contract.Requires(clock IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
+        Dim offset = time - clock.ElapsedTime
+        Return New RelativeClock(clock, offset)
+    End Function
+    <Pure()> <Extension()>
+    Public Function Stopped(ByVal clock As IClock) As IClock
+        Contract.Requires(clock IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
+        Dim r = New ManualClock()
+        r.Advance(clock.ElapsedTime)
+        Return r
+    End Function
+
+    <Pure()> <Extension()>
     <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Net.IPEndPoint)().Address Is address")>
     <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Net.IPEndPoint)().Port = port")>
     Public Function WithPort(ByVal address As Net.IPAddress, ByVal port As UShort) As Net.IPEndPoint
@@ -128,13 +144,6 @@ Public Module PoorlyCategorizedFunctions
         Dim result = FindFilesMatching(fileQuery, likeQuery, directory, 1).FirstOrDefault
         If result Is Nothing Then Throw New OperationFailedException("No matches.")
         Return result
-    End Function
-
-    <Extension()> <Pure()>
-    Public Function Maybe(Of T)(ByVal value As T) As Maybe(Of T)
-        Contract.Requires(value IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Maybe(Of T))().HasValue)
-        Return New Maybe(Of T)(value)
     End Function
 
     <Extension()> <Pure()>

@@ -259,7 +259,7 @@ Namespace WC3.Protocol
                     {"game type", game.GameType},
                     {"num players + 1", 1UI},
                     {"free slots + 1", CUInt(game.TotalSlotCount + 1 - game.UsedSlotCount)},
-                    {"age", CUInt(game.Age.TotalMilliseconds)},
+                    {"age", CUInt(game.AgeClock.ElapsedTime.TotalMilliseconds)},
                     {"listen port", game.Port}})
         End Function
         <Pure()>

@@ -9,6 +9,12 @@ Imports System.Collections.Generic
 
 Friend Module TestingCommon
     <Extension()>
+    Public Function FixedClock(ByVal t As TimeSpan) As Strilbrary.Time.IClock
+        Dim c = New Strilbrary.Time.ManualClock()
+        c.Advance(t)
+        Return c
+    End Function
+    <Extension()>
     Public Function WaitValue(Of T)(ByVal task As Task(Of T)) As T
         task.Wait()
         Return task.Result

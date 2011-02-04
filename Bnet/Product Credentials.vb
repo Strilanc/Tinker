@@ -220,7 +220,7 @@
         '''<remarks>This transformation is reversible if and only if the factor is coprime to the number of items.</remarks>
         <Extension()> <Pure()>
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IRist(Of T))().Count = items.Count")>
-        Private Function Permute(Of T)(ByVal items As IIndexedEnumerable(Of T), ByVal offset As Integer, ByVal factor As Integer) As IRist(Of T)
+        Private Function Permute(Of T)(ByVal items As IRist(Of T), ByVal offset As Integer, ByVal factor As Integer) As IRist(Of T)
             Contract.Requires(items IsNot Nothing)
             Contract.Requires(offset >= 0)
             Contract.Requires(factor > 0)

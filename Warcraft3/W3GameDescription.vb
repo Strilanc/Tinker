@@ -7,7 +7,6 @@
         Private ReadOnly _gameId As UInt32
         Private ReadOnly _entryKey As UInteger
         Private ReadOnly _ageClock As IClock
-        Private ReadOnly _baseAge As TimeSpan
         Private ReadOnly _gameType As Protocol.GameTypes
         Private ReadOnly _state As Bnet.Protocol.GameStates
         Private ReadOnly _totalSlotCount As Integer
@@ -23,15 +22,70 @@
             Contract.Invariant(_ageClock IsNot Nothing)
         End Sub
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
+        Public Sub New(ByVal name As InvariantString,
+                       ByVal gameStats As GameStats,
+                       ByVal gameId As UInt32,
+                       ByVal entryKey As UInteger,
+                       ByVal totalSlotCount As Integer,
+                       ByVal gameType As Protocol.GameTypes,
+                       ByVal state As Bnet.Protocol.GameStates,
+                       ByVal usedSlotCount As Integer,
+                       ByVal ageClock As IClock)
+            Contract.Requires(gameId > 0)
+            Contract.Requires(totalSlotCount > 0)
+            Contract.Requires(totalSlotCount <= 12)
+            Contract.Requires(usedSlotCount >= 0)
+            Contract.Requires(usedSlotCount <= totalSlotCount)
+            Contract.Requires(gameStats IsNot Nothing)
+            Contract.Requires(ageClock IsNot Nothing)
+            Me._name = name
+            Me._gameStats = gameStats
+            Me._gameType = gameType
+            Me._gameId = gameId
+            Me._entryKey = entryKey
+            Me._ageClock = ageClock
+            Me._totalSlotCount = totalSlotCount
+            Me._usedSlotCount = usedSlotCount
+            Me._state = state
+        End Sub
+        Public Function [With](Optional ByVal name As InvariantString? = Nothing,
+                               Optional ByVal gameStats As GameStats = Nothing,
+                               Optional ByVal gameId As UInt32? = Nothing,
+                               Optional ByVal entryKey As UInt32? = Nothing,
+                               Optional ByVal totalSlotCount As Integer? = Nothing,
+                               Optional ByVal gameType As Protocol.GameTypes? = Nothing,
+                               Optional ByVal state As Bnet.Protocol.GameStates? = Nothing,
+                               Optional ByVal usedSlotCount As Integer? = Nothing,
+                               Optional ByVal ageClock As IClock = Nothing) As GameDescription
+            Contract.Requires(gameId Is Nothing OrElse gameId.Value > 0)
+            Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value > 0)
+            Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value <= 12)
+            Contract.Requires(usedSlotCount Is Nothing OrElse usedSlotCount.Value >= 0)
+            Contract.Requires(If(usedSlotCount, Me.UsedSlotCount) < If(totalSlotCount, Me.TotalSlotCount))
+            Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
+            Contract.Assume(If(gameId, Me.GameId) > 0)
+            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) > 0)
+            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) <= 12)
+            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) >= 0)
+            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) <= If(totalSlotCount, Me.TotalSlotCount))
+            Return New GameDescription(If(name, _name),
+                                                If(gameStats, _gameStats),
+                                                If(gameId, _gameId),
+                                                If(entryKey, _entryKey),
+                                                If(totalSlotCount, _totalSlotCount),
+                                                If(gameType, _gameType),
+                                                If(state, _state),
+                                                If(usedSlotCount, _usedSlotCount),
+                                                If(ageClock, _ageClock))
+        End Function
+
         Public Shared Function FromArguments(ByVal name As InvariantString,
                                              ByVal map As Map,
                                              ByVal stats As GameStats,
-                                             ByVal clock As IClock) As GameDescription
+                                             ByVal ageClock As IClock) As GameDescription
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
-            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(ageClock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
             Dim totalSlotCount = map.LobbySlots.Count
             If stats.Observers = GameObserverOption.FullObservers OrElse stats.Observers = GameObserverOption.Referees Then
@@ -46,37 +100,8 @@
                                        GameType:=map.FilterGameType,
                                        state:=0,
                                        UsedSlotCount:=0,
-                                       clock:=clock)
+                                       ageClock:=ageClock)
         End Function
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal gameStats As GameStats,
-                       ByVal gameId As UInt32,
-                       ByVal entryKey As UInteger,
-                       ByVal totalSlotCount As Integer,
-                       ByVal gameType As Protocol.GameTypes,
-                       ByVal state As Bnet.Protocol.GameStates,
-                       ByVal usedSlotCount As Integer,
-                       ByVal clock As IClock,
-                       Optional ByVal baseAge As TimeSpan = Nothing)
-            Contract.Requires(gameId > 0)
-            Contract.Requires(totalSlotCount > 0)
-            Contract.Requires(totalSlotCount <= 12)
-            Contract.Requires(usedSlotCount >= 0)
-            Contract.Requires(usedSlotCount <= totalSlotCount)
-            Contract.Requires(gameStats IsNot Nothing)
-            Contract.Requires(baseAge.Ticks >= 0)
-            Contract.Requires(clock IsNot Nothing)
-            Me._name = name
-            Me._gameStats = gameStats
-            Me._gameType = gameType
-            Me._gameId = gameId
-            Me._entryKey = entryKey
-            Me._ageClock = clock.Restarted
-            Me._baseAge = baseAge
-            Me._totalSlotCount = totalSlotCount
-            Me._usedSlotCount = usedSlotCount
-            Me._state = state
-        End Sub
 
         Public ReadOnly Property Name As InvariantString
             Get
@@ -101,9 +126,10 @@
                 Return _totalSlotCount
             End Get
         End Property
-        Public ReadOnly Property Age As TimeSpan
+        Public ReadOnly Property AgeClock As IClock
             Get
-                Return _ageClock.ElapsedTime + _baseAge
+                Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
+                Return _ageClock
             End Get
         End Property
         Public ReadOnly Property GameId As UInteger
@@ -119,7 +145,7 @@
                 Return _usedSlotCount
             End Get
         End Property
-        Public Overridable ReadOnly Property GameState As Bnet.Protocol.GameStates
+        Public ReadOnly Property GameState As Bnet.Protocol.GameStates
             Get
                 Return _state
             End Get
@@ -138,7 +164,8 @@
         End Function
         Public Overloads Function Equals(ByVal other As GameDescription) As Boolean Implements IEquatable(Of GameDescription).Equals
             If other Is Nothing Then Return False
-            If Me._baseAge <> other._baseAge Then Return False
+            If other Is Me Then Return True
+            If other.AgeClock IsNot Me.AgeClock Then Return False
             If Me.EntryKey <> other.EntryKey Then Return False
             If Me.GameId <> other.GameId Then Return False
             If Me.GameState <> other.GameState Then Return False
@@ -156,16 +183,67 @@
 
         Private ReadOnly _hostPort As UShort
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
+        Public Sub New(ByVal name As InvariantString,
+                       ByVal gameStats As GameStats,
+                       ByVal hostPort As UShort,
+                       ByVal gameId As UInt32,
+                       ByVal entryKey As UInteger,
+                       ByVal totalSlotCount As Integer,
+                       ByVal gameType As Protocol.GameTypes,
+                       ByVal state As Bnet.Protocol.GameStates,
+                       ByVal usedSlotCount As Integer,
+                       ByVal ageClock As IClock)
+            MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, ageClock)
+            Contract.Requires(gameId > 0)
+            Contract.Requires(totalSlotCount > 0)
+            Contract.Requires(totalSlotCount <= 12)
+            Contract.Requires(usedSlotCount >= 0)
+            Contract.Requires(usedSlotCount <= totalSlotCount)
+            Contract.Requires(gameStats IsNot Nothing)
+            Contract.Requires(ageClock IsNot Nothing)
+            Me._hostPort = hostPort
+        End Sub
+        Public Shadows Function [With](Optional ByVal name As InvariantString? = Nothing,
+                                       Optional ByVal gameStats As GameStats = Nothing,
+                                       Optional ByVal gameId As UInt32? = Nothing,
+                                       Optional ByVal entryKey As UInt32? = Nothing,
+                                       Optional ByVal totalSlotCount As Integer? = Nothing,
+                                       Optional ByVal gameType As Protocol.GameTypes? = Nothing,
+                                       Optional ByVal state As Bnet.Protocol.GameStates? = Nothing,
+                                       Optional ByVal usedSlotCount As Integer? = Nothing,
+                                       Optional ByVal ageClock As IClock = Nothing,
+                                       Optional ByVal hostPort As UShort? = Nothing) As LocalGameDescription
+            Contract.Requires(gameId Is Nothing OrElse gameId.Value > 0)
+            Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value > 0)
+            Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value <= 12)
+            Contract.Requires(usedSlotCount Is Nothing OrElse usedSlotCount.Value >= 0)
+            Contract.Requires(If(usedSlotCount, Me.UsedSlotCount) < If(totalSlotCount, Me.TotalSlotCount))
+            Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
+            Contract.Assume(If(gameId, Me.GameId) > 0)
+            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) > 0)
+            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) <= 12)
+            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) >= 0)
+            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) <= If(totalSlotCount, Me.TotalSlotCount))
+            Return New LocalGameDescription(If(name, Me.Name),
+                                                   If(gameStats, Me.GameStats),
+                                                   If(hostPort, _hostPort),
+                                                   If(gameId, Me.GameId),
+                                                   If(entryKey, Me.EntryKey),
+                                                   If(totalSlotCount, Me.TotalSlotCount),
+                                                   If(gameType, Me.GameType),
+                                                   If(state, Me.GameState),
+                                                   If(usedSlotCount, Me.UsedSlotCount),
+                                                   If(ageClock, Me.AgeClock))
+        End Function
+
         Public Shared Shadows Function FromArguments(ByVal name As InvariantString,
                                                      ByVal map As Map,
                                                      ByVal id As UInt32,
                                                      ByVal stats As GameStats,
-                                                     ByVal clock As IClock) As LocalGameDescription
+                                                     ByVal ageClock As IClock) As LocalGameDescription
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
-            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(ageClock IsNot Nothing)
             Contract.Requires(id > 0)
             Contract.Ensures(Contract.Result(Of LocalGameDescription)() IsNot Nothing)
             Dim totalSlotCount = map.LobbySlots.Count
@@ -182,50 +260,8 @@
                                             state:=0,
                                             UsedSlotCount:=0,
                                             hostPort:=0,
-                                            clock:=clock)
+                                            ageClock:=ageClock)
         End Function
-
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
-        Public Sub New(ByVal gameDescription As GameDescription,
-                       ByVal port As UShort,
-                       ByVal clock As IClock)
-            Me.New(gameDescription.Name,
-                   gameDescription.GameStats,
-                   port,
-                   gameDescription.GameId,
-                   gameDescription.EntryKey,
-                   gameDescription.TotalSlotCount,
-                   gameDescription.GameType,
-                   gameDescription.GameState,
-                   gameDescription.UsedSlotCount,
-                   clock,
-                   gameDescription.Age)
-            Contract.Requires(gameDescription IsNot Nothing)
-            Contract.Requires(clock IsNot Nothing)
-        End Sub
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal gameStats As GameStats,
-                       ByVal hostPort As UShort,
-                       ByVal gameId As UInt32,
-                       ByVal entryKey As UInteger,
-                       ByVal totalSlotCount As Integer,
-                       ByVal gameType As Protocol.GameTypes,
-                       ByVal state As Bnet.Protocol.GameStates,
-                       ByVal usedSlotCount As Integer,
-                       ByVal clock As IClock,
-                       Optional ByVal baseAge As TimeSpan = Nothing)
-            MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, clock, baseAge)
-            Contract.Requires(gameId > 0)
-            Contract.Requires(totalSlotCount > 0)
-            Contract.Requires(totalSlotCount <= 12)
-            Contract.Requires(usedSlotCount >= 0)
-            Contract.Requires(usedSlotCount <= totalSlotCount)
-            Contract.Requires(gameStats IsNot Nothing)
-            Contract.Requires(baseAge.Ticks >= 0)
-            Contract.Requires(clock IsNot Nothing)
-            Me._hostPort = hostPort
-        End Sub
 
         Public ReadOnly Property Port As UShort
             Get
@@ -264,9 +300,8 @@
                        ByVal gameType As Protocol.GameTypes,
                        ByVal state As Bnet.Protocol.GameStates,
                        ByVal usedSlotCount As Integer,
-                       ByVal clock As IClock,
-                       Optional ByVal baseAge As TimeSpan = Nothing)
-            MyBase.new(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, clock, baseAge)
+                       ByVal ageClock As IClock)
+            MyBase.new(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, ageClock)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
@@ -274,11 +309,42 @@
             Contract.Requires(usedSlotCount <= totalSlotCount)
             Contract.Requires(gameStats IsNot Nothing)
             Contract.Requires(location IsNot Nothing)
-            Contract.Requires(baseAge.Ticks >= 0)
-            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(ageClock IsNot Nothing)
             Contract.Assume(location.Address IsNot Nothing)
             Me._address = location.Address
         End Sub
+        Public Shadows Function [With](Optional ByVal name As InvariantString? = Nothing,
+                                       Optional ByVal gameStats As GameStats = Nothing,
+                                       Optional ByVal gameId As UInt32? = Nothing,
+                                       Optional ByVal entryKey As UInt32? = Nothing,
+                                       Optional ByVal totalSlotCount As Integer? = Nothing,
+                                       Optional ByVal gameType As Protocol.GameTypes? = Nothing,
+                                       Optional ByVal state As Bnet.Protocol.GameStates? = Nothing,
+                                       Optional ByVal usedSlotCount As Integer? = Nothing,
+                                       Optional ByVal ageClock As IClock = Nothing,
+                                       Optional ByVal location As Net.IPEndPoint = Nothing) As RemoteGameDescription
+            Contract.Requires(gameId Is Nothing OrElse gameId.Value > 0)
+            Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value > 0)
+            Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value <= 12)
+            Contract.Requires(usedSlotCount Is Nothing OrElse usedSlotCount.Value >= 0)
+            Contract.Requires(If(usedSlotCount, Me.UsedSlotCount) < If(totalSlotCount, Me.TotalSlotCount))
+            Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
+            Contract.Assume(If(gameId, Me.GameId) > 0)
+            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) > 0)
+            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) <= 12)
+            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) >= 0)
+            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) <= If(totalSlotCount, Me.TotalSlotCount))
+            Return New RemoteGameDescription(If(name, Me.Name),
+                                             If(gameStats, Me.GameStats),
+                                             If(location, _address.WithPort(Me.Port)),
+                                             If(gameId, Me.GameId),
+                                             If(entryKey, Me.EntryKey),
+                                             If(totalSlotCount, Me.TotalSlotCount),
+                                             If(gameType, Me.GameType),
+                                             If(state, Me.GameState),
+                                             If(usedSlotCount, Me.UsedSlotCount),
+                                             If(ageClock, Me.AgeClock))
+        End Function
 
         Public ReadOnly Property Address As Net.IPAddress
             Get

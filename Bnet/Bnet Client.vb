@@ -68,7 +68,7 @@ Namespace Bnet
                 _failCount += 1UI
             End Sub
             Public Sub SetNameSucceeded()
-                _initialGameDescription.TrySetResult(UpdatedGameDescription(New ManualClock()))
+                _initialGameDescription.TrySetResult(UpdatedFixedGameDescription())
             End Sub
             Public Sub SetRemoved()
                 _initialGameDescription.TrySetException(New InvalidOperationException("Removed before advertising succeeded."))
@@ -95,7 +95,7 @@ Namespace Bnet
                     Return result
                 End Get
             End Property
-            Public ReadOnly Property UpdatedGameDescription(ByVal clock As IClock) As WC3.LocalGameDescription
+            Public ReadOnly Property UpdatedFixedGameDescription() As WC3.LocalGameDescription
                 Get
                     Dim useFull = False
 
@@ -113,17 +113,10 @@ Namespace Bnet
                             gameType = gameType Or WC3.Protocol.GameTypes.ObsNone
                     End Select
 
-                    Return New WC3.LocalGameDescription(name:=Me.GameName,
-                                                        gamestats:=BaseGameDescription.GameStats,
-                                                        hostport:=BaseGameDescription.Port,
-                                                        gameid:=BaseGameDescription.GameId,
-                                                        entrykey:=BaseGameDescription.EntryKey,
-                                                        totalslotcount:=BaseGameDescription.TotalSlotCount,
-                                                        gameType:=gameType,
-                                                        state:=gameState,
-                                                        usedslotcount:=BaseGameDescription.UsedSlotCount,
-                                                        baseage:=BaseGameDescription.Age,
-                                                        clock:=clock)
+                    Return BaseGameDescription.With(name:=Me.GameName,
+                                                    gameType:=gameType,
+                                                    state:=gameState,
+                                                    ageClock:=BaseGameDescription.AgeClock.Stopped())
                 End Get
             End Property
         End Class
@@ -526,7 +519,7 @@ Namespace Bnet
                     ChangeState(ClientState.CreatingGame)
                     _curAdvertisement = _advertisementList.First
                     SetReportedListenPort(_curAdvertisement.BaseGameDescription.Port)
-                    SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedGameDescription(_clock)))
+                    SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
                 Case ClientState.AdvertisingGame, ClientState.CreatingGame
                     If _advertisementList.Contains(_curAdvertisement) Then Return
                     SendPacket(Protocol.MakeCloseGame3())
@@ -823,7 +816,7 @@ Namespace Bnet
                 Case ClientState.AdvertisingGame
                     If result = 0 Then
                         'Refresh succeeded
-                        outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedGameDescription(_clock), _curAdvertisement.IsPrivate, True))
+                        outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, True))
                     Else
                         'Refresh failed (No idea why it happened, better return to channel and try again)
                         If _advertiseRefreshTicker IsNot Nothing Then
@@ -841,16 +834,16 @@ Namespace Bnet
                             _advertiseRefreshTicker = _clock.AsyncRepeat(RefreshPeriod, Sub() inQueue.QueueAction(
                                 Sub()
                                     If _state <> ClientState.AdvertisingGame Then Return
-                                    SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedGameDescription(_clock)))
+                                    SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
                                 End Sub))
                         End If
 
                         _curAdvertisement.SetNameSucceeded()
-                        outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedGameDescription(_clock), _curAdvertisement.IsPrivate, False))
+                        outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, False))
                     Else
                         'Initial advertisement failed, probably because of game name in use, try again with a new name
                         _curAdvertisement.SetNameFailed()
-                        SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedGameDescription(_clock)))
+                        SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
                     End If
             End Select
         End Sub

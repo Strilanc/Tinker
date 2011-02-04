@@ -134,7 +134,7 @@ Namespace Bnet.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.CreateGame3, New Dictionary(Of InvariantString, Object) From {
                     {"game state", game.GameState},
-                    {"seconds since creation", CUInt(game.Age.TotalSeconds)},
+                    {"seconds since creation", CUInt(game.AgeClock.ElapsedTime.TotalSeconds)},
                     {"game type", game.GameType},
                     {"unknown1=1023", 1023UI},
                     {"is ladder", 0UI},
