@@ -78,7 +78,6 @@ Namespace WC3
             Me._name = name
         End Sub
 
-        <ContractVerification(False)>
         Public Shared Function FromFile(ByVal filePath As InvariantString,
                                         ByVal wc3MapFolder As InvariantString,
                                         ByVal wc3PatchMPQFolder As InvariantString) As Map
@@ -96,9 +95,14 @@ Namespace WC3
             Dim fileChecksumCRC32 As UInt32
             Using crcStream = factory().Value
                 fileSize = CUInt(crcStream.Length)
-                fileChecksumCRC32 = crcStream.readCRC32
+                fileChecksumCRC32 = crcStream.ReadCRC32
             End Using
 
+            Contract.Assume(info.slots IsNot Nothing)
+            Contract.Assume(info.slots.Count > 0)
+            Contract.Assume(info.slots.Count <= 12)
+            Contract.Assume(info.playableWidth > 0)
+            Contract.Assume(info.playableHeight > 0)
             Return New Map(streamFactory:=factory,
                            AdvertisedPath:=IO.Path.Combine("Maps", relPath).ReplaceDirectorySeparatorWith("\"c),
                            fileSize:=fileSize,
@@ -612,7 +616,6 @@ Namespace WC3
                 Return New ReadMapInfoResult(mapName, CUShort(playableWidth), CUShort(playableHeight), options, teamedSlots)
             End Using
         End Function
-        <ContractVerification(False)>
         Private Shared Function ReadMapInfoLobbySlots(ByVal stream As IReadableStream,
                                                       ByVal options As MapOptions) As IRist(Of Slot)
             Contract.Requires(stream IsNot Nothing)
@@ -639,6 +642,7 @@ Namespace WC3
             Dim lobbySlots = New List(Of Slot)()
             For Each item In slotData
                 'Check
+                Contract.Assume(item IsNot Nothing)
                 CheckIOData(item.colorData.EnumValueIsDefined, "Unrecognized map slot color: {0}.".Frmt(item.colorData))
                 CheckIOData(item.raceData <= 4, "Unrecognized map slot race data: {0}.".Frmt(item.raceData))
                 CheckIOData(item.typeData >= 1 AndAlso item.typeData <= 3, "Unrecognized map slot type data: {0}.".Frmt(item.typeData))
@@ -663,26 +667,27 @@ Namespace WC3
                 End Select
 
                 'Use
+                Contract.Assume(CByte(lobbySlots.Count) < 12)
                 lobbySlots.Add(New Slot(index:=CByte(lobbySlots.Count),
-                                    raceUnlocked:=raceUnlocked,
-                                    Color:=item.colorData,
-                                    contents:=contents,
-                                    race:=race,
-                                    team:=0))
+                                        raceUnlocked:=raceUnlocked,
+                                        Color:=item.colorData,
+                                        contents:=contents,
+                                        race:=race,
+                                        team:=0))
             Next item
 
-            Contract.Assert(lobbySlots.Count <= rawSlotCount)
+            Contract.Assume(lobbySlots.Count <= rawSlotCount)
             CheckIOData(lobbySlots.Count > 0, "Map contains no lobby slots.")
             Return lobbySlots.AsReadableList
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IRist(Of Slot))().Count = lobbySlots.Count")>
         Private Shared Function ReadMapInfoForces(ByVal stream As IReadableStream,
                                                   ByVal lobbySlots As IRist(Of Slot),
                                                   ByVal options As MapOptions) As IRist(Of Slot)
             Contract.Requires(stream IsNot Nothing)
-            Contract.Requires(LobbySlots IsNot Nothing)
+            Contract.Requires(lobbySlots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IRist(Of Slot))().Count = LobbySlots.Count)
+            Contract.Ensures(Contract.Result(Of IRist(Of Slot))().Count = lobbySlots.Count)
 
             'Read Forces
             Dim forceCount = stream.ReadUInt32()

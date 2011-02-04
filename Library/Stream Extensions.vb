@@ -86,7 +86,7 @@ Public Module StreamExtensions
             End If
         End Function
 
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Invariant-57-23")>
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If Not finalizing AndAlso _takeOwnershipofStream Then _stream.Dispose()
             Return Nothing

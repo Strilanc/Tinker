@@ -108,6 +108,7 @@
             Contract.Requires(subStream IsNot Nothing)
             Contract.Requires(blockCount >= 0)
             Contract.Requires(firstBlockOffset >= 0)
+            Contract.Requires(firstBlockOffset <= subStream.Length)
             Me._stream = subStream
             Me._blockCount = blockCount
             Me._length = decompressedSize

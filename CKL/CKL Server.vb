@@ -92,7 +92,6 @@ Namespace CKL
                 Logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, ex.Summarize), LogMessageType.Problem)
             End Try
         End Sub
-        <ContractVerification(False)>
         Private Sub HandlePacket(ByVal socket As PacketSocket, ByVal packetData As IRist(Of Byte))
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(packetData IsNot Nothing)
@@ -116,11 +115,12 @@ Namespace CKL
                             errorMessage = "Invalid length. Require client token [4] + server token [4]."
                         Else
                             If _keyIndex >= _keys.Count Then _keyIndex = 0
-                            Dim credentials = _keys(_keyIndex).GenerateCredentials(clientToken:=data.SubView(0, 4).ToUInt32,
-                                                                                   serverToken:=data.SubView(4, 4).ToUInt32)
+                            Dim credentials = _keys(_keyIndex).Value.GenerateCredentials(
+                                    clientToken:=data.SubView(0, 4).ToUInt32,
+                                    serverToken:=data.SubView(4, 4).ToUInt32)
                             responseData = Concat(jar.Pack(credentials.AuthenticationROC),
                                                   jar.Pack(credentials.AuthenticationTFT))
-                            Logger.Log("Provided key '{0}' to {1}".Frmt(_keys(_keyIndex).Name, socket.Name), LogMessageType.Positive)
+                            Logger.Log("Provided key '{0}' to {1}".Frmt(_keys(_keyIndex).Value.Name, socket.Name), LogMessageType.Positive)
                             _keyIndex += 1
                         End If
                     Case Else

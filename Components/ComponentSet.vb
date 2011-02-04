@@ -134,9 +134,8 @@ Namespace Components
         ''' Throws an InvalidOperationException if there is no such component.
         ''' </summary>
         <Pure()>
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-46-114")>
         Private Function FindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As T
-            'verification disabled due to stupid verifier (1.2.30118.5)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T).Name = name)
             Dim result = TryFindComponent(Of T)(name)

@@ -90,6 +90,7 @@ Namespace WC3.Replay
             _compressedSize += compressedLength + CUInt(Format.BlockHeaderSize)
             _decompressedSize += usableDecompressedLength
             _blockCount += 1UI
+            Contract.Assume(_startPosition <= _stream.Length)
         End Sub
 
         Public Sub WriteData(ByVal data As IRist(Of Byte))
@@ -145,7 +146,6 @@ Namespace WC3.Replay
             End Using
         End Function
 
-        <ContractVerification(False)>
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             EndBlock()
             _stream.WriteAt(position:=_startPosition, data:=GenerateHeader())
@@ -154,6 +154,7 @@ Namespace WC3.Replay
             _blockDataBuffer.Dispose()
             _dataCompressor.Dispose()
 
+            Contract.Assume(_startPosition <= _stream.Length)
             Return Nothing
         End Function
     End Class
