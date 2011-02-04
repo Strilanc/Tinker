@@ -12,7 +12,7 @@ Namespace CKL
         Public ReadOnly name As InvariantString
         Private WithEvents _accepter As New ConnectionAccepter()
         Private ReadOnly _logger As New Logger()
-        Private ReadOnly _keys As New AsyncViewableCollection(Of CKL.KeyEntry)(outQueue:=outQueue)
+        Private ReadOnly _keys As New AsyncViewableCollection(Of NonNull(Of CKL.KeyEntry))(outQueue:=outQueue)
         Private ReadOnly _portHandle As PortPool.PortHandle
         Private ReadOnly _clock As IClock
         Private _keyIndex As Integer
@@ -51,7 +51,7 @@ Namespace CKL
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(
                 Sub()
-                    If (From k In _keys Where k.Name = keyName).Any Then
+                    If (From k In _keys Where k.Value.Name = keyName).Any Then
                         Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(keyName))
                     End If
                     Dim key = New CKL.KeyEntry(keyName, cdKeyROC, cdKeyTFT)
@@ -63,7 +63,7 @@ Namespace CKL
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(
                 Sub()
-                    Dim key = (From k In _keys Where k.Name = keyName).FirstOrDefault
+                    Dim key = (From k In _keys Where k.Value.Name = keyName Select k.Value).FirstOrDefault
                     If key Is Nothing Then Throw New InvalidOperationException("No key found with the name '{0}'.".Frmt(keyName))
                     _keys.Remove(key)
                 End Sub

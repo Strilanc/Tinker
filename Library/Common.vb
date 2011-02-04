@@ -2,7 +2,7 @@ Imports System.Numerics
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
-    'verification disabled due to stupid verifier (1.2.30118.5)
+    'verification disabled due to inadequate verifier
     <ContractVerification(False)>
     <Pure()>
     Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IEnumerable(Of String)
@@ -26,7 +26,8 @@ Public Module PoorlyCategorizedFunctions
         For Each we In body.IndexesOf(" "c).Append(body.Length) 'iterate over word endings
             Contract.Assert(ls <= ws)
             Contract.Assert(ws <= ls + maxLineLength + 1)
-            Contract.Assert(ws <= we)
+            Contract.Assume(ws <= we)
+            Contract.Assume(we <= body.Length)
 
             If ws + maxLineLength < we Then 'word will not fit on a single line
                 'Output current line, shoving as much of the word at the end of the line as possible

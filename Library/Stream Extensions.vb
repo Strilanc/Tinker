@@ -57,22 +57,12 @@ Public Module StreamExtensions
             Me._takeOwnershipofStream = takeOwnershipOfStream
         End Sub
 
-        <SuppressMessage("Microsoft.Contracts", "Ensures-26-37")>
-        Public Function Contains(ByVal item As Byte) As Boolean Implements IReadableCollection(Of Byte).Contains
-            Return (From e In Me Where item = e).Any
-        End Function
-
-        Public ReadOnly Property Count As Integer Implements IReadableCollection(Of Byte).Count
+        Public ReadOnly Property Count As Integer Implements IRist(Of Byte).Count
             Get
                 Return CInt(_stream.Length - _offset)
             End Get
         End Property
 
-        <SuppressMessage("Microsoft.Contracts", "Ensures-19-62")>
-        <SuppressMessage("Microsoft.Contracts", "Ensures-41-62")>
-        Public Function IndexOf(ByVal item As Byte) As Integer Implements IRist(Of Byte).IndexOf
-            Return (From i In Count.Range Where Me.Item(i) = item).OffsetBy(1).FirstOrDefault - 1
-        End Function
         Default Public ReadOnly Property Item(ByVal index As Integer) As Byte Implements IRist(Of Byte).Item
             Get
                 If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.FullName)

@@ -48,6 +48,8 @@
             Me._usedSlotCount = usedSlotCount
             Me._state = state
         End Sub
+        'Verification disabled because verifier doesn't seem to understand assumptions involving null coalescing
+        <ContractVerification(False)>
         Public Function [With](Optional ByVal name As InvariantString? = Nothing,
                                Optional ByVal gameStats As GameStats = Nothing,
                                Optional ByVal gameId As UInt32? = Nothing,
@@ -63,20 +65,15 @@
             Contract.Requires(usedSlotCount Is Nothing OrElse usedSlotCount.Value >= 0)
             Contract.Requires(If(usedSlotCount, Me.UsedSlotCount) < If(totalSlotCount, Me.TotalSlotCount))
             Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
-            Contract.Assume(If(gameId, Me.GameId) > 0)
-            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) > 0)
-            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) <= 12)
-            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) >= 0)
-            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) <= If(totalSlotCount, Me.TotalSlotCount))
             Return New GameDescription(If(name, _name),
-                                                If(gameStats, _gameStats),
-                                                If(gameId, _gameId),
-                                                If(entryKey, _entryKey),
-                                                If(totalSlotCount, _totalSlotCount),
-                                                If(gameType, _gameType),
-                                                If(state, _state),
-                                                If(usedSlotCount, _usedSlotCount),
-                                                If(ageClock, _ageClock))
+                                       If(gameStats, _gameStats),
+                                       If(gameId, _gameId),
+                                       If(entryKey, _entryKey),
+                                       If(totalSlotCount, _totalSlotCount),
+                                       If(gameType, _gameType),
+                                       If(state, _state),
+                                       If(usedSlotCount, _usedSlotCount),
+                                       If(ageClock, _ageClock))
         End Function
 
         Public Shared Function FromArguments(ByVal name As InvariantString,
@@ -203,6 +200,8 @@
             Contract.Requires(ageClock IsNot Nothing)
             Me._hostPort = hostPort
         End Sub
+        'Verification disabled because verifier doesn't seem to understand assumptions involving null coalescing
+        <ContractVerification(False)>
         Public Shadows Function [With](Optional ByVal name As InvariantString? = Nothing,
                                        Optional ByVal gameStats As GameStats = Nothing,
                                        Optional ByVal gameId As UInt32? = Nothing,
@@ -219,21 +218,16 @@
             Contract.Requires(usedSlotCount Is Nothing OrElse usedSlotCount.Value >= 0)
             Contract.Requires(If(usedSlotCount, Me.UsedSlotCount) < If(totalSlotCount, Me.TotalSlotCount))
             Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
-            Contract.Assume(If(gameId, Me.GameId) > 0)
-            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) > 0)
-            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) <= 12)
-            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) >= 0)
-            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) <= If(totalSlotCount, Me.TotalSlotCount))
             Return New LocalGameDescription(If(name, Me.Name),
-                                                   If(gameStats, Me.GameStats),
-                                                   If(hostPort, _hostPort),
-                                                   If(gameId, Me.GameId),
-                                                   If(entryKey, Me.EntryKey),
-                                                   If(totalSlotCount, Me.TotalSlotCount),
-                                                   If(gameType, Me.GameType),
-                                                   If(state, Me.GameState),
-                                                   If(usedSlotCount, Me.UsedSlotCount),
-                                                   If(ageClock, Me.AgeClock))
+                                            If(gameStats, Me.GameStats),
+                                            If(hostPort, _hostPort),
+                                            If(gameId, Me.GameId),
+                                            If(entryKey, Me.EntryKey),
+                                            If(totalSlotCount, Me.TotalSlotCount),
+                                            If(gameType, Me.GameType),
+                                            If(state, Me.GameState),
+                                            If(usedSlotCount, Me.UsedSlotCount),
+                                            If(ageClock, Me.AgeClock))
         End Function
 
         Public Shared Shadows Function FromArguments(ByVal name As InvariantString,
@@ -313,6 +307,8 @@
             Contract.Assume(location.Address IsNot Nothing)
             Me._address = location.Address
         End Sub
+        'Verification disabled because verifier doesn't seem to understand assumptions involving null coalescing
+        <ContractVerification(False)>
         Public Shadows Function [With](Optional ByVal name As InvariantString? = Nothing,
                                        Optional ByVal gameStats As GameStats = Nothing,
                                        Optional ByVal gameId As UInt32? = Nothing,
@@ -329,11 +325,6 @@
             Contract.Requires(usedSlotCount Is Nothing OrElse usedSlotCount.Value >= 0)
             Contract.Requires(If(usedSlotCount, Me.UsedSlotCount) < If(totalSlotCount, Me.TotalSlotCount))
             Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
-            Contract.Assume(If(gameId, Me.GameId) > 0)
-            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) > 0)
-            Contract.Assume(If(totalSlotCount, Me.TotalSlotCount) <= 12)
-            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) >= 0)
-            Contract.Assume(If(usedSlotCount, Me.UsedSlotCount) <= If(totalSlotCount, Me.TotalSlotCount))
             Return New RemoteGameDescription(If(name, Me.Name),
                                              If(gameStats, Me.GameStats),
                                              If(location, _address.WithPort(Me.Port)),

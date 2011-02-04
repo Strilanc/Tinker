@@ -91,6 +91,7 @@
         End Property
 
         '''<summary>Returns a slot based on the current slot, with the specified properties changed.</summary>
+        '''<remarks>Verification disabled because the verifier doesn't seem to understand null coalescing.</remarks>
         <Pure()>
         <ContractVerification(False)>
         Public Function [With](Optional ByVal index As Byte? = Nothing,
@@ -102,8 +103,8 @@
                                Optional ByVal handicap As Byte? = Nothing,
                                Optional ByVal locked As LockState? = Nothing) As Slot
             '[assumed instead of required due to stupid verifier]
-            Contract.Assume(Not index.HasValue OrElse index.Value < 12)
-            Contract.Assume(Not team.HasValue OrElse team.Value <= 12)
+            Contract.Assume(If(index, Me.Index) < 12)
+            Contract.Assume(If(team, Me.Team) <= 12)
             Return New Slot(index:=If(index, Me.Index),
                             color:=If(color, Me.Color),
                             team:=If(team, Me.Team),

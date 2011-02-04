@@ -50,7 +50,7 @@
         End Property
         Public ReadOnly Property MapChecksumSHA1 As Maybe(Of IRist(Of Byte))
             Get
-                Contract.Ensures(Contract.Result(Of Maybe(Of IRist(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IRist(Of Byte)))().Value.Count = 20)
+                Contract.Ensures(Not Contract.Result(Of Maybe(Of IRist(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IRist(Of Byte)))().Value.Count = 20)
                 Return _mapChecksumSHA1
             End Get
         End Property
