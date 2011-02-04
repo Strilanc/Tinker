@@ -332,6 +332,7 @@ Namespace WC3
             Using stream = _streamFactory().Value
                 If stream Is Nothing Then Throw New InvalidStateException("Invalid stream factory.")
                 If Me.FileSize <> stream.Length Then Throw New InvalidStateException("Modified map file.")
+                Contract.Assume(pos < stream.Length)
                 stream.Position = pos
                 Return stream.Read(CInt(size))
             End Using

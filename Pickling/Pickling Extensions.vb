@@ -1,7 +1,7 @@
 ﻿Namespace Pickling
     Public Module PicklingExtensions
         <Extension()> <Pure()>
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Requires-12-59")>
         Public Function PackPickle(Of T, TValue As T)(ByVal jar As IJar(Of T), ByVal value As TValue) As IPickle(Of TValue)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)

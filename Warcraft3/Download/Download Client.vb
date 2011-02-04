@@ -131,11 +131,13 @@ Namespace WC3.Download
             Get
                 Contract.Requires(HasReported)
                 Contract.Ensures(Contract.Result(Of UInt32)() <= Map.FileSize)
+                Contract.Assume(_reportedPosition <= Map.FileSize)
                 Return _reportedPosition
             End Get
             Set(ByVal value As UInt32)
                 Contract.Requires(HasReported)
                 Contract.Requires(value <= Map.FileSize)
+                Contract.Assume(value <= _map.FileSize)
                 _reportedPosition = value
             End Set
         End Property
@@ -199,7 +201,6 @@ Namespace WC3.Download
             Contract.Ensures(Contract.Result(Of Transfer)().Downloader Is downloader)
             Contract.Ensures(Contract.Result(Of Transfer)().Uploader Is uploader)
 
-            Contract.Assume(downloader.ReportedPosition <= downloader.Map.FileSize)
             Dim transfer = New Transfer(downloader:=downloader,
                                         uploader:=uploader,
                                         startingPosition:=downloader.ReportedPosition,

@@ -29,13 +29,13 @@ Namespace Pickling
             Dim valueData = _valueJars(value.Key).Value.Pack(value.Value)
             Return keyData.Concat(valueData)
         End Function
-        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of KeyValuePair(Of TKey, Object))
             Dim parsedKey = _keyJar.Parse(data)
             If Not _valueJars.ContainsKey(parsedKey.Value) Then Throw New PicklingException("No subjar with key {0}.".Frmt(parsedKey.Value))
             Dim parsedValue = _valueJars(parsedKey.Value).Value.Parse(data.SubView(parsedKey.UsedDataCount))
 
             Dim value = parsedKey.Value.KeyValue(parsedValue.Value)
+            Contract.Assume(parsedKey.UsedDataCount + parsedValue.UsedDataCount <= data.Count)
             Return value.ParsedWithDataCount(parsedKey.UsedDataCount + parsedValue.UsedDataCount)
         End Function
 
@@ -48,7 +48,8 @@ Namespace Pickling
                       "{0}: {1}".Frmt(keyDesc, valueDesc),
                       "{0}, {1}".Frmt(keyDesc, valueDesc))
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Requires-36-179")>
+        <SuppressMessage("Microsoft.Contracts", "Ensures-28-210")>
         Public Overrides Function Parse(ByVal text As String) As KeyValuePair(Of TKey, Object)
             Dim divider = If(_useSingleLineDescription, ":", ",")
             Dim p = text.IndexOf(divider, StringComparison.Ordinal)

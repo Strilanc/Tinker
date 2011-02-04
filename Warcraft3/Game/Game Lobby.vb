@@ -207,14 +207,13 @@
             RaiseEvent ChangedPublicState(Me)
         End Sub
 
-        <ContractVerification(False)>
         Private Function AllocateSpaceForNewPlayer(ByVal name As InvariantString) As Tuple(Of Slot, PlayerId)
             Contract.Ensures(Not _freeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PlayerId))().Item2))
 
             'Choose Slot
             Dim slotMatch = (From s In _slots
                              Let match = s.Contents.WantPlayer(name)
-                             ).Max(comparator:=Function(e1, e2) e1.match - e2.match)
+                             ).AssumeAny().Max(comparator:=Function(e1, e2) e1.match - e2.match)
             Contract.Assume(slotMatch IsNot Nothing)
             If slotMatch.match < SlotContents.WantPlayerPriority.Open Then
                 Throw New InvalidOperationException("No slot available for player.")
@@ -245,7 +244,9 @@
             End If
             _freeIndexes.Remove(id)
 
-            Return Tuple.Create(slot, id)
+            Dim r = Tuple.Create(slot, id)
+            Contract.Assume(Not _freeIndexes.Contains(r.Item2))
+            Return r
         End Function
         Private Function AddPlayer(ByVal newPlayer As Player,
                                    ByVal slot As Slot,
@@ -356,12 +357,12 @@
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
-        <ContractVerification(False)>
         Public Function FindMatchingSlot(ByVal query As InvariantString) As Slot
             Dim best = (From slot In _slots
                         Let match = slot.Matches(query)
                         Let content = slot.Contents.ContentType
-                        ).MaxBy(Function(item) item.match * 10 - item.content)
+                        ).AssumeAny().MaxBy(Function(item) item.match * 10 - item.content)
+            Contract.Assume(best IsNot Nothing)
             If best.match = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
             Return best.slot
         End Function
@@ -466,6 +467,7 @@
                 'swap with next open slot from target team
                 For Each offset_mod In _slots.Count.Range
                     Dim nextIndex = (slot.Index + offset_mod) Mod _slots.Count
+                    Contract.Assume(nextIndex >= 0)
                     Dim nextSlot = _slots(nextIndex)
                     If nextSlot.Team = newTeam AndAlso nextSlot.Contents.WantPlayer(sender.Name) >= SlotContents.WantPlayerPriority.Open Then
                         SwapSlotContents(nextSlot, slot)

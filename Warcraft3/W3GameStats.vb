@@ -151,7 +151,7 @@
         ''' <summary>
         ''' Constructs the game stats using some values from a map.
         ''' </summary>
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Requires-35-78")>
         Public Shared Function FromMapAndSettings(ByVal map As Map,
                                                   ByVal randomHero As Boolean,
                                                   ByVal randomRace As Boolean,
@@ -175,7 +175,7 @@
                                  PlayableWidth:=map.PlayableWidth,
                                  PlayableHeight:=map.PlayableHeight,
                                  MapChecksumXORO:=map.MapChecksumXORO,
-                                 MapChecksumSHA1:=map.MapChecksumSHA1.Maybe,
+                                 MapChecksumSHA1:=map.MapChecksumSHA1.Maybe(),
                                  AdvertisedPath:=map.AdvertisedPath,
                                  hostName:=hostName)
         End Function

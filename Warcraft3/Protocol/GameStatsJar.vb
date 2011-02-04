@@ -44,8 +44,11 @@ Namespace WC3.Protocol
         End Function
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of GameStats)
             'null-terminated
-            Dim usedDataCount = data.IndexOf(0) + 1
-            If usedDataCount <= 0 Then Throw New PicklingException("No null terminator on game statstring.")
+            Dim indexOfNull = data.IndexOf(0)
+            If Not indexOfNull.HasValue Then Throw New PicklingException("No null terminator on game statstring.")
+            Dim usedDataCount = indexOfNull.Value + 1
+            Contract.Assume(usedDataCount > 0)
+            Contract.Assume(usedDataCount <= data.Count)
 
             Dim decodedData = DecodeStatStringData(data.Take(usedDataCount - 1)).ToReadableList
             Dim parsed = DataJar.Parse(decodedData)
@@ -198,7 +201,7 @@ Namespace WC3.Protocol
             Contract.Assume(value IsNot Nothing)
             Return DataJar.Describe(PackDataValue(value))
         End Function
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Requires-7-11")>
         Public Overrides Function Parse(ByVal text As String) As GameStats
             Return ParseDataValue(DataJar.Parse(text))
         End Function

@@ -78,10 +78,9 @@ Public NotInheritable Class DeadManSwitch
         End If
     End Sub
 
-    <ContractVerification(False)>
     Public Overrides Function ToString() As String
         If _isArmed Then
-            Return "Armed: {0} remaining out of {1}".Frmt({0.Seconds, _timer.ElapsedTime - _period}.Max, _period)
+            Return "Armed: {0} remaining out of {1}".Frmt({0.Seconds, _timer.ElapsedTime - _period}.AssumeAny().Max, _period)
         Else
             Return "Disarmed: {0}".Frmt(_period)
         End If

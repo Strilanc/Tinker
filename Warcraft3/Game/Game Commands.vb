@@ -357,12 +357,10 @@ Namespace WC3
                     Case "TickPeriod"
                         If Not isShort OrElse val_us < 1 OrElse val_us > 20000 Then Throw New ArgumentException("Invalid value")
                         Dim t = CInt(val_us).Milliseconds
-                        Contract.Assume(t.Ticks >= 0)
                         target.Motor.QueueSetTickPeriod(t)
                     Case "LagLimit"
                         If Not isShort OrElse val_us < 1 OrElse val_us > 20000 Then Throw New ArgumentException("Invalid value")
                         Dim t = CInt(val_us).Milliseconds
-                        Contract.Assume(t.Ticks >= 0)
                         target.Motor.QueueSetLagLimit(t)
                     Case "GameRate"
                         If Not isDouble OrElse vald < 0.01 OrElse vald > 10 Then Throw New ArgumentException("Invalid value")

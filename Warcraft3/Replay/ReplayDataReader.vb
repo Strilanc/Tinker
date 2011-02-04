@@ -108,7 +108,6 @@
             Contract.Requires(subStream IsNot Nothing)
             Contract.Requires(blockCount >= 0)
             Contract.Requires(firstBlockOffset >= 0)
-            Contract.Requires(firstBlockOffset <= subStream.Length)
             Me._stream = subStream
             Me._blockCount = blockCount
             Me._length = decompressedSize
@@ -124,11 +123,11 @@
         ''' <param name="dataPosition">The logical starting position of the data stored in the block.</param>
         Private Sub LoadNextBlockInfo(ByVal blockPosition As Long, ByVal dataPosition As Long)
             Contract.Requires(blockPosition >= 0)
-            Contract.Requires(blockPosition <= _stream.Length)
             Contract.Requires(dataPosition >= 0)
             Contract.Requires(_blockInfoTable.Count < _blockCount)
             Contract.Ensures(_blockInfoTable.Count = Contract.OldValue(_blockInfoTable.Count) + 1)
             'Read block header
+            If blockPosition + Format.BlockHeaderSize > _stream.Length Then Throw New IO.IOException("Invalid block position.")
             _stream.Position = blockPosition
             Dim compressedDataSize = _stream.ReadUInt16()
             Dim decompressedDataSize = _stream.ReadUInt16()
@@ -157,7 +156,6 @@
             'Add to table until it contains the desired block
             While _blockInfoTable.Count <= blockIndex
                 Dim prev = _blockInfoTable.Last
-                Contract.Assume(prev.NextBlockPosition <= _stream.Length)
                 LoadNextBlockInfo(prev.NextBlockPosition, prev.NextDataPosition)
             End While
             'Retrieve from table
@@ -166,7 +164,6 @@
         ''' <summary>
         ''' Determines the block data for the given block, filling the block info table as necessary.
         ''' </summary>
-        <ContractVerification(False)>
         Private Function ReadBlockData(ByVal blockIndex As Integer) As IRist(Of Byte)
             Contract.Requires(blockIndex >= 0)
             Contract.Requires(blockIndex < _blockCount)
@@ -174,6 +171,8 @@
             Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
 
             Dim blockInfo = ReadBlockInfo(blockIndex)
+            If blockInfo.BlockLength < Format.BlockHeaderSize Then Throw New IO.IOException("Invalid block.")
+            If blockInfo.BlockPosition + blockInfo.BlockLength >= _stream.Length Then Throw New IO.IOException("Invalid block.")
             'Checksum
             Dim headerCRC32 = _stream.ReadExactAt(position:=blockInfo.BlockPosition,
                                                   exactCount:=4

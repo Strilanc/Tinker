@@ -148,10 +148,12 @@
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             'Find terminator
             Dim p = data.IndexOf(0)
-            If p < 0 Then Throw New PicklingException("No null terminator found.")
+            If Not p.HasValue Then Throw New PicklingException("No null terminator found.")
             'Parse
-            Dim parsed = SubJar.Parse(data.SubView(0, p))
-            If parsed.UsedDataCount <> p Then Throw New PicklingException("Leftover data before null terminator.")
+            Contract.Assume(p.Value >= 0)
+            Contract.Assume(p.Value < data.Count)
+            Dim parsed = SubJar.Parse(data.SubView(0, p.Value))
+            If parsed.UsedDataCount <> p.Value Then Throw New PicklingException("Leftover data before null terminator.")
             Return parsed.Value.ParsedWithDataCount(parsed.UsedDataCount + 1)
         End Function
     End Class

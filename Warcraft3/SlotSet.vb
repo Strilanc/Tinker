@@ -37,12 +37,12 @@
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
-        <ContractVerification(False)>
         Public Function FindMatchingSlot(ByVal query As InvariantString) As Slot
+            If Not _slots.Any Then Throw New OperationFailedException("No matching slot found.")
             Dim best = (From slot In _slots
                         Let match = slot.Matches(query)
                         Let contentType = slot.Contents.ContentType
-                        ).MaxBy(Function(item) item.match * 3 - item.contentType)
+                        ).AssumeAny().MaxBy(Function(item) item.match * 3 - item.contentType)
             Contract.Assume(best IsNot Nothing)
             If best.match = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
             Return best.slot

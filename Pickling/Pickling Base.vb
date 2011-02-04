@@ -160,7 +160,6 @@
             If data.Count < DataSize Then Throw New PicklingNotEnoughDataException("{0} requires {1} bytes.".Frmt(Me.GetType.Name, DataSize))
             Dim usedDataCount = CInt(DataSize)
             Contract.Assume(usedDataCount >= 0)
-            Contract.Assume(usedDataCount <= data.Count)
             Return FixedSizeParse(data.SubView(0, usedDataCount)).ParsedWithDataCount(usedDataCount)
         End Function
     End Class

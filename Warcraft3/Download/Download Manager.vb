@@ -63,6 +63,7 @@ Namespace WC3.Download
             If _allowUploads Then
                 _defaultClient = New TransferClient(Nothing, _map, _clock, {})
                 _defaultClient.MarkReported()
+                Contract.Assume(_map.FileSize <= _defaultClient.Map.FileSize)
                 _defaultClient.ReportedPosition = _map.FileSize
             End If
 
@@ -234,6 +235,7 @@ Namespace WC3.Download
             End If
 
             client.MarkReported()
+            Contract.Assume(_map.FileSize = client.Map.FileSize)
             client.ReportedPosition = position
             client.ReportedState = state
 

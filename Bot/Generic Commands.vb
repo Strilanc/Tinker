@@ -41,6 +41,7 @@ Namespace Bot
                 End Select
             End Function
 
+            <SuppressMessage("Microsoft.Contracts", "Requires-31-203")>
             Private Shared Function TryExtractDownloadLink(ByVal html As String) As String
                 Contract.Requires(html IsNot Nothing)
 
@@ -59,6 +60,7 @@ Namespace Bot
 
                 Return "http://epicwar.com{0}".Frmt(html.Substring(posLink.Value, posLinkEnd - posLink.Value))
             End Function
+            <SuppressMessage("Microsoft.Contracts", "Requires-31-118")>
             Private Shared Function TryExtractEpicWarFilename(ByVal html As String) As String
                 Contract.Requires(html IsNot Nothing)
 

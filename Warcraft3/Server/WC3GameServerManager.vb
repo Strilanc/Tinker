@@ -238,8 +238,7 @@ Namespace WC3
             Return inQueue.QueueFunc(Function() _portHandle.Port)
         End Function
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
+        <SuppressMessage("Microsoft.Contracts", "Requires-23-223")>
         Private Function AsyncAddAdminGame(ByVal name As InvariantString, ByVal password As String) As Task(Of GameSet)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
@@ -254,7 +253,9 @@ Namespace WC3
             Dim slot2 = slot1.With(index:=1,
                                    color:=Protocol.PlayerColor.Blue,
                                    contents:=New SlotContentsClosed)
+            Dim slots = {slot1, slot2}.AsReadableList
             Contract.Assume(sha1Checksum.Count = 20)
+            Contract.Assume(slots.Count = 2)
             Dim map = New WC3.Map(streamFactory:=Nothing,
                                   advertisedPath:="Maps\AdminGame.w3x",
                                   fileSize:=1,
@@ -267,7 +268,7 @@ Namespace WC3
                                   name:="Admin Game",
                                   playableWidth:=256,
                                   playableHeight:=56,
-                                  lobbySlots:={slot1, slot2}.AsReadableList)
+                                  lobbySlots:=slots)
 
             Dim hostName = Application.ProductName
             Contract.Assume(hostName IsNot Nothing)

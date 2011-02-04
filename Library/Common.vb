@@ -167,6 +167,15 @@ Public Module PoorlyCategorizedFunctions
         End Select
     End Function
     <Extension()> <Pure()>
+    Public Function AssumeAny(Of T)(ByVal sequence As IEnumerable(Of T)) As IEnumerable(Of T)
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))().Any())
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() Is sequence)
+        Contract.Assume(sequence.Any())
+        Return sequence
+    End Function
+    <Extension()> <Pure()>
     Public Function EnumUInt32WithSet(Of T)(ByVal value As T, ByVal [option] As UInt32, ByVal include As Boolean) As T
         Dim v = value.DynamicDirectCastTo(Of UInt32)()
         v = If(include, v Or [option], v And Not [option])
