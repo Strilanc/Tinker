@@ -6,14 +6,14 @@
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of TValue))() IsNot Nothing)
-            Return New Pickle(Of TValue)(jar, value, jar.Pack(value).ToReadableList)
+            Return New Pickle(Of TValue)(jar, value, jar.Pack(value).ToRist)
         End Function
         <Extension()> <Pure()>
         Public Function PackPickle(Of T)(ByVal jar As ISimpleJar, ByVal value As T) As IPickle(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
-            Return New Pickle(Of T)(jar, value, jar.Pack(value).ToReadableList)
+            Return New Pickle(Of T)(jar, value, jar.Pack(value).ToRist)
         End Function
         <Extension()> <Pure()>
         Public Function ParsePickle(Of T)(ByVal jar As IJar(Of T), ByVal data As IRist(Of Byte)) As IPickle(Of T)
@@ -177,7 +177,7 @@
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
             Contract.Requires(prefixSize <= 4)
-            Return New ChecksumPrefixedFramingJar(Of T)(jar, prefixSize, Function(data) data.CRC32.Bytes.Take(prefixSize).ToReadableList)
+            Return New ChecksumPrefixedFramingJar(Of T)(jar, prefixSize, Function(data) data.CRC32.Bytes.Take(prefixSize).ToRist)
         End Function
         '''<summary>Exposes the jar as an INamedJar with the given name.</summary>
         <Extension()> <Pure()>

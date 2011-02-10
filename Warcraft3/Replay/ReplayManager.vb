@@ -130,7 +130,7 @@
                 _writer.WriteEntry(MakeTickPreOverflow(visibleActionStreak))
             Next visibleActionStreak
             _writer.WriteEntry(MakeTick(duration, If(visibleActionStreaks.LastOrDefault,
-                                                     New Protocol.PlayerActionSet() {}.AsReadableList)))
+                                                     New Protocol.PlayerActionSet() {}.AsRist)))
         End Sub
         Private Sub OnChat(ByVal speaker As Player,
                            ByVal text As String,

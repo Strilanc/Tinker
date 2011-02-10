@@ -313,7 +313,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(outputBase >= 2)
         Contract.Requires(outputBase <= 256)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
-        Return digits.ToUnsignedBigInteger(inputBase).UnsignedDigits(outputBase).ToReadableList
+        Return digits.ToUnsignedBigInteger(inputBase).UnsignedDigits(outputBase).ToRist
     End Function
     ''' <summary>
     ''' Determines a list starting with the elements of the given list but padded with default values to meet a minimum length.
@@ -327,7 +327,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IRist(Of T))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IRist(Of T))().Count = Math.Max(this.Count, minimumLength))
         If this.Count >= minimumLength Then Return this
-        Dim result = this.Concat(paddingValue.Repeated(minimumLength - this.Count)).ToReadableList
+        Dim result = this.Concat(paddingValue.Repeated(minimumLength - this.Count)).ToRist
         Contract.Assume(result.Count = Math.Max(this.Count, minimumLength))
         Return result
     End Function
@@ -360,7 +360,7 @@ Public Module PoorlyCategorizedFunctions
     Public Function ToUnsignedBytes(ByVal value As BigInteger) As IRist(Of Byte)
         Contract.Requires(value >= 0)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
-        Dim result = value.ToByteArray.AssumeNotNull().ToReadableList
+        Dim result = value.ToByteArray.AssumeNotNull().ToRist
         If result.Count > 0 AndAlso result.Last = 0 Then
             Return result.SubView(0, result.Count - 1)
         Else
@@ -381,7 +381,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
         Using sha = New System.Security.Cryptography.SHA1Managed()
-            Dim result = sha.ComputeHash(data.AsReadableStream.AsStream).AsReadableList
+            Dim result = sha.ComputeHash(data.AsReadableStream.AsStream).AsRist
             Contract.Assume(result.Count = 20)
             Return result
         End Using

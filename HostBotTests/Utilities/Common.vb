@@ -64,7 +64,7 @@ Friend Module TestingCommon
                              Optional ByVal appendSafe As Boolean = True,
                              Optional ByVal requireAllData As Boolean = True,
                              Optional ByVal description As String = Nothing)
-        Dim parsed = jar.Parse(data.ToReadableList)
+        Dim parsed = jar.Parse(data.ToRist)
         Assert.IsTrue(equater(parsed.Value, value))
         Assert.IsTrue(parsed.UsedDataCount = data.Count)
         If description IsNot Nothing Then
@@ -81,14 +81,14 @@ Friend Module TestingCommon
 
         If data.Count > 0 Then
             Try
-                Dim parsed2 = jar.Parse(data.Take(data.Count - 1).ToReadableList)
+                Dim parsed2 = jar.Parse(data.Take(data.Count - 1).ToRist)
                 Assert.IsTrue(Not requireAllData)
             Catch ex As Exception
                 Assert.IsTrue(requireAllData)
             End Try
         End If
         If appendSafe Then
-            Dim parsed2 = jar.Parse(data.Concat({1, 2, 3}).ToReadableList)
+            Dim parsed2 = jar.Parse(data.Concat({1, 2, 3}).ToRist)
             Assert.IsTrue(equater(parsed2.Value, value))
             Assert.IsTrue(parsed2.UsedDataCount >= data.Count)
             If description IsNot Nothing Then
@@ -96,7 +96,7 @@ Friend Module TestingCommon
             End If
         Else
             Try
-                Dim parsed2 = jar.Parse(data.Concat({1, 2, 3}).ToReadableList)
+                Dim parsed2 = jar.Parse(data.Concat({1, 2, 3}).ToRist)
                 Assert.IsFalse(equater(parsed2.Value, value))
                 Assert.IsTrue(parsed2.UsedDataCount >= data.Count)
             Catch ex As PicklingException

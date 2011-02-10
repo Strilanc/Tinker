@@ -21,7 +21,7 @@ Public Class PacketHandlerTest
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
                      handler:=Function(data) TaskedAction(Sub() flag = data.SubView(0, 4).ToUInt32))
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsRist)
         WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag = &H78563412)
     End Sub
@@ -35,7 +35,7 @@ Public Class PacketHandlerTest
                      handler:=Function(data) TaskedAction(Sub() flag1 = False))
         p.IncludeHandler(key:=2,
                      handler:=Function(data) TaskedAction(Sub() flag2 = True))
-        Dim result = p.HandlePacket(New Byte() {2, &H12, &H34, &H56, &H78}.AsReadableList)
+        Dim result = p.HandlePacket(New Byte() {2, &H12, &H34, &H56, &H78}.AsRist)
         WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)
@@ -50,7 +50,7 @@ Public Class PacketHandlerTest
                      handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
         p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag2 = True))
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsRist)
         WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)
@@ -63,7 +63,7 @@ Public Class PacketHandlerTest
                      handler:=Function(pickle)
                                   Throw New InvalidOperationException("Mock Exception")
                               End Function)
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsRist)
         WaitUntilTaskFails(result)
     End Sub
 
@@ -72,7 +72,7 @@ Public Class PacketHandlerTest
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() Throw New InvalidOperationException("Mock Exception")))
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsRist)
         WaitUntilTaskFails(result)
     End Sub
 
@@ -82,7 +82,7 @@ Public Class PacketHandlerTest
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag = False))
-        Dim result = p.HandlePacket(New Byte() {255, &H12, &H34, &H56, &H78}.AsReadableList)
+        Dim result = p.HandlePacket(New Byte() {255, &H12, &H34, &H56, &H78}.AsRist)
         WaitUntilTaskFails(result)
         Assert.IsTrue(flag)
     End Sub
@@ -90,7 +90,7 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub MissingHandlerTest()
         Dim p = MakeTestPacketHandler()
-        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsReadableList)
+        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsRist)
         WaitUntilTaskFails(result)
     End Sub
 
@@ -101,7 +101,7 @@ Public Class PacketHandlerTest
                      handler:=Function(pickle) TaskedAction(Sub()
                                                             End Sub)
                      ).Dispose()
-        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsReadableList)
+        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsRist)
         WaitUntilTaskFails(result)
     End Sub
 
@@ -115,7 +115,7 @@ Public Class PacketHandlerTest
         p.IncludeHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag2 = False)
                      ).Dispose()
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsRist)
         WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)

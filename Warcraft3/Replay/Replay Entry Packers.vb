@@ -50,7 +50,7 @@ Namespace WC3.Replay
             Contract.Requires(defaultPlayerSlotCount <= 12)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
             Return ReplayEntry.FromDefinitionAndValue(Format.ReplayEntryLobbyState, New Dictionary(Of InvariantString, Object) From {
-                    {"slots", (From slot In slots Select Protocol.SlotJar.PackSlot(slot)).ToReadableList},
+                    {"slots", (From slot In slots Select Protocol.SlotJar.PackSlot(slot)).ToRist},
                     {"random seed", randomSeed},
                     {"layout style", layoutStyle},
                     {"num player slots", defaultPlayerSlotCount}})

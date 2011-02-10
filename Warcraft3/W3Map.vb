@@ -123,7 +123,7 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
 
             'Parse map values
-            Dim vals = Protocol.ServerPackets.HostMapInfo.Jar.Parse(data.ToReadableList).Value
+            Dim vals = Protocol.ServerPackets.HostMapInfo.Jar.Parse(data.ToRist).Value
             Dim path = vals.ItemAs(Of String)("path").ToInvariant
             Dim size = vals.ItemAs(Of UInt32)("size")
             Dim crc32 = vals.ItemAs(Of UInt32)("crc32")
@@ -150,7 +150,7 @@ Namespace WC3
             Dim slot3 = slot1.With(index:=2,
                                    color:=Protocol.PlayerColor.Teal,
                                    contents:=New SlotContentsComputer(Protocol.ComputerLevel.Normal))
-            Dim lobbySlots = {slot1, slot2, slot3}.AsReadableList
+            Dim lobbySlots = {slot1, slot2, slot3}.AsRist
             Contract.Assume(lobbySlots.Count = 3)
 
             'Finish
@@ -384,7 +384,7 @@ Namespace WC3
                   stream = New ConcatStream(Concat(MapChecksumOverridableFileStreams(mapArchive, war3PatchArchive),
                                                    {m.AsReadableStream},
                                                    MapChecksumFileStreams(mapArchive)))
-                Dim r = sha.ComputeHash(stream.AsStream).AsReadableList
+                Dim r = sha.ComputeHash(stream.AsStream).AsRist
                 Contract.Assume(r.Count = 20)
                 Return r
             End Using
@@ -679,7 +679,7 @@ Namespace WC3
 
             Contract.Assume(lobbySlots.Count <= rawSlotCount)
             CheckIOData(lobbySlots.Count > 0, "Map contains no lobby slots.")
-            Return lobbySlots.AsReadableList
+            Return lobbySlots.AsRist
         End Function
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IRist(Of Slot))().Count = lobbySlots.Count")>
         Private Shared Function ReadMapInfoForces(ByVal stream As IReadableStream,
@@ -706,7 +706,7 @@ Namespace WC3
                         Let team = pair.Item2
                         Select slot.With(team:=CByte(team),
                                          race:=Protocol.Races.Random)
-                        ).ToReadableList
+                        ).ToRist
             Else
                 Return (From slot In lobbySlots
                         Let team = (From force In forceData
@@ -714,7 +714,7 @@ Namespace WC3
                                     Select force.index
                                     ).Single
                         Select slot.With(team:=team)
-                        ).ToReadableList
+                        ).ToRist
             End If
         End Function
 #End Region

@@ -1,7 +1,7 @@
 Namespace Bot
     Public Class Settings
-        Private _clientProfiles As IRist(Of ClientProfile) = New List(Of ClientProfile)().AsReadableList
-        Private _pluginProfiles As IRist(Of PluginProfile) = New List(Of PluginProfile)().AsReadableList
+        Private _clientProfiles As IRist(Of ClientProfile) = New List(Of ClientProfile)().AsRist
+        Private _pluginProfiles As IRist(Of PluginProfile) = New List(Of PluginProfile)().AsRist
         Private ReadOnly lock As New Object()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -14,8 +14,8 @@ Namespace Bot
             Contract.Requires(clientProfiles IsNot Nothing)
             Contract.Requires(pluginProfiles IsNot Nothing)
             SyncLock lock
-                Me._clientProfiles = clientProfiles.ToReadableList
-                Me._pluginProfiles = pluginProfiles.ToReadableList
+                Me._clientProfiles = clientProfiles.ToRist
+                Me._pluginProfiles = pluginProfiles.ToRist
             End SyncLock
         End Sub
         <Pure()>
@@ -84,7 +84,7 @@ Namespace Bot
                 Dim pluginProfileCount = reader.ReadUInt32()
                 Dim pluginProfiles = (From repeat In pluginProfileCount.Range
                                       Select New Bot.PluginProfile(reader)
-                                      ).ToReadableList
+                                      ).ToRist
                 UpdateProfiles(clientProfiles, pluginProfiles)
             End SyncLock
         End Sub

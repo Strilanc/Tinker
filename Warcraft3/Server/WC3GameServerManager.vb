@@ -243,7 +243,7 @@ Namespace WC3
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
 
-            Dim sha1Checksum = CByte(20).Range.ToReadableList
+            Dim sha1Checksum = CByte(20).Range.ToRist
             Dim slot1 = New Slot(index:=0,
                                  raceUnlocked:=False,
                                  Color:=Protocol.PlayerColor.Red,
@@ -253,7 +253,7 @@ Namespace WC3
             Dim slot2 = slot1.With(index:=1,
                                    color:=Protocol.PlayerColor.Blue,
                                    contents:=New SlotContentsClosed)
-            Dim slots = {slot1, slot2}.AsReadableList
+            Dim slots = {slot1, slot2}.AsRist
             Contract.Assume(sha1Checksum.Count = 20)
             Contract.Assume(slots.Count = 2)
             Dim map = New WC3.Map(streamFactory:=Nothing,

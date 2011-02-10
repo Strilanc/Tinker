@@ -212,8 +212,8 @@
                           elementSelector:=Function(e) e.Item1)
 
             Return (From subSequence In result
-                    Select subSequence.ToReadableList
-                    ).ToReadableList
+                    Select subSequence.ToRist
+                    ).ToRist
         End Function
         Private Sub SendQueuedGameData(ByVal record As TickRecord)
             Contract.Requires(record IsNot Nothing)
@@ -232,8 +232,8 @@
                                   Select (From actionSet In subSequence
                                           Let id = _lobby.GetVisiblePlayer(actionSet.Player).Id
                                           Select New Protocol.PlayerActionSet(id, actionSet.Actions)
-                                          ).ToReadableList
-                                  ).ToReadableList
+                                          ).ToRist
+                                  ).ToRist
 
             For Each player In _kernel.Players
                 Contract.Assume(player IsNot Nothing)

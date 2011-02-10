@@ -147,7 +147,7 @@ Public Class BnetProtocolTest
                         66, 111, 116, 0}),
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"client cd key salt", 76UI},
-                        {"exe version", New Byte() {1, 2, 3, 4}.AsReadableList},
+                        {"exe version", New Byte() {1, 2, 3, 4}.AsRist},
                         {"revision check response", 42UI},
                         {"# cd keys", 2UI},
                         {"is spawn", 0UI},
@@ -184,13 +184,13 @@ Public Class BnetProtocolTest
                 data:=key.Concat(
                       {116, 101, 115, 116, 0}),
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"client public key", key.AsReadableList},
+                        {"client public key", key.AsRist},
                         {"username", "test"}
                     })
     End Sub
     <TestMethod()>
     Public Sub ClientUserAuthenticationFinishTest()
-        Dim proof = CByte(20).Range.ToReadableList
+        Dim proof = CByte(20).Range.ToRist
         JarTest(Packets.ClientToServer.UserAuthenticationFinish.Jar,
                 equater:=Function(e1 As IRist(Of Byte), e2 As IRist(Of Byte)) e1.SequenceEqual(e2),
                 data:=proof,
@@ -198,7 +198,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientWardenTest()
-        Dim data = CByte(50).Range.ToReadableList
+        Dim data = CByte(50).Range.ToRist
         JarTest(Packets.ClientToServer.Warden.Jar,
                 equater:=Function(e1 As IRist(Of Byte), e2 As IRist(Of Byte)) e1.SequenceEqual(e2),
                 data:=data,
@@ -323,7 +323,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerProgramAuthenticationBeginTest()
-        Dim sig = CByte(128).Range.ToReadableList
+        Dim sig = CByte(128).Range.ToRist
         JarTest(Packets.ServerToClient.ProgramAuthenticationBegin.Jar,
                 data:=New Byte() {2, 0, 0, 0,
                        42, 0, 0, 0,
@@ -366,12 +366,12 @@ Public Class BnetProtocolTest
                      67,
                      65, &H32, &H30, &H30, &H30, &H30, &H30, &H30
                      }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats)
-                ).ToReadableList
+                ).ToRist
         Dim value = Packets.ServerToClient.QueryGamesList.Jar.Parse(New Byte() _
                     {2, 0, 0, 0}.
                     Concat(testGameData).
                     Concat(testGameData).
-                ToArray.AsReadableList).Value
+                ToArray.AsRist).Value
         Assert.IsTrue(value.Result = QueryGameResponse.Ok)
         Assert.IsTrue(value.Games.Count = 2)
         For Each game In value.Games
@@ -381,7 +381,7 @@ Public Class BnetProtocolTest
         'single game
         value = Packets.ServerToClient.QueryGamesList.Jar.Parse(New Byte() _
                     {0, 0, 0, 0,
-                     0, 0, 0, 0}.AsReadableList).Value
+                     0, 0, 0, 0}.AsRist).Value
         Assert.IsTrue(value.Result = QueryGameResponse.Ok)
         Assert.IsTrue(value.Games.Count = 0)
     End Sub
@@ -393,8 +393,8 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerUserAuthenticationBeginTest()
-        Dim key = CByte(32).Range.ToReadableList
-        Dim salt = key.Reverse.ToReadableList
+        Dim key = CByte(32).Range.ToRist
+        Dim salt = key.Reverse.ToRist
         JarTest(Packets.ServerToClient.UserAuthenticationBegin.Jar,
                 data:=New Byte() {0, 0, 0, 0}.Concat(salt).Concat(key),
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -405,7 +405,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerUserAuthenticationFinishTest()
-        Dim proof = CByte(20).Range.ToReadableList
+        Dim proof = CByte(20).Range.ToRist
         JarTest(Packets.ServerToClient.UserAuthenticationFinish.Jar,
                 data:=New Byte() {0, 0, 0, 0}.Concat(
                       proof).Concat(
@@ -418,7 +418,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerWardenTest()
-        Dim data = CByte(50).Range.ToReadableList
+        Dim data = CByte(50).Range.ToRist
         JarTest(Packets.ServerToClient.Warden.Jar,
                 equater:=Function(e1 As IRist(Of Byte), e2 As IRist(Of Byte)) e1.SequenceEqual(e2),
                 data:=data,

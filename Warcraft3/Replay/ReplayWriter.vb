@@ -46,7 +46,7 @@ Namespace WC3.Replay
             Me._settings = settings
             Me._providedDuration = duration
 
-            _stream.WriteAt(_startPosition, CByte(0).Repeated(CInt(Format.HeaderSize)).ToReadableList)
+            _stream.WriteAt(_startPosition, CByte(0).Repeated(CInt(Format.HeaderSize)).ToRist)
             StartBlock()
         End Sub
 
@@ -62,7 +62,7 @@ Namespace WC3.Replay
 
             'Finish block [wc3 won't accept replays which don't null-pad the last block like this]
             If _blockSizeRemaining > 0 Then
-                _dataCompressor.Write(CByte(0).Repeated(_blockSizeRemaining).ToReadableList)
+                _dataCompressor.Write(CByte(0).Repeated(_blockSizeRemaining).ToRist)
             End If
             Dim usableDecompressedLength = CUShort(BlockSize - _blockSizeRemaining)
             Dim blockDecompressedLength = CUShort(BlockSize)
@@ -71,7 +71,7 @@ Namespace WC3.Replay
             'Get compressed data
             _blockDataBuffer.Position = 0
             Contract.Assume(_blockDataBuffer.CanRead)
-            Dim compressedBlockData = _blockDataBuffer.ReadRemaining().AsReadableList
+            Dim compressedBlockData = _blockDataBuffer.ReadRemaining().AsRist
             Dim compressedLength = CUShort(compressedBlockData.Count)
 
             'compute checksum
@@ -113,7 +113,7 @@ Namespace WC3.Replay
         End Sub
         Public Sub WriteEntry(ByVal entry As ReplayEntry)
             Contract.Requires(entry IsNot Nothing)
-            WriteData(entryJar.Pack(entry).ToReadableList)
+            WriteData(entryJar.Pack(entry).ToRist)
         End Sub
 
         Private Function GenerateHeader() As IRist(Of Byte)
@@ -131,7 +131,7 @@ Namespace WC3.Replay
                 header.Write(Format.HeaderVersion)
                 header.Write(_decompressedSize)
                 header.Write(_blockCount)
-                header.Write("PX3W".ToAsciiBytes.ToReadableList)
+                header.Write("PX3W".ToAsciiBytes.ToRist)
                 header.Write(_wc3Version)
                 header.Write(_replayVersion)
                 header.Write(_settings)

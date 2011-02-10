@@ -21,7 +21,7 @@ Namespace Pickling
                 If byteText.EndsWith("]", StringComparison.Ordinal) Then byteText = byteText.Substring(0, byteText.Length - 1)
                 Return (From word In byteText.Split({" "}, StringSplitOptions.RemoveEmptyEntries)
                         Select Byte.Parse(word, NumberStyles.HexNumber, CultureInfo.InvariantCulture)
-                        ).ToReadableList
+                        ).ToRist
             Catch ex As Exception When TypeOf ex Is ArgumentException OrElse
                                        TypeOf ex Is FormatException
                 Throw New PicklingException("Invalid hex data.", ex)

@@ -9,7 +9,7 @@
 
         Public Sub New(ByVal slots As IEnumerable(Of Slot))
             Contract.Requires(slots IsNot Nothing)
-            Me._slots = slots.ToReadableList
+            Me._slots = slots.ToRist
         End Sub
 
         Public ReadOnly Property Slots As IRist(Of Slot)

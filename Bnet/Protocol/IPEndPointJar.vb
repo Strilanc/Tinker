@@ -17,7 +17,7 @@ Namespace Bnet.Protocol
                     {"protocol", If(addrBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0US, 2US)},
                     {"ip", value.Address},
                     {"port", CUShort(value.Port)},
-                    {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsReadableList}})
+                    {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsRist}})
             Return DataJar.Pack(vals)
         End Function
 

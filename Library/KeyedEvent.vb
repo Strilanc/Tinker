@@ -33,9 +33,9 @@
         Contract.Requires(key IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IRist(Of Task))() IsNot Nothing)
         SyncLock lock
-            If Not handlers.ContainsKey(key) Then Return New Task() {}.AsReadableList
+            If Not handlers.ContainsKey(key) Then Return New Task() {}.AsRist
             Contract.Assume(handlers(key) IsNot Nothing)
-            Return (From handler In handlers(key) Select handler(value)).ToReadableList
+            Return (From handler In handlers(key) Select handler(value)).ToRist
         End SyncLock
     End Function
 End Class

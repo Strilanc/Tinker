@@ -22,14 +22,14 @@ Public Class DownloadManagerTest
             fileSize:=CUInt(_data.Length),
             fileChecksumCRC32:=_data.CRC32,
             mapChecksumxoro:=1,
-            mapChecksumSHA1:=CByte(1).Repeated(20).ToReadableList,
+            mapChecksumSHA1:=CByte(1).Repeated(20).ToRist,
             playableWidth:=256,
             playableHeight:=256,
             isMelee:=True,
             usesCustomForces:=False,
             usesFixedPlayerSettings:=False,
             name:="Test",
-            lobbySlots:={New Slot(index:=0, raceUnlocked:=False, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)}.AsReadableList)
+            lobbySlots:={New Slot(index:=0, raceUnlocked:=False, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)}.AsRist)
         Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue()
         Private ReadOnly _players As New AsyncViewableCollection(Of TestPlayer)(outQueue:=outQueue)
         Private ReadOnly _logger As New Logger
@@ -51,7 +51,7 @@ Public Class DownloadManagerTest
         Public Function QueueSendMapPiece(ByVal player As Download.IPlayerDownloadAspect, ByVal position As UInteger) As Task
             Return CType(player, TestPlayer).QueueSendPacket(MakeMapFileData(
                     position,
-                    CByte(1).Repeated(CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToReadableList,
+                    CByte(1).Repeated(CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToRist,
                     player.Id,
                     HostPid))
         End Function
@@ -91,7 +91,7 @@ Public Class DownloadManagerTest
             Return MakeOtherPlayerJoined(Name,
                                          ID,
                                          0,
-                                         New Byte() {0}.AsReadableList,
+                                         New Byte() {0}.AsRist,
                                          Net.IPAddress.Loopback.WithPort(6112))
         End Function
         Public ReadOnly Property Name As InvariantString Implements Download.IPlayerDownloadAspect.Name
@@ -131,7 +131,7 @@ Public Class DownloadManagerTest
                 Return _handler.HandlePacket(
                         New Byte() {Packets.PacketPrefix, packet.Id}.Concat(
                                     CUShort(packet.Payload.Data.Count + 4).Bytes).Concat(
-                                    packet.Payload.Data).ToReadableList
+                                    packet.Payload.Data).ToRist
                 ).Catch(Sub(ex) _failFuture.SetException(ex.InnerExceptions))
             End SyncLock
         End Function
@@ -212,13 +212,13 @@ Public Class DownloadManagerTest
         clock.Advance(Download.Manager.UpdatePeriod)
         For p = Packets.MaxFileDataSize To game.Map.FileSize Step Packets.MaxFileDataSize
             dler.ExpectSentPacket(MakeMapFileData(p - Packets.MaxFileDataSize,
-                                                  Enumerable.Repeat(CByte(1), Packets.MaxFileDataSize).ToReadableList,
+                                                  Enumerable.Repeat(CByte(1), Packets.MaxFileDataSize).ToRist,
                                                   dler.ID,
                                                   TestGame.HostPid))
             dler.InjectClientMapInfo(MapTransferState.Idle, p)
         Next p
         dler.ExpectSentPacket(MakeMapFileData(game.Map.FileSize.FloorMultiple(Packets.MaxFileDataSize),
-                                              CByte(1).Repeated(CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)).ToReadableList,
+                                              CByte(1).Repeated(CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)).ToRist,
                                               dler.ID,
                                               TestGame.HostPid))
         dler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)

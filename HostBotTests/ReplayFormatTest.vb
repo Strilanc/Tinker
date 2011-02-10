@@ -70,7 +70,7 @@ Public Class ReplayFormatTest
                        3,
                        12},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"slots", New List(Of NamedValueMap)().ToReadableList},
+                        {"slots", New List(Of NamedValueMap)().ToRist},
                         {"random seed", 13UI},
                         {"layout style", Protocol.LobbyLayoutStyle.FixedPlayerSettings},
                         {"num player slots", CByte(12)}
@@ -86,7 +86,7 @@ Public Class ReplayFormatTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"joiner id", New PlayerId(2)},
                         {"name", "test"},
-                        {"shared data", {CByte(0)}.AsReadableList},
+                        {"shared data", {CByte(0)}.AsRist},
                         {"unknown", 5UI}})
     End Sub
     <TestMethod()>
@@ -119,7 +119,7 @@ Public Class ReplayFormatTest
                         {"unknown1", 2UI},
                         {"primary player id", New PlayerId(1)},
                         {"primary player name", "test"},
-                        {"primary player shared data", {CByte(1)}.AsReadableList},
+                        {"primary player shared data", {CByte(1)}.AsRist},
                         {"game name", "tes"},
                         {"unknown2", CByte(3)},
                         {"game stats", TestStats},
@@ -134,7 +134,7 @@ Public Class ReplayFormatTest
                        250, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250US},
-                        {"player action sets", New Protocol.PlayerActionSet() {}.AsReadableList}})
+                        {"player action sets", New Protocol.PlayerActionSet() {}.AsRist}})
 
         JarTest(Format.ReplayEntryTick.Jar,
                 data:={11, 0,
@@ -151,7 +151,7 @@ Public Class ReplayFormatTest
                                                          New Protocol.GameAction() {
                                 Protocol.GameAction.FromDefinitionAndValue(Protocol.GameActions.CheatGold, New Dictionary(Of InvariantString, Object) From {
                                     {"unknown", CByte(1)},
-                                    {"amount", 5UI}})}.AsReadableList)}.AsReadableList}})
+                                    {"amount", 5UI}})}.AsRist)}.AsRist}})
     End Sub
     <TestMethod()>
     Public Sub ReplayEntryTournamentForcedCountdownTest()
@@ -193,7 +193,7 @@ Public Class ReplayFormatTest
     End Sub
     <TestMethod()>
     Public Sub MakePlayerJoinedTest()
-        MakePlayerJoined(New PlayerId(1), "test", New Byte() {0}.AsReadableList)
+        MakePlayerJoined(New PlayerId(1), "test", New Byte() {0}.AsRist)
     End Sub
     <TestMethod()>
     Public Sub MakePlayerLeftTest()
@@ -201,10 +201,10 @@ Public Class ReplayFormatTest
     End Sub
     <TestMethod()>
     Public Sub MakeStartOfReplayTest()
-        MakeStartOfReplay(New PlayerId(1), "test", New Byte() {0}.AsReadableList, "test", TestStats, 5, Protocol.GameTypes.MakerBlizzard)
+        MakeStartOfReplay(New PlayerId(1), "test", New Byte() {0}.AsRist, "test", TestStats, 5, Protocol.GameTypes.MakerBlizzard)
     End Sub
     <TestMethod()>
     Public Sub MakeTickTest()
-        MakeTick(250US, New Protocol.PlayerActionSet() {}.AsReadableList)
+        MakeTick(250US, New Protocol.PlayerActionSet() {}.AsRist)
     End Sub
 End Class

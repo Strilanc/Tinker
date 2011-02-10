@@ -15,7 +15,7 @@ Public Class BnetProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeAccountLogOnFinishTest()
-        MakeAccountLogOnFinish(CByte(1).Repeated(20).ToReadableList)
+        MakeAccountLogOnFinish(CByte(1).Repeated(20).ToRist)
     End Sub
     <TestMethod()>
     Public Sub MakeAuthenticationBeginTest()
@@ -23,7 +23,7 @@ Public Class BnetProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeAuthenticationFinishTest()
-        MakeAuthenticationFinish(version:=New Byte() {1, 2, 3, 4}.AsReadableList,
+        MakeAuthenticationFinish(version:=New Byte() {1, 2, 3, 4}.AsRist,
                                  revisionCheckResponse:=1,
                                  clientCDKeySalt:=2,
                                  cdKeyOwner:="test",
@@ -70,6 +70,6 @@ Public Class BnetProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeWardenTest()
-        MakeWarden(New Byte() {0}.AsReadableList)
+        MakeWarden(New Byte() {0}.AsRist)
     End Sub
 End Class

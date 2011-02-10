@@ -50,7 +50,7 @@
         End Sub
 
         Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-            Dim data = SubJar.Pack(value).ToReadableList
+            Dim data = SubJar.Pack(value).ToRist
             If data.Count <> _dataSize Then Throw New PicklingException("Packed data did not take exactly {0} bytes.".Frmt(_dataSize))
             Return data
         End Function
@@ -82,7 +82,7 @@
         End Sub
 
         Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-            Dim data = SubJar.Pack(value).ToReadableList
+            Dim data = SubJar.Pack(value).ToRist
             If data.Count > _maxDataCount Then Throw New PicklingException("Packed data did not fit in {0} bytes.".Frmt(_maxDataCount))
             Return data
         End Function
@@ -113,7 +113,7 @@
         End Sub
 
         Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-            Dim subData = SubJar.Pack(value).ToReadableList
+            Dim subData = SubJar.Pack(value).ToRist
             Dim sizeBytes = CULng(subData.Count).Bytes.Take(_prefixSize)
             If sizeBytes.Take(_prefixSize).ToUValue <> subData.Count Then Throw New PicklingException("Unable to fit byte count into size prefix.")
             Return sizeBytes.Concat(subData)
@@ -253,7 +253,7 @@
         End Sub
 
         Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-            Dim subData = SubJar.Pack(value).ToReadableList
+            Dim subData = SubJar.Pack(value).ToRist
             Dim checksum = _checksumFunction(subData)
             Contract.Assume(checksum IsNot Nothing)
             Contract.Assume(checksum.Count = _checksumSize)
@@ -287,7 +287,7 @@
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
-            Dim parsed = SubJar.Parse(data.Reverse.ToReadableList)
+            Dim parsed = SubJar.Parse(data.Reverse.ToRist)
             If parsed.UsedDataCount <> data.Count Then Throw New PicklingException("Leftover reversed data.")
             Return parsed
         End Function

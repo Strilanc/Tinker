@@ -44,7 +44,7 @@ Public NotInheritable Class PacketStreamer
         If totalSize > _maxPacketSize Then Throw New IO.InvalidDataException("Packet exceeded maximum size.")
         Dim body = Await _subStream.ReadExactAsync(totalSize - FullHeaderSize)
 
-        Return Concat(header, body).ToReadableList()
+        Return Concat(header, body).ToRist()
     End Function
 
     Public Function WritePacket(ByVal preheader As IEnumerable(Of Byte), ByVal payload As IEnumerable(Of Byte)) As IEnumerable(Of Byte)

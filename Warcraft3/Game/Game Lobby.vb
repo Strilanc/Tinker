@@ -98,7 +98,7 @@
                                                     raceUnlocked:=False))
             End Select
 
-            Return result.AsReadableList
+            Return result.AsRist
         End Function
 
         Private ReadOnly Property AcceptingPlayers As Boolean

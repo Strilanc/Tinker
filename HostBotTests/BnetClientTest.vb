@@ -17,7 +17,7 @@ Public Class BnetClientTest
 
         Public ReadOnly Property WC3ExeVersion As IRist(Of Byte) Implements IProductInfoProvider.ExeVersion
             Get
-                Return New Byte() {1, 2, 3, 4}.AsReadableList
+                Return New Byte() {1, 2, 3, 4}.AsRist
             End Get
         End Property
 
@@ -59,14 +59,14 @@ Public Class BnetClientTest
         'program auth begin (C->S)
         Dim packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.ProgramAuthenticationBegin)
-        Dim body = Protocol.Packets.ClientToServer.ProgramAuthenticationBegin.Jar.Parse(packet.Skip(4).ToReadableList)
+        Dim body = Protocol.Packets.ClientToServer.ProgramAuthenticationBegin.Jar.Parse(packet.Skip(4).ToRist)
         Assert.IsTrue(body.Value.ItemAs(Of UInt32)("protocol") = 0)
 
         'ping
         stream.EnqueueRead({&HFF, &H25, &H8, &H0, &H6A, &H55, &H70, &H1C})
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.Ping)
-        Assert.IsTrue(Protocol.Packets.ClientToServer.Ping.Jar.Parse(packet.Skip(4).ToReadableList).Value = New Byte() {&H6A, &H55, &H70, &H1C}.ToUInt32)
+        Assert.IsTrue(Protocol.Packets.ClientToServer.Ping.Jar.Parse(packet.Skip(4).ToRist).Value = New Byte() {&H6A, &H55, &H70, &H1C}.ToUInt32)
 
         'program auth begin (S->C)
         Dim serverCdKeySalt = 19UI
@@ -80,13 +80,13 @@ Public Class BnetClientTest
                     {"mpq filetime", Now()},
                     {"revision check seed", "[not tested]"},
                     {"revision check challenge", "[not tested]"},
-                    {"server signature", CByte(128).Range.ToReadableList}
+                    {"server signature", CByte(128).Range.ToRist}
                 })))
 
         'program auth finish (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.ProgramAuthenticationFinish)
-        body = Protocol.Packets.ClientToServer.ProgramAuthenticationFinish.Jar.Parse(packet.Skip(4).ToReadableList)
+        body = Protocol.Packets.ClientToServer.ProgramAuthenticationFinish.Jar.Parse(packet.Skip(4).ToRist)
         Assert.IsTrue(body.Value.ItemAs(Of UInt32)("client cd key salt") = 13)
         Assert.IsTrue(body.Value.ItemAs(Of UInt32)("# cd keys") = 2)
         Assert.IsTrue(body.Value.ItemAs(Of UInt32)("is spawn") = 0)
@@ -114,13 +114,13 @@ Public Class BnetClientTest
         'user auth begin (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.UserAuthenticationBegin)
-        body = Protocol.Packets.ClientToServer.UserAuthenticationBegin.Jar.Parse(packet.Skip(4).ToReadableList)
+        body = Protocol.Packets.ClientToServer.UserAuthenticationBegin.Jar.Parse(packet.Skip(4).ToRist)
         Assert.IsTrue(body.Value.ItemAs(Of IRist(Of Byte))("client public key").SequenceEqual(credentials.PublicKeyBytes))
         Assert.IsTrue(body.Value.ItemAs(Of String)("username") = profile.userName)
 
         'user auth begin (S->C)
-        Dim accountSalt = CByte(1).Repeated(32).ToReadableList
-        Dim serverPublicKey = CByte(2).Repeated(32).ToReadableList
+        Dim accountSalt = CByte(1).Repeated(32).ToRist
+        Dim serverPublicKey = CByte(2).Repeated(32).ToRist
         stream.EnqueuedReadPacket(
             preheader:={&HFF, Protocol.PacketId.UserAuthenticationBegin},
             sizeByteCount:=2,
@@ -133,7 +133,7 @@ Public Class BnetClientTest
         'user auth finish (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.UserAuthenticationFinish)
-        Assert.IsTrue(credentials.ClientPasswordProof(accountSalt, serverPublicKey).SequenceEqual(Protocol.Packets.ClientToServer.UserAuthenticationFinish.Jar.Parse(packet.Skip(4).ToReadableList).Value))
+        Assert.IsTrue(credentials.ClientPasswordProof(accountSalt, serverPublicKey).SequenceEqual(Protocol.Packets.ClientToServer.UserAuthenticationFinish.Jar.Parse(packet.Skip(4).ToRist).Value))
 
         'user auth finish (S->C)
         stream.EnqueuedReadPacket(
@@ -151,12 +151,12 @@ Public Class BnetClientTest
         'net game port (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.NetGamePort)
-        Protocol.Packets.ClientToServer.NetGamePort.Jar.Parse(packet.Skip(4).ToReadableList)
+        Protocol.Packets.ClientToServer.NetGamePort.Jar.Parse(packet.Skip(4).ToRist)
 
         'enter chat (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.EnterChat)
-        Protocol.Packets.ClientToServer.EnterChat.Jar.Parse(packet.Skip(4).ToReadableList)
+        Protocol.Packets.ClientToServer.EnterChat.Jar.Parse(packet.Skip(4).ToRist)
 
         stream.EnqueueClosed()
         client.Dispose()

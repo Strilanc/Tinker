@@ -9,7 +9,7 @@ Namespace WC3.Protocol
             Return Packet.FromValue(ServerPackets.PlayersLagging, (From lagger In laggers
                                                                    Select New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                                                            {"id", lagger},
-                                                                           {"initial milliseconds used", 2000UI}})).ToReadableList)
+                                                                           {"initial milliseconds used", 2000UI}})).ToRist)
         End Function
         <Pure()>
         Public Function MakePlayerStoppedLagging(ByVal lagger As PlayerId,
@@ -32,13 +32,13 @@ Namespace WC3.Protocol
                 Case chatType.Game
                     Contract.Assume(receivingGroup.HasValue)
                     Return Packet.FromValue(ServerPackets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"requested receivers", receivers.ToReadableList},
+                            {"requested receivers", receivers.ToRist},
                             {"speaker", sender},
                             {"type group", chatType.KeyValue(Of Object)(receivingGroup.Value)},
                             {"message", text}})
                 Case chatType.Lobby
                     Return Packet.FromValue(ServerPackets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"requested receivers", receivers.ToReadableList},
+                            {"requested receivers", receivers.ToRist},
                             {"speaker", sender},
                             {"type group", chatType.KeyValue(Of Object)(New NoValue)},
                             {"message", text}})
@@ -126,7 +126,7 @@ Namespace WC3.Protocol
             End If
 
             Return Packet.FromValue(ServerPackets.LobbyState, New Dictionary(Of InvariantString, Object) From {
-                    {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver)).ToReadableList},
+                    {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver)).ToRist},
                     {"random seed", randomSeed},
                     {"layout style", layoutStyle},
                     {"num player slots", reportedPlayerSlots}})
@@ -287,7 +287,7 @@ Namespace WC3.Protocol
                     listenPort:=listenPort,
                     peerKey:=peerKey,
                     name:=name,
-                    peerData:=New Byte() {0}.AsReadableList,
+                    peerData:=New Byte() {0}.AsRist,
                     internalEndPoint:=internalAddress.WithPort(sendingPort)))
         End Function
         <Pure()>

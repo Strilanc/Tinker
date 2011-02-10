@@ -176,7 +176,7 @@ Namespace Bnet
                 Contract.Assume(sharedValue >= 0)
                 Dim result = (From slice In sharedValue.ToUnsignedBytes.PaddedTo(32).Deinterleaved(2)
                               Select slice.SHA1
-                              ).Interleaved.ToReadableList
+                              ).Interleaved.ToRist
                 Contract.Assume(result.Count = 40)
                 Return result
             End Get

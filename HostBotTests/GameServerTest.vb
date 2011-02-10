@@ -89,7 +89,7 @@ Public Class GameServerTest
             'Try read Greet
             Dim packet = testStream.RetrieveWritePacket()
             Assert.IsTrue(packet(1) = WC3.Protocol.PacketId.Greet)
-            Dim response = WC3.Protocol.ServerPackets.Greet.Jar.Parse(packet.Skip(4).ToReadableList)
+            Dim response = WC3.Protocol.ServerPackets.Greet.Jar.Parse(packet.Skip(4).ToRist)
             'Check not closed
             Assert.IsTrue(Not testStream.RetrieveClosed(timeout:=100))
             'Cleanup

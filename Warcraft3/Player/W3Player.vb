@@ -124,7 +124,7 @@ Namespace WC3
                                     IsFake:=True,
                                     logger:=logger,
                                     PeerKey:=0,
-                                    PeerData:=New Byte() {0}.AsReadableList,
+                                    PeerData:=New Byte() {0}.AsRist,
                                     PacketHandlerLogger:=Protocol.MakeW3PacketHandlerLogger(name, logger),
                                     ListenEndPoint:=New Net.IPAddress({0, 0, 0, 0}).WithPort(0),
                                     taskTestCanHost:=hostFail.Task)

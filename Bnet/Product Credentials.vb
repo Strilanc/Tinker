@@ -228,7 +228,7 @@
             Contract.Ensures(Contract.Result(Of IRist(Of T))().Count = items.Count)
             Return (From i In items.Count.Range
                     Select items((offset + factor * i) Mod items.Count)
-                    ).ToReadableList
+                    ).ToRist
         End Function
 
         '''<summary>Generates product credentials using a wc3 cd key.</summary>
@@ -249,11 +249,11 @@
             If badChars.Any Then Throw New ArgumentException("Bad Char: '{0}'".Frmt(badChars.First), "key")
 
             'Map cd key characters into digits of a base 25 number
-            Dim digits25 = (From c In key Select digitMap(c)).ToReadableList
+            Dim digits25 = (From c In key Select digitMap(c)).ToRist
 
             'Permute base 5 digits
             Dim digits5 = digits25.ConvertFromBaseToBase(25, 5).PaddedTo(minimumLength:=NumDigitsBase5)
-            digits5 = digits5.Deinterleaved(2).Reverse.Interleaved.ToReadableList
+            digits5 = digits5.Deinterleaved(2).Reverse.Interleaved.ToRist
             digits5 = digits5.Permute(offset:=10, factor:=17)
 
             'Xor-Permute nibbles

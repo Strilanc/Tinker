@@ -13,7 +13,7 @@ Namespace Bnet.Protocol
 
         Public Sub New(ByVal result As QueryGameResponse, ByVal games As IEnumerable(Of WC3.RemoteGameDescription))
             Contract.Requires(games IsNot Nothing)
-            Me._games = games.ToReadableList
+            Me._games = games.ToRist
             Me._result = result
         End Sub
 
@@ -108,14 +108,14 @@ Namespace Bnet.Protocol
         Private Shared Function PackRawGameDescriptions(ByVal games As IEnumerable(Of WC3.RemoteGameDescription)) As IRist(Of NamedValueMap)
             Contract.Requires(games IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of NamedValueMap))() IsNot Nothing)
-            Return (From game In games Select PackRawGameDescription(game)).ToReadableList
+            Return (From game In games Select PackRawGameDescription(game)).ToRist
         End Function
         Private Shared Function ParseRawGameDescriptions(ByVal games As IEnumerable(Of NamedValueMap),
                                                          ByVal clock As IClock) As IRist(Of WC3.RemoteGameDescription)
             Contract.Requires(games IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of WC3.RemoteGameDescription))() IsNot Nothing)
-            Return (From game In games Select ParseRawGameDescription(game, clock)).ToReadableList
+            Return (From game In games Select ParseRawGameDescription(game, clock)).ToRist
         End Function
 
         Private Shared Function PackRawGameDescription(ByVal game As WC3.RemoteGameDescription) As NamedValueMap

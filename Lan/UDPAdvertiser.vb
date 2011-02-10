@@ -45,7 +45,7 @@ Namespace Lan
                 Contract.Requires(gameDescription IsNot Nothing)
                 Contract.Requires(targetHosts IsNot Nothing)
                 Me._gameDescription = gameDescription
-                Me._targetHosts = targetHosts.ToReadableList
+                Me._targetHosts = targetHosts.ToRist
             End Sub
 
             Public ReadOnly Property GameDescription As WC3.LocalGameDescription

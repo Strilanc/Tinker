@@ -188,8 +188,8 @@ Namespace WC3
             AddHandler _loadScreen.EmptyTick, Sub(sender) _kernel.OutQueue.QueueAction(
                 Sub() RaiseEvent Tick(sender:=Me,
                                       TimeSpan:=0,
-                                      actualActionStreaks:=New IRist(Of Protocol.SpecificPlayerActionSet)() {}.AsReadableList,
-                                      visibleActionStreaks:=New IRist(Of Protocol.PlayerActionSet)() {}.AsReadableList))
+                                      actualActionStreaks:=New IRist(Of Protocol.SpecificPlayerActionSet)() {}.AsRist,
+                                      visibleActionStreaks:=New IRist(Of Protocol.PlayerActionSet)() {}.AsRist))
             AddHandler _loadScreen.Finished, Sub(sender) _motor.QueueStart()
         End Sub
         Private Sub InitMotor()
@@ -294,7 +294,7 @@ Namespace WC3
         End Function
         Public Function QueueGetPlayers() As Task(Of IRist(Of Player))
             Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Player)))() IsNot Nothing)
-            Return _kernel.InQueue.QueueFunc(Function() _kernel.Players.ToReadableList)
+            Return _kernel.InQueue.QueueFunc(Function() _kernel.Players.ToRist)
         End Function
         Public Function QueueGetState() As Task(Of GameState)
             Contract.Ensures(Contract.Result(Of Task(Of GameState))() IsNot Nothing)

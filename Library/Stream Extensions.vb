@@ -5,7 +5,7 @@ Public Module StreamExtensions
     Public Sub WriteNullTerminatedString(ByVal bw As IWritableStream, ByVal data As String)
         Contract.Requires(bw IsNot Nothing)
         Contract.Requires(data IsNot Nothing)
-        bw.Write(data.ToAsciiBytes.Append(0).ToReadableList)
+        bw.Write(data.ToAsciiBytes.Append(0).ToRist)
     End Sub
     <Extension()>
     Public Function ReadNullTerminatedString(ByVal reader As IReadableStream,

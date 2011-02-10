@@ -61,7 +61,7 @@ Namespace Components
         ''' <summary>Asynchronously determines a list of all components in the set.</summary>
         Public Function QueueGetAllComponents() As Task(Of IRist(Of IBotComponent))
             Contract.Ensures(Contract.Result(Of Task(Of IRist(Of IBotComponent)))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _components.ToReadableList())
+            Return inQueue.QueueFunc(Function() _components.ToRist())
         End Function
 
         ''' <summary>

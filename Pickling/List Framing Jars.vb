@@ -30,7 +30,7 @@
                 usedDataCount += subParsed.UsedDataCount
             End While
 
-            Dim result = values.ToReadableList.ParsedWithDataCount(usedDataCount)
+            Dim result = values.ToRist.ParsedWithDataCount(usedDataCount)
             Contract.Assume(result.UsedDataCount <= data.Count)
             Return result
         End Function
@@ -42,7 +42,7 @@
         Public Overrides Function Parse(ByVal text As String) As IRist(Of T)
             Return (From line In text.SplitListDescription(_useSingleLineDescription)
                     Select _subJar.Parse(line)
-                    ).ToReadableList
+                    ).ToRist
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of IRist(Of T))
@@ -95,7 +95,7 @@
                 Contract.Assume(usedDataCount <= data.Count)
             Next repeat
 
-            Return values.ToReadableList.ParsedWithDataCount(usedDataCount)
+            Return values.ToRist.ParsedWithDataCount(usedDataCount)
         End Function
 
         Public Overrides Function Describe(ByVal value As IRist(Of T)) As String
@@ -105,7 +105,7 @@
         Public Overrides Function Parse(ByVal text As String) As IRist(Of T)
             Return (From line In text.SplitListDescription(_useSingleLineDescription)
                     Select _subJar.Parse(line)
-                    ).ToReadableList
+                    ).ToRist
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of IRist(Of T))
@@ -281,7 +281,7 @@
 
         Public Property Value As IRist(Of T) Implements IValueEditor(Of IRist(Of T)).Value
             Get
-                Return (From e In subControls Select (e.SubControl.Value)).ToReadableList
+                Return (From e In subControls Select (e.SubControl.Value)).ToRist
             End Get
             Set(ByVal value As IRist(Of T))
                 Contract.Assume(value IsNot Nothing)

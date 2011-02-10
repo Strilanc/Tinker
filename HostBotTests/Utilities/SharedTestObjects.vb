@@ -11,7 +11,7 @@ Friend Module SharedTestObjects
         advertisedPath:="Maps\test.w3x",
         filesize:=1,
         fileChecksumCRC32:=1,
-        mapChecksumSHA1:=CByte(20).Range.ToReadableList,
+        mapChecksumSHA1:=CByte(20).Range.ToRist,
         mapChecksumXORO:=1,
         ismelee:=False,
         usesCustomForces:=True,
@@ -28,7 +28,7 @@ Friend Module SharedTestObjects
                          raceunlocked:=False,
                          color:=PlayerColor.Blue,
                          team:=0,
-                         contents:=New SlotContentsOpen)}.AsReadableList)
+                         contents:=New SlotContentsOpen)}.AsRist)
     Friend ReadOnly TestArgument As New Tinker.Commands.CommandArgument("")
     Friend ReadOnly TestStats As GameStats = GameStats.FromMapAndArgument(
             map:=TestMap,

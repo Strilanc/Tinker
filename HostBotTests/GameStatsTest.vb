@@ -17,7 +17,7 @@ Public Class GameStatsTest
                                    &H39, &H6F, &H6B, &H59, &HAF, &H17, &HA3, &HCD, &H9B, &H6F, &H0}
         Dim jar = New WC3.Protocol.GameStatsJar()
 
-        Dim stats = jar.Parse(testData.AsReadableList).Value
+        Dim stats = jar.Parse(testData.AsRist).Value
         Assert.IsTrue(Not stats.randomHero)
         Assert.IsTrue(Not stats.randomRace)
         Assert.IsTrue(Not stats.allowFullSharedControl)

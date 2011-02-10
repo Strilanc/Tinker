@@ -46,7 +46,7 @@ Namespace WC3.Download
             Me._map = map
             Me._player = player
             Me._clock = clock
-            Me._hooks = hooks.ToReadableList
+            Me._hooks = hooks.ToRist
             Me._lastActivityClock = _clock.Restarted
         End Sub
 
