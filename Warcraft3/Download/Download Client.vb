@@ -88,6 +88,7 @@ Namespace WC3.Download
                 Return _lastActivityClock.ElapsedTime
             End Get
         End Property
+        <SuppressMessage("Microsoft.Contracts", "Requires-6-11")>
         Public ReadOnly Property LocalState As Protocol.MapTransferState
             Get
                 If _transfer Is Nothing Then Return Protocol.MapTransferState.Idle
@@ -216,8 +217,6 @@ Namespace WC3.Download
             uploader._expectedState = Protocol.MapTransferState.Uploading
             uploader._lastTransferPartner = downloader
 
-            Contract.Assume(downloader.Transfer Is transfer)
-            Contract.Assume(uploader.Transfer Is transfer)
             Return transfer
         End Function
         Public Sub ClearTransfer()
@@ -233,7 +232,6 @@ Namespace WC3.Download
             Contract.Ensures(HasReported)
             _lastActivityClock = _lastActivityClock.Restarted
             _hasReported = True
-            Contract.Assume(HasReported)
         End Sub
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task

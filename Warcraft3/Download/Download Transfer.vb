@@ -38,9 +38,6 @@ Namespace WC3.Download
             Me._durationClock = clock.Restarted()
             Me._lastActivityClock = clock.Restarted()
             Me._startingPosition = startingPosition
-            Contract.Assume(Me.Downloader Is downloader)
-            Contract.Assume(Me.Uploader Is uploader)
-            Contract.Assume(Me.StartingPosition = startingPosition)
         End Sub
 
         Public ReadOnly Property Downloader As TransferClient
