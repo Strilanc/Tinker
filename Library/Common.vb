@@ -2,6 +2,16 @@ Imports System.Numerics
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
+    <Extension()> <Pure()>
+    Public Function MaybeFirst(Of T)(ByVal sequence As IEnumerable(Of T)) As Maybe(Of T)
+        Contract.Requires(sequence IsNot Nothing)
+        Using e = sequence.GetEnumerator()
+            If Not e.MoveNext() Then Return Maybe(Of T).Empty
+            If e.Current Is Nothing Then Throw New NullReferenceException("sequence.First()")
+            Return e.Current
+        End Using
+    End Function
+
     'verification disabled due to inadequate verifier
     <ContractVerification(False)>
     <Pure()>

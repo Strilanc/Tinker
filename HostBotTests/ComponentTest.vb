@@ -174,18 +174,6 @@ Public Class ComponentTest
         Assert.IsTrue(removedItems.SequenceEqual({t2}))
     End Sub
     <TestMethod()>
-    Public Sub ComponentSetTest_GetAllComponentsT()
-        Dim t1 = New TestComponent1("t1")
-        Dim t2 = New TestComponent1("t2")
-        Dim t3 = New TestComponent2("t3")
-        Dim c = New ComponentSet()
-        c.QueueAddComponent(t1)
-        c.QueueAddComponent(t2)
-        c.QueueAddComponent(t3)
-        Assert.IsTrue(WaitValue(c.QueueGetAllComponents(Of TestComponent1)).SequenceEqual({t1, t2}))
-        Assert.IsTrue(WaitValue(c.QueueGetAllComponents(Of TestComponent2)).SequenceEqual({t3}))
-    End Sub
-    <TestMethod()>
     Public Sub ComponentSetTest_FindComponent()
         Dim t1 = New TestComponent1("t1")
         Dim t2 = New TestComponent1("t2")

@@ -40,7 +40,7 @@ Namespace Components
             Contract.Requires(component IsNot Nothing)
             If _components.Contains(component) Then
                 Throw New InvalidOperationException("Component already added.")
-            ElseIf TryFindComponent(component.Type, component.Name) IsNot Nothing Then
+            ElseIf TryFindComponent(component.Type, component.Name).HasValue Then
                 Throw New InvalidOperationException("There is already a {0} named {1}.".Frmt(component.Type, component.Name))
             End If
             _components.Add(component)
@@ -61,21 +61,7 @@ Namespace Components
         ''' <summary>Asynchronously determines a list of all components in the set.</summary>
         Public Function QueueGetAllComponents() As Task(Of IRist(Of IBotComponent))
             Contract.Ensures(Contract.Result(Of Task(Of IRist(Of IBotComponent)))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _components.ToReadableList)
-        End Function
-
-        ''' <summary>Returns an enumeration of components of a type in the set.</summary>
-        <Pure()>
-        Private Function EnumComponents(Of T As IBotComponent)() As IEnumerable(Of T)
-            Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
-            Return From component In _components
-                   Where TypeOf component Is T
-                   Select DirectCast(component, T)
-        End Function
-        ''' <summary>Asynchronously determines a list of all components of a type in the set.</summary>
-        Public Function QueueGetAllComponents(Of T As IBotComponent)() As Task(Of IRist(Of T))
-            Contract.Ensures(Contract.Result(Of Task(Of IRist(Of T)))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() EnumComponents(Of T)().ToReadableList)
+            Return inQueue.QueueFunc(Function() _components.ToReadableList())
         End Function
 
         ''' <summary>
@@ -83,13 +69,11 @@ Namespace Components
         ''' Returns null if there is no such component.
         ''' </summary>
         <Pure()>
-        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Name = name")>
-        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Type = type")>
         Private Function TryFindComponent(ByVal type As InvariantString,
-                                          ByVal name As InvariantString) As IBotComponent
-            Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Name = name)
-            Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Type = type)
-            Return (From c In _components Where c.Type = type AndAlso c.Name = name).FirstOrDefault
+                                          ByVal name As InvariantString) As Maybe(Of IBotComponent)
+            Contract.Ensures(Not Contract.Result(Of Maybe(Of IBotComponent))().HasValue OrElse Contract.Result(Of Maybe(Of IBotComponent)).Value.Name = name)
+            Contract.Ensures(Not Contract.Result(Of Maybe(Of IBotComponent))().HasValue OrElse Contract.Result(Of Maybe(Of IBotComponent)).Value.Type = type)
+            Return (From c In _components Where c.Type = type AndAlso c.Name = name).MaybeFirst()
         End Function
         ''' <summary>
         ''' Determines a component, from the set, with the given type and name identifiers.
@@ -102,10 +86,10 @@ Namespace Components
             Contract.Ensures(Contract.Result(Of IBotComponent)().Name = name)
             Contract.Ensures(Contract.Result(Of IBotComponent)().Type = type)
             Dim result = TryFindComponent(type, name)
-            If result Is Nothing Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(type, name))
-            Contract.Assume(result.Name = name)
-            Contract.Assume(result.Type = type)
-            Return result
+            If Not result.HasValue Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(type, name))
+            Contract.Assume(result.Value.Name = name)
+            Contract.Assume(result.Value.Type = type)
+            Return result.Value
         End Function
         ''' <summary>
         ''' Asynchronously determines a component, from the set, with the given type and name identifiers.
@@ -122,11 +106,10 @@ Namespace Components
         ''' Returns null if there is no such component.
         ''' </summary>
         <Pure()>
-        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of T)() Is Nothing OrElse Contract.Result(Of T).Name = name")>
-        Private Function TryFindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As T
-            Contract.Ensures(Contract.Result(Of T)() Is Nothing OrElse Contract.Result(Of T).Name = name)
-            Dim result = (From c In Me.EnumComponents(Of T)() Where c.Name = name).FirstOrDefault
-            Contract.Assume(result Is Nothing OrElse result.Name = name)
+        Private Function TryFindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As Maybe(Of T)
+            Contract.Ensures(Not Contract.Result(Of Maybe(Of T))().HasValue OrElse Contract.Result(Of Maybe(Of T))().Value.Name = name)
+            Dim result = (From c In _components.OfType(Of T)() Where c.Name = name).MaybeFirst()
+            Contract.Assume(Not result.HasValue OrElse result.Value.Name = name)
             Return result
         End Function
         ''' <summary>
@@ -139,8 +122,8 @@ Namespace Components
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T).Name = name)
             Dim result = TryFindComponent(Of T)(name)
-            If result Is Nothing Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(GetType(T), name))
-            Return result
+            If Not result.HasValue Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(GetType(T), name))
+            Return result.Value
         End Function
         ''' <summary>
         ''' Asynchronously determines a component, from the set, with the given type and name.
@@ -158,13 +141,12 @@ Namespace Components
         Private Function FindOrElseConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As T
             Contract.Requires(factory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
-            Dim result = EnumComponents(Of T)().FirstOrDefault
-            If result Is Nothing Then
-                result = factory()
-                Contract.Assume(result IsNot Nothing)
-                AddComponent(result)
+            Dim result = _components.OfType(Of T)().MaybeFirst()
+            If Not result.HasValue Then
+                result = factory().AssumeNotNull()
+                AddComponent(result.Value)
             End If
-            Return result
+            Return result.Value
         End Function
         ''' <summary>
         ''' Asynchronously determines a component, from the set, with the given type.
@@ -191,21 +173,6 @@ Namespace Components
                 adder:=Sub(sender, item) adder(Me, item),
                 remover:=Sub(sender, item) remover(Me, item)))
         End Function
-        ''' <summary>
-        ''' Asychronously registers methods to be used for syncing with components of a type in the set.
-        ''' The result is an IDisposable which, if disposed, unregisters the methods.
-        ''' </summary>
-        ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
-        ''' <param name="remover">Asynchronously called with components as they are removed.</param>
-        Public Function ObserveComponentsOfType(Of T As IBotComponent)(ByVal adder As Action(Of ComponentSet, T),
-                                                                       ByVal remover As Action(Of ComponentSet, T)) As Task(Of IDisposable)
-            Contract.Requires(adder IsNot Nothing)
-            Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _components.Observe(
-                adder:=Sub(sender, component) If TypeOf component Is T Then adder(Me, DirectCast(component, T)),
-                remover:=Sub(sender, component) If TypeOf component Is T Then remover(Me, DirectCast(component, T))))
-        End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
@@ -217,4 +184,24 @@ Namespace Components
                 End Sub)
         End Function
     End Class
+    Public Module ComponentSetExtensions
+        ''' <summary>
+        ''' Asychronously registers methods to be used for syncing with components of a type in the set.
+        ''' The result is an IDisposable which, if disposed, unregisters the methods.
+        ''' </summary>
+        ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
+        ''' <param name="remover">Asynchronously called with components as they are removed.</param>
+        <Extension()> <Pure()>
+        Public Function ObserveComponentsOfType(Of T As IBotComponent)(ByVal this As ComponentSet,
+                                                                       ByVal adder As Action(Of ComponentSet, T),
+                                                                       ByVal remover As Action(Of ComponentSet, T)) As Task(Of IDisposable)
+            Contract.Requires(this IsNot Nothing)
+            Contract.Requires(adder IsNot Nothing)
+            Contract.Requires(remover IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
+            Return this.ObserveComponents(
+                adder:=Sub(sender, component) If TypeOf component Is T Then adder(sender, DirectCast(component, T)),
+                remover:=Sub(sender, component) If TypeOf component Is T Then remover(sender, DirectCast(component, T)))
+        End Function
+    End Module
 End Namespace

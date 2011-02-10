@@ -106,7 +106,7 @@ Namespace WC3
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
             Protected Overrides Async Function PerformInvoke(ByVal target As GameManager, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
-                Dim botManagers = Await target.Bot.Components.QueueGetAllComponents(Of Bot.MainBotManager)()
+                Dim botManagers = (Await target.Bot.Components.QueueGetAllComponents()).OfType(Of Bot.MainBotManager)()
                 Return Await botManagers.Single().InvokeCommand(user, argument)
             End Function
         End Class

@@ -76,7 +76,7 @@ Namespace Bot
             Contract.Assume(this IsNot Nothing)
             Contract.Assume(argument IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing) 'Incompability between AsyncCTP and code contracts
-            Dim components = Await this.Components.QueueGetAllComponents(Of MainBotManager)()
+            Dim components = (Await this.Components.QueueGetAllComponents()).OfType(Of MainBotManager)()
             Return Await components.Single.InvokeCommand(user, argument)
         End Function
         <Extension()>
