@@ -64,13 +64,13 @@ Public Class ReplayFormatTest
     Public Sub ReplayEntryLobbyStateTest()
         Dim slots = New List(Of Slot)()
         JarTest(Format.ReplayEntryLobbyState.Jar,
-                Data:={7, 0,
+                data:={7, 0,
                        0,
                        13, 0, 0, 0,
                        3,
                        12},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"slots", New List(Of NamedValueMap)().ToRist},
+                        {"slots", New NamedValueMap() {}.AsRist()},
                         {"random seed", 13UI},
                         {"layout style", Protocol.LobbyLayoutStyle.FixedPlayerSettings},
                         {"num player slots", CByte(12)}

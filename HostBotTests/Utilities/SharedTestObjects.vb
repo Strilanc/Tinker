@@ -11,7 +11,7 @@ Friend Module SharedTestObjects
         advertisedPath:="Maps\test.w3x",
         filesize:=1,
         fileChecksumCRC32:=1,
-        mapChecksumSHA1:=CByte(20).Range.ToRist,
+        mapChecksumSHA1:=CByte(20).Range(),
         mapChecksumXORO:=1,
         ismelee:=False,
         usesCustomForces:=True,

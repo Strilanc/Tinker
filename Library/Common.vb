@@ -293,12 +293,14 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(base >= 2)
         Contract.Requires(base <= 256)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
-        Return value.Iterate(Function(numerator)
-                                 If numerator = 0 Then Return Nothing
-                                 Dim remainder = [Default](Of BigInteger)()
-                                 Dim quotient = BigInteger.DivRem(numerator, base, remainder)
-                                 Return Tuple.Create(quotient, CByte(remainder))
-                             End Function)
+        Return Iterator Function()
+                   Dim numerator = value
+                   While numerator <> 0
+                       Dim remainder = [Default](Of BigInteger)()
+                       numerator = BigInteger.DivRem(numerator, base, remainder)
+                       Yield CByte(remainder)
+                   End While
+               End Function()
     End Function
     ''' <summary>
     ''' Determines the little-endian digits in one base from the little-endian digits in another base.
@@ -360,7 +362,7 @@ Public Module PoorlyCategorizedFunctions
     Public Function ToUnsignedBytes(ByVal value As BigInteger) As IRist(Of Byte)
         Contract.Requires(value >= 0)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
-        Dim result = value.ToByteArray.AssumeNotNull().ToRist
+        Dim result = value.ToByteArray().AssumeNotNull().AsRist()
         If result.Count > 0 AndAlso result.Last = 0 Then
             Return result.SubView(0, result.Count - 1)
         Else

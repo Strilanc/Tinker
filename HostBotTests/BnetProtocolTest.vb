@@ -190,7 +190,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientUserAuthenticationFinishTest()
-        Dim proof = CByte(20).Range.ToRist
+        Dim proof = CByte(20).Range()
         JarTest(Packets.ClientToServer.UserAuthenticationFinish.Jar,
                 equater:=Function(e1 As IRist(Of Byte), e2 As IRist(Of Byte)) e1.SequenceEqual(e2),
                 data:=proof,
@@ -198,7 +198,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientWardenTest()
-        Dim data = CByte(50).Range.ToRist
+        Dim data = CByte(50).Range()
         JarTest(Packets.ClientToServer.Warden.Jar,
                 equater:=Function(e1 As IRist(Of Byte), e2 As IRist(Of Byte)) e1.SequenceEqual(e2),
                 data:=data,
@@ -323,7 +323,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerProgramAuthenticationBeginTest()
-        Dim sig = CByte(128).Range.ToRist
+        Dim sig = CByte(128).Range()
         JarTest(Packets.ServerToClient.ProgramAuthenticationBegin.Jar,
                 data:=New Byte() {2, 0, 0, 0,
                        42, 0, 0, 0,
@@ -393,7 +393,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerUserAuthenticationBeginTest()
-        Dim key = CByte(32).Range.ToRist
+        Dim key = CByte(32).Range()
         Dim salt = key.Reverse.ToRist
         JarTest(Packets.ServerToClient.UserAuthenticationBegin.Jar,
                 data:=New Byte() {0, 0, 0, 0}.Concat(salt).Concat(key),
@@ -405,7 +405,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerUserAuthenticationFinishTest()
-        Dim proof = CByte(20).Range.ToRist
+        Dim proof = CByte(20).Range()
         JarTest(Packets.ServerToClient.UserAuthenticationFinish.Jar,
                 data:=New Byte() {0, 0, 0, 0}.Concat(
                       proof).Concat(
@@ -418,7 +418,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerWardenTest()
-        Dim data = CByte(50).Range.ToRist
+        Dim data = CByte(50).Range()
         JarTest(Packets.ServerToClient.Warden.Jar,
                 equater:=Function(e1 As IRist(Of Byte), e2 As IRist(Of Byte)) e1.SequenceEqual(e2),
                 data:=data,

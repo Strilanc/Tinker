@@ -22,7 +22,7 @@ Public Class DownloadManagerTest
             fileSize:=CUInt(_data.Length),
             fileChecksumCRC32:=_data.CRC32,
             mapChecksumxoro:=1,
-            mapChecksumSHA1:=CByte(1).Repeated(20).ToRist,
+            mapChecksumSHA1:=CByte(1).Repeated(20),
             playableWidth:=256,
             playableHeight:=256,
             isMelee:=True,
@@ -218,7 +218,7 @@ Public Class DownloadManagerTest
             dler.InjectClientMapInfo(MapTransferState.Idle, p)
         Next p
         dler.ExpectSentPacket(MakeMapFileData(game.Map.FileSize.FloorMultiple(Packets.MaxFileDataSize),
-                                              CByte(1).Repeated(CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)).ToRist,
+                                              CByte(1).Repeated(CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)),
                                               dler.ID,
                                               TestGame.HostPid))
         dler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)

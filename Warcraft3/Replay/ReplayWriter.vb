@@ -131,7 +131,7 @@ Namespace WC3.Replay
                 header.Write(Format.HeaderVersion)
                 header.Write(_decompressedSize)
                 header.Write(_blockCount)
-                header.Write("PX3W".ToAsciiBytes.ToRist)
+                header.Write("PX3W".ToAsciiBytes().AsRist())
                 header.Write(_wc3Version)
                 header.Write(_replayVersion)
                 header.Write(_settings)

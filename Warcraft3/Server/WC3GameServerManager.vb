@@ -243,7 +243,7 @@ Namespace WC3
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
 
-            Dim sha1Checksum = CByte(20).Range.ToRist
+            Dim sha1Checksum = CByte(20).Range()
             Dim slot1 = New Slot(index:=0,
                                  raceUnlocked:=False,
                                  Color:=Protocol.PlayerColor.Red,

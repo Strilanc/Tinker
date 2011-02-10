@@ -80,7 +80,7 @@ Public Class BnetClientTest
                     {"mpq filetime", Now()},
                     {"revision check seed", "[not tested]"},
                     {"revision check challenge", "[not tested]"},
-                    {"server signature", CByte(128).Range.ToRist}
+                    {"server signature", CByte(128).Range()}
                 })))
 
         'program auth finish (C->S)
@@ -119,8 +119,8 @@ Public Class BnetClientTest
         Assert.IsTrue(body.Value.ItemAs(Of String)("username") = profile.userName)
 
         'user auth begin (S->C)
-        Dim accountSalt = CByte(1).Repeated(32).ToRist
-        Dim serverPublicKey = CByte(2).Repeated(32).ToRist
+        Dim accountSalt = CByte(1).Repeated(32)
+        Dim serverPublicKey = CByte(2).Repeated(32)
         stream.EnqueuedReadPacket(
             preheader:={&HFF, Protocol.PacketId.UserAuthenticationBegin},
             sizeByteCount:=2,

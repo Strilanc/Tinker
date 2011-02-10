@@ -53,7 +53,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub HostMapInfoTest()
-        Dim sha1 = CByte(20).Range.ToRist
+        Dim sha1 = CByte(20).Range()
         JarTest(ServerPackets.HostMapInfo.Jar,
                 data:=New Byte() _
                       {0, 0, 0, 0,
@@ -183,7 +183,7 @@ Public Class WC3ProtocolTest
                        3,
                        12},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"slots", New List(Of NamedValueMap)().ToRist},
+                        {"slots", New NamedValueMap() {}.AsRist()},
                         {"random seed", 13UI},
                         {"layout style", LobbyLayoutStyle.FixedPlayerSettings},
                         {"num player slots", CByte(12)}
@@ -248,7 +248,7 @@ Public Class WC3ProtocolTest
                        1, 0, 0, 0,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToRist},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.GameChat.KeyValue(Of Object)(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                     {"receiving group", ChatGroup.Allies},
@@ -260,7 +260,7 @@ Public Class WC3ProtocolTest
                        16,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToRist},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.LobbyChat.KeyValue(Of Object)(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                     {"message", "test"}
@@ -271,7 +271,7 @@ Public Class WC3ProtocolTest
                        17,
                        1},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToRist},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetTeam.KeyValue(Of Object)(CByte(1))}
                     })
@@ -281,7 +281,7 @@ Public Class WC3ProtocolTest
                        20,
                        100},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToRist},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetHandicap.KeyValue(Of Object)(CByte(100))}
                     })
@@ -291,7 +291,7 @@ Public Class WC3ProtocolTest
                        18,
                        1},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToRist},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetColor.KeyValue(Of Object)(PlayerColor.Blue)}
                     })
@@ -301,7 +301,7 @@ Public Class WC3ProtocolTest
                        19,
                        2},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToRist},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetRace.KeyValue(Of Object)(Races.Orc)}
                     })
@@ -450,7 +450,7 @@ Public Class WC3ProtocolTest
                 data:={2,
                        2, 25, 0, 0, 0,
                        2, 25, 0, 0, 0},
-                value:={lagger, lagger}.ToRist)
+                value:={lagger, lagger}.AsRist())
     End Sub
     <TestMethod()>
     Public Sub StartCountdownTest()
@@ -469,7 +469,7 @@ Public Class WC3ProtocolTest
                        1, 0, 0, 0,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToRist},
+                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.AsRist()},
                         {"speaker", New PlayerId(1)},
                         {"type group", ChatType.Game.KeyValue(Of Object)(ChatGroup.Allies)},
                         {"message", "test"}
@@ -480,7 +480,7 @@ Public Class WC3ProtocolTest
                        16,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToRist},
+                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.AsRist()},
                         {"speaker", New PlayerId(1)},
                         {"type group", ChatType.Lobby.KeyValue(Of Object)(New NoValue)},
                         {"message", "test"}
