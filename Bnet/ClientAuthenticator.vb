@@ -174,9 +174,9 @@ Namespace Bnet
 
                 'Interleave hashes of odd and even bytes of the shared value
                 Contract.Assume(sharedValue >= 0)
-                Dim result = (From slice In sharedValue.ToUnsignedBytes.PaddedTo(32).Deinterleaved(2)
-                              Select slice.SHA1
-                              ).Interleaved.ToRist
+                Dim result = sharedValue.ToUnsignedBytes().PaddedTo(32).
+                             Deinterleaved(2).Select(Function(slice) slice.SHA1()).Interleaved().
+                             ToRist()
                 Contract.Assume(result.Count = 40)
                 Return result
             End Get

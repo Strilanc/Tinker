@@ -65,7 +65,7 @@ Namespace CKL
             End If
 
             'Read body
-            Dim body = packetData.Skip(4)
+            Dim body = packetData.SkipExact(4)
             Select Case DirectCast(id, CKLPacketId)
                 Case CKLPacketId.[Error]
                     Throw New IO.IOException("CKL server returned an error: {0}.".Frmt(System.Text.UTF8Encoding.UTF8.GetString(body.ToArray)))

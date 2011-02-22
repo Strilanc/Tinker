@@ -2,6 +2,17 @@ Imports System.Numerics
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
+    <Pure()>
+    Public Function EmptyRist(Of T)() As IRist(Of T)
+        Contract.Ensures(Contract.Result(Of IRist(Of T))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IRist(Of T))().Count = 0)
+        Dim r = New Rist(Of T)(counter:=Function() 0, getter:=Function(i)
+                                                                  Throw New UnreachableException()
+                                                              End Function)
+        Contract.Assume(r.Count = 0)
+        Return r
+    End Function
+
     <Extension()> <Pure()>
     Public Function MaybeFirst(Of T)(ByVal sequence As IEnumerable(Of T)) As Maybe(Of T)
         Contract.Requires(sequence IsNot Nothing)
@@ -300,7 +311,7 @@ Public Module PoorlyCategorizedFunctions
                        numerator = BigInteger.DivRem(numerator, base, remainder)
                        Yield CByte(remainder)
                    End While
-               End Function()
+               End Function().AssumeNotNull()
     End Function
     ''' <summary>
     ''' Determines the little-endian digits in one base from the little-endian digits in another base.

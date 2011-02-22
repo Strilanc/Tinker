@@ -251,7 +251,7 @@
 
             'Permute base 5 digits
             Dim digits5 = digits25.ConvertFromBaseToBase(25, 5).PaddedTo(minimumLength:=NumDigitsBase5)
-            digits5 = digits5.Deinterleaved(2).Reverse.Interleaved.ToRist
+            digits5 = digits5.Deinterleaved(2).Reverse().Interleaved().ToRist()
             digits5 = digits5.Permute(offset:=10, factor:=17)
 
             'Xor-Permute nibbles

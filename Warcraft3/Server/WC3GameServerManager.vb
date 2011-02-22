@@ -254,7 +254,6 @@ Namespace WC3
                                    color:=Protocol.PlayerColor.Blue,
                                    contents:=New SlotContentsClosed)
             Dim slots = {slot1, slot2}.AsRist
-            Contract.Assume(sha1Checksum.Count = 20)
             Contract.Assume(slots.Count = 2)
             Dim map = New WC3.Map(streamFactory:=Nothing,
                                   advertisedPath:="Maps\AdminGame.w3x",

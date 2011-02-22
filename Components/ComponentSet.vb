@@ -123,6 +123,7 @@ Namespace Components
             Contract.Ensures(Contract.Result(Of T).Name = name)
             Dim result = TryFindComponent(Of T)(name)
             If Not result.HasValue Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(GetType(T), name))
+            Contract.Assume(result.Value.Name = name)
             Return result.Value
         End Function
         ''' <summary>
@@ -144,6 +145,7 @@ Namespace Components
             Dim result = _components.OfType(Of T)().MaybeFirst()
             If Not result.HasValue Then
                 result = factory().AssumeNotNull()
+                Contract.Assume(result.HasValue)
                 AddComponent(result.Value)
             End If
             Return result.Value

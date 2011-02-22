@@ -41,11 +41,11 @@ Namespace Lan
             End Sub
 
             Public Sub New(ByVal gameDescription As WC3.LocalGameDescription,
-                           ByVal targetHosts As IEnumerable(Of String))
+                           ByVal targetHosts As IRist(Of String))
                 Contract.Requires(gameDescription IsNot Nothing)
                 Contract.Requires(targetHosts IsNot Nothing)
                 Me._gameDescription = gameDescription
-                Me._targetHosts = targetHosts.ToRist
+                Me._targetHosts = targetHosts
             End Sub
 
             Public ReadOnly Property GameDescription As WC3.LocalGameDescription
@@ -85,7 +85,7 @@ Namespace Lan
         End Property
 
         Private Sub AddGame(ByVal gameDescription As WC3.LocalGameDescription,
-                            Optional ByVal targets As IEnumerable(Of String) = Nothing)
+                            Optional ByVal targets As IRist(Of String) = Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
             If _games.ContainsKey(gameDescription.GameId) Then
                 Dim gameSet = _games(gameDescription.GameId)
@@ -94,7 +94,7 @@ Namespace Lan
                 Throw New InvalidOperationException("There is already a game being advertised with id = {0}.".Frmt(gameDescription.GameId))
             End If
 
-            Dim lanGame = New LanGame(gameDescription, If(targets, {_defaultTargetHost}))
+            Dim lanGame = New LanGame(gameDescription, If(targets, {_defaultTargetHost}.AsRist()))
             _games(gameDescription.GameId) = lanGame
             RefreshGame(lanGame)
 
@@ -102,7 +102,7 @@ Namespace Lan
             _viewGames.Add(lanGame)
         End Sub
         Public Function QueueAddGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                     Optional ByVal targetHosts As IEnumerable(Of String) = Nothing) As Task
+                                     Optional ByVal targetHosts As IRist(Of String) = Nothing) As Task
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() AddGame(gameDescription, targetHosts))

@@ -11,9 +11,9 @@ Namespace Bnet.Protocol
             Contract.Invariant(_games IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal result As QueryGameResponse, ByVal games As IEnumerable(Of WC3.RemoteGameDescription))
+        Public Sub New(ByVal result As QueryGameResponse, ByVal games As IRist(Of WC3.RemoteGameDescription))
             Contract.Requires(games IsNot Nothing)
-            Me._games = games.ToRist
+            Me._games = games
             Me._result = result
         End Sub
 
@@ -84,7 +84,7 @@ Namespace Bnet.Protocol
                 'result of a single-game query
                 Dim parsed = queryResultJar.Parse(data.SkipExact(4))
                 Contract.Assume(data.Count >= 8)
-                Return New QueryGamesListResponse(parsed.Value, {}).ParsedWithDataCount(8)
+                Return New QueryGamesListResponse(parsed.Value, EmptyRist(Of WC3.RemoteGameDescription)()).ParsedWithDataCount(8)
             Else
                 'result of a game search
                 Dim parsed = gameDataJar.Parse(data)
@@ -115,7 +115,7 @@ Namespace Bnet.Protocol
             Contract.Requires(games IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of WC3.RemoteGameDescription))() IsNot Nothing)
-            Return (From game In games Select ParseRawGameDescription(game, clock)).ToRist
+            Return games.Select(Function(game) ParseRawGameDescription(game, clock)).ToRist()
         End Function
 
         Private Shared Function PackRawGameDescription(ByVal game As WC3.RemoteGameDescription) As NamedValueMap

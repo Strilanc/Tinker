@@ -47,7 +47,7 @@ Public Class BnetProtocolJarsTest
     Public Sub QueryGamesListResponseJarTest()
         Dim jar = New QueryGamesListResponseJar(New manualclock())
         JarTest(jar,
-                New QueryGamesListResponse(QueryGameResponse.Ok, {TestDesc}),
+                New QueryGamesListResponse(QueryGameResponse.Ok, {TestDesc}.AsRist()),
                 New Byte() { _
                  1, 0, 0, 0,
                  8, 0, 0, 0,
@@ -61,7 +61,7 @@ Public Class BnetProtocolJarsTest
                  Asc("a"c), Asc("2"c), Asc("0"c), Asc("0"c), Asc("0"c), Asc("0"c), Asc("0"c), Asc("0"c)
                  }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats)))
         JarTest(jar,
-                New QueryGamesListResponse(QueryGameResponse.NotFound, {}),
+                New QueryGamesListResponse(QueryGameResponse.NotFound, EmptyRist(Of WC3.RemoteGameDescription)()),
                 {0, 0, 0, 0,
                  1, 0, 0, 0})
     End Sub
