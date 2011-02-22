@@ -255,9 +255,9 @@
                 'Append block data to result
                 Dim relativePosition = CInt(_position - blockInfo.DataPosition)
                 Contract.Assume(relativePosition < _loadedBlockData.Count)
-                Dim remainingBlockData = _loadedBlockData.SubView(relativePosition)
+                Dim remainingBlockData = _loadedBlockData.SkipExact(relativePosition)
                 Dim n = Math.Min(Math.Min(maxCount - result.Count, remainingBlockData.Count), _length - _position)
-                result.AddRange(remainingBlockData.SubView(0, CInt(n)))
+                result.AddRange(remainingBlockData.TakeExact(CInt(n)))
                 _position += n
             End While
 

@@ -675,7 +675,7 @@ Namespace Bnet
             End If
 
             'Attempt BNLS connection
-            Dim seed = keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32
+            Dim seed = keys.AuthenticationROC.AuthenticationProof.TakeExact(4).ToUInt32
             If remoteHost = "" Then
                 _wardenClient = Warden.Client.MakeMock(_logger)
             Else

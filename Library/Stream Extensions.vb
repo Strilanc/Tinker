@@ -80,7 +80,7 @@ Public Module StreamExtensions
 
         Public Overrides Function ToString() As String
             If Me.Count > 10 Then
-                Return "[{0}, ...".Frmt(Me.Take(10).StringJoin(", "))
+                Return "[{0}, ...".Frmt(Me.TakeExact(10).StringJoin(", "))
             Else
                 Return "[{0}]".Frmt(Me.StringJoin(", "))
             End If

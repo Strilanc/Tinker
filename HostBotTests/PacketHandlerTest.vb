@@ -20,7 +20,7 @@ Public Class PacketHandlerTest
         Dim flag = 0UI
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
-                     handler:=Function(data) TaskedAction(Sub() flag = data.SubView(0, 4).ToUInt32))
+                     handler:=Function(data) TaskedAction(Sub() flag = data.TakeExact(4).ToUInt32))
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsRist)
         WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag = &H78563412)

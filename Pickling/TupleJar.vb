@@ -34,7 +34,7 @@ Namespace Pickling
             Dim usedDataCount = 0
             For Each subjar In _subJars
                 Contract.Assume(subjar IsNot Nothing)
-                Dim parsed = subjar.Parse(data.SubView(usedDataCount))
+                Dim parsed = subjar.Parse(data.SkipExact(usedDataCount))
                 vals(subjar.Name) = parsed.Value
                 usedDataCount += parsed.UsedDataCount
                 Contract.Assume(usedDataCount <= data.Count)

@@ -363,8 +363,8 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(value >= 0)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
         Dim result = value.ToByteArray().AssumeNotNull().AsRist()
-        If result.Count > 0 AndAlso result.Last = 0 Then
-            Return result.SubView(0, result.Count - 1)
+        If result.Count > 0 AndAlso result.Last() = 0 Then
+            Return result.SkipLastExact(1)
         Else
             Return result
         End If

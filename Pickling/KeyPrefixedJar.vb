@@ -32,7 +32,7 @@ Namespace Pickling
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of KeyValuePair(Of TKey, Object))
             Dim parsedKey = _keyJar.Parse(data)
             If Not _valueJars.ContainsKey(parsedKey.Value) Then Throw New PicklingException("No subjar with key {0}.".Frmt(parsedKey.Value))
-            Dim parsedValue = _valueJars(parsedKey.Value).Value.Parse(data.SubView(parsedKey.UsedDataCount))
+            Dim parsedValue = _valueJars(parsedKey.Value).Value.Parse(data.SkipExact(parsedKey.UsedDataCount))
 
             Dim value = parsedKey.Value.KeyValue(parsedValue.Value)
             Contract.Assume(parsedKey.UsedDataCount + parsedValue.UsedDataCount <= data.Count)

@@ -21,7 +21,7 @@
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             Dim parsed = jar.Parse(data)
-            Return New Pickle(Of T)(jar, parsed.Value, data.SubView(0, parsed.UsedDataCount))
+            Return New Pickle(Of T)(jar, parsed.Value, data.TakeExact(parsed.UsedDataCount))
         End Function
         <Extension()> <Pure()>
         Public Function ParsePickle(ByVal jar As ISimpleJar, ByVal data As IRist(Of Byte)) As ISimplePickle
@@ -29,7 +29,7 @@
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
             Dim parsed = jar.Parse(data)
-            Return New Pickle(Of Object)(jar, parsed.Value, data.SubView(0, parsed.UsedDataCount))
+            Return New Pickle(Of Object)(jar, parsed.Value, data.TakeExact(parsed.UsedDataCount))
         End Function
         <Extension()> <Pure()>
         Public Function ParsedWithDataCount(Of T)(ByVal value As T, ByVal usedDataCount As Int32) As ParsedValue(Of T)

@@ -99,7 +99,7 @@ Namespace CKL
 
             Dim flag = packetData(0)
             Dim id = packetData(0)
-            Dim data = packetData.SubView(4)
+            Dim data = packetData.SkipExact(4)
             Dim responseData As IEnumerable(Of Byte) = Nothing
             Dim errorMessage As String = Nothing
             If flag <> PacketPrefixValue Then
@@ -116,8 +116,8 @@ Namespace CKL
                         Else
                             If _keyIndex >= _keys.Count Then _keyIndex = 0
                             Dim credentials = _keys(_keyIndex).Value.GenerateCredentials(
-                                    clientToken:=data.SubView(0, 4).ToUInt32,
-                                    serverToken:=data.SubView(4, 4).ToUInt32)
+                                    clientToken:=data.SubList(0, 4).ToUInt32,
+                                    serverToken:=data.SubList(4, 4).ToUInt32)
                             responseData = Concat(jar.Pack(credentials.AuthenticationROC),
                                                   jar.Pack(credentials.AuthenticationTFT))
                             Logger.Log("Provided key '{0}' to {1}".Frmt(_keys(_keyIndex).Value.Name, socket.Name), LogMessageType.Positive)

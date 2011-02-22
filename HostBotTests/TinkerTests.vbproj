@@ -42,6 +42,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\Documents\Microsoft Visual Studio Async CTP\Samples\AsyncCtpLibrary.dll</HintPath>
     </Reference>
+    <Reference Include="LinqToLists">
+      <HintPath>..\..\..\..\..\..\Documents\Visual Studio 2010\Projects\LinqToLists\LinqToLists\bin\Debug\LinqToLists.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
     </Reference>
@@ -69,6 +72,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Import Include="LinqToLists" />
+    <Import Include="LinqToLists.Extra" />
     <Import Include="Microsoft.VisualBasic" />
     <Import Include="System" />
     <Import Include="System.Linq" />

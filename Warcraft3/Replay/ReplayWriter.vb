@@ -98,8 +98,8 @@ Namespace WC3.Replay
             If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
 
             While data.Count >= _blockSizeRemaining
-                _dataCompressor.Write(data.SubView(0, _blockSizeRemaining))
-                data = data.SubView(_blockSizeRemaining)
+                _dataCompressor.Write(data.TakeExact(_blockSizeRemaining))
+                data = data.SkipExact(_blockSizeRemaining)
                 _blockSizeRemaining = 0
                 EndBlock()
                 StartBlock()

@@ -50,7 +50,7 @@ Namespace WC3.Protocol
             Contract.Assume(usedDataCount > 0)
             Contract.Assume(usedDataCount <= data.Count)
 
-            Dim decodedData = DecodeStatStringData(data.Take(usedDataCount - 1)).ToRist
+            Dim decodedData = DecodeStatStringData(data.TakeExact(usedDataCount - 1)).ToRist
             Dim parsed = DataJar.Parse(decodedData)
             If parsed.UsedDataCount <> decodedData.Count Then Throw New PicklingException("Leftover data before null terminator.")
             Return ParseDataValue(parsed.Value).ParsedWithDataCount(usedDataCount)

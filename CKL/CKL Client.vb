@@ -65,13 +65,13 @@ Namespace CKL
             End If
 
             'Read body
-            Dim body = packetData.SubView(4)
+            Dim body = packetData.Skip(4)
             Select Case DirectCast(id, CKLPacketId)
                 Case CKLPacketId.[Error]
                     Throw New IO.IOException("CKL server returned an error: {0}.".Frmt(System.Text.UTF8Encoding.UTF8.GetString(body.ToArray)))
                 Case CKLPacketId.Keys
-                    Dim rocAuthentication = jar.Parse(body.SubView(0, body.Count \ 2)).Value
-                    Dim tftAuthentication = jar.Parse(body.SubView(body.Count \ 2)).Value
+                    Dim rocAuthentication = jar.Parse(body.TakeExact(body.Count \ 2)).Value
+                    Dim tftAuthentication = jar.Parse(body.SkipExact(body.Count \ 2)).Value
                     If rocAuthentication.Product <> Bnet.ProductType.Warcraft3ROC _
                                 OrElse tftAuthentication.Product <> Bnet.ProductType.Warcraft3TFT Then
                         Throw New IO.InvalidDataException("CKL server returned invalid credentials.")

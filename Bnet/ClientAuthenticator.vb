@@ -166,7 +166,7 @@ Namespace Bnet
                 Dim userIdAuthData = "{0}:{1}".Frmt(Me._userName.ToUpperInvariant, Me._password.ToUpperInvariant).ToAsciiBytes
                 Dim passwordKey = Concat(accountSalt, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
                 Dim verifier = BigInteger.ModPow(G, passwordKey, N)
-                Dim serverKey = serverPublicKeyBytes.SHA1.Take(4).Reverse.ToUnsignedBigInteger
+                Dim serverKey = serverPublicKeyBytes.SHA1.TakeExact(4).Reverse.ToUnsignedBigInteger
 
                 'Shared value
                 Dim serverPublicKey = serverPublicKeyBytes.ToUnsignedBigInteger

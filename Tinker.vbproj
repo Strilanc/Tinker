@@ -142,6 +142,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\Documents\Microsoft Visual Studio Async CTP\Samples\AsyncCtpLibrary.dll</HintPath>
     </Reference>
+    <Reference Include="LinqToLists">
+      <HintPath>..\..\..\..\..\Documents\Visual Studio 2010\Projects\LinqToLists\LinqToLists\bin\Debug\LinqToLists.dll</HintPath>
+    </Reference>
     <Reference Include="MpqLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=08060530187cdd8c, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\MpqLibrary\MpqLibrary\bin\Release\MpqLibrary.dll</HintPath>
@@ -166,6 +169,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Import Include="LinqToLists" />
+    <Import Include="LinqToLists.Extra" />
     <Import Include="Strilbrary.Collections" />
     <Import Include="Strilbrary.Exceptions" />
     <Import Include="Strilbrary.Misc" />

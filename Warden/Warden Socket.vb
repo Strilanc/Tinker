@@ -65,7 +65,7 @@ Namespace Warden
             End If
 
             'Parse, log, return
-            Dim pk = ServerPacket.FromData(packetData.SubView(3))
+            Dim pk = ServerPacket.FromData(packetData.SkipExact(3))
             _logger.Log(Function() "Received {0} from {1}".Frmt(pk.Id, _socket.Name), LogMessageType.DataEvent)
             _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(pk.Id, _socket.Name, pk), LogMessageType.DataParsed)
             Return pk

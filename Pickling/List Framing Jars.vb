@@ -25,7 +25,7 @@
             Dim values = New List(Of T)
             Dim usedDataCount = 0
             While usedDataCount < data.Count
-                Dim subParsed = _subJar.Parse(data.SubView(usedDataCount))
+                Dim subParsed = _subJar.Parse(data.SkipExact(usedDataCount))
                 values.Add(subParsed.Value)
                 usedDataCount += subParsed.UsedDataCount
             End While
@@ -84,18 +84,18 @@
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of IRist(Of T))
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The count prefix requires {0} bytes.".Frmt(_prefixSize))
-            Dim elementCount = data.Take(_prefixSize).ToUValue
+            Dim elementCount = data.TakeExact(_prefixSize).ToUValue
 
             Dim values = New List(Of T)
             Dim usedDataCount = _prefixSize
             For repeat = 1UL To elementCount
-                Dim subParsed = _subJar.Parse(data.SubView(usedDataCount))
+                Dim subParsed = _subJar.Parse(data.SkipExact(usedDataCount))
                 values.Add(subParsed.Value)
                 usedDataCount += subParsed.UsedDataCount
                 Contract.Assume(usedDataCount <= data.Count)
             Next repeat
 
-            Return values.ToRist.ParsedWithDataCount(usedDataCount)
+            Return values.AsRist().ParsedWithDataCount(usedDataCount)
         End Function
 
         Public Overrides Function Describe(ByVal value As IRist(Of T)) As String

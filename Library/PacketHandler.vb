@@ -120,8 +120,8 @@ Public NotInheritable Class PacketHandlerRaw(Of TKey)
         Contract.Assume(packetData.Count >= HeaderSize)
         'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
-        Dim head = packetData.SubView(0, HeaderSize)
-        Dim body = packetData.SubView(HeaderSize)
+        Dim head = packetData.TakeExact(HeaderSize)
+        Dim body = packetData.SkipExact(HeaderSize)
         Dim key = _keyExtractor(head)
 
         Dim handlerResults = _handlers.Raise(key, body)

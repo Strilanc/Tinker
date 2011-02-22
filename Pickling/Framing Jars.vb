@@ -57,7 +57,7 @@
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < _dataSize Then Throw New PicklingNotEnoughDataException("The fixed-size data requires {0} bytes.".Frmt(_dataSize))
-            Dim result = SubJar.Parse(data.SubView(0, _dataSize))
+            Dim result = SubJar.Parse(data.TakeExact(_dataSize))
             If result.UsedDataCount <> _dataSize Then Throw New PicklingException("Parsed value did not use exactly {0} bytes.".Frmt(_dataSize))
             Return result
         End Function
@@ -88,7 +88,7 @@
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
-            Return SubJar.Parse(data.SubView(0, Math.Min(data.Count, _maxDataCount)))
+            Return SubJar.Parse(data.Take(_maxDataCount))
         End Function
     End Class
 
@@ -121,12 +121,12 @@
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The size prefix requires {0} bytes.".Frmt(_prefixSize))
-            Dim dataSize = data.SubView(0, _prefixSize).ToUValue
+            Dim dataSize = data.TakeExact(_prefixSize).ToUValue
             If data.Count < _prefixSize + dataSize Then Throw New PicklingNotEnoughDataException("The size-prefixed data requires the {0} bytes specified by the prefix.".Frmt(dataSize))
 
             Contract.Assume(CInt(dataSize) >= 0)
             Contract.Assume(_prefixSize + CInt(dataSize) <= data.Count)
-            Dim parsed = SubJar.Parse(data.SubView(_prefixSize, CInt(dataSize)))
+            Dim parsed = SubJar.Parse(data.SubList(_prefixSize, CInt(dataSize)))
             If parsed.UsedDataCount < dataSize Then Throw New PicklingException("Fragmented data.")
             Return parsed.Value.ParsedWithDataCount(_prefixSize + parsed.UsedDataCount)
         End Function
@@ -152,7 +152,7 @@
             'Parse
             Contract.Assume(p.Value >= 0)
             Contract.Assume(p.Value < data.Count)
-            Dim parsed = SubJar.Parse(data.SubView(0, p.Value))
+            Dim parsed = SubJar.Parse(data.TakeExact(p.Value))
             If parsed.UsedDataCount <> p.Value Then Throw New PicklingException("Leftover data before null terminator.")
             Return parsed.Value.ParsedWithDataCount(parsed.UsedDataCount + 1)
         End Function
@@ -262,9 +262,9 @@
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < _checksumSize Then Throw New PicklingNotEnoughDataException("The checksum requires {0} bytes.".Frmt(_checksumSize))
-            Dim checksum = data.SubView(0, _checksumSize)
-            Dim parsed = SubJar.Parse(data.SubView(_checksumSize))
-            Dim expectedChecksum = _checksumFunction(data.SubView(_checksumSize, parsed.UsedDataCount))
+            Dim checksum = data.TakeExact(_checksumSize)
+            Dim parsed = SubJar.Parse(data.SkipExact(_checksumSize))
+            Dim expectedChecksum = _checksumFunction(data.SubList(_checksumSize, parsed.UsedDataCount))
             Contract.Assume(expectedChecksum IsNot Nothing)
             If Not expectedChecksum.SequenceEqual(checksum) Then
                 Throw New PicklingException("Checksum didn't match. Should be [{0}], not [{1}].".Frmt(expectedChecksum.ToHexString, checksum.ToHexString))

@@ -90,7 +90,7 @@ Namespace WC3
             End If
 
             'Parse
-            Dim pickle = Protocol.ClientPackets.Knock.Jar.ParsePickle(data.SubView(4))
+            Dim pickle = Protocol.ClientPackets.Knock.Jar.ParsePickle(data.SkipExact(4))
             Dim knockData = pickle.Value
 
             'Handle
