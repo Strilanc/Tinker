@@ -15,7 +15,7 @@
                 Return _subJar
             End Get
         End Property
-        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As T) As IRist(Of Byte)
             Return _subJar.Pack(value)
         End Function
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
@@ -49,8 +49,8 @@
             Me._dataSize = dataSize
         End Sub
 
-        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-            Dim data = SubJar.Pack(value).ToRist
+        Public Overrides Function Pack(ByVal value As T) As IRist(Of Byte)
+            Dim data = SubJar.Pack(value)
             If data.Count <> _dataSize Then Throw New PicklingException("Packed data did not take exactly {0} bytes.".Frmt(_dataSize))
             Return data
         End Function
@@ -81,8 +81,8 @@
             Me._maxDataCount = maxDataCount
         End Sub
 
-        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-            Dim data = SubJar.Pack(value).ToRist
+        Public Overrides Function Pack(ByVal value As T) As IRist(Of Byte)
+            Dim data = SubJar.Pack(value)
             If data.Count > _maxDataCount Then Throw New PicklingException("Packed data did not fit in {0} bytes.".Frmt(_maxDataCount))
             Return data
         End Function
@@ -112,11 +112,11 @@
             Me._prefixSize = prefixSize
         End Sub
 
-        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-            Dim subData = SubJar.Pack(value).ToRist
+        Public Overrides Function Pack(ByVal value As T) As IRist(Of Byte)
+            Dim subData = SubJar.Pack(value)
             Dim sizeBytes = CULng(subData.Count).Bytes.Take(_prefixSize)
             If sizeBytes.Take(_prefixSize).ToUValue <> subData.Count Then Throw New PicklingException("Unable to fit byte count into size prefix.")
-            Return sizeBytes.Concat(subData)
+            Return sizeBytes.Concat(subData).ToRist()
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
@@ -141,8 +141,8 @@
             Contract.Requires(subJar IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-            Return SubJar.Pack(value).Append(0)
+        Public Overrides Function Pack(ByVal value As T) As IRist(Of Byte)
+            Return SubJar.Pack(value).Append(0).ToRist()
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
@@ -173,11 +173,11 @@
             Me._subJar = subJar
         End Sub
 
-        Public Overrides Function Pack(ByVal value As Maybe(Of T)) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As Maybe(Of T)) As IRist(Of Byte)
             If value.HasValue Then
                 Return _subJar.Pack(value.Value)
             Else
-                Return New Byte() {}
+                Return MakeRist(Of Byte)()
             End If
         End Function
 
@@ -252,12 +252,12 @@
             Me._checksumFunction = checksumFunction
         End Sub
 
-        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As T) As IRist(Of Byte)
             Dim subData = SubJar.Pack(value).ToRist
             Dim checksum = _checksumFunction(subData)
             Contract.Assume(checksum IsNot Nothing)
             Contract.Assume(checksum.Count = _checksumSize)
-            Return checksum.Concat(subData)
+            Return checksum.Concat(subData).ToRist()
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
@@ -282,8 +282,8 @@
             Contract.Requires(subJar IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
-            Return SubJar.Pack(value).Reverse
+        Public Overrides Function Pack(ByVal value As T) As IRist(Of Byte)
+            Return SubJar.Pack(value).Reverse()
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)

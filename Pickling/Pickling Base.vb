@@ -111,7 +111,7 @@
     Public MustInherit Class BaseJar(Of T)
         Implements IJar(Of T)
 
-        Public MustOverride Function Pack(ByVal value As T) As IEnumerable(Of Byte) Implements IJar(Of T).Pack
+        Public MustOverride Function Pack(ByVal value As T) As IRist(Of Byte) Implements IJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
         Public MustOverride Function Parse(ByVal text As String) As T Implements IJar(Of T).Parse
         Public Overridable Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
@@ -135,7 +135,7 @@
         Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
             Return MakeControl()
         End Function
-        Private Function SimplePack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
+        Private Function SimplePack(ByVal value As Object) As IRist(Of Byte) Implements ISimpleJar.Pack
             Return Pack(DirectCast(value, T).AssumeNotNull)
         End Function
         Private Function SimpleParse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
@@ -177,7 +177,7 @@
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Overrides Function Pack(ByVal value As T) As System.Collections.Generic.IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As T) As IRist(Of Byte)
             Throw New NotSupportedException
         End Function
         Public Overloads Overrides Function Parse(ByVal text As String) As T
@@ -193,7 +193,7 @@
         MustOverride Function ParseRaw(ByVal value As TUsed) As TExposed
         MustOverride Function PackRaw(ByVal value As TExposed) As TUsed
 
-        Public NotOverridable Overrides Function Pack(ByVal value As TExposed) As IEnumerable(Of Byte)
+        Public NotOverridable Overrides Function Pack(ByVal value As TExposed) As IRist(Of Byte)
             Return SubJar.Pack(PackRaw(value))
         End Function
         Public NotOverridable Overloads Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of TExposed)

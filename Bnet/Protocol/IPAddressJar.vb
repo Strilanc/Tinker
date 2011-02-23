@@ -4,9 +4,9 @@ Namespace Bnet.Protocol
     Public Class IPAddressJar
         Inherits BaseFixedSizeJar(Of Net.IPAddress)
 
-        Public Overrides Function Pack(ByVal value As Net.IPAddress) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As Net.IPAddress) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
-            Return value.GetAddressBytes()
+            Return value.GetAddressBytes().AsRist()
         End Function
         Protected Overrides ReadOnly Property DataSize As UInt16
             Get

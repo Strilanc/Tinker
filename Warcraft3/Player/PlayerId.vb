@@ -54,8 +54,8 @@ Namespace WC3
     Public Class PlayerIdJar
         Inherits BaseJar(Of PlayerId)
 
-        Public Overrides Function Pack(ByVal value As PlayerId) As IEnumerable(Of Byte)
-            Return {value.Index}
+        Public Overrides Function Pack(ByVal value As PlayerId) As IRist(Of Byte)
+            Return MakeRist(value.Index)
         End Function
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of PlayerId)
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException("A PlayerId requires 1 byte.")

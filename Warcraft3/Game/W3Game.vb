@@ -188,8 +188,8 @@ Namespace WC3
             AddHandler _loadScreen.EmptyTick, Sub(sender) _kernel.OutQueue.QueueAction(
                 Sub() RaiseEvent Tick(sender:=Me,
                                       TimeSpan:=0,
-                                      actualActionStreaks:=New IRist(Of Protocol.SpecificPlayerActionSet)() {}.AsRist,
-                                      visibleActionStreaks:=New IRist(Of Protocol.PlayerActionSet)() {}.AsRist))
+                                      actualActionStreaks:=MakeRist(Of IRist(Of Protocol.SpecificPlayerActionSet))(),
+                                      visibleActionStreaks:=MakeRist(Of IRist(Of Protocol.PlayerActionSet))()))
             AddHandler _loadScreen.Finished, Sub(sender) _motor.QueueStart()
         End Sub
         Private Sub InitMotor()
@@ -665,7 +665,7 @@ Namespace WC3
             TryBeginAutoStart()
         End Sub
 
-        Public Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As Task
+        Public Function QueueTrySetTeamSizes(ByVal sizes As IRist(Of Integer)) As Task
             Contract.Requires(sizes IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.TrySetTeamSizes(sizes))

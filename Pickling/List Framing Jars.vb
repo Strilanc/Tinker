@@ -16,9 +16,9 @@
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        Public Overrides Function Pack(ByVal value As IRist(Of T)) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As IRist(Of T)) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
-            Return Concat(From item In value Select _subJar.Pack(item))
+            Return Concat(From item In value Select _subJar.Pack(item)).ToRist()
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of IRist(Of T))
@@ -75,11 +75,11 @@
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        Public Overrides Function Pack(ByVal value As IRist(Of T)) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As IRist(Of T)) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
             Dim sizeData = CULng(value.Count).Bytes.Take(_prefixSize)
             Dim itemData = Concat(From item In value Select _subJar.Pack(item))
-            Return sizeData.Concat(itemData)
+            Return sizeData.Concat(itemData).ToRist()
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of IRist(Of T))

@@ -21,13 +21,13 @@ Namespace Pickling
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        Public Overrides Function Pack(ByVal value As KeyValuePair(Of TKey, Object)) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As KeyValuePair(Of TKey, Object)) As IRist(Of Byte)
             If value.Key Is Nothing Then Throw New ArgumentNullException("value.Key")
             If value.Value Is Nothing Then Throw New ArgumentNullException("value.Value")
             If Not _valueJars.ContainsKey(value.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(value.Key))
             Dim keyData = _keyJar.Pack(value.Key)
             Dim valueData = _valueJars(value.Key).Value.Pack(value.Value)
-            Return keyData.Concat(valueData)
+            Return keyData.Concat(valueData).ToRist()
         End Function
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of KeyValuePair(Of TKey, Object))
             Dim parsedKey = _keyJar.Parse(data)

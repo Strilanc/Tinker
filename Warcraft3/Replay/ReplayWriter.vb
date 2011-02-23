@@ -71,7 +71,7 @@ Namespace WC3.Replay
             'Get compressed data
             _blockDataBuffer.Position = 0
             Contract.Assume(_blockDataBuffer.CanRead)
-            Dim compressedBlockData = _blockDataBuffer.ReadRemaining().AsRist
+            Dim compressedBlockData = _blockDataBuffer.ReadRemaining().AsRist()
             Dim compressedLength = CUShort(compressedBlockData.Count)
 
             'compute checksum
@@ -131,7 +131,7 @@ Namespace WC3.Replay
                 header.Write(Format.HeaderVersion)
                 header.Write(_decompressedSize)
                 header.Write(_blockCount)
-                header.Write("PX3W".ToAsciiBytes().AsRist())
+                header.Write("PX3W".ToAsciiBytes().ToRist())
                 header.Write(_wc3Version)
                 header.Write(_replayVersion)
                 header.Write(_settings)

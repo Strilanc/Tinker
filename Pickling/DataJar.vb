@@ -3,7 +3,7 @@ Namespace Pickling
     Public Class DataJar
         Inherits BaseJar(Of IRist(Of Byte))
 
-        Public Overrides Function Pack(ByVal value As IRist(Of Byte)) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As IRist(Of Byte)) As IRist(Of Byte)
             Return value.AssumeNotNull
         End Function
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of IRist(Of Byte))

@@ -71,10 +71,10 @@ Public Class CachedWC3InfoProvider
         Dim versionInfo = FileVersionInfo.GetVersionInfo(path)
         Dim fileInfo = New IO.FileInfo(path)
         Contract.Assume(versionInfo IsNot Nothing)
-        _exeVersion = {versionInfo.ProductPrivatePart,
-                       versionInfo.ProductBuildPart,
-                       versionInfo.ProductMinorPart,
-                       versionInfo.ProductMajorPart}.AsRist().Select(Function(e) CByte(e And &HFF))
+        _exeVersion = MakeRist(versionInfo.ProductPrivatePart,
+                               versionInfo.ProductBuildPart,
+                               versionInfo.ProductMinorPart,
+                               versionInfo.ProductMajorPart).Select(Function(e) CByte(e And &HFF))
         Contract.Assume(_exeVersion.Count = 4)
         _exeLastModifiedTime = fileInfo.LastWriteTime
         _exeSize = CUInt(fileInfo.Length)

@@ -10,14 +10,14 @@ Namespace Bnet.Protocol
                     New IPAddressJar().Named("ip"),
                     New DataJar().Fixed(exactDataCount:=8).Named("unknown"))
 
-        Public Overrides Function Pack(ByVal value As Net.IPEndPoint) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As Net.IPEndPoint) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
-            Dim addrBytes = value.Address.AssumeNotNull().GetAddressBytes
+            Dim addrBytes = value.Address.AssumeNotNull().GetAddressBytes()
             Dim vals = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"protocol", If(addrBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0US, 2US)},
                     {"ip", value.Address},
                     {"port", CUShort(value.Port)},
-                    {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsRist}})
+                    {"unknown", MakeRist(Of Byte)(0, 0, 0, 0, 0, 0, 0, 0)}})
             Return DataJar.Pack(vals)
         End Function
 

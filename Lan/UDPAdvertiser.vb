@@ -94,7 +94,7 @@ Namespace Lan
                 Throw New InvalidOperationException("There is already a game being advertised with id = {0}.".Frmt(gameDescription.GameId))
             End If
 
-            Dim lanGame = New LanGame(gameDescription, If(targets, {_defaultTargetHost}.AsRist()))
+            Dim lanGame = New LanGame(gameDescription, If(targets, MakeRist(_defaultTargetHost)))
             _games(gameDescription.GameId) = lanGame
             RefreshGame(lanGame)
 

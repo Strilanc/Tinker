@@ -187,7 +187,7 @@
             _stream.Position = blockInfo.BlockPosition + Format.BlockHeaderSize
             Dim dataStream = MakeZLibStream(_stream.AsStream, IO.Compression.CompressionMode.Decompress)
             Contract.Assume(dataStream.CanRead)
-            Return dataStream.ReadBytesExact(length:=CInt(blockInfo.DataLength)).AsRist
+            Return dataStream.ReadBytesExact(length:=CInt(blockInfo.DataLength)).AsRist()
         End Function
 
         '''<summary>Determines the block which contains the given position.</summary>
@@ -227,7 +227,7 @@
 
         Public Function Read(ByVal maxCount As Integer) As IRist(Of Byte) Implements IReadableStream.Read
             Dim result = New List(Of Byte)
-            If _blockCount = 0 Then Return result.AsRist
+            If _blockCount = 0 Then Return result.AsRist()
 
             'Load first block on first read
             If _loadedBlockData Is Nothing Then
@@ -262,7 +262,7 @@
             End While
 
             Contract.Assume(result.Count <= maxCount)
-            Return result.AsRist
+            Return result.AsRist()
         End Function
 
         Public ReadOnly Property Length As Long Implements ISeekableStream.Length

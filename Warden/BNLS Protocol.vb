@@ -100,10 +100,10 @@ Namespace Warden
                                     ClientPackets.FullServerConnect.PackPickle(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"cookie", cookie},
                     {"client type", ClientType.Warcraft3TFT},
-                    {"seed", seed.Bytes.AsRist},
+                    {"seed", seed.Bytes()},
                     {"username", ""},
-                    {"password", New Byte() {}.AsRist},
-                    {"unspecified", New Byte() {}.AsRist}})))
+                    {"password", MakeRist(Of Byte)()},
+                    {"unspecified", MakeRist(Of Byte)()}})))
         End Function
         Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As IRist(Of Byte)) As ClientPacket
             Contract.Ensures(Contract.Result(Of ClientPacket)() IsNot Nothing)
@@ -111,7 +111,7 @@ Namespace Warden
                                     ClientPackets.FullServiceHandleWardenPacket.PackPickle(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"cookie", cookie},
                     {"raw warden packet data", data},
-                    {"unspecified", New Byte() {}.AsRist}})))
+                    {"unspecified", MakeRist(Of Byte)()}})))
         End Function
     End Class
 

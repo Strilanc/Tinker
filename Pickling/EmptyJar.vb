@@ -3,8 +3,8 @@ Namespace Pickling
     Public NotInheritable Class EmptyJar
         Inherits BaseJar(Of NoValue)
 
-        Public Overrides Function Pack(ByVal value As NoValue) As IEnumerable(Of Byte)
-            Return New Byte() {}
+        Public Overrides Function Pack(ByVal value As NoValue) As IRist(Of Byte)
+            Return MakeRist(Of Byte)()
         End Function
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of NoValue)
             Return New NoValue().ParsedWithDataCount(0)

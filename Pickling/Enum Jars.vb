@@ -18,7 +18,7 @@
             Me._checkDefined = checkDefined
         End Sub
 
-        Public Overrides Function Pack(ByVal value As TEnum) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As TEnum) As IRist(Of Byte)
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(Describe(value), GetType(TEnum)))
             End If

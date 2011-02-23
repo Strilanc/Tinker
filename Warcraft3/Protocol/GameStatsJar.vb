@@ -38,9 +38,9 @@ Namespace WC3.Protocol
                     New ByteJar().Named("unknown2"),
                     New DataJar().Fixed(exactDataCount:=20).Optional.Named("sha1 checksum"))
 
-        Public Overrides Function Pack(ByVal value As GameStats) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As GameStats) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
-            Return EncodeStatStringData(DataJar.Pack(PackDataValue(value))).Append(0)
+            Return EncodeStatStringData(DataJar.Pack(PackDataValue(value))).Append(0).ToRist()
         End Function
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of GameStats)
             'null-terminated

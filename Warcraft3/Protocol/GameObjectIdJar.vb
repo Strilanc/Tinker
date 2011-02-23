@@ -4,8 +4,8 @@ Namespace WC3.Protocol
     Public NotInheritable Class GameObjectIdJar
         Inherits BaseJar(Of GameObjectId)
 
-        Public Overrides Function Pack(ByVal value As GameObjectId) As IEnumerable(Of Byte)
-            Return value.AllocatedId.Bytes.Concat(value.CounterId.Bytes)
+        Public Overrides Function Pack(ByVal value As GameObjectId) As IRist(Of Byte)
+            Return value.AllocatedId.Bytes.Concat(value.CounterId.Bytes).ToRist()
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of GameObjectId)

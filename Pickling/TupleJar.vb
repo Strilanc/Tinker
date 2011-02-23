@@ -21,12 +21,12 @@ Namespace Pickling
             Contract.Requires(subJars IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(ByVal value As NamedValueMap) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As NamedValueMap) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
             If value.Count > _subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
             Dim missingKeys = From subJar In _subJars Where Not value.ContainsKey(subJar.Name)
             If missingKeys.Any Then Throw New PicklingException("Missing key in dictionary: {0}.".Frmt(missingKeys.First))
-            Return Concat(From subJar In _subJars Select subJar.Pack(value.ItemRaw(subJar.Name)))
+            Return Concat(From subJar In _subJars Select subJar.Pack(value.ItemRaw(subJar.Name))).ToRist()
         End Function
 
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of NamedValueMap)

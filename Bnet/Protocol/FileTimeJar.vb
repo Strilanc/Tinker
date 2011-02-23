@@ -4,7 +4,7 @@ Namespace Bnet.Protocol
     Public NotInheritable Class FileTimeJar
         Inherits BaseFixedSizeJar(Of DateTime)
 
-        Public Overrides Function Pack(ByVal value As DateTime) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As DateTime) As IRist(Of Byte)
             Return value.ToFileTime.BitwiseToUInt64.Bytes()
         End Function
 

@@ -287,7 +287,7 @@ Namespace WC3.Protocol
                     listenPort:=listenPort,
                     peerKey:=peerKey,
                     name:=name,
-                    peerData:=New Byte() {0}.AsRist,
+                    peerData:=MakeRist(Of Byte)(0),
                     internalEndPoint:=internalAddress.WithPort(sendingPort)))
         End Function
         <Pure()>

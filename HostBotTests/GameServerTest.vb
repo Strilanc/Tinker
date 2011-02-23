@@ -77,7 +77,7 @@ Public Class GameServerTest
             'Prep data
             Dim testStream = New TestStream()
             testStream.EnqueueRead({WC3.Protocol.Packets.PacketPrefix, WC3.Protocol.PacketId.Knock})
-            testStream.EnqueueRead(CUShort(KnockData.Length + 4).Bytes)
+            testStream.EnqueueRead(CUShort(KnockData.Length + 4).Bytes().ToArray())
             testStream.EnqueueRead(KnockData)
             'Connect
             Dim socket = New WC3.W3Socket(New PacketSocket(

@@ -1,7 +1,7 @@
 Namespace Bot
     Public Class Settings
-        Private _clientProfiles As IRist(Of ClientProfile) = New List(Of ClientProfile)().AsRist
-        Private _pluginProfiles As IRist(Of PluginProfile) = New List(Of PluginProfile)().AsRist
+        Private _clientProfiles As IRist(Of ClientProfile) = MakeRist(Of ClientProfile)()
+        Private _pluginProfiles As IRist(Of PluginProfile) = MakeRist(Of PluginProfile)()
         Private ReadOnly lock As New Object()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()

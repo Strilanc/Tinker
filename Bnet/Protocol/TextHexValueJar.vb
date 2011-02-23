@@ -18,10 +18,10 @@ Namespace Bnet.Protocol
             Me._byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(ByVal value As UInteger) As IEnumerable(Of Byte)
-            Dim digits = value.ToString("x{0}".Frmt(_digitCount), CultureInfo.InvariantCulture).ToAsciiBytes.ToArray
-            Contract.Assume(digits.Length >= _digitCount)
-            If digits.Length > _digitCount Then Throw New PicklingException("Value {0} is too large to fit into {1} hex digits.".Frmt(value, _digitCount))
+        Public Overrides Function Pack(ByVal value As UInteger) As IRist(Of Byte)
+            Dim digits = value.ToString("x{0}".Frmt(_digitCount), CultureInfo.InvariantCulture).ToAsciiBytes().ToRist()
+            Contract.Assume(digits.Count >= _digitCount)
+            If digits.Count > _digitCount Then Throw New PicklingException("Value {0} is too large to fit into {1} hex digits.".Frmt(value, _digitCount))
             Select Case _byteOrder
                 Case ByteOrder.BigEndian : Return digits  'no change
                 Case ByteOrder.LittleEndian : Return digits.Reverse

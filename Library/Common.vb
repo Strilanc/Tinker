@@ -2,17 +2,6 @@ Imports System.Numerics
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
-    <Pure()>
-    Public Function EmptyRist(Of T)() As IRist(Of T)
-        Contract.Ensures(Contract.Result(Of IRist(Of T))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IRist(Of T))().Count = 0)
-        Dim r = New Rist(Of T)(counter:=Function() 0, getter:=Function(i)
-                                                                  Throw New UnreachableException()
-                                                              End Function)
-        Contract.Assume(r.Count = 0)
-        Return r
-    End Function
-
     <Extension()> <Pure()>
     Public Function MaybeFirst(Of T)(ByVal sequence As IEnumerable(Of T)) As Maybe(Of T)
         Contract.Requires(sequence IsNot Nothing)
@@ -394,7 +383,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
         Using sha = New System.Security.Cryptography.SHA1Managed()
-            Dim result = sha.ComputeHash(data.AsReadableStream.AsStream).AsRist
+            Dim result = sha.ComputeHash(data.AsReadableStream.AsStream).AsRist()
             Contract.Assume(result.Count = 20)
             Return result
         End Using
@@ -450,14 +439,14 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>
-    Public Function TeamVersusStringToTeamSizes(ByVal value As String) As IList(Of Integer)
+    Public Function TeamVersusStringToTeamSizes(ByVal value As String) As IRist(Of Integer)
         Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of Integer))() IsNot Nothing)
 
         'parse numbers between 'v's
         Return (From e In value.ToUpperInvariant.Split("V"c)
                 Select CInt(Byte.Parse(e, NumberStyles.Integer, CultureInfo.InvariantCulture))
-                ).ToList
+                ).ToRist
     End Function
 
     Public Sub CheckIOData(ByVal clause As Boolean, ByVal message As String)

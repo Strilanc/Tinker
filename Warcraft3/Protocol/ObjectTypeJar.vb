@@ -6,7 +6,7 @@ Namespace WC3.Protocol
 
         Private Shared ReadOnly DataJar As New UInt32Jar()
 
-        Public Overrides Function Pack(ByVal value As UInteger) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As UInteger) As IRist(Of Byte)
             Return DataJar.Pack(value)
         End Function
         Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of UInt32)
@@ -15,7 +15,7 @@ Namespace WC3.Protocol
 
         Public Overrides Function Describe(ByVal value As UInt32) As String
             If value.Bytes.All(Function(b) b >= 32 AndAlso b <= 127) Then
-                Return "type '{0}'".Frmt(New String(System.Text.Encoding.ASCII.GetChars(value.Bytes(ByteOrder.BigEndian))))
+                Return "type '{0}'".Frmt(New String(System.Text.Encoding.ASCII.GetChars(value.Bytes(ByteOrder.BigEndian).ToArray())))
             Else
                 Return "0x{0}".Frmt(value.ToString("X", CultureInfo.InvariantCulture))
             End If

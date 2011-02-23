@@ -41,7 +41,7 @@
     <ContractClass(GetType(ISimpleJar.ContractClass))>
     Public Interface ISimpleJar
         Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Object)
-        Function Pack(ByVal value As Object) As IEnumerable(Of Byte)
+        Function Pack(ByVal value As Object) As IRist(Of Byte)
         Function MakeControl() As ISimpleValueEditor
         Function Describe(ByVal value As Object) As String
         Function Parse(ByVal text As String) As Object
@@ -67,9 +67,9 @@
                 Throw New NotSupportedException()
             End Function
             <Pure()>
-            Public Function Pack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
+            Public Function Pack(ByVal value As Object) As IRist(Of Byte) Implements ISimpleJar.Pack
                 Contract.Requires(value IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
             <Pure()>
@@ -85,7 +85,7 @@
     <ContractClass(GetType(ContractClassIJar(Of )))>
     Public Interface IJar(Of T)
         Inherits ISimpleJar
-        Shadows Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+        Shadows Function Pack(ByVal value As T) As IRist(Of Byte)
         Shadows Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
         Shadows Function MakeControl() As IValueEditor(Of T)
         Shadows Function Describe(ByVal value As T) As String
@@ -185,9 +185,9 @@
             Throw New NotSupportedException
         End Function
         <Pure()>
-        Public Shadows Function Pack(ByVal value As T) As IEnumerable(Of Byte) Implements IJar(Of T).Pack
+        Public Shadows Function Pack(ByVal value As T) As IRist(Of Byte) Implements IJar(Of T).Pack
             Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
         <Pure()>
@@ -212,7 +212,7 @@
         Private Function SimpleParse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
             Throw New NotSupportedException()
         End Function
-        Private Function SimplePack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
+        Private Function SimplePack(ByVal value As Object) As IRist(Of Byte) Implements ISimpleJar.Pack
             Throw New NotSupportedException
         End Function
         Private Function SimpleParse(ByVal text As String) As Object Implements ISimpleJar.Parse

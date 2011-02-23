@@ -8,8 +8,8 @@
             Me._showHex = showHex
         End Sub
 
-        Public Overrides Function Pack(ByVal value As Byte) As IEnumerable(Of Byte)
-            Return {value}
+        Public Overrides Function Pack(ByVal value As Byte) As IRist(Of Byte)
+            Return MakeRist(value)
         End Function
 
         Protected Overrides ReadOnly Property DataSize As UInt16
@@ -70,7 +70,7 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(ByVal value As UShort) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As UShort) As IRist(Of Byte)
             Return value.Bytes(byteOrder)
         End Function
 
@@ -133,7 +133,7 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(ByVal value As UInt32) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As UInt32) As IRist(Of Byte)
             Return value.Bytes(byteOrder)
         End Function
 
@@ -196,7 +196,7 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(ByVal value As UInt64) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As UInt64) As IRist(Of Byte)
             Return value.Bytes(byteOrder)
         End Function
 
@@ -236,8 +236,8 @@
     Public NotInheritable Class Float32Jar
         Inherits BaseFixedSizeJar(Of Single)
 
-        Public Overrides Function Pack(ByVal value As Single) As IEnumerable(Of Byte)
-            Return BitConverter.GetBytes(value)
+        Public Overrides Function Pack(ByVal value As Single) As IRist(Of Byte)
+            Return BitConverter.GetBytes(value).AsRist()
         End Function
 
         Protected Overrides ReadOnly Property DataSize As UInt16
@@ -270,8 +270,8 @@
     Public NotInheritable Class Float64Jar
         Inherits BaseFixedSizeJar(Of Double)
 
-        Public Overrides Function Pack(ByVal value As Double) As IEnumerable(Of Byte)
-            Return BitConverter.GetBytes(value)
+        Public Overrides Function Pack(ByVal value As Double) As IRist(Of Byte)
+            Return BitConverter.GetBytes(value).AsRist()
         End Function
 
         Protected Overrides ReadOnly Property DataSize As UShort

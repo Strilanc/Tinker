@@ -11,7 +11,7 @@ Imports Tinker
 <TestClass()>
 Public Class BnetProtocolTest
     Private Shared ReadOnly TestDate As New Date(Year:=2000, Month:=1, Day:=1)
-    Private Shared ReadOnly TestDateData As Byte() = TestDate.ToFileTime.BitwiseToUInt64.Bytes()
+    Private Shared ReadOnly TestDateData As IRist(Of Byte) = TestDate.ToFileTime.BitwiseToUInt64.Bytes()
 
     <TestMethod()>
     Public Sub ClientChatCommandTest()

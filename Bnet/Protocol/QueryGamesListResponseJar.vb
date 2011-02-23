@@ -69,10 +69,10 @@ Namespace Bnet.Protocol
             Me._clock = clock
         End Sub
 
-        Public Overrides Function Pack(ByVal value As QueryGamesListResponse) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As QueryGamesListResponse) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
             If value.Games.Count = 0 Then
-                Return 0UI.Bytes.Concat(queryResultJar.Pack(value.Result))
+                Return 0UI.Bytes().Concat(queryResultJar.Pack(value.Result))
             Else
                 Return gameDataJar.Pack(PackRawGameDescriptions(value.Games))
             End If
@@ -84,7 +84,7 @@ Namespace Bnet.Protocol
                 'result of a single-game query
                 Dim parsed = queryResultJar.Parse(data.SkipExact(4))
                 Contract.Assume(data.Count >= 8)
-                Return New QueryGamesListResponse(parsed.Value, EmptyRist(Of WC3.RemoteGameDescription)()).ParsedWithDataCount(8)
+                Return New QueryGamesListResponse(parsed.Value, MakeRist(Of WC3.RemoteGameDescription)()).ParsedWithDataCount(8)
             Else
                 'result of a game search
                 Dim parsed = gameDataJar.Parse(data)

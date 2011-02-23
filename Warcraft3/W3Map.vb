@@ -150,7 +150,7 @@ Namespace WC3
             Dim slot3 = slot1.With(index:=2,
                                    color:=Protocol.PlayerColor.Teal,
                                    contents:=New SlotContentsComputer(Protocol.ComputerLevel.Normal))
-            Dim lobbySlots = {slot1, slot2, slot3}.AsRist
+            Dim lobbySlots = MakeRist(slot1, slot2, slot3)
             Contract.Assume(lobbySlots.Count = 3)
 
             'Finish
@@ -378,13 +378,13 @@ Namespace WC3
             Contract.Requires(war3PatchArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
-            Dim m = New IO.MemoryStream(&H3F1379EUI.Bytes)
+            Dim m = New IO.MemoryStream(&H3F1379EUI.Bytes().ToArray())
             Contract.Assume(m.CanRead)
             Using sha = New Security.Cryptography.SHA1Managed(),
                   stream = New ConcatStream(Concat(MapChecksumOverridableFileStreams(mapArchive, war3PatchArchive),
                                                    {m.AsReadableStream},
                                                    MapChecksumFileStreams(mapArchive)))
-                Dim r = sha.ComputeHash(stream.AsStream).AsRist
+                Dim r = sha.ComputeHash(stream.AsStream()).AsRist()
                 Contract.Assume(r.Count = 20)
                 Return r
             End Using
@@ -679,7 +679,7 @@ Namespace WC3
 
             Contract.Assume(lobbySlots.Count <= rawSlotCount)
             CheckIOData(lobbySlots.Count > 0, "Map contains no lobby slots.")
-            Return lobbySlots.AsRist
+            Return lobbySlots.AsRist()
         End Function
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IRist(Of Slot))().Count = lobbySlots.Count")>
         Private Shared Function ReadMapInfoForces(ByVal stream As IReadableStream,

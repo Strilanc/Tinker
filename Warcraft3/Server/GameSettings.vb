@@ -180,9 +180,9 @@
             Contract.Ensures(Contract.Result(Of IRist(Of Integer))() IsNot Nothing)
             Dim teamArg = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
             If teamArg IsNot Nothing Then
-                Return TeamVersusStringToTeamSizes(teamArg).AsRist
+                Return TeamVersusStringToTeamSizes(teamArg)
             Else
-                Return New Integer() {}.AsRist
+                Return MakeRist(Of Integer)()
             End If
         End Function
         Private Shared Function ExtractObserverCount(ByVal argument As Commands.CommandArgument) As Integer
@@ -207,7 +207,7 @@
                         Select New InvariantString(name)
                         ).ToRist
             Else
-                Return New InvariantString() {}.AsRist
+                Return MakeRist(Of InvariantString)()
             End If
         End Function
         Private Shared Function ExtractReservations(ByVal argument As Commands.CommandArgument,
@@ -223,7 +223,7 @@
                                         If(argument.TryGetOptionalNamedValue("r"), "").Split(" "c))
                 If username <> "" Then result.Add(username)
             Next username
-            Return result.AsRist
+            Return result.AsRist()
         End Function
         Private Shared Function ExtractInitialInstanceCount(ByVal argument As Commands.CommandArgument) As Integer
             Contract.Requires(argument IsNot Nothing)
