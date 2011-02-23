@@ -162,7 +162,7 @@
         Public Overloads Function Equals(ByVal other As GameDescription) As Boolean Implements IEquatable(Of GameDescription).Equals
             If other Is Nothing Then Return False
             If other Is Me Then Return True
-            If other.AgeClock IsNot Me.AgeClock Then Return False
+            If Me.AgeClock.ElapsedTime <> other.AgeClock.ElapsedTime Then Return False
             If Me.EntryKey <> other.EntryKey Then Return False
             If Me.GameId <> other.GameId Then Return False
             If Me.GameState <> other.GameState Then Return False

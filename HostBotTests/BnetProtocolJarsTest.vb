@@ -45,7 +45,7 @@ Public Class BnetProtocolJarsTest
     End Sub
     <TestMethod()>
     Public Sub QueryGamesListResponseJarTest()
-        Dim jar = New QueryGamesListResponseJar(New manualclock())
+        Dim jar = New QueryGamesListResponseJar(New ManualClock())
         JarTest(jar,
                 New QueryGamesListResponse(QueryGameResponse.Ok, MakeRist(TestDesc)),
                 New Byte() { _

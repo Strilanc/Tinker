@@ -355,6 +355,7 @@ Public Class BnetProtocolTest
     <TestMethod()>
     Public Sub ServerQueryGamesListTest()
         'multiple games
+        Dim jar = New QueryGamesListResponseJar(New ManualClock())
         Dim testGameData = ByteRist(
                      8, 0, 0, 0,
                      255, 255, 255, 255,
@@ -366,7 +367,7 @@ Public Class BnetProtocolTest
                      67,
                      65, &H32, &H30, &H30, &H30, &H30, &H30, &H30
                      ).Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats))
-        Dim value = Packets.ServerToClient.QueryGamesList.Jar.Parse(
+        Dim value = jar.Parse(
                     ByteRist(2, 0, 0, 0).
                     Concat(testGameData).
                     Concat(testGameData)).Value
