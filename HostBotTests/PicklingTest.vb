@@ -14,7 +14,7 @@ Public Class PicklingTest
         JarTest(jar, 0, {0})
         JarTest(jar, 1, {1})
         JarTest(jar, Byte.MaxValue, {Byte.MaxValue})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist()))
 
         jar = New ByteJar(showHex:=True)
         JarTest(jar, 0, {0})
@@ -28,7 +28,7 @@ Public Class PicklingTest
         JarTest(jar, 1, {1, 0})
         JarTest(jar, 256, {0, 1})
         JarTest(jar, UInt16.MaxValue, {&HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1)))
 
         jar = New UInt16Jar(showHex:=True)
         JarTest(jar, 0, {0, 0})
@@ -50,7 +50,7 @@ Public Class PicklingTest
         JarTest(jar, 256, {0, 1, 0, 0})
         JarTest(jar, UInt16.MaxValue, {&HFF, &HFF, 0, 0})
         JarTest(jar, UInt32.MaxValue, {&HFF, &HFF, &HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 2, 3)))
 
         jar = New UInt32Jar(showHex:=True)
         JarTest(jar, 0, {0, 0, 0, 0})
@@ -75,7 +75,7 @@ Public Class PicklingTest
         JarTest(jar, UInt16.MaxValue, {&HFF, &HFF, 0, 0, 0, 0, 0, 0})
         JarTest(jar, UInt32.MaxValue, {&HFF, &HFF, &HFF, &HFF, 0, 0, 0, 0})
         JarTest(jar, UInt64.MaxValue, {&HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3, 4, 5, 6, 7}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 2, 3, 4, 5, 6, 7)))
 
         jar = New UInt64Jar(showHex:=True)
         JarTest(jar, 0, {0, 0, 0, 0, 0, 0, 0, 0})
@@ -111,7 +111,7 @@ Public Class PicklingTest
         br.Write(Single.PositiveInfinity)
         JarTest(jar, Single.PositiveInfinity, m.ToArray)
 
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 2, 3)))
     End Sub
     <TestMethod()>
     Public Sub Float64JarTest()
@@ -131,7 +131,7 @@ Public Class PicklingTest
         br.Write(Double.PositiveInfinity)
         JarTest(jar, Double.PositiveInfinity, m.ToArray)
 
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3, 4, 5, 6, 7}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 2, 3, 4, 5, 6, 7)))
     End Sub
 #End Region
 
@@ -150,14 +150,14 @@ Public Class PicklingTest
         Dim jar = New EnumByteJar(Of E8)(checkDefined:=False)
         JarTest(jar, Function(e1, e2) e1 = e2, E8.E0, {0})
         JarTest(jar, Function(e1, e2) e1 = e2, E8.E3, {3})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsRist))
-        jar.Parse(New Byte() {2}.AsRist)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist()))
+        jar.Parse(ByteRist(2))
 
         jar = New EnumByteJar(Of E8)(checkDefined:=True)
         JarTest(jar, Function(e1, e2) e1 = e2, E8.E0, {0})
         JarTest(jar, Function(e1, e2) e1 = e2, E8.E3, {3})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {2}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist()))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(2)))
     End Sub
     <TestMethod()>
     Public Sub EnumByteJarTest_Flags()
@@ -165,17 +165,17 @@ Public Class PicklingTest
         JarTest(jar, Function(e1, e2) e1 = e2, F8.F1, {2})
         JarTest(jar, Function(e1, e2) e1 = e2, F8.F7, {128})
         JarTest(jar, Function(e1, e2) e1 = e2, F8.F1 Or F8.F7, {130})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsRist))
-        jar.Parse(New Byte() {1}.AsRist)
-        jar.Parse(New Byte() {3}.AsRist)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist()))
+        jar.Parse(ByteRist(1))
+        jar.Parse(ByteRist(3))
 
         jar = New EnumByteJar(Of F8)(checkDefined:=True)
         JarTest(jar, Function(e1, e2) e1 = e2, F8.F1, {2})
         JarTest(jar, Function(e1, e2) e1 = e2, F8.F7, {128})
         JarTest(jar, Function(e1, e2) e1 = e2, F8.F1 Or F8.F7, {130})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist()))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(3)))
     End Sub
     Private Enum E16 As UInt16
         E0 = 0
@@ -194,15 +194,15 @@ Public Class PicklingTest
         JarTest(jar, Function(e1, e2) e1 = e2, E16.E0, {0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E16.E3, {3, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E16.EM, {&HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0}.AsRist))
-        jar.Parse(New Byte() {2, 0}.AsRist)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0)))
+        jar.Parse(ByteRist(2, 0))
 
         jar = New EnumUInt16Jar(Of E16)(checkDefined:=True)
         JarTest(jar, Function(e1, e2) e1 = e2, E16.E0, {0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E16.E3, {3, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E16.EM, {&HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {2, 0}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(2, 0)))
     End Sub
     <TestMethod()>
     Public Sub EnumUInt16JarTest_Flags()
@@ -211,18 +211,18 @@ Public Class PicklingTest
         JarTest(jar, Function(e1, e2) e1 = e2, F16.F7, {128, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F16.F1 Or F16.F7, {130, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F16.FM, {0, &H80})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0}.AsRist))
-        jar.Parse(New Byte() {1, 0}.AsRist)
-        jar.Parse(New Byte() {3, 0}.AsRist)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0)))
+        jar.Parse(ByteRist(1, 0))
+        jar.Parse(ByteRist(3, 0))
 
         jar = New EnumUInt16Jar(Of F16)(checkDefined:=True)
         JarTest(jar, Function(e1, e2) e1 = e2, F16.F1, {2, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F16.F7, {128, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F16.F1 Or F16.F7, {130, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F16.FM, {0, &H80})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3, 0}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 0)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(3, 0)))
     End Sub
     Private Enum E32 As UInt32
         E0 = 0
@@ -241,15 +241,15 @@ Public Class PicklingTest
         JarTest(jar, Function(e1, e2) e1 = e2, E32.E0, {0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E32.E3, {3, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E32.EM, {&HFF, &HFF, &HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0}.AsRist))
-        jar.Parse(New Byte() {2, 0, 0, 0}.AsRist)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0, 0, 0)))
+        jar.Parse(ByteRist(2, 0, 0, 0))
 
         jar = New EnumUInt32Jar(Of E32)(checkDefined:=True)
         JarTest(jar, Function(e1, e2) e1 = e2, E32.E0, {0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E32.E3, {3, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E32.EM, {&HFF, &HFF, &HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {2, 0, 0, 0}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0, 0, 0)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(2, 0, 0, 0)))
     End Sub
     <TestMethod()>
     Public Sub EnumUInt32JarTest_Flags()
@@ -258,18 +258,18 @@ Public Class PicklingTest
         JarTest(jar, Function(e1, e2) e1 = e2, F32.F7, {128, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F32.F1 Or F32.F7, {130, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F32.FM, {0, 0, 0, &H80})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsRist))
-        jar.Parse(New Byte() {1, 0, 0, 0}.AsRist)
-        jar.Parse(New Byte() {3, 0, 0, 0}.AsRist)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist()))
+        jar.Parse(ByteRist(1, 0, 0, 0))
+        jar.Parse(ByteRist(3, 0, 0, 0))
 
         jar = New EnumUInt32Jar(Of F32)(checkDefined:=True)
         JarTest(jar, Function(e1, e2) e1 = e2, F32.F1, {2, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F32.F7, {128, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F32.F1 Or F32.F7, {130, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F32.FM, {0, 0, 0, &H80})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0, 0, 0}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3, 0, 0, 0}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0, 0, 0)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 0, 0, 0)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(3, 0, 0, 0)))
     End Sub
     Private Enum E64 As UInt64
         E0 = 0
@@ -288,15 +288,15 @@ Public Class PicklingTest
         JarTest(jar, Function(e1, e2) e1 = e2, E64.E0, {0, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E64.E3, {3, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E64.EM, {&HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0, 0, 0, 0, 0}.AsRist))
-        jar.Parse(New Byte() {2, 0, 0, 0, 0, 0, 0, 0}.AsRist)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0, 0, 0, 0, 0, 0, 0)))
+        jar.Parse(ByteRist(2, 0, 0, 0, 0, 0, 0, 0))
 
         jar = New EnumUInt64Jar(Of E64)(checkDefined:=True)
         JarTest(jar, Function(e1, e2) e1 = e2, E64.E0, {0, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E64.E3, {3, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, E64.EM, {&HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0, 0, 0, 0, 0}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {2, 0, 0, 0, 0, 0, 0, 0}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0, 0, 0, 0, 0, 0, 0)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(2, 0, 0, 0, 0, 0, 0, 0)))
     End Sub
     <TestMethod()>
     Public Sub EnumUInt64JarTest_Flags()
@@ -305,18 +305,18 @@ Public Class PicklingTest
         JarTest(jar, Function(e1, e2) e1 = e2, F64.F7, {128, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F64.F1 Or F64.F7, {130, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F64.FM, {0, 0, 0, 0, 0, 0, 0, &H80})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0, 0, 0, 0, 0}.AsRist))
-        jar.Parse(New Byte() {1, 0, 0, 0, 0, 0, 0, 0}.AsRist)
-        jar.Parse(New Byte() {3, 0, 0, 0, 0, 0, 0, 0}.AsRist)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0, 0, 0, 0, 0, 0, 0)))
+        jar.Parse(ByteRist(1, 0, 0, 0, 0, 0, 0, 0))
+        jar.Parse(ByteRist(3, 0, 0, 0, 0, 0, 0, 0))
 
         jar = New EnumUInt64Jar(Of F64)(checkDefined:=True)
         JarTest(jar, Function(e1, e2) e1 = e2, F64.F1, {2, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F64.F7, {128, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F64.F1 Or F64.F7, {130, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, Function(e1, e2) e1 = e2, F64.FM, {0, 0, 0, 0, 0, 0, 0, &H80})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0, 0, 0, 0, 0}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0, 0, 0, 0, 0, 0, 0}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3, 0, 0, 0, 0, 0, 0, 0}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(0, 0, 0, 0, 0, 0, 0)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 0, 0, 0, 0, 0, 0, 0)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(3, 0, 0, 0, 0, 0, 0, 0)))
     End Sub
 #End Region
 
@@ -324,41 +324,41 @@ Public Class PicklingTest
     Public Sub DataJarTest()
         Dim jar = New DataJar()
         Dim equater As Func(Of IRist(Of Byte), IRist(Of Byte), Boolean) = Function(x, y) x.SequenceEqual(y)
-        JarTest(jar, equater, New Byte() {}.AsRist, {}, appendSafe:=False)
-        JarTest(jar, equater, New Byte() {1}.AsRist, {1}, appendSafe:=False)
-        JarTest(jar, equater, New Byte() {1, 2, 3}.AsRist, {1, 2, 3}, appendSafe:=False)
-        JarTest(jar, equater, New Byte() {7, 6, 5}.AsRist, {7, 6, 5}, appendSafe:=False)
+        JarTest(jar, equater, ByteRist(), {}, appendSafe:=False)
+        JarTest(jar, equater, ByteRist(1), {1}, appendSafe:=False)
+        JarTest(jar, equater, ByteRist(1, 2, 3), {1, 2, 3}, appendSafe:=False)
+        JarTest(jar, equater, ByteRist(7, 6, 5), {7, 6, 5}, appendSafe:=False)
     End Sub
 
     <TestMethod()>
     Public Sub ItemCountPrefixedFramingJarTest()
         Dim jar = New ItemCountPrefixedFramingJar(Of UInt16)(New UInt16Jar(), prefixSize:=1)
         Dim equater As Func(Of IRist(Of UInt16), IRist(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
-        JarTest(jar, equater, New UShort() {}.AsRist(), {0})
-        JarTest(jar, equater, New UShort() {0}.AsRist(), {1, 0, 0})
-        JarTest(jar, equater, New UShort() {1}.AsRist(), {1, 1, 0})
-        JarTest(jar, equater, New UShort() {1, 2, UInt16.MaxValue}.AsRist(), {3, 1, 0, 2, 0, &HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsRist))
+        JarTest(jar, equater, MakeRist(Of UInt16)(), {0})
+        JarTest(jar, equater, MakeRist(0US), {1, 0, 0})
+        JarTest(jar, equater, MakeRist(1US), {1, 1, 0})
+        JarTest(jar, equater, MakeRist(1US, 2US, UInt16.MaxValue), {3, 1, 0, 2, 0, &HFF, &HFF})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1)))
 
         jar = New ItemCountPrefixedFramingJar(Of UInt16)(New UInt16Jar(), prefixSize:=4)
-        JarTest(jar, equater, New UShort() {}.AsRist(), {0, 0, 0, 0})
-        JarTest(jar, equater, New UShort() {0}.AsRist(), {1, 0, 0, 0, 0, 0})
-        JarTest(jar, equater, New UShort() {1}.AsRist(), {1, 0, 0, 0, 1, 0})
-        JarTest(jar, equater, New UShort() {1, 2, UInt16.MaxValue}.AsRist(), {3, 0, 0, 0, 1, 0, 2, 0, &HFF, &HFF})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsRist()))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0, 0, 0, 5}.AsRist()))
+        JarTest(jar, equater, MakeRist(Of UInt16)(), {0, 0, 0, 0})
+        JarTest(jar, equater, MakeRist(0US), {1, 0, 0, 0, 0, 0})
+        JarTest(jar, equater, MakeRist(1US), {1, 0, 0, 0, 1, 0})
+        JarTest(jar, equater, MakeRist(1US, 2US, UInt16.MaxValue), {3, 0, 0, 0, 1, 0, 2, 0, &HFF, &HFF})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist()))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 0, 0, 0, 5)))
     End Sub
     <TestMethod()>
     Public Sub RepeatedFramingJarTest()
         Dim jar = New RepeatedFramingJar(Of UInt16)(New UInt16Jar())
         Dim equater As Func(Of IRist(Of UInt16), IRist(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
-        JarTest(jar, equater, New UInt16() {}.AsRist, {}, appendSafe:=False)
-        JarTest(jar, equater, New UInt16() {0}.AsRist, {0, 0}, appendSafe:=False)
-        JarTest(jar, equater, New UInt16() {1}.AsRist, {1, 0}, appendSafe:=False)
-        JarTest(jar, equater, New UInt16() {1, 2, UInt16.MaxValue}.AsRist, {1, 0, 2, 0, &HFF, &HFF}, appendSafe:=False)
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3}.AsRist))
+        JarTest(jar, equater, MakeRist(Of UInt16)(), {}, appendSafe:=False)
+        JarTest(jar, equater, MakeRist(0US), {0, 0}, appendSafe:=False)
+        JarTest(jar, equater, MakeRist(1US), {1, 0}, appendSafe:=False)
+        JarTest(jar, equater, MakeRist(1US, 2US, UInt16.MaxValue), {1, 0, 2, 0, &HFF, &HFF}, appendSafe:=False)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 2, 3)))
     End Sub
 
     <TestMethod()>
@@ -370,23 +370,23 @@ Public Class PicklingTest
         jar = New UTF8Jar(minCharCount:=2)
         ExpectException(Of PicklingException)(Sub() jar.Pack(""))
         ExpectException(Of PicklingException)(Sub() jar.Pack("a"))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {Asc("a")}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist()))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(Asc("a"))))
         JarTest(jar, "abc", {Asc("a"), Asc("b"), Asc("c")}, appendSafe:=False, requireAllData:=True)
         jar = New UTF8Jar(maxCharCount:=1)
         ExpectException(Of PicklingException)(Sub() jar.Pack("ab"))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {Asc("a"), Asc("b")}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(Asc("a"), Asc("b"))))
         JarTest(jar, "", {}, appendSafe:=False, requireAllData:=True)
         JarTest(jar, "a", {Asc("a")}, appendSafe:=False, requireAllData:=True)
         jar = New ASCIIJar()
         JarTest(jar, "", {}, appendSafe:=False, requireAllData:=True)
         JarTest(jar, "a", {Asc("a")}, appendSafe:=False, requireAllData:=True)
         JarTest(jar, "ab", {Asc("a"), Asc("b")}, appendSafe:=False, requireAllData:=True)
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {255}.AsRist))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {128}.AsRist))
-        jar.Parse(New Byte() {127}.AsRist)
-        jar.Parse(New Byte() {31}.AsRist)
-        jar.Parse(New Byte() {0}.AsRist)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(255)))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(128)))
+        jar.Parse(ByteRist(127))
+        jar.Parse(ByteRist(31))
+        jar.Parse(ByteRist(0))
     End Sub
 
     <TestMethod()>
@@ -396,7 +396,7 @@ Public Class PicklingTest
         JarTest(jar, New Dictionary(Of InvariantString, Object)() From {{"32", UInt32.MaxValue}, {"16", 0US}}, {&HFF, &HFF, &HFF, &HFF, 0, 0})
         JarTest(jar, New Dictionary(Of InvariantString, Object)() From {{"32", 0UI}, {"16", UInt16.MaxValue}}, {0, 0, 0, 0, &HFF, &HFF})
         JarTest(jar, New Dictionary(Of InvariantString, Object)() From {{"32", 1UI}, {"16", 2US}}, {1, 0, 0, 0, 2, 0})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3, 4, 5}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(1, 2, 3, 4, 5)))
     End Sub
 
     <TestMethod()>
@@ -422,16 +422,16 @@ Public Class PicklingTest
         JarTest(jar2, data:={0}, value:="")
         JarTest(jar2, data:={}, value:=New Maybe(Of String)(), appendSafe:=False)
         JarTest(jar2, data:={Asc("A"), 0}, value:="A")
-        ExpectException(Of PicklingException)(Sub() jar2.Parse(New Byte() {92}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar2.Parse(ByteRist(92)))
     End Sub
 
     <TestMethod()>
     Public Sub ChecksumPrefixedJarTest()
-        Dim jar = New ChecksumPrefixedFramingJar(Of Byte)(New ByteJar(), checksumSize:=1, checksumFunction:=Function(a) {a(0) Xor CByte(1)}.AsRist)
+        Dim jar = New ChecksumPrefixedFramingJar(Of Byte)(New ByteJar(), checksumSize:=1, checksumFunction:=Function(a) MakeRist(a(0) Xor CByte(1)))
         JarTest(jar, 5, {4, 5})
         JarTest(jar, 3, {2, 3})
         JarTest(jar, 2, {3, 2})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3, 3}.AsRist))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(ByteRist(3, 3)))
     End Sub
 
     <TestMethod()>

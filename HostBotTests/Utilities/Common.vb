@@ -8,6 +8,10 @@ Imports Tinker
 Imports System.Collections.Generic
 
 Friend Module TestingCommon
+    Public Function ByteRist(ByVal ParamArray values As Byte()) As IRist(Of Byte)
+        Return values.AsRist()
+    End Function
+
     <Extension()>
     Public Function FixedClock(ByVal t As TimeSpan) As Strilbrary.Time.IClock
         Dim c = New Strilbrary.Time.ManualClock()

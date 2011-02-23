@@ -17,7 +17,7 @@ Public Class BnetClientTest
 
         Public ReadOnly Property WC3ExeVersion As IRist(Of Byte) Implements IProductInfoProvider.ExeVersion
             Get
-                Return New Byte() {1, 2, 3, 4}.AsRist
+                Return ByteRist(1, 2, 3, 4)
             End Get
         End Property
 

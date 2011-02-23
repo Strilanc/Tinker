@@ -23,7 +23,7 @@ Public Class BnetProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeAuthenticationFinishTest()
-        MakeAuthenticationFinish(version:=New Byte() {1, 2, 3, 4}.AsRist,
+        MakeAuthenticationFinish(version:=ByteRist(1, 2, 3, 4),
                                  revisionCheckResponse:=1,
                                  clientCDKeySalt:=2,
                                  cdKeyOwner:="test",
@@ -70,6 +70,6 @@ Public Class BnetProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeWardenTest()
-        MakeWarden(New Byte() {0}.AsRist)
+        MakeWarden(ByteRist(0))
     End Sub
 End Class

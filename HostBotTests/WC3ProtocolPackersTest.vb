@@ -40,7 +40,7 @@ Public Class WC3ProtocolPackersTest
         MakeOtherPlayerJoined("test",
                               New PlayerId(1),
                               1,
-                              New Byte() {0}.AsRist,
+                              ByteRist(0),
                               Net.IPAddress.Loopback.WithPort(6112))
     End Sub
     <TestMethod()>
@@ -74,18 +74,18 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeTickTest()
-        MakeTick(250, {New PlayerActionSet(New PlayerId(1),
-                                           {GameAction.FromDefinitionAndValue(
+        MakeTick(250, MakeRist(New PlayerActionSet(New PlayerId(1),
+                                           MakeRist(GameAction.FromDefinitionAndValue(
                                                    GameActions.CheatGold,
                                                    New Dictionary(Of InvariantString, Object) From {
                                                                {"amount", 100UI},
                                                                {"unknown", CByte(0)}})
-                                            }.AsRist)
-                       }.AsRist.Maybe)
+                                            ))
+                       ).Maybe())
     End Sub
     <TestMethod()>
     Public Sub MakeMapFileDataTest()
-        MakeMapFileData(5, New Byte() {}.AsRist, New PlayerId(1), New PlayerId(2))
+        MakeMapFileData(5, ByteRist(), New PlayerId(1), New PlayerId(2))
     End Sub
     <TestMethod()>
     Public Sub MakeSetUploadTargetTest()

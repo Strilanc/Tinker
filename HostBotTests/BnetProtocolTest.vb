@@ -147,7 +147,7 @@ Public Class BnetProtocolTest
                         66, 111, 116, 0}),
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"client cd key salt", 76UI},
-                        {"exe version", New Byte() {1, 2, 3, 4}.AsRist},
+                        {"exe version", ByteRist(1, 2, 3, 4)},
                         {"revision check response", 42UI},
                         {"# cd keys", 2UI},
                         {"is spawn", 0UI},
@@ -179,12 +179,12 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientUserAuthenticationBeginTest()
-        Dim key = CByte(32).Range.ToArray
+        Dim key = CByte(32).Range()
         JarTest(Packets.ClientToServer.UserAuthenticationBegin.Jar,
                 data:=key.Concat(
                       {116, 101, 115, 116, 0}),
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"client public key", key.AsRist},
+                        {"client public key", key},
                         {"username", "test"}
                     })
     End Sub
@@ -355,8 +355,8 @@ Public Class BnetProtocolTest
     <TestMethod()>
     Public Sub ServerQueryGamesListTest()
         'multiple games
-        Dim testGameData = New Byte() _
-                    {8, 0, 0, 0,
+        Dim testGameData = ByteRist(
+                     8, 0, 0, 0,
                      255, 255, 255, 255,
                      2, 0, &H17, &HE0, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
                      1, 0, 0, 0,
@@ -365,13 +365,11 @@ Public Class BnetProtocolTest
                      0,
                      67,
                      65, &H32, &H30, &H30, &H30, &H30, &H30, &H30
-                     }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats)
-                ).ToRist
-        Dim value = Packets.ServerToClient.QueryGamesList.Jar.Parse(New Byte() _
-                    {2, 0, 0, 0}.
+                     ).Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats))
+        Dim value = Packets.ServerToClient.QueryGamesList.Jar.Parse(
+                    ByteRist(2, 0, 0, 0).
                     Concat(testGameData).
-                    Concat(testGameData).
-                ToArray.AsRist).Value
+                    Concat(testGameData)).Value
         Assert.IsTrue(value.Result = QueryGameResponse.Ok)
         Assert.IsTrue(value.Games.Count = 2)
         For Each game In value.Games
@@ -379,9 +377,9 @@ Public Class BnetProtocolTest
         Next game
 
         'single game
-        value = Packets.ServerToClient.QueryGamesList.Jar.Parse(New Byte() _
-                    {0, 0, 0, 0,
-                     0, 0, 0, 0}.AsRist).Value
+        value = Packets.ServerToClient.QueryGamesList.Jar.Parse(ByteRist(
+                    0, 0, 0, 0,
+                    0, 0, 0, 0)).Value
         Assert.IsTrue(value.Result = QueryGameResponse.Ok)
         Assert.IsTrue(value.Games.Count = 0)
     End Sub

@@ -47,7 +47,7 @@ Public Class BnetProtocolJarsTest
     Public Sub QueryGamesListResponseJarTest()
         Dim jar = New QueryGamesListResponseJar(New manualclock())
         JarTest(jar,
-                New QueryGamesListResponse(QueryGameResponse.Ok, {TestDesc}.AsRist()),
+                New QueryGamesListResponse(QueryGameResponse.Ok, MakeRist(TestDesc)),
                 New Byte() { _
                  1, 0, 0, 0,
                  8, 0, 0, 0,

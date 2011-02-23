@@ -29,7 +29,7 @@ Public Class DownloadManagerTest
             usesCustomForces:=False,
             usesFixedPlayerSettings:=False,
             name:="Test",
-            lobbySlots:={New Slot(index:=0, raceUnlocked:=False, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)}.AsRist)
+            lobbySlots:=MakeRist(New Slot(index:=0, raceUnlocked:=False, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)))
         Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue()
         Private ReadOnly _players As New AsyncViewableCollection(Of TestPlayer)(outQueue:=outQueue)
         Private ReadOnly _logger As New Logger
@@ -91,7 +91,7 @@ Public Class DownloadManagerTest
             Return MakeOtherPlayerJoined(Name,
                                          ID,
                                          0,
-                                         New Byte() {0}.AsRist,
+                                         ByteRist(0),
                                          Net.IPAddress.Loopback.WithPort(6112))
         End Function
         Public ReadOnly Property Name As InvariantString Implements Download.IPlayerDownloadAspect.Name

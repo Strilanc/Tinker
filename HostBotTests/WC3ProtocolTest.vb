@@ -33,7 +33,7 @@ Public Class WC3ProtocolTest
                 equater:=Function(e1, e2) ObjectEqual(e1, e2),
                 appendSafe:=False,
                 data:={0, 0, 0, 0},
-                value:=New List(Of GameAction)().AsRist)
+                value:=MakeRist(Of GameAction)())
     End Sub
     <TestMethod()>
     Public Sub GreetTest()
@@ -88,7 +88,7 @@ Public Class WC3ProtocolTest
                                      listenport:=6112US,
                                      peerkey:=16UI,
                                      name:="test",
-                                     peerdata:=New Byte() {0}.AsRist,
+                                     peerdata:=ByteRist(0),
                                      internalEndPoint:=Net.IPAddress.Loopback.WithPort(6113)))
     End Sub
     <TestMethod()>
@@ -183,7 +183,7 @@ Public Class WC3ProtocolTest
                        3,
                        12},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"slots", New NamedValueMap() {}.AsRist()},
+                        {"slots", MakeRist(Of NamedValueMap)()},
                         {"random seed", 13UI},
                         {"layout style", LobbyLayoutStyle.FixedPlayerSettings},
                         {"num player slots", CByte(12)}
@@ -204,7 +204,7 @@ Public Class WC3ProtocolTest
                         {"uploader", New PlayerId(3)},
                         {"map transfer key", 0UI},
                         {"file position", 128UI},
-                        {"file data", New Byte() {1, 2, 3, 4}.AsRist}
+                        {"file data", ByteRist(1, 2, 3, 4)}
                     })
     End Sub
     <TestMethod()>
@@ -248,7 +248,7 @@ Public Class WC3ProtocolTest
                        1, 0, 0, 0,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
+                        {"requested receivers", MakeRist(New PlayerId(1), New PlayerId(2), New PlayerId(3))},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.GameChat.KeyValue(Of Object)(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                     {"receiving group", ChatGroup.Allies},
@@ -260,7 +260,7 @@ Public Class WC3ProtocolTest
                        16,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
+                        {"requested receivers", MakeRist(New PlayerId(1), New PlayerId(2), New PlayerId(3))},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.LobbyChat.KeyValue(Of Object)(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                     {"message", "test"}
@@ -271,7 +271,7 @@ Public Class WC3ProtocolTest
                        17,
                        1},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
+                        {"requested receivers", MakeRist(New PlayerId(1), New PlayerId(2), New PlayerId(3))},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetTeam.KeyValue(Of Object)(CByte(1))}
                     })
@@ -281,7 +281,7 @@ Public Class WC3ProtocolTest
                        20,
                        100},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
+                        {"requested receivers", MakeRist(New PlayerId(1), New PlayerId(2), New PlayerId(3))},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetHandicap.KeyValue(Of Object)(CByte(100))}
                     })
@@ -291,7 +291,7 @@ Public Class WC3ProtocolTest
                        18,
                        1},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
+                        {"requested receivers", MakeRist(New PlayerId(1), New PlayerId(2), New PlayerId(3))},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetColor.KeyValue(Of Object)(PlayerColor.Blue)}
                     })
@@ -301,7 +301,7 @@ Public Class WC3ProtocolTest
                        19,
                        2},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.AsRist()},
+                        {"requested receivers", MakeRist(New PlayerId(1), New PlayerId(2), New PlayerId(3))},
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetRace.KeyValue(Of Object)(Races.Orc)}
                     })
@@ -319,7 +319,7 @@ Public Class WC3ProtocolTest
                         {"peer key", 27UI},
                         {"joiner id", New PlayerId(1)},
                         {"name", "test"},
-                        {"peer data", New Byte() {42}.AsRist},
+                        {"peer data", ByteRist(42)},
                         {"external address", Net.IPAddress.Loopback.WithPort(6112)},
                         {"internal address", Net.IPAddress.Loopback.WithPort(6113)}
                     })
@@ -450,7 +450,7 @@ Public Class WC3ProtocolTest
                 data:={2,
                        2, 25, 0, 0, 0,
                        2, 25, 0, 0, 0},
-                value:={lagger, lagger}.AsRist())
+                value:=MakeRist(lagger, lagger))
     End Sub
     <TestMethod()>
     Public Sub StartCountdownTest()
@@ -469,7 +469,7 @@ Public Class WC3ProtocolTest
                        1, 0, 0, 0,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.AsRist()},
+                        {"requested receivers", MakeRist(New PlayerId(2), New PlayerId(3))},
                         {"speaker", New PlayerId(1)},
                         {"type group", ChatType.Game.KeyValue(Of Object)(ChatGroup.Allies)},
                         {"message", "test"}
@@ -480,7 +480,7 @@ Public Class WC3ProtocolTest
                        16,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.AsRist()},
+                        {"requested receivers", MakeRist(New PlayerId(2), New PlayerId(3))},
                         {"speaker", New PlayerId(1)},
                         {"type group", ChatType.Lobby.KeyValue(Of Object)(New NoValue)},
                         {"message", "test"}
@@ -499,14 +499,13 @@ Public Class WC3ProtocolTest
                                 100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250US},
-                        {"player action sets", {New PlayerActionSet(New PlayerId(1),
-                                           {GameAction.FromDefinitionAndValue(
+                        {"player action sets", MakeRist(New PlayerActionSet(New PlayerId(1),
+                                           MakeRist(GameAction.FromDefinitionAndValue(
                                                    GameActions.CheatGold,
                                                    New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                                                {"amount", 100UI},
-                                                               {"unknown", CByte(2)}}))
-                                            }.AsRist)
-                                     }.AsRist.Maybe}
+                                                               {"unknown", CByte(2)}}))))
+                                     ).Maybe()}
                     })
         JarTest(ServerPackets.Tick.Jar,
                 appendSafe:=False,

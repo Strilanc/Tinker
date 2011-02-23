@@ -19,7 +19,8 @@ Friend Module SharedTestObjects
         name:="Test Map",
         playableWidth:=256,
         playableHeight:=256,
-        lobbySlots:={New Slot(index:=0,
+        lobbySlots:=MakeRist(
+                New Slot(index:=0,
                          raceunlocked:=False,
                          color:=PlayerColor.Red,
                          team:=0,
@@ -28,7 +29,7 @@ Friend Module SharedTestObjects
                          raceunlocked:=False,
                          color:=PlayerColor.Blue,
                          team:=0,
-                         contents:=New SlotContentsOpen)}.AsRist)
+                         contents:=New SlotContentsOpen)))
     Friend ReadOnly TestArgument As New Tinker.Commands.CommandArgument("")
     Friend ReadOnly TestStats As GameStats = GameStats.FromMapAndArgument(
             map:=TestMap,

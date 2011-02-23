@@ -28,7 +28,7 @@ Public Class GameActionProtocolTest
                        1, 0, 0, 0, 2, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"group index", CByte(1)},
-                        {"targets", {New GameObjectId(1, 2)}.AsRist()}
+                        {"targets", MakeRist(New GameObjectId(1, 2))}
                     })
     End Sub
     <TestMethod()>
@@ -58,7 +58,7 @@ Public Class GameActionProtocolTest
                        1, 0, 0, 0, 2, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"operation", SelectionOperation.Remove},
-                        {"targets", {New GameObjectId(1, 2)}.AsRist()}
+                        {"targets", MakeRist(New GameObjectId(1, 2))}
                     })
     End Sub
     <TestMethod()>
@@ -357,13 +357,13 @@ Public Class GameActionProtocolTest
                         {"mission key", "h"},
                         {"key", "u"},
                         {"unit type", "Obla".ToAsciiBytes.Reverse.ToUInt32},
-                        {"inventory", {New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ratf".ToAsciiBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3500UI}}),
+                        {"inventory", MakeRist(
+                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ratf".ToAsciiBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3500UI}}),
                                        New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ckng".ToAsciiBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3500UI}}),
                                        New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "desc".ToAsciiBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3700UI}}),
                                        New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "modt".ToAsciiBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3500UI}}),
                                        New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ofro".ToAsciiBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3500UI}}),
-                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", 0UI}, {"charges", 0UI}, {"unknown", 0UI}})
-                                       }.AsRist()},
+                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", 0UI}, {"charges", 0UI}, {"unknown", 0UI}}))},
                         {"experience", 2700UI},
                         {"level ups", 6UI},
                         {"skill points", 2UI},
@@ -377,19 +377,19 @@ Public Class GameActionProtocolTest
                         {"bonus agility per level", CSng(1.75000012)},
                         {"base intelligence", 16UI},
                         {"bonus intelligence per level", CSng(2.25)},
-                        {"hero skills", {New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOwk".ToAsciiBytes.Reverse.ToUInt32}, {"level", 2UI}}),
+                        {"hero skills", MakeRist(
+                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOwk".ToAsciiBytes.Reverse.ToUInt32}, {"level", 2UI}}),
                                          New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOcr".ToAsciiBytes.Reverse.ToUInt32}, {"level", 1UI}}),
                                          New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOmi".ToAsciiBytes.Reverse.ToUInt32}, {"level", 1UI}}),
                                          New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOww".ToAsciiBytes.Reverse.ToUInt32}, {"level", 1UI}}),
-                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", 0UI}, {"level", 0UI}})
-                                         }.AsRist()},
+                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", 0UI}, {"level", 0UI}}))},
                         {"bonus health", CSng(0)},
                         {"bonus mana", CSng(0)},
                         {"sight radius (day)", CSng(1800)},
                         {"unknown2", 2UI},
-                        {"unknown3", New Byte() {0, 0, 0, 0}.AsRist},
-                        {"unknown4", New Byte() {0, 0, 0, 0}.AsRist},
-                        {"unknown5", New Byte() {0, 0, 0, 0}.AsRist},
+                        {"unknown3", ByteRist(0, 0, 0, 0)},
+                        {"unknown4", ByteRist(0, 0, 0, 0)},
+                        {"unknown5", ByteRist(0, 0, 0, 0)},
                         {"hotkey flags", 0US}
                     })
     End Sub
