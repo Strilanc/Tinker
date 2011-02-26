@@ -12,10 +12,10 @@ Namespace WC3
         Private ReadOnly _clock As IClock
         Private ReadOnly _logger As Logger
         Private ReadOnly _gameSets As New Dictionary(Of UInt32, GameSet)()
-        Private ReadOnly _viewGameSets As New AsyncViewableCollection(Of GameSet)(outQueue:=outQueue)
-        Private ReadOnly _viewActiveGameSets As New AsyncViewableCollection(Of GameSet)(outQueue:=outQueue)
-        Private ReadOnly _viewGames As New AsyncViewableCollection(Of Tuple(Of GameSet, Game))(outQueue:=outQueue)
-        Private ReadOnly _viewPlayers As New AsyncViewableCollection(Of Tuple(Of GameSet, Game, Player))(outQueue:=outQueue)
+        Private ReadOnly _viewGameSets As New ObservableCollection(Of GameSet)(outQueue:=outQueue)
+        Private ReadOnly _viewActiveGameSets As New ObservableCollection(Of GameSet)(outQueue:=outQueue)
+        Private ReadOnly _viewGames As New ObservableCollection(Of Tuple(Of GameSet, Game))(outQueue:=outQueue)
+        Private ReadOnly _viewPlayers As New ObservableCollection(Of Tuple(Of GameSet, Game, Player))(outQueue:=outQueue)
 
         Public Event PlayerTalked(ByVal sender As GameServer, ByVal game As Game, ByVal player As Player, ByVal text As String)
         Public Event PlayerLeft(ByVal sender As GameServer, ByVal game As Game, ByVal gameState As GameState, ByVal player As Player, ByVal reportedResult As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
@@ -153,11 +153,11 @@ Namespace WC3
             AddHandler gameSet.StateChanged, activeAdder
 
             Dim gameLink = gameSet.ObserveGames(
-                    adder:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Add(Tuple.Create(gameSet, game))),
-                    remover:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Remove(Tuple.Create(gameSet, game))))
+                    adder:=Sub(game) inQueue.QueueAction(Sub() _viewGames.Add(Tuple.Create(gameSet, game))),
+                    remover:=Sub(game) inQueue.QueueAction(Sub() _viewGames.Remove(Tuple.Create(gameSet, game))))
             Dim playerLink = gameSet.ObservePlayers(
-                    adder:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Add(Tuple.Create(gameSet, game, player))),
-                    remover:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(Tuple.Create(gameSet, game, player))))
+                    adder:=Sub(game, player) inQueue.QueueAction(Sub() _viewPlayers.Add(Tuple.Create(gameSet, game, player))),
+                    remover:=Sub(game, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(Tuple.Create(gameSet, game, player))))
 
             'Automatic removal
             gameSet.DisposalTask.QueueContinueWithAction(inQueue,
@@ -210,44 +210,40 @@ Namespace WC3
             Return inQueue.QueueFunc(Function() AsyncFindPlayerGame(userName)).Unwrap.AssumeNotNull
         End Function
 
-        Public Function ObserveGameSets(ByVal adder As Action(Of GameServer, GameSet),
-                                        ByVal remover As Action(Of GameServer, GameSet)) As Task(Of IDisposable)
+        Public Function ObserveGameSets(ByVal adder As Action(Of GameSet),
+                                        ByVal remover As Action(Of GameSet)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _viewGameSets.Observe(
-                adder:=Sub(sender, item) adder(Me, item),
-                remover:=Sub(sender, item) remover(Me, item)))
+            Return inQueue.QueueFunc(Function() _viewGameSets.Observe(adder, remover))
         End Function
 
-        Public Function ObserveActiveGameSets(ByVal adder As Action(Of GameServer, GameSet),
-                                              ByVal remover As Action(Of GameServer, GameSet)) As Task(Of IDisposable)
+        Public Function ObserveActiveGameSets(ByVal adder As Action(Of GameSet),
+                                              ByVal remover As Action(Of GameSet)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _viewActiveGameSets.Observe(
-                adder:=Sub(sender, item) adder(Me, item),
-                remover:=Sub(sender, item) remover(Me, item)))
+            Return inQueue.QueueFunc(Function() _viewActiveGameSets.Observe(adder, remover))
         End Function
 
-        Public Function ObserveGames(ByVal adder As Action(Of GameServer, GameSet, Game),
-                                     ByVal remover As Action(Of GameServer, GameSet, Game)) As Task(Of IDisposable)
+        Public Function ObserveGames(ByVal adder As Action(Of GameSet, Game),
+                                     ByVal remover As Action(Of GameSet, Game)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _viewGames.Observe(
-                adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2),
-                remover:=Sub(sender, item) remover(Me, item.Item1, item.Item2)))
+                adder:=Sub(item) adder(item.Item1, item.Item2),
+                remover:=Sub(item) remover(item.Item1, item.Item2)))
         End Function
 
-        Public Function ObservePlayers(ByVal adder As Action(Of GameServer, GameSet, Game, Player),
-                                       ByVal remover As Action(Of GameServer, GameSet, Game, Player)) As Task(Of IDisposable)
+        Public Function ObservePlayers(ByVal adder As Action(Of GameSet, Game, Player),
+                                       ByVal remover As Action(Of GameSet, Game, Player)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _viewPlayers.Observe(
-                adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2, item.Item3),
-                remover:=Sub(sender, item) remover(Me, item.Item1, item.Item2, item.Item3)))
+                adder:=Sub(item) adder(item.Item1, item.Item2, item.Item3),
+                remover:=Sub(item) remover(item.Item1, item.Item2, item.Item3)))
         End Function
     End Class
 End Namespace

@@ -12,7 +12,7 @@ Namespace CKL
         Public ReadOnly name As InvariantString
         Private WithEvents _accepter As New ConnectionAccepter()
         Private ReadOnly _logger As New Logger()
-        Private ReadOnly _keys As New AsyncViewableCollection(Of NonNull(Of CKL.KeyEntry))(outQueue:=outQueue)
+        Private ReadOnly _keys As New ObservableCollection(Of NonNull(Of CKL.KeyEntry))(outQueue:=outQueue)
         Private ReadOnly _portHandle As PortPool.PortHandle
         Private ReadOnly _clock As IClock
         Private _keyIndex As Integer

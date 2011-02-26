@@ -88,8 +88,8 @@ Namespace Bot
         End Function
         <Extension()>
         Public Async Function ObserveGameSets(ByVal this As MainBot,
-                                              ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
-                                              ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
+                                              ByVal adder As Action(Of WC3.GameServer, WC3.GameSet),
+                                              ByVal remover As Action(Of WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
             Contract.Assume(this IsNot Nothing)
             Contract.Assume(adder IsNot Nothing)
             Contract.Assume(remover IsNot Nothing)
@@ -98,18 +98,18 @@ Namespace Bot
             Dim inQueue = MakeTaskedCallQueue()
             Dim hooks = New List(Of Task(Of IDisposable))
             Dim viewHook = Await this.Components.ObserveComponentsOfType(Of WC3.GameServerManager)(
-                adder:=Sub(sender, manager) inQueue.QueueAction(
+                adder:=Sub(manager) inQueue.QueueAction(
                     Sub()
                         If hooks Is Nothing Then Return
                         Dim gameSetLink = manager.Server.ObserveActiveGameSets(
-                                 adder:=Sub(sender2, gameSet) adder(this, sender2, gameSet),
-                                 remover:=Sub(sender2, gameSet) remover(this, sender2, gameSet))
+                                 adder:=Sub(gameSet) adder(manager.Server, gameSet),
+                                 remover:=Sub(gameSet) remover(manager.Server, gameSet))
                         'async remove when view is disposed
                         hooks.Add(gameSetLink)
                         'async auto-remove when server is disposed
                         Call {gameSetLink, manager.Server.DisposalTask}.AsAggregateTask.QueueContinueWithAction(inQueue, Sub() gameSetLink.Result.Dispose()).IgnoreExceptions()
                     End Sub),
-                remover:=Sub(sender, server)
+                remover:=Sub(server)
                              'no action needed
                          End Sub)
 
@@ -136,12 +136,12 @@ Namespace Bot
 
             'Include commands
             Dim view = this.Components.ObserveComponentsOfType(Of T)(
-                adder:=Sub(bot, component) inQueue.QueueAction(
+                adder:=Sub(component) inQueue.QueueAction(
                     Sub()
                         If commandDisposers Is Nothing Then Return
                         commandDisposers.Add(component, component.IncludeCommand(weakCommand))
                     End Sub),
-                remover:=Sub(bot, component) inQueue.QueueAction(
+                remover:=Sub(component) inQueue.QueueAction(
                     Sub()
                         If commandDisposers Is Nothing Then Return
                         commandDisposers.Remove(component)
@@ -168,12 +168,12 @@ Namespace Bot
 
             'Include commands
             Dim view = this.Components.ObserveComponentsOfType(Of T)(
-                adder:=Sub(bot, component) inQueue.QueueAction(
+                adder:=Sub(component) inQueue.QueueAction(
                     Sub()
                         If commandDisposers Is Nothing Then Return
                         commandDisposers.Add(component, component.IncludeAllCommands(weakCommands))
                     End Sub),
-                remover:=Sub(bot, component) inQueue.QueueAction(
+                remover:=Sub(component) inQueue.QueueAction(
                     Sub()
                         If commandDisposers Is Nothing Then Return
                         commandDisposers.Remove(component)

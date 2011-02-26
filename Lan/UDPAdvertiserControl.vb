@@ -25,8 +25,8 @@ Namespace Lan
             logClient.SetLogger(Me._udpAdvertiser.Logger, "Lan")
 
             _hooks.Add(Me._udpAdvertiser.ObserveGames(
-                                    adder:=Sub(sender, game) inQueue.QueueAction(Sub() OnAddedGame(game)),
-                                    remover:=Sub(sender, game) inQueue.QueueAction(Sub() OnRemovedGame(game))))
+                                    adder:=Sub(game) inQueue.QueueAction(Sub() OnAddedGame(game)),
+                                    remover:=Sub(game) inQueue.QueueAction(Sub() OnRemovedGame(game))))
         End Sub
 
         Public Function QueueDispose() As Task

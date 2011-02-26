@@ -21,8 +21,8 @@ Namespace Components
 
             _botComponentTabs = New Components.TabManager(tabsComponents)
             _hooks.Add(bot.Components.ObserveComponents(
-                                adder:=Sub(sender, component) inQueue.QueueAction(Sub() OnBotAddedComponent(component)),
-                                remover:=Sub(sender, component) inQueue.QueueAction(Sub() OnBotRemovedComponent(component))))
+                                adder:=Sub(component) inQueue.QueueAction(Sub() OnBotAddedComponent(component)),
+                                remover:=Sub(component) inQueue.QueueAction(Sub() OnBotRemovedComponent(component))))
         End Sub
 
         Private Sub OnBotAddedComponent(ByVal component As Components.IBotComponent)

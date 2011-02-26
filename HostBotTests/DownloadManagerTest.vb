@@ -31,7 +31,7 @@ Public Class DownloadManagerTest
             name:="Test",
             lobbySlots:=MakeRist(New Slot(index:=0, raceUnlocked:=False, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)))
         Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue()
-        Private ReadOnly _players As New AsyncViewableCollection(Of TestPlayer)(outQueue:=outQueue)
+        Private ReadOnly _players As New ObservableCollection(Of TestPlayer)(outQueue:=outQueue)
         Private ReadOnly _logger As New Logger
         Public ReadOnly Property Logger As Logger
             Get

@@ -22,7 +22,7 @@ Namespace Components
 
         Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
         Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue
-        Private ReadOnly _components As New AsyncViewableCollection(Of IBotComponent)(outQueue:=outQueue)
+        Private ReadOnly _components As New ObservableCollection(Of IBotComponent)(outQueue:=outQueue)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
@@ -166,14 +166,12 @@ Namespace Components
         ''' </summary>
         ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
         ''' <param name="remover">Asynchronously called with components as they are removed.</param>
-        Public Function ObserveComponents(ByVal adder As Action(Of ComponentSet, IBotComponent),
-                                          ByVal remover As Action(Of ComponentSet, IBotComponent)) As Task(Of IDisposable)
+        Public Function ObserveComponents(ByVal adder As Action(Of IBotComponent),
+                                          ByVal remover As Action(Of IBotComponent)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _components.Observe(
-                adder:=Sub(sender, item) adder(Me, item),
-                remover:=Sub(sender, item) remover(Me, item)))
+            Return inQueue.QueueFunc(Function() _components.Observe(adder, remover))
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
@@ -195,15 +193,15 @@ Namespace Components
         ''' <param name="remover">Asynchronously called with components as they are removed.</param>
         <Extension()> <Pure()>
         Public Function ObserveComponentsOfType(Of T As IBotComponent)(ByVal this As ComponentSet,
-                                                                       ByVal adder As Action(Of ComponentSet, T),
-                                                                       ByVal remover As Action(Of ComponentSet, T)) As Task(Of IDisposable)
+                                                                       ByVal adder As Action(Of T),
+                                                                       ByVal remover As Action(Of T)) As Task(Of IDisposable)
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return this.ObserveComponents(
-                adder:=Sub(sender, component) If TypeOf component Is T Then adder(sender, DirectCast(component, T)),
-                remover:=Sub(sender, component) If TypeOf component Is T Then remover(sender, DirectCast(component, T)))
+                adder:=Sub(component) If TypeOf component Is T Then adder(DirectCast(component, T)),
+                remover:=Sub(component) If TypeOf component Is T Then remover(DirectCast(component, T)))
         End Function
     End Module
 End Namespace

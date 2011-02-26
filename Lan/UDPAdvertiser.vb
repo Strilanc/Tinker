@@ -12,7 +12,7 @@ Namespace Lan
         Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue()
 
         Private ReadOnly _games As New Dictionary(Of UInt32, LanGame)
-        Private ReadOnly _viewGames As New AsyncViewableCollection(Of LanGame)(outQueue:=outQueue)
+        Private ReadOnly _viewGames As New ObservableCollection(Of LanGame)(outQueue:=outQueue)
         Private ReadOnly _socket As New UdpClient
         Private ReadOnly _logger As Logger
         Private ReadOnly _defaultTargetHost As String
@@ -176,14 +176,12 @@ Namespace Lan
             End Try
         End Sub
 
-        Public Function ObserveGames(ByVal adder As Action(Of Lan.UDPAdvertiser, LanGame),
-                                     ByVal remover As Action(Of Lan.UDPAdvertiser, LanGame)) As Task(Of IDisposable)
+        Public Function ObserveGames(ByVal adder As Action(Of LanGame),
+                                     ByVal remover As Action(Of LanGame)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _viewGames.Observe(
-                adder:=Sub(sender, game) adder(Me, game),
-                remover:=Sub(sender, game) remover(Me, game)))
+            Return inQueue.QueueFunc(Function() _viewGames.Observe(adder, remover))
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task

@@ -30,7 +30,7 @@ Namespace WC3
         Private ReadOnly _clock As IClock
         Private ReadOnly _inQueue As CallQueue
         Private ReadOnly _outQueue As CallQueue
-        Private ReadOnly _players As New AsyncViewableCollection(Of Player)
+        Private ReadOnly _players As New ObservableCollection(Of Player)
         Private _state As GameState = GameState.AcceptingPlayers
 
         Public Event ChangedState(ByVal sender As GameKernel, ByVal oldState As GameState, ByVal newState As GameState)
@@ -80,9 +80,9 @@ Namespace WC3
                 Return _logger
             End Get
         End Property
-        Public ReadOnly Property Players As AsyncViewableCollection(Of Player)
+        Public ReadOnly Property Players As ObservableCollection(Of Player)
             Get
-                Contract.Ensures(Contract.Result(Of AsyncViewableCollection(Of Player))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ObservableCollection(Of Player))() IsNot Nothing)
                 Return _players
             End Get
         End Property

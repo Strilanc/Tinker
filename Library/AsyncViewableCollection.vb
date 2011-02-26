@@ -1,15 +1,16 @@
-﻿''' <summary>
-''' A collection which supports asynchronously syncing its items with others.
-''' </summary>
-''' <remarks>This class is not thread safe (its methods may not be called concurrently).</remarks>
-Public Class AsyncViewableCollection(Of T)
+﻿''' <summary>A collection with support for asynchronously observing its items.</summary>
+''' <remarks>
+''' Incoming calls (including invoking the Observe method) must be synchronized.
+''' The adder and remover delegates given to Observe may assume no re-entrency, but little else about thread safety.
+''' </remarks>
+Public Class ObservableCollection(Of T)
     Implements ICollection(Of T)
 
     Private ReadOnly outQueue As CallQueue
     Private ReadOnly _items As New List(Of T)
 
-    Public Event Added(ByVal sender As AsyncViewableCollection(Of T), ByVal item As T)
-    Public Event Removed(ByVal sender As AsyncViewableCollection(Of T), ByVal item As T)
+    Private Event Added As Action(Of T)
+    Private Event Removed As Action(Of T)
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(outQueue IsNot Nothing)
@@ -27,18 +28,18 @@ Public Class AsyncViewableCollection(Of T)
     <SuppressMessage("Microsoft.Contracts", "Ensures-28-62")>
     Public Sub Add(ByVal item As T) Implements ICollection(Of T).Add
         _items.Add(item)
-        outQueue.QueueAction(Sub() RaiseEvent Added(Me, item))
+        outQueue.QueueAction(Sub() RaiseEvent Added(item))
     End Sub
     Public Sub Clear() Implements ICollection(Of T).Clear
         For Each e In _items
             Dim e_ = e
-            outQueue.QueueAction(Sub() RaiseEvent Removed(Me, e_))
+            outQueue.QueueAction(Sub() RaiseEvent Removed(e_))
         Next e
         _items.Clear()
     End Sub
     Public Function Remove(ByVal item As T) As Boolean Implements ICollection(Of T).Remove
         Dim result = _items.Remove(item)
-        If result Then outQueue.QueueAction(Sub() RaiseEvent Removed(Me, item))
+        If result Then outQueue.QueueAction(Sub() RaiseEvent Removed(item))
         Return result
     End Function
 
@@ -73,15 +74,15 @@ Public Class AsyncViewableCollection(Of T)
     ''' <param name="remover">A callback for items removed from the collection. Never called concurrently, but calls may migrate across threads.</param>
     ''' <returns>An IDisposable which, when disposed, begins unregistering 'adder' and 'remover'.</returns>
     ''' <remarks>The 'never called concurrently' clause applies between adder and remover (eg. adder will not be called during remover).</remarks>
-    Public Function Observe(ByVal adder As AddedEventHandler,
-                            ByVal remover As RemovedEventHandler) As IDisposable
+    Public Function Observe(ByVal adder As Action(Of T),
+                            ByVal remover As Action(Of T)) As IDisposable
         Contract.Requires(adder IsNot Nothing)
         Contract.Requires(remover IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         'Current items
         For Each item In _items
             Dim item_ = item
-            outQueue.QueueAction(Sub() adder(Me, item_))
+            outQueue.QueueAction(Sub() adder(item_))
         Next item
         'Future items
         outQueue.QueueAction(

@@ -87,27 +87,27 @@ Namespace WC3
             Tinker.Components.UIInvokeCommand(_manager, argument)
         End Sub
 
-        Private Sub OnAddedGame(ByVal sender As GameServer, ByVal gameSet As GameSet, ByVal game As Game)
+        Private Sub OnAddedGame(ByVal gameSet As GameSet, ByVal game As Game)
             inQueue.QueueAction(Sub()
                                     _games(game) = New WC3.GameManager(game.Name, _manager.Bot, game)
                                     gameTabs.Add(_games(game))
                                     BeginUpdateStateDisplay()
                                 End Sub)
         End Sub
-        Private Sub OnRemovedGame(ByVal sender As GameServer, ByVal gameSet As GameSet, ByVal game As Game)
+        Private Sub OnRemovedGame(ByVal gameSet As GameSet, ByVal game As Game)
             inQueue.QueueAction(Sub()
                                     gameTabs.Remove(_games(game))
                                     _games.Remove(game)
                                     BeginUpdateStateDisplay()
                                 End Sub)
         End Sub
-        Private Sub OnAddedGameSet(ByVal sender As GameServer, ByVal gameSet As GameSet)
+        Private Sub OnAddedGameSet(ByVal gameSet As GameSet)
             inQueue.QueueAction(Sub()
                                     _gameSets.Add(gameSet)
                                     BeginUpdateStateDisplay()
                                 End Sub)
         End Sub
-        Private Sub OnRemovedGameSet(ByVal sender As GameServer, ByVal gameSet As GameSet)
+        Private Sub OnRemovedGameSet(ByVal gameSet As GameSet)
             inQueue.QueueAction(Sub()
                                     _gameSets.Remove(gameSet)
                                     BeginUpdateStateDisplay()

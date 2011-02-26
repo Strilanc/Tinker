@@ -162,12 +162,12 @@ Namespace Bnet
 
             If slaved Then
                 _autoHook = _bot.ObserveGameSets(
-                    adder:=Sub(sender, server, gameSet)
+                    adder:=Sub(server, gameSet)
                                If gameSet.GameSettings.IsAdminGame Then Return
                                _client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
                                                                 isPrivate:=gameSet.GameSettings.IsPrivate)
                            End Sub,
-                    remover:=Sub(sender, server, gameSet)
+                    remover:=Sub(server, gameSet)
                                  _client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription)
                              End Sub)
             Else
