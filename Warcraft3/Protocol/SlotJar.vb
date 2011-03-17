@@ -17,8 +17,8 @@ Namespace WC3.Protocol
                     New ByteJar().Named("handicap"))
         End Sub
 
-        Public Shared Function PackSlot(ByVal slot As Slot,
-                                        Optional ByVal receiver As Player = Nothing) As NamedValueMap
+        Public Shared Function PackSlot(slot As Slot,
+                                        Optional receiver As Player = Nothing) As NamedValueMap
             Contract.Requires(receiver IsNot Nothing)
             Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
             Dim pid = slot.Contents.DataPlayerIndex(receiver)

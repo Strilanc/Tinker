@@ -38,11 +38,11 @@ Namespace WC3.Protocol
                     New ByteJar().Named("unknown2"),
                     New DataJar().Fixed(exactDataCount:=20).Optional.Named("sha1 checksum"))
 
-        Public Overrides Function Pack(ByVal value As GameStats) As IRist(Of Byte)
+        Public Overrides Function Pack(value As GameStats) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
             Return EncodeStatStringData(DataJar.Pack(PackDataValue(value))).Append(0).ToRist()
         End Function
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of GameStats)
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of GameStats)
             'null-terminated
             Dim indexOfNull = data.IndexOf(0)
             If Not indexOfNull.HasValue Then Throw New PicklingException("No null terminator on game statstring.")
@@ -56,7 +56,7 @@ Namespace WC3.Protocol
             Return ParseDataValue(parsed.Value).ParsedWithDataCount(usedDataCount)
         End Function
 
-        Private Shared Function PackDataValue(ByVal value As GameStats) As NamedValueMap
+        Private Shared Function PackDataValue(value As GameStats) As NamedValueMap
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
             'Encode settings
@@ -114,7 +114,7 @@ Namespace WC3.Protocol
                     {"unknown1", CByte(0)},
                     {"unknown2", CByte(0)}}
         End Function
-        Private Shared Function ParseDataValue(ByVal vals As NamedValueMap) As GameStats
+        Private Shared Function ParseDataValue(vals As NamedValueMap) As GameStats
             Contract.Requires(vals IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)
             Dim settings = vals.ItemAs(Of GameSettings)("settings")
@@ -180,7 +180,7 @@ Namespace WC3.Protocol
                                  hostName:=hostName)
         End Function
 
-        Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
+        Private Shared Function EncodeStatStringData(data As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
             Return From b In Concat(From plainBlock In data.Partitioned(partitionSize:=7)
@@ -189,7 +189,7 @@ Namespace WC3.Protocol
                    Select b Or CByte(1)
         End Function
 
-        Private Shared Function DecodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
+        Private Shared Function DecodeStatStringData(data As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
             Return From encodedBlock In data.Partitioned(partitionSize:=8)
@@ -197,12 +197,12 @@ Namespace WC3.Protocol
                    Select decodedValue = valueMaskBitPair.Item1.WithBitSetTo(bitPosition:=0, bitValue:=valueMaskBitPair.Item2)
         End Function
 
-        Public Overrides Function Describe(ByVal value As GameStats) As String
+        Public Overrides Function Describe(value As GameStats) As String
             Contract.Assume(value IsNot Nothing)
             Return DataJar.Describe(PackDataValue(value))
         End Function
         <SuppressMessage("Microsoft.Contracts", "Requires-7-11")>
-        Public Overrides Function Parse(ByVal text As String) As GameStats
+        Public Overrides Function Parse(text As String) As GameStats
             Return ParseDataValue(DataJar.Parse(text))
         End Function
 

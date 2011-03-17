@@ -33,7 +33,7 @@ Namespace WC3
         Private ReadOnly _players As New ObservableCollection(Of Player)
         Private _state As GameState = GameState.AcceptingPlayers
 
-        Public Event ChangedState(ByVal sender As GameKernel, ByVal oldState As GameState, ByVal newState As GameState)
+        Public Event ChangedState(sender As GameKernel, oldState As GameState, newState As GameState)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_clock IsNot Nothing)
@@ -43,10 +43,10 @@ Namespace WC3
             Contract.Invariant(_logger IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal clock As IClock,
-                       ByVal inQueue As CallQueue,
-                       ByVal outQueue As CallQueue,
-                       ByVal logger As Logger)
+        Public Sub New(clock As IClock,
+                       inQueue As CallQueue,
+                       outQueue As CallQueue,
+                       logger As Logger)
             Contract.Assume(clock IsNot Nothing)
             Contract.Assume(inQueue IsNot Nothing)
             Contract.Assume(outQueue IsNot Nothing)
@@ -90,7 +90,7 @@ Namespace WC3
             Get
                 Return _state
             End Get
-            Set(ByVal value As GameState)
+            Set(value As GameState)
                 Dim oldState = State
                 _state = value
                 RaiseEvent ChangedState(Me, oldState, value)

@@ -9,14 +9,14 @@ Namespace WC3.Protocol
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal id As PacketId, ByVal payload As ISimplePickle)
+        Private Sub New(id As PacketId, payload As ISimplePickle)
             Contract.Requires(payload IsNot Nothing)
             Me._id = id
             Me._payload = payload
         End Sub
 
-        Public Shared Function FromValue(Of T)(ByVal packetDefinition As Packets.Definition(Of T),
-                                               ByVal value As T) As Packet
+        Public Shared Function FromValue(Of T)(packetDefinition As Packets.Definition(Of T),
+                                               value As T) As Packet
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
@@ -37,7 +37,7 @@ Namespace WC3.Protocol
     End Class
 
     Public Module W3PacketHandler
-        Public Function MakeW3PacketHandlerLogger(ByVal sourceName As String, ByVal logger As Logger) As PacketHandlerLogger(Of PacketId)
+        Public Function MakeW3PacketHandlerLogger(sourceName As String, logger As Logger) As PacketHandlerLogger(Of PacketId)
             Contract.Requires(sourceName IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of PacketHandlerLogger(Of PacketId))() IsNot Nothing)

@@ -192,7 +192,7 @@ Namespace WC3.Protocol
 
         Public ReadOnly AllocatedId As UInteger
         Public ReadOnly CounterId As UInteger
-        Public Sub New(ByVal allocatedId As UInteger, ByVal counterId As UInteger)
+        Public Sub New(allocatedId As UInteger, counterId As UInteger)
             Me.AllocatedId = allocatedId
             Me.CounterId = counterId
         End Sub
@@ -200,18 +200,18 @@ Namespace WC3.Protocol
         Public Overrides Function GetHashCode() As Integer
             Return CounterId.GetHashCode
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             If Not TypeOf obj Is GameObjectId Then Return False
             Return Me.Equals(DirectCast(obj, GameObjectId))
         End Function
-        Public Overloads Function Equals(ByVal other As GameObjectId) As Boolean Implements IEquatable(Of GameObjectId).Equals
+        Public Overloads Function Equals(other As GameObjectId) As Boolean Implements IEquatable(Of GameObjectId).Equals
             Return Me.AllocatedId = other.AllocatedId AndAlso Me.CounterId = other.CounterId
         End Function
 
-        Public Shared Operator =(ByVal value1 As GameObjectId, ByVal value2 As GameObjectId) As Boolean
+        Public Shared Operator =(value1 As GameObjectId, value2 As GameObjectId) As Boolean
             Return value1.equals(value2)
         End Operator
-        Public Shared Operator <>(ByVal value1 As GameObjectId, ByVal value2 As GameObjectId) As Boolean
+        Public Shared Operator <>(value1 As GameObjectId, value2 As GameObjectId) As Boolean
             Return Not value1 = value2
         End Operator
 
@@ -219,7 +219,7 @@ Namespace WC3.Protocol
             If AllocatedId = UInt32.MaxValue AndAlso CounterId = UInt32.MaxValue Then Return "[none]"
             Return "allocated id: {0}, counter id: {1}".Frmt(AllocatedId, CounterId)
         End Function
-        Public Shared Function Parse(ByVal text As String) As GameObjectId
+        Public Shared Function Parse(text As String) As GameObjectId
             Contract.Requires(text IsNot Nothing)
             If text = "[none]" Then Return New GameObjectId(UInt32.MaxValue, UInt32.MaxValue)
             If Not text Like "allocated id: #*, counter id: #*" Then Throw New FormatException("Not a recognized GameObjectId format.")
@@ -242,7 +242,7 @@ Namespace WC3.Protocol
                 Return _allDefinitions.Values
             End Get
         End Property
-        Public Shared ReadOnly Property DefinitionFor(ByVal id As GameActionId) As Definition
+        Public Shared ReadOnly Property DefinitionFor(id As GameActionId) As Definition
             Get
                 Contract.Ensures(Contract.Result(Of Definition)() IsNot Nothing)
                 If Not _allDefinitions.ContainsKey(id) Then Throw New ArgumentException("No definition defined for id: {0}.".Frmt(id))
@@ -259,7 +259,7 @@ Namespace WC3.Protocol
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As GameActionId, ByVal jar As ISimpleJar)
+            Friend Sub New(id As GameActionId, jar As ISimpleJar)
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -286,7 +286,7 @@ Namespace WC3.Protocol
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As GameActionId, ByVal jar As IJar(Of T))
+            Friend Sub New(id As GameActionId, jar As IJar(Of T))
                 MyBase.New(id, jar)
                 Contract.Requires(jar IsNot Nothing)
                 Me._jar = jar
@@ -300,21 +300,21 @@ Namespace WC3.Protocol
             End Property
         End Class
 
-        Private Shared Function Define(ByVal id As GameActionId) As Definition(Of NoValue)
+        Private Shared Function Define(id As GameActionId) As Definition(Of NoValue)
             Contract.Ensures(Contract.Result(Of Definition(Of NoValue))() IsNot Nothing)
             Return Define(id, New EmptyJar)
         End Function
-        Private Shared Function Define(Of T)(ByVal id As GameActionId, ByVal jar As IJar(Of T)) As Definition(Of T)
+        Private Shared Function Define(Of T)(id As GameActionId, jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
             Dim result = New Definition(Of T)(id, jar)
             _allDefinitions.Add(id, result)
             Return result
         End Function
-        Private Shared Function Define(ByVal id As GameActionId,
-                                       ByVal jar1 As ISimpleNamedJar,
-                                       ByVal jar2 As ISimpleNamedJar,
-                                       ByVal ParamArray jars() As ISimpleNamedJar) As Definition(Of NamedValueMap)
+        Private Shared Function Define(id As GameActionId,
+                                       jar1 As ISimpleNamedJar,
+                                       jar2 As ISimpleNamedJar,
+                                       ParamArray jars() As ISimpleNamedJar) As Definition(Of NamedValueMap)
             Contract.Requires(jar1 IsNot Nothing)
             Contract.Requires(jar2 IsNot Nothing)
             Contract.Requires(jars IsNot Nothing)

@@ -11,9 +11,9 @@
         Private _loadInGameTickCount As Integer
         Private _loadInGameTicker As IDisposable
 
-        Public Event RecordGameStarted(ByVal sender As GameLoadScreen)
-        Public Event EmptyTick(ByVal sender As GameLoadScreen)
-        Public Event Finished(ByVal sender As GameLoadScreen)
+        Public Event RecordGameStarted(sender As GameLoadScreen)
+        Public Event EmptyTick(sender As GameLoadScreen)
+        Public Event Finished(sender As GameLoadScreen)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_settings IsNot Nothing)
@@ -25,9 +25,9 @@
             Contract.Invariant(_loadInGameTickCount >= 0)
         End Sub
 
-        Public Sub New(ByVal kernel As GameKernel,
-                       ByVal lobby As GameLobby,
-                       ByVal settings As GameSettings)
+        Public Sub New(kernel As GameKernel,
+                       lobby As GameLobby,
+                       settings As GameSettings)
             Contract.Assume(kernel IsNot Nothing)
             Contract.Assume(lobby IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
@@ -115,7 +115,7 @@
             End If
         End Sub
 
-        Private Sub OnReceiveReady(ByVal sendingPlayer As Player)
+        Private Sub OnReceiveReady(sendingPlayer As Player)
             Contract.Requires(sendingPlayer IsNot Nothing)
             If Not unreadyPlayers.Contains(sendingPlayer) Then Return
 

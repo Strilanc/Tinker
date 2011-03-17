@@ -35,10 +35,10 @@ Namespace WC3.Download
             Contract.Invariant(_reportedPosition <= _map.FileSize)
         End Sub
 
-        Public Sub New(ByVal player As IPlayerDownloadAspect,
-                       ByVal map As Map,
-                       ByVal clock As IClock,
-                       ByVal hooks As IEnumerable(Of Task(Of IDisposable)))
+        Public Sub New(player As IPlayerDownloadAspect,
+                       map As Map,
+                       clock As IClock,
+                       hooks As IEnumerable(Of Task(Of IDisposable)))
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(hooks IsNot Nothing)
@@ -123,7 +123,7 @@ Namespace WC3.Download
                 Contract.Requires(HasReported)
                 Return _reportedState
             End Get
-            Set(ByVal value As Protocol.MapTransferState)
+            Set(value As Protocol.MapTransferState)
                 Contract.Requires(HasReported)
                 _reportedState = value
             End Set
@@ -135,7 +135,7 @@ Namespace WC3.Download
                 Contract.Assume(_reportedPosition <= Map.FileSize)
                 Return _reportedPosition
             End Get
-            Set(ByVal value As UInt32)
+            Set(value As UInt32)
                 Contract.Requires(HasReported)
                 Contract.Requires(value <= Map.FileSize)
                 Contract.Assume(value <= _map.FileSize)
@@ -184,7 +184,7 @@ Namespace WC3.Download
                                   Where sign <> 0).FirstOrDefault)
         End Function
 
-        Public Shared Function StartTransfer(ByVal downloader As TransferClient, ByVal uploader As TransferClient) As Transfer
+        Public Shared Function StartTransfer(downloader As TransferClient, uploader As TransferClient) As Transfer
             Contract.Requires(downloader IsNot Nothing)
             Contract.Requires(uploader IsNot Nothing)
             Contract.Requires(downloader.HasReported)
@@ -234,7 +234,7 @@ Namespace WC3.Download
             _hasReported = True
         End Sub
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If _transfer IsNot Nothing Then
                 _transfer.Dispose()
                 _transfer = Nothing

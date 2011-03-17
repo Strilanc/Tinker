@@ -17,15 +17,15 @@
             Contract.Invariant(_hooks IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal writer As ReplayWriter,
-                        ByVal infoProvider As IProductInfoProvider)
+        Private Sub New(writer As ReplayWriter,
+                        infoProvider As IProductInfoProvider)
             Contract.Requires(writer IsNot Nothing)
             Contract.Requires(infoProvider IsNot Nothing)
             Me._writer = writer
             Me._infoProvider = infoProvider
         End Sub
 
-        Private Sub Wire(ByVal game As Game)
+        Private Sub Wire(game As Game)
             Contract.Requires(game IsNot Nothing)
 
             Dim tickHandler As Game.TickEventHandler =
@@ -50,12 +50,12 @@
             game.ChainEventualDisposalTo(Me)
         End Sub
 
-        Public Shared Function StartRecordingFrom(ByVal defaultFileName As String,
-                                                  ByVal game As Game,
-                                                  ByVal players As IEnumerable(Of Player),
-                                                  ByVal slots As IEnumerable(Of Slot),
-                                                  ByVal randomSeed As UInt32,
-                                                  ByVal infoProvider As IProductInfoProvider) As ReplayManager
+        Public Shared Function StartRecordingFrom(defaultFileName As String,
+                                                  game As Game,
+                                                  players As IEnumerable(Of Player),
+                                                  slots As IEnumerable(Of Slot),
+                                                  randomSeed As UInt32,
+                                                  infoProvider As IProductInfoProvider) As ReplayManager
             Contract.Requires(game IsNot Nothing)
             Contract.Requires(players IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
@@ -122,8 +122,8 @@
             Return result
         End Function
 
-        Private Sub OnTick(ByVal duration As UShort,
-                           ByVal visibleActionStreaks As IRist(Of IRist(Of Protocol.PlayerActionSet)))
+        Private Sub OnTick(duration As UShort,
+                           visibleActionStreaks As IRist(Of IRist(Of Protocol.PlayerActionSet)))
             Contract.Requires(visibleActionStreaks IsNot Nothing)
             For Each visibleActionStreak In visibleActionStreaks.SkipLast(1)
                 Contract.Assume(visibleActionStreak IsNot Nothing)
@@ -132,9 +132,9 @@
             _writer.WriteEntry(MakeTick(duration, If(visibleActionStreaks.LastOrDefault,
                                                      MakeRist(Of Protocol.PlayerActionSet)())))
         End Sub
-        Private Sub OnChat(ByVal speaker As Player,
-                           ByVal text As String,
-                           ByVal receivingGroup As Protocol.ChatGroup?)
+        Private Sub OnChat(speaker As Player,
+                           text As String,
+                           receivingGroup As Protocol.ChatGroup?)
             Contract.Requires(speaker IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             If receivingGroup Is Nothing Then
@@ -143,13 +143,13 @@
                 _writer.WriteEntry(MakeGameChatMessage(speaker.Id, text, receivingGroup.Value))
             End If
         End Sub
-        Private Sub Onleave(ByVal leaver As Player,
-                            ByVal reportedResult As Protocol.PlayerLeaveReason)
+        Private Sub Onleave(leaver As Player,
+                            reportedResult As Protocol.PlayerLeaveReason)
             Contract.Requires(leaver IsNot Nothing)
             _writer.WriteEntry(MakePlayerLeft(0, leaver.Id, reportedResult, 0))
         End Sub
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueFunc(
                 Function()

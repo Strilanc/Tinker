@@ -20,12 +20,12 @@ Namespace WC3
                 hook.Dispose()
             Next hook
         End Sub
-        Private Sub OnCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comGame.IssuedCommand
+        Private Sub OnCommand(sender As CommandControl, argument As String) Handles comGame.IssuedCommand
             Contract.Requires(argument IsNot Nothing)
             Tinker.Components.UIInvokeCommand(_manager, argument)
         End Sub
 
-        Public Sub New(ByVal manager As WC3.GameManager)
+        Public Sub New(manager As WC3.GameManager)
             Contract.Assert(manager IsNot Nothing)
             InitializeComponent()
 
@@ -39,7 +39,7 @@ Namespace WC3
             _game.QueueThrowUpdated()
         End Sub
 
-        Private Sub txtInput_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtInput.KeyPress
+        Private Sub txtInput_KeyPress(sender As Object, e As System.Windows.Forms.KeyPressEventArgs) Handles txtInput.KeyPress
             If e.KeyChar <> Microsoft.VisualBasic.ChrW(Keys.Enter) Then Return
             If txtInput.Text = "" Then Return
             _game.QueueBroadcastMessage(txtInput.Text)
@@ -47,7 +47,7 @@ Namespace WC3
             e.Handled = True
         End Sub
 
-        Private Sub OnGameUpdated(ByVal sender As WC3.Game, ByVal slots As SlotSet)
+        Private Sub OnGameUpdated(sender As WC3.Game, slots As SlotSet)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
             Dim descriptions = (From slot In slots Select slot.AsyncGenerateDescription).ToArray

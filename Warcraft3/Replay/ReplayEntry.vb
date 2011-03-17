@@ -14,7 +14,7 @@ Namespace WC3.Replay
             Contract.Invariant(_definition IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal definition As Format.Definition, ByVal payload As Object)
+        Private Sub New(definition As Format.Definition, payload As Object)
             Contract.Requires(definition IsNot Nothing)
             Contract.Requires(payload IsNot Nothing)
             Contract.Ensures(Me.Definition Is definition)
@@ -23,8 +23,8 @@ Namespace WC3.Replay
             Me._payload = payload
         End Sub
         <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", justification:="Helps type inference.")>
-        Public Shared Function FromDefinitionAndValue(Of TPayload)(ByVal definition As Format.Definition(Of TPayload),
-                                                                   ByVal payload As TPayload) As ReplayEntry
+        Public Shared Function FromDefinitionAndValue(Of TPayload)(definition As Format.Definition(Of TPayload),
+                                                                   payload As TPayload) As ReplayEntry
             Contract.Requires(definition IsNot Nothing)
             Contract.Requires(payload IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
@@ -44,21 +44,21 @@ Namespace WC3.Replay
             End Get
         End Property
 
-        Public Shared Widening Operator CType(ByVal value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
+        Public Shared Widening Operator CType(value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
             Contract.Requires(value IsNot Nothing)
             Return value.Definition.Id.KeyValue(value.Payload)
         End Operator
-        Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry
+        Public Shared Widening Operator CType(value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
             Contract.Assume(value.Value IsNot Nothing)
             Return New ReplayEntry(Format.DefinitionFor(value.Key), value.Value)
         End Operator
 
-        Public Overloads Function Equals(ByVal other As ReplayEntry) As Boolean Implements System.IEquatable(Of ReplayEntry).Equals
+        Public Overloads Function Equals(other As ReplayEntry) As Boolean Implements System.IEquatable(Of ReplayEntry).Equals
             If other Is Nothing Then Return False
             Return SharedJar.Pack(Me).SequenceEqual(SharedJar.Pack(other))
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, ReplayEntry))
         End Function
         Public Overrides Function GetHashCode() As Integer
@@ -82,11 +82,11 @@ Namespace WC3.Replay
             Return DataJar
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-33-18")>
-        Public Overrides Function PackRaw(ByVal value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
+        Public Overrides Function PackRaw(value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
             Contract.Assume(value IsNot Nothing)
             Return value
         End Function
-        Public Overrides Function ParseRaw(ByVal value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry
+        Public Overrides Function ParseRaw(value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry
             Return value
         End Function
     End Class

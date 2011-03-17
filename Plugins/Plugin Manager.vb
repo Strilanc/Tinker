@@ -16,7 +16,7 @@ Namespace Plugins
             Contract.Invariant(_hooks IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal socket As Plugins.Socket)
+        Public Sub New(socket As Plugins.Socket)
             Contract.Requires(socket IsNot Nothing)
             Me._socket = socket
         End Sub
@@ -42,14 +42,14 @@ Namespace Plugins
                 Return _socket.Plugin.HasControl
             End Get
         End Property
-        Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
+        Public Function IsArgumentPrivate(argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
             Return _socket.Plugin.IsArgumentPrivate(argument)
         End Function
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(user As BotUser, argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return _socket.Plugin.InvokeCommand(user, argument)
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             _socket.Dispose()
             Return _hooks.DisposeAllAsync()
         End Function
@@ -60,7 +60,7 @@ Namespace Plugins
             End Get
         End Property
 
-        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+        Private Function IncludeCommandImpl(command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
             Dim converter = Function(plugin As IPlugin)
                                 If plugin IsNot Me._socket.Plugin Then
                                     Throw New NotSupportedException("Command mapped from manager to plugin used on different plugin.")
@@ -69,7 +69,7 @@ Namespace Plugins
                             End Function
             Return IncludeCommand(command.ProjectedFrom(converter))
         End Function
-        Public Function IncludeCommand(ByVal command As ICommand(Of IPlugin)) As Task(Of IDisposable)
+        Public Function IncludeCommand(command As ICommand(Of IPlugin)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return _socket.Plugin.IncludeCommand(command)

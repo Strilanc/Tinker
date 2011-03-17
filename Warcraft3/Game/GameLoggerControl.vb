@@ -6,7 +6,7 @@ Namespace WC3
     Public Class GameLoggerControl
         Private WithEvents game As WC3.Game
         Private actionMode As CallbackMode = CallbackMode.Off
-        Public Sub SetGame(ByVal game As WC3.Game)
+        Public Sub SetGame(game As WC3.Game)
             SyncLock lock
                 If Me.game Is game Then Return
                 Me.game = game
@@ -24,9 +24,9 @@ Namespace WC3
             End Select
         End Sub
 
-        Private Sub OnPlayerAction(ByVal sender As WC3.Game,
-                                   ByVal player As WC3.Player,
-                                   ByVal actions As IRist(Of WC3.Protocol.GameAction)) Handles game.ReceivedPlayerActions
+        Private Sub OnPlayerAction(sender As WC3.Game,
+                                   player As WC3.Player,
+                                   actions As IRist(Of WC3.Protocol.GameAction)) Handles game.ReceivedPlayerActions
             Dim mode = actionMode
             If mode = CallbackMode.Off Then Return
             For Each action In actions

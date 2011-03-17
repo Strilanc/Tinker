@@ -5,7 +5,7 @@ Namespace WC3
         Private Sub New()
         End Sub
 
-        Private Shared Function Conv(ByVal command As ICommand(Of Game)) As ICommand(Of GameManager)
+        Private Shared Function Conv(command As ICommand(Of Game)) As ICommand(Of GameManager)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ICommand(Of GameManager))() IsNot Nothing)
             Return command.ProjectedFrom(Function(x As GameManager) x.Game)
@@ -88,7 +88,7 @@ Namespace WC3
                            Description:="Kicks a player from the game. Closes their slot if -close is specified.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim slotQuery = argument.RawValue(0)
                 Dim shouldClose = argument.HasOptionalSwitch("close")
                 Await target.QueueBoot(slotQuery, shouldClose)
@@ -105,7 +105,7 @@ Namespace WC3
                            Description:="Forwards commands to the bot.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overrides Async Function PerformInvoke(ByVal target As GameManager, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(target As GameManager, user As BotUser, argument As String) As Task(Of String)
                 Dim botManagers = (Await target.Bot.Components.QueueGetAllComponents()).OfType(Of Bot.MainBotManager)()
                 Return Await botManagers.Single().InvokeCommand(user, argument)
             End Function
@@ -119,7 +119,7 @@ Namespace WC3
                            Description:="Closes this game instance.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 target.Dispose()
                 Await target.DisposalTask
                 Return "Cancelled"
@@ -134,7 +134,7 @@ Namespace WC3
                            Description:="Closes a slot.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Await target.QueueCloseSlot(argument.RawValue(0))
                 Return "Closed"
             End Function
@@ -148,7 +148,7 @@ Namespace WC3
                            Description:="Sets the color of a slot. Not allowed when the map uses Fixed Player Settings.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim argSlot = argument.RawValue(0)
                 Dim argColor = argument.RawValue(1)
                 Dim color = argColor.EnumTryParse(Of Protocol.PlayerColor)(ignoreCase:=True)
@@ -166,7 +166,7 @@ Namespace WC3
                            Description:="Places a computer in a slot, unless it contains a player.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim argSlot = argument.RawValue(0)
                 Dim argDifficulty = If(argument.RawValueCount >= 2, argument.RawValue(1), WC3.Protocol.ComputerLevel.Normal.ToString)
                 Dim difficulty = argDifficulty.EnumTryParse(Of Protocol.ComputerLevel)(ignoreCase:=True)
@@ -184,7 +184,7 @@ Namespace WC3
                            Description:="Causes the bot to disconnect from the game. The game might continue if one of the players can host.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 target.Dispose()
                 Await target.DisposalTask
                 Return "Disconnected"
@@ -199,7 +199,7 @@ Namespace WC3
                            Description:="Gives access to admin or host commands.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
                 Await target.QueueElevatePlayer(user.Name, argument.RawValue(0))
                 Return "Elevated"
@@ -213,7 +213,7 @@ Namespace WC3
                            template:="setting",
                            Description:="Returns the current value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim val As Task(Of Double)
                 Dim argSetting = argument.RawValue(0).ToInvariant
@@ -236,7 +236,7 @@ Namespace WC3
                            Description:="Sets the handicap of a slot.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim argSlot = argument.RawValue(0)
                 Dim argHandicap = argument.RawValue(1)
                 Dim newHandicap As Byte
@@ -259,7 +259,7 @@ Namespace WC3
                            Description:="Prevents players from leaving a slot or from changing slot properties (if -full). Omit the slot argument to affect all slots.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim lockType = If(argument.HasOptionalSwitch("full"), WC3.Slot.LockState.Frozen, WC3.Slot.LockState.Sticky)
                 If argument.RawValueCount = 0 Then
                     Await target.QueueSetAllSlotsLocked(lockType)
@@ -279,7 +279,7 @@ Namespace WC3
                            Description:="Opens a slot.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Await target.QueueOpenSlot(argument.RawValue(0))
                 Return "Opened"
             End Function
@@ -292,7 +292,7 @@ Namespace WC3
                            template:="",
                            Description:="Returns estimated network round trip times for each player.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Return From players In target.QueueGetPlayers()
                        From latencies In (From player In players Select player.QueueGetLatencyDescription).Cache.AsAggregateTask
@@ -311,7 +311,7 @@ Namespace WC3
                            Description:="Sets the race of a slot. Not allowed when the map uses Fixed Player Settings and the slot race is not Selectable.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim argSlot = argument.RawValue(0)
                 Dim argRace = argument.RawValue(1)
                 Dim race = argRace.EnumTryParse(Of Protocol.Races)(ignoreCase:=True)
@@ -329,7 +329,7 @@ Namespace WC3
                            Description:="Reserves a slot for a player.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim name = argument.RawValue(0)
                 Dim slotQueryString = argument.TryGetOptionalNamedValue("slot")
                 Dim slotQuery = If(slotQueryString Is Nothing, Nothing, New InvariantString?(slotQueryString))
@@ -346,7 +346,7 @@ Namespace WC3
                            template:="setting value",
                            Description:="Sets the value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim val_us As UShort
                 Dim vald As Double
@@ -381,7 +381,7 @@ Namespace WC3
                            Description:="Sets a slot's team. Only works in melee games.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim argSlot = argument.RawValue(0)
                 Dim argTeam = argument.RawValue(1)
                 Dim team As Byte
@@ -402,7 +402,7 @@ Namespace WC3
                            Description:="Sets up the number of slots on each team (eg. 'SetupTeams 2v2' will leave two open slots on each team).")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Await target.QueueTrySetTeamSizes(TeamVersusStringToTeamSizes(argument.RawValue(0)))
                 Return "Set Teams"
             End Function
@@ -416,7 +416,7 @@ Namespace WC3
                            Description:="Starts the launch countdown.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Await target.QueueStartCountdown()
                 Return "Started Countdown"
             End Function
@@ -430,7 +430,7 @@ Namespace WC3
                            Description:="Swaps the contents of two slots.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Await target.QueueSwapSlotContents(argument.RawValue(0), argument.RawValue(1))
                 Return "Swapped Slots"
             End Function
@@ -444,7 +444,7 @@ Namespace WC3
                            Description:="Allows players to move from a slot and change its properties. Omit the slot argument to affect all slots.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim lockType = WC3.Slot.LockState.Unlocked
                 If argument.RawValueCount = 0 Then
                     Await target.QueueSetAllSlotsLocked(lockType)
@@ -464,7 +464,7 @@ Namespace WC3
                            Description:="Places or cancels a vote to prematurely start an autostarted game. Requires at least 2 players and at least a 2/3 majority.")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
                 If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
                 Await target.QueueSetPlayerVoteToStart(user.Name, wantsToStart:=Not argument.HasOptionalSwitch("cancel"))
                 Return "Voted to start"

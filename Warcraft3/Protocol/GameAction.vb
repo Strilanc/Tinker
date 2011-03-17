@@ -14,7 +14,7 @@ Namespace WC3.Protocol
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal definition As GameActions.Definition, ByVal payload As Object)
+        Private Sub New(definition As GameActions.Definition, payload As Object)
             Contract.Requires(definition IsNot Nothing)
             Contract.Requires(payload IsNot Nothing)
             Contract.Ensures(Me.Definition Is definition)
@@ -23,8 +23,8 @@ Namespace WC3.Protocol
             Me._payload = payload
         End Sub
         <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", justification:="Helps type inference.")>
-        Public Shared Function FromDefinitionAndValue(Of TPayload)(ByVal definition As GameActions.Definition(Of TPayload),
-                                                                   ByVal payload As TPayload) As GameAction
+        Public Shared Function FromDefinitionAndValue(Of TPayload)(definition As GameActions.Definition(Of TPayload),
+                                                                   payload As TPayload) As GameAction
             Contract.Requires(definition IsNot Nothing)
             Contract.Requires(payload IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
@@ -43,22 +43,22 @@ Namespace WC3.Protocol
             End Get
         End Property
 
-        Public Shared Widening Operator CType(ByVal value As GameAction) As KeyValuePair(Of GameActionId, Object)
+        Public Shared Widening Operator CType(value As GameAction) As KeyValuePair(Of GameActionId, Object)
             Contract.Requires(value IsNot Nothing)
             Return value.Definition.Id.KeyValue(value.Payload)
         End Operator
-        Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of GameActionId, Object)) As GameAction
+        Public Shared Widening Operator CType(value As KeyValuePair(Of GameActionId, Object)) As GameAction
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
             Contract.Assume(value.Value IsNot Nothing)
             Return New GameAction(GameActions.DefinitionFor(value.Key), value.Value)
         End Operator
 
-        Public Overloads Function Equals(ByVal other As GameAction) As Boolean Implements System.IEquatable(Of GameAction).Equals
+        Public Overloads Function Equals(other As GameAction) As Boolean Implements System.IEquatable(Of GameAction).Equals
             If other Is Nothing Then Return False
             If other.Definition IsNot Me.Definition Then Return False
             Return SharedJar.Pack(Me).SequenceEqual(SharedJar.Pack(other))
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, GameAction))
         End Function
         Public Overrides Function GetHashCode() As Integer
@@ -82,11 +82,11 @@ Namespace WC3.Protocol
             Return DataJar
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-33-18")>
-        Public Overrides Function PackRaw(ByVal value As GameAction) As KeyValuePair(Of GameActionId, Object)
+        Public Overrides Function PackRaw(value As GameAction) As KeyValuePair(Of GameActionId, Object)
             Contract.Assume(value IsNot Nothing)
             Return value
         End Function
-        Public Overrides Function ParseRaw(ByVal value As KeyValuePair(Of GameActionId, Object)) As GameAction
+        Public Overrides Function ParseRaw(value As KeyValuePair(Of GameActionId, Object)) As GameAction
             Return value
         End Function
     End Class

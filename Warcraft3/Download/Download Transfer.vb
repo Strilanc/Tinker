@@ -20,11 +20,11 @@ Namespace WC3.Download
             Contract.Invariant(_startingPosition <= _fileSize)
         End Sub
 
-        Public Sub New(ByVal downloader As TransferClient,
-                           ByVal uploader As TransferClient,
-                           ByVal startingPosition As UInt32,
-                           ByVal filesize As UInt32,
-                           ByVal clock As IClock)
+        Public Sub New(downloader As TransferClient,
+                           uploader As TransferClient,
+                           startingPosition As UInt32,
+                           filesize As UInt32,
+                           clock As IClock)
             Contract.Requires(downloader IsNot Nothing)
             Contract.Requires(uploader IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
@@ -95,7 +95,7 @@ Namespace WC3.Download
             End Get
         End Property
 
-        Public Sub Advance(ByVal progress As UInt32)
+        Public Sub Advance(progress As UInt32)
             _totalProgress += progress
             _lastActivityClock = _lastActivityClock.Restarted()
         End Sub

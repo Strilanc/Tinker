@@ -9,8 +9,8 @@
     Private ReadOnly _clock As IClock
     Private ReadOnly _ticker As IDisposable
 
-    Public Event SendPing(ByVal sender As Pinger, ByVal salt As UInteger)
-    Public Event Timeout(ByVal sender As Pinger)
+    Public Event SendPing(sender As Pinger, salt As UInteger)
+    Public Event Timeout(sender As Pinger)
 
     <ContractInvariantMethod()>
     Private Sub ObjectInvariant()
@@ -23,7 +23,7 @@
         Contract.Invariant(_timeoutCount > 0)
     End Sub
 
-    Public Sub New(ByVal period As TimeSpan, ByVal timeoutCount As Integer, ByVal clock As IClock)
+    Public Sub New(period As TimeSpan, timeoutCount As Integer, clock As IClock)
         Contract.Assume(period.Ticks > 0)
         Contract.Assume(timeoutCount > 0)
         Contract.Assume(clock IsNot Nothing)
@@ -47,7 +47,7 @@
         End If
     End Sub
 
-    Private Sub ReceivedPong(ByVal salt As UInteger)
+    Private Sub ReceivedPong(salt As UInteger)
         If _pingQueue.Count <= 0 Then
             Throw New InvalidOperationException("Pong received before ping sent.")
         End If
@@ -65,7 +65,7 @@
         _latency += lambda * stored.Item2.ElapsedTime.TotalMilliseconds
         If _latency <= 0 Then _latency = Double.Epsilon
     End Sub
-    Public Function QueueReceivedPong(ByVal salt As UInteger) As Task
+    Public Function QueueReceivedPong(salt As UInteger) As Task
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Return inQueue.QueueAction(Sub() ReceivedPong(salt))
     End Function

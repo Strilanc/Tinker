@@ -6,14 +6,14 @@ Namespace WC3.Protocol
 
         Private Shared ReadOnly DataJar As New EnumUInt32Jar(Of OrderId)(checkDefined:=False)
 
-        Public Overrides Function Pack(ByVal value As OrderId) As IRist(Of Byte)
+        Public Overrides Function Pack(value As OrderId) As IRist(Of Byte)
             Return DataJar.Pack(value)
         End Function
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of OrderId)
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of OrderId)
             Return DataJar.Parse(data)
         End Function
 
-        Public Overrides Function Describe(ByVal value As OrderId) As String
+        Public Overrides Function Describe(value As OrderId) As String
             If value.EnumValueIsDefined() Then
                 Return value.ToString
             ElseIf value >= &HD0000UI AndAlso value < &HE0000UI Then
@@ -23,7 +23,7 @@ Namespace WC3.Protocol
             End If
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-189")>
-        Public Overrides Function Parse(ByVal text As String) As OrderId
+        Public Overrides Function Parse(text As String) As OrderId
             Try
                 Dim enumVal = text.EnumTryParse(Of OrderId)(ignoreCase:=True)
                 If enumVal.HasValue Then

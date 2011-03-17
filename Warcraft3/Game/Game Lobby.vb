@@ -11,8 +11,8 @@
         Private _fakeHostPlayer As Player
         Private _slots As SlotSet
 
-        Public Event ChangedPublicState(ByVal sender As GameLobby)
-        Public Event RemovePlayer(ByVal sender As GameLobby, ByVal player As Player, ByVal wasExpected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
+        Public Event ChangedPublicState(sender As GameLobby)
+        Public Event RemovePlayer(sender As GameLobby, player As Player, wasExpected As Boolean, reportedReason As Protocol.PlayerLeaveReason, reasonDescription As String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_downloadManager IsNot Nothing)
@@ -24,10 +24,10 @@
             Contract.Invariant(_settings IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal startPlayerHoldPoint As HoldPoint(Of Player),
-                       ByVal downloadManager As Download.Manager,
-                       ByVal kernel As GameKernel,
-                       ByVal settings As GameSettings)
+        Public Sub New(startPlayerHoldPoint As HoldPoint(Of Player),
+                       downloadManager As Download.Manager,
+                       kernel As GameKernel,
+                       settings As GameSettings)
             Contract.Assume(startPlayerHoldPoint IsNot Nothing)
             Contract.Assume(downloadManager IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
@@ -77,7 +77,7 @@
                 Next remainingObsSlot
             End If
         End Sub
-        Private Shared Function InitCreateSlots(ByVal settings As GameSettings) As IRist(Of Slot)
+        Private Shared Function InitCreateSlots(settings As GameSettings) As IRist(Of Slot)
             Contract.Requires(settings IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)
             Dim result = New List(Of Slot)
@@ -111,7 +111,7 @@
                 Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
                 Return _slots
             End Get
-            Set(ByVal value As SlotSet)
+            Set(value As SlotSet)
                 Contract.Requires(value IsNot Nothing)
                 _slots = value
             End Set
@@ -134,8 +134,8 @@
             End Get
         End Property
 
-        Public Sub LobbyCatchRemovedPlayer(ByVal player As Player,
-                                           ByVal slot As Slot?)
+        Public Sub LobbyCatchRemovedPlayer(player As Player,
+                                           slot As Slot?)
             Contract.Requires(player IsNot Nothing)
 
             If slot Is Nothing OrElse slot.Value.Contents.PlayerIndex Is Nothing Then
@@ -163,8 +163,8 @@
             End Try
         End Function
 
-        Public Function AddFakePlayer(ByVal name As InvariantString,
-                                      Optional ByVal slot As Slot? = Nothing) As Player
+        Public Function AddFakePlayer(name As InvariantString,
+                                      Optional slot As Slot? = Nothing) As Player
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             If Not AcceptingPlayers Then
@@ -207,7 +207,7 @@
             RaiseEvent ChangedPublicState(Me)
         End Sub
 
-        Private Function AllocateSpaceForNewPlayer(ByVal name As InvariantString) As Tuple(Of Slot, PlayerId)
+        Private Function AllocateSpaceForNewPlayer(name As InvariantString) As Tuple(Of Slot, PlayerId)
             Contract.Ensures(Not _freeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PlayerId))().Item2))
 
             'Choose Slot
@@ -248,9 +248,9 @@
             Contract.Assume(Not _freeIndexes.Contains(r.Item2))
             Return r
         End Function
-        Private Function AddPlayer(ByVal newPlayer As Player,
-                                   ByVal slot As Slot,
-                                   ByVal socketRemoteEndPoint As Net.IPEndPoint) As Player
+        Private Function AddPlayer(newPlayer As Player,
+                                   slot As Slot,
+                                   socketRemoteEndPoint As Net.IPEndPoint) As Player
             Contract.Requires(newPlayer IsNot Nothing)
             Contract.Requires(socketRemoteEndPoint IsNot Nothing)
             Contract.Requires(socketRemoteEndPoint.Address IsNot Nothing)
@@ -286,8 +286,8 @@
 
             Return newPlayer
         End Function
-        Public Function AddPlayer(ByVal knockData As Protocol.KnockData,
-                                  ByVal socket As W3Socket) As Player
+        Public Function AddPlayer(knockData As Protocol.KnockData,
+                                  socket As W3Socket) As Player
             Contract.Requires(knockData IsNot Nothing)
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
@@ -303,19 +303,19 @@
             Return AddPlayer(newPlayer, space.Item1, socket.RemoteEndPoint)
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             _downloadManager.Dispose()
             Return Nothing
         End Function
 
         <Pure()>
-        Public Function IsPlayerVisible(ByVal player As Player) As Boolean
+        Public Function IsPlayerVisible(player As Player) As Boolean
             Contract.Requires(player IsNot Nothing)
             Return _pidVisiblityMap(player.Id) = player.Id
         End Function
         <Pure()>
-        Public Function GetVisiblePlayer(ByVal player As Player) As Player
+        Public Function GetVisiblePlayer(player As Player) As Player
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
             If IsPlayerVisible(player) Then Return player
@@ -324,10 +324,10 @@
             Contract.Assume(visiblePlayer IsNot Nothing)
             Return visiblePlayer
         End Function
-        Public Shared Function SetupCoveredSlot(ByVal slots As SlotSet,
-                                                ByVal coveringSlot As Slot,
-                                                ByVal coveredSlot As Slot,
-                                                ByVal coveredPlayersId As PlayerId) As SlotSet
+        Public Shared Function SetupCoveredSlot(slots As SlotSet,
+                                                coveringSlot As Slot,
+                                                coveredSlot As Slot,
+                                                coveredPlayersId As PlayerId) As SlotSet
             Contract.Requires(slots IsNot Nothing)
             Contract.Requires(coveringSlot.Contents.EnumPlayers.None)
             Contract.Requires(coveringSlot.Contents.EnumPlayers.Count = 1)
@@ -339,8 +339,8 @@
                                                  coveredSlot.With(contents:=New SlotContentsCovered(coveringSlot.MatchableId, coveredPlayersId, {})))
         End Function
 
-        Public Function SendMapPiece(ByVal receiver As Download.IPlayerDownloadAspect,
-                                     ByVal position As UInt32) As Task
+        Public Function SendMapPiece(receiver As Download.IPlayerDownloadAspect,
+                                     position As UInt32) As Task
             Contract.Requires(receiver IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
@@ -357,7 +357,7 @@
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
-        Public Function FindMatchingSlot(ByVal query As InvariantString) As Slot
+        Public Function FindMatchingSlot(query As InvariantString) As Slot
             Dim best = (From slot In _slots
                         Let match = slot.Matches(query)
                         Let content = slot.Contents.ContentType
@@ -367,7 +367,7 @@
             Return best.slot
         End Function
 
-        Public Sub OnPlayerSetColor(ByVal sender As Player, ByVal newColor As Protocol.PlayerColor)
+        Public Sub OnPlayerSetColor(sender As Player, newColor As Protocol.PlayerColor)
             Contract.Requires(sender IsNot Nothing)
             Dim trySlot = _slots.TryFindPlayerSlot(sender)
             If Not trySlot.HasValue Then Return
@@ -392,7 +392,7 @@
             _slots = _slots.WithSlotsUpdatedByIndex(slot.With(color:=newColor))
             RaiseEvent ChangedPublicState(Me)
         End Sub
-        Public Sub OnPlayerSetRace(ByVal sender As Player, ByVal newRace As Protocol.Races)
+        Public Sub OnPlayerSetRace(sender As Player, newRace As Protocol.Races)
             Contract.Requires(sender IsNot Nothing)
             Dim trySlot = _slots.TryFindPlayerSlot(sender)
             If trySlot Is Nothing Then Return
@@ -408,7 +408,7 @@
             _slots = _slots.WithSlotsUpdatedByIndex(slot.With(race:=newRace))
             RaiseEvent ChangedPublicState(Me)
         End Sub
-        Public Sub OnPlayerSetHandicap(ByVal sender As Player, ByVal newHandicap As Byte)
+        Public Sub OnPlayerSetHandicap(sender As Player, newHandicap As Byte)
             Contract.Requires(sender IsNot Nothing)
             Dim trySlot = _slots.TryFindPlayerSlot(sender)
             If trySlot Is Nothing Then Return
@@ -429,7 +429,7 @@
 
             RaiseEvent ChangedPublicState(Me)
         End Sub
-        Public Sub OnPlayerSetTeam(ByVal sender As Player, ByVal newTeam As Byte)
+        Public Sub OnPlayerSetTeam(sender As Player, newTeam As Byte)
             Contract.Requires(sender IsNot Nothing)
             Dim trySlot = _slots.TryFindPlayerSlot(sender)
             If trySlot Is Nothing Then Return
@@ -480,8 +480,8 @@
         End Sub
 
         '''<summary>Reserves a slot for a player.</summary>
-        Public Function ReserveSlot(ByVal userName As InvariantString,
-                                    Optional ByVal slotQuery As InvariantString? = Nothing) As Player
+        Public Function ReserveSlot(userName As InvariantString,
+                                    Optional slotQuery As InvariantString? = Nothing) As Player
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
             If Not AcceptingPlayers Then Throw New InvalidOperationException("Can't reserve slots after launch.")
             Dim slot As Slot
@@ -498,9 +498,9 @@
             Return AddFakePlayer(userName, slot:=slot)
         End Function
 
-        Private Sub ModifySlot(ByVal slotQuery As InvariantString,
-                               ByVal projection As Func(Of Slot, Slot),
-                               Optional ByVal avoidPlayers As Boolean = False)
+        Private Sub ModifySlot(slotQuery As InvariantString,
+                               projection As Func(Of Slot, Slot),
+                               Optional avoidPlayers As Boolean = False)
             Contract.Requires(projection IsNot Nothing)
 
             If Not AcceptingPlayers Then Throw New InvalidOperationException("Can't modify slots during launch.")
@@ -515,28 +515,28 @@
         End Sub
 
         '''<summary>Opens the slot with the given index, unless the slot contains a player.</summary>
-        Public Sub OpenSlot(ByVal slotQuery As InvariantString)
+        Public Sub OpenSlot(slotQuery As InvariantString)
             ModifySlot(slotQuery,
                        Function(slot) slot.With(contents:=New SlotContentsOpen),
                        avoidPlayers:=True)
         End Sub
 
         '''<summary>Places a computer with the given difficulty in the slot with the given index, unless the slot contains a player.</summary>
-        Public Sub ComputerizeSlot(ByVal slotQuery As InvariantString, ByVal cpu As Protocol.ComputerLevel)
+        Public Sub ComputerizeSlot(slotQuery As InvariantString, cpu As Protocol.ComputerLevel)
             ModifySlot(slotQuery,
                        Function(slot) slot.With(contents:=New SlotContentsComputer(cpu)),
                        avoidPlayers:=True)
         End Sub
 
         '''<summary>Closes the slot with the given index, unless the slot contains a player.</summary>
-        Public Sub CloseSlot(ByVal slotQuery As InvariantString)
+        Public Sub CloseSlot(slotQuery As InvariantString)
             ModifySlot(slotQuery,
                        Function(slot) slot.With(contents:=New SlotContentsClosed),
                        avoidPlayers:=True)
         End Sub
 
-        Public Sub SwapSlotContents(ByVal slotQuery1 As InvariantString,
-                                    ByVal slotQuery2 As InvariantString)
+        Public Sub SwapSlotContents(slotQuery1 As InvariantString,
+                                    slotQuery2 As InvariantString)
             If Not AcceptingPlayers Then Throw New InvalidOperationException("Can't swap slots after launch.")
             Dim slot1 = FindMatchingSlot(slotQuery1)
             Dim slot2 = FindMatchingSlot(slotQuery2)
@@ -544,13 +544,13 @@
             SwapSlotContents(slot1, slot2)
             RaiseEvent ChangedPublicState(Me)
         End Sub
-        Public Sub SwapSlotContents(ByVal slot1 As Slot, ByVal slot2 As Slot)
+        Public Sub SwapSlotContents(slot1 As Slot, slot2 As Slot)
             _slots = _slots.WithSlotsUpdatedByIndex(slot1.With(contents:=slot2.Contents),
                                                     slot2.With(contents:=slot1.Contents))
             RaiseEvent ChangedPublicState(Me)
         End Sub
 
-        Public Sub SetSlotColor(ByVal slotQuery As InvariantString, ByVal color As Protocol.PlayerColor)
+        Public Sub SetSlotColor(slotQuery As InvariantString, color As Protocol.PlayerColor)
             If _settings.Map.UsesFixedPlayerSettings Then
                 Throw New InvalidOperationException("The map says that slot's color is locked.")
             ElseIf Not AcceptingPlayers Then
@@ -567,14 +567,14 @@
             RaiseEvent ChangedPublicState(Me)
         End Sub
 
-        Public Sub SetSlotRace(ByVal slotQuery As InvariantString, ByVal race As Protocol.Races)
+        Public Sub SetSlotRace(slotQuery As InvariantString, race As Protocol.Races)
             ModifySlot(slotQuery, Function(slot)
                                       If Not slot.RaceUnlocked Then Throw New InvalidOperationException("The map says that slot's race is locked.")
                                       Return slot.With(race:=race)
                                   End Function)
         End Sub
 
-        Public Sub SetSlotTeam(ByVal slotQuery As InvariantString, ByVal team As Byte)
+        Public Sub SetSlotTeam(slotQuery As InvariantString, team As Byte)
             If _settings.Map.UsesCustomForces Then Throw New InvalidOperationException("The map says that all teams are locked.")
             ModifySlot(slotQuery, Function(slot)
                                       If slot.Team <> team AndAlso slot.Team = WC3.Slot.ObserverTeamIndex Then
@@ -586,15 +586,15 @@
                                   End Function)
         End Sub
 
-        Public Sub SetSlotHandicap(ByVal slotQuery As InvariantString, ByVal handicap As Byte)
+        Public Sub SetSlotHandicap(slotQuery As InvariantString, handicap As Byte)
             ModifySlot(slotQuery, Function(slot) slot.With(handicap:=handicap))
         End Sub
 
-        Public Sub SetSlotLocked(ByVal slotQuery As InvariantString, ByVal locked As Slot.LockState)
+        Public Sub SetSlotLocked(slotQuery As InvariantString, locked As Slot.LockState)
             ModifySlot(slotQuery, Function(slot) slot.With(locked:=locked))
         End Sub
 
-        Public Sub SetAllSlotsLocked(ByVal locked As Slot.LockState)
+        Public Sub SetAllSlotsLocked(locked As Slot.LockState)
             _slots = _slots.WithSlotsReplaced(From slot In _slots Select slot.With(locked:=locked))
         End Sub
 
@@ -607,7 +607,7 @@
         End Function
 
         '''<summary>Opens slots, closes slots and moves players around to try to match the desired team sizes.</summary>
-        Public Sub TrySetTeamSizes(ByVal desiredTeamSizes As IEnumerable(Of Integer))
+        Public Sub TrySetTeamSizes(desiredTeamSizes As IEnumerable(Of Integer))
             Contract.Requires(desiredTeamSizes IsNot Nothing)
             If Not AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't change team sizes after launch.")
@@ -623,9 +623,9 @@
         End Sub
 
         <Pure()>
-        Public Shared Function SetupTeamSizesMeleeForces(ByVal slotSet As SlotSet,
-                                                         ByVal desiredTeamSizes As IEnumerable(Of Integer),
-                                                         ByVal maxNonObserverSlots As Integer) As SlotSet
+        Public Shared Function SetupTeamSizesMeleeForces(slotSet As SlotSet,
+                                                         desiredTeamSizes As IEnumerable(Of Integer),
+                                                         maxNonObserverSlots As Integer) As SlotSet
             Contract.Requires(slotSet IsNot Nothing)
             Contract.Requires(desiredTeamSizes IsNot Nothing)
             Contract.Requires(maxNonObserverSlots > 0)
@@ -659,8 +659,8 @@
             Return slotSet.WithSlotsReplaced(assignedSlots).WithSlotsReplaced(closedSlots)
         End Function
         <Pure()>
-        Public Shared Function SetupTeamSizesCustomForces(ByVal slotSet As SlotSet,
-                                                          ByVal desiredTeamSizes As IEnumerable(Of Integer)) As SlotSet
+        Public Shared Function SetupTeamSizesCustomForces(slotSet As SlotSet,
+                                                          desiredTeamSizes As IEnumerable(Of Integer)) As SlotSet
             Contract.Requires(slotSet IsNot Nothing)
             Contract.Requires(desiredTeamSizes IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
@@ -713,8 +713,8 @@
         End Function
 
         '''<summary>Broadcasts a packet to all players. Requires a packer for the packet, and values matching the packer.</summary>
-        Public Sub BroadcastPacket(ByVal packet As Protocol.Packet,
-                                   Optional ByVal source As Player = Nothing)
+        Public Sub BroadcastPacket(packet As Protocol.Packet,
+                                   Optional source As Player = Nothing)
             Contract.Requires(packet IsNot Nothing)
             For Each player In From p In _kernel.Players
                                Where p IsNot source
@@ -724,9 +724,9 @@
         End Sub
 
         '''<summary>Sends text to all players. Uses spoof chat if necessary.</summary>
-        Public Sub BroadcastMessage(ByVal message As String,
-                                    Optional ByVal playerToAvoid As Player = Nothing,
-                                    Optional ByVal messageType As LogMessageType = LogMessageType.Typical)
+        Public Sub BroadcastMessage(message As String,
+                                    Optional playerToAvoid As Player = Nothing,
+                                    Optional messageType As LogMessageType = LogMessageType.Typical)
             Contract.Requires(message IsNot Nothing)
             For Each player In From p In _kernel.Players
                                Where p IsNot playerToAvoid
@@ -736,9 +736,9 @@
         End Sub
 
         '''<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
-        Public Sub SendMessageTo(ByVal message As String,
-                                 ByVal player As Player,
-                                 Optional ByVal display As Boolean = True)
+        Public Sub SendMessageTo(message As String,
+                                 player As Player,
+                                 Optional display As Boolean = True)
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
 

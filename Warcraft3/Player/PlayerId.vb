@@ -14,7 +14,7 @@ Namespace WC3
         End Sub
 
         <CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", MessageId:="index-1")>
-        Public Sub New(ByVal index As Byte)
+        Public Sub New(index As Byte)
             Contract.Requires(index > 0)
             Contract.Requires(index <= 12)
             Me._index = index - CByte(1)
@@ -28,21 +28,21 @@ Namespace WC3
             End Get
         End Property
 
-        Public Shared Operator =(ByVal value1 As PlayerId, ByVal value2 As PlayerId) As Boolean
+        Public Shared Operator =(value1 As PlayerId, value2 As PlayerId) As Boolean
             Return value1._index = value2._index
         End Operator
-        Public Shared Operator <>(ByVal value1 As PlayerId, ByVal value2 As PlayerId) As Boolean
+        Public Shared Operator <>(value1 As PlayerId, value2 As PlayerId) As Boolean
             Return Not value1 = value2
         End Operator
 
         Public Overrides Function GetHashCode() As Integer
             Return _index.GetHashCode
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             If Not TypeOf obj Is PlayerId Then Return False
             Return Me = DirectCast(obj, PlayerId)
         End Function
-        Public Overloads Function Equals(ByVal other As PlayerId) As Boolean Implements IEquatable(Of PlayerId).Equals
+        Public Overloads Function Equals(other As PlayerId) As Boolean Implements IEquatable(Of PlayerId).Equals
             Return Me = other
         End Function
 
@@ -54,17 +54,17 @@ Namespace WC3
     Public Class PlayerIdJar
         Inherits BaseJar(Of PlayerId)
 
-        Public Overrides Function Pack(ByVal value As PlayerId) As IRist(Of Byte)
+        Public Overrides Function Pack(value As PlayerId) As IRist(Of Byte)
             Return MakeRist(value.Index)
         End Function
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of PlayerId)
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of PlayerId)
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException("A PlayerId requires 1 byte.")
             If data.First < 1 OrElse data.First > 12 Then Throw New PicklingException("Invalid player id: {0}".Frmt(data.First))
             Return New PlayerId(data.First).ParsedWithDataCount(1)
         End Function
 
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-100")>
-        Public Overrides Function Parse(ByVal text As String) As PlayerId
+        Public Overrides Function Parse(text As String) As PlayerId
             Dim index As Byte
             If text.StartsWith("pid", StringComparison.Ordinal) Then
                 index = Byte.Parse(text.Substring(3), NumberStyles.Integer, CultureInfo.InvariantCulture)

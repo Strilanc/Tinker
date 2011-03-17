@@ -9,7 +9,7 @@ Namespace WC3.Protocol
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_actions IsNot Nothing)
         End Sub
-        Public Sub New(ByVal id As PlayerId, ByVal actions As IRist(Of GameAction))
+        Public Sub New(id As PlayerId, actions As IRist(Of GameAction))
             Contract.Requires(actions IsNot Nothing)
             Me._id = id
             Me._actions = actions
@@ -29,10 +29,10 @@ Namespace WC3.Protocol
         Public Overrides Function GetHashCode() As Integer
             Return Id.GetHashCode
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, PlayerActionSet))
         End Function
-        Public Overloads Function Equals(ByVal other As PlayerActionSet) As Boolean Implements IEquatable(Of PlayerActionSet).Equals
+        Public Overloads Function Equals(other As PlayerActionSet) As Boolean Implements IEquatable(Of PlayerActionSet).Equals
             If other Is Nothing Then Return False
             If Me.Id <> other.Id Then Return False
             If Me.Actions.Count <> other.Actions.Count Then Return False
@@ -49,7 +49,7 @@ Namespace WC3.Protocol
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_player IsNot Nothing)
         End Sub
-        Public Sub New(ByVal player As Player, ByVal actions As IRist(Of GameAction))
+        Public Sub New(player As Player, actions As IRist(Of GameAction))
             MyBase.New(player.Id, actions)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(actions IsNot Nothing)
@@ -65,10 +65,10 @@ Namespace WC3.Protocol
         Public Overrides Function GetHashCode() As Integer
             Return _player.GetHashCode
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, SpecificPlayerActionSet))
         End Function
-        Public Overloads Function Equals(ByVal other As SpecificPlayerActionSet) As Boolean Implements IEquatable(Of SpecificPlayerActionSet).Equals
+        Public Overloads Function Equals(other As SpecificPlayerActionSet) As Boolean Implements IEquatable(Of SpecificPlayerActionSet).Equals
             Return MyBase.Equals(DirectCast(other, PlayerActionSet)) AndAlso Me.Player Is other.Player
         End Function
     End Class
@@ -82,13 +82,13 @@ Namespace WC3.Protocol
         Public Overrides Function SubJar() As IJar(Of NamedValueMap)
             Return DataJar
         End Function
-        Public Overrides Function PackRaw(ByVal value As PlayerActionSet) As NamedValueMap
+        Public Overrides Function PackRaw(value As PlayerActionSet) As NamedValueMap
             Contract.Assume(value IsNot Nothing)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"source", value.Id},
                     {"actions", value.Actions}}
         End Function
-        Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As PlayerActionSet
+        Public Overrides Function ParseRaw(value As NamedValueMap) As PlayerActionSet
             Contract.Assume(value IsNot Nothing)
             Return New PlayerActionSet(value.ItemAs(Of PlayerId)("source"),
                                        value.ItemAs(Of IRist(Of GameAction))("actions"))

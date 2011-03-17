@@ -19,14 +19,14 @@ Namespace WC3.Protocol
             Contract.Invariant(_peerData IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal gameId As UInt32,
-                       ByVal peerKey As UInt32,
-                       ByVal peerData As IRist(Of Byte),
-                       ByVal entryKey As UInt32,
-                       ByVal listenPort As UInt16,
-                       ByVal internalEndPoint As Net.IPEndPoint,
-                       ByVal unknown As Byte)
+        Public Sub New(name As InvariantString,
+                       gameId As UInt32,
+                       peerKey As UInt32,
+                       peerData As IRist(Of Byte),
+                       entryKey As UInt32,
+                       listenPort As UInt16,
+                       internalEndPoint As Net.IPEndPoint,
+                       unknown As Byte)
             Contract.Requires(peerData IsNot Nothing)
             Contract.Requires(internalEndPoint IsNot Nothing)
             Contract.Assume(internalEndPoint.Address IsNot Nothing)
@@ -86,7 +86,7 @@ Namespace WC3.Protocol
         End Property
 #End Region
 
-        Public Overloads Function Equals(ByVal other As KnockData) As Boolean Implements IEquatable(Of KnockData).Equals
+        Public Overloads Function Equals(other As KnockData) As Boolean Implements IEquatable(Of KnockData).Equals
             If other Is Nothing Then Return False
             Return Me.Name = other.Name AndAlso
                    Me.PeerData.SequenceEqual(other.PeerData) AndAlso
@@ -97,7 +97,7 @@ Namespace WC3.Protocol
                    Me.InternalEndPoint.Equals(other.InternalEndPoint) AndAlso
                    Me.Unknown = other.Unknown
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, KnockData))
         End Function
         Public Overrides Function GetHashCode() As Integer
@@ -106,11 +106,11 @@ Namespace WC3.Protocol
         Public Overrides Function ToString() As String
             Return "{0} joining game {1}".Frmt(Me.Name, Me.GameId)
         End Function
-        Public Shared Operator =(ByVal value1 As KnockData, ByVal value2 As KnockData) As Boolean
+        Public Shared Operator =(value1 As KnockData, value2 As KnockData) As Boolean
             If value1 Is Nothing Then Return value2 Is Nothing
             Return value1.Equals(value2)
         End Operator
-        Public Shared Operator <>(ByVal value1 As KnockData, ByVal value2 As KnockData) As Boolean
+        Public Shared Operator <>(value1 As KnockData, value2 As KnockData) As Boolean
             Return Not value1 = value2
         End Operator
     End Class
@@ -130,7 +130,7 @@ Namespace WC3.Protocol
         Public Overrides Function SubJar() As Pickling.IJar(Of NamedValueMap)
             Return DataJar
         End Function
-        Public Overrides Function PackRaw(ByVal value As KnockData) As NamedValueMap
+        Public Overrides Function PackRaw(value As KnockData) As NamedValueMap
             Contract.Assume(value IsNot Nothing)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"game id", value.GameId},
@@ -142,7 +142,7 @@ Namespace WC3.Protocol
                     {"peer data", value.PeerData},
                     {"internal address", value.InternalEndPoint}}
         End Function
-        Public Overrides Function ParseRaw(ByVal value As NamedValueMap) As KnockData
+        Public Overrides Function ParseRaw(value As NamedValueMap) As KnockData
             Contract.Assume(value IsNot Nothing)
             Return New KnockData(GameId:=value.ItemAs(Of UInt32)("game id"),
                                  EntryKey:=value.ItemAs(Of UInt32)("entry key"),

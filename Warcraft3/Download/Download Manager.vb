@@ -36,11 +36,11 @@ Namespace WC3.Download
             'Contract.Invariant((_started.State = OnetimeLockState.Acquired) = (_mapPieceSender IsNot Nothing))
         End Sub
 
-        Public Sub New(ByVal clock As IClock,
-                       ByVal map As Map,
-                       ByVal logger As Logger,
-                       ByVal allowDownloads As Boolean,
-                       ByVal allowUploads As Boolean)
+        Public Sub New(clock As IClock,
+                       map As Map,
+                       logger As Logger,
+                       allowDownloads As Boolean,
+                       allowUploads As Boolean)
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
@@ -51,8 +51,8 @@ Namespace WC3.Download
             Me._allowUploads = allowUploads
         End Sub
 
-        Public Sub Start(ByVal startPlayerHoldPoint As IHoldPoint(Of IPlayerDownloadAspect),
-                         ByVal mapPieceSender As Action(Of IPlayerDownloadAspect, UInt32))
+        Public Sub Start(startPlayerHoldPoint As IHoldPoint(Of IPlayerDownloadAspect),
+                         mapPieceSender As Action(Of IPlayerDownloadAspect, UInt32))
             Contract.Requires(startPlayerHoldPoint IsNot Nothing)
             Contract.Requires(mapPieceSender IsNot Nothing)
             If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
@@ -80,7 +80,7 @@ Namespace WC3.Download
             End Get
         End Property
 
-        Private Sub SendMapFileData(ByVal client As TransferClient, ByVal reportedPosition As UInt32)
+        Private Sub SendMapFileData(client As TransferClient, reportedPosition As UInt32)
             Contract.Requires(client IsNot Nothing)
             Contract.Requires(client.Transfer IsNot Nothing)
             Contract.Requires(client.Transfer.Uploader Is _defaultClient)
@@ -94,7 +94,7 @@ Namespace WC3.Download
         End Sub
 
 #Region "Public View"
-        Private ReadOnly Property ClientLatencyDescription(ByVal player As IPlayerDownloadAspect, ByVal latencyDescription As String) As String
+        Private ReadOnly Property ClientLatencyDescription(player As IPlayerDownloadAspect, latencyDescription As String) As String
             Get
                 Contract.Requires(player IsNot Nothing)
                 Contract.Requires(latencyDescription IsNot Nothing)
@@ -119,14 +119,14 @@ Namespace WC3.Download
                 End If
             End Get
         End Property
-        Public Function QueueGetClientLatencyDescription(ByVal player As IPlayerDownloadAspect, ByVal latencyDescription As String) As Task(Of String)
+        Public Function QueueGetClientLatencyDescription(player As IPlayerDownloadAspect, latencyDescription As String) As Task(Of String)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(latencyDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() ClientLatencyDescription(player, latencyDescription))
         End Function
 
-        Private ReadOnly Property ClientBandwidthDescription(ByVal player As IPlayerDownloadAspect) As String
+        Private ReadOnly Property ClientBandwidthDescription(player As IPlayerDownloadAspect) As String
             Get
                 Contract.Requires(player IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
@@ -147,7 +147,7 @@ Namespace WC3.Download
                 Return ">HiB/s" '... What? It could happen...
             End Get
         End Property
-        Public Function QueueGetClientBandwidthDescription(ByVal player As IPlayerDownloadAspect) As Task(Of String)
+        Public Function QueueGetClientBandwidthDescription(player As IPlayerDownloadAspect) As Task(Of String)
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() ClientBandwidthDescription(player))
@@ -161,7 +161,7 @@ Namespace WC3.Download
 #End Region
 
 #Region "Game-Triggered"
-        Private Function OnGameStartPlayerHold(ByVal player As IPlayerDownloadAspect) As Task
+        Private Function OnGameStartPlayerHold(player As IPlayerDownloadAspect) As Task
             Contract.Requires(player IsNot Nothing)
 
             Dim playerHooks = New List(Of Task(Of IDisposable))() From {
@@ -187,7 +187,7 @@ Namespace WC3.Download
 #End Region
 
 #Region "Communication-Triggered"
-        Private Function QueueOnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal vals As NamedValueMap) As Task
+        Private Function QueueOnReceiveClientMapInfo(player As IPlayerDownloadAspect, vals As NamedValueMap) As Task
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
@@ -195,14 +195,14 @@ Namespace WC3.Download
                                                                     state:=vals.ItemAs(Of Protocol.MapTransferState)("transfer state"),
                                                                     position:=vals.ItemAs(Of UInt32)("total downloaded")))
         End Function
-        Private Function QueueOnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal flags As UInt16) As Task
+        Private Function QueueOnReceivePeerConnectionInfo(player As IPlayerDownloadAspect, flags As UInt16) As Task
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() OnReceivePeerConnectionInfo(player:=player,
                                                                          flags:=flags))
         End Function
 
-        Private Sub OnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal flags As UInt32)
+        Private Sub OnReceivePeerConnectionInfo(player As IPlayerDownloadAspect, flags As UInt32)
             Contract.Requires(player IsNot Nothing)
             If Not _playerClients.ContainsKey(player) Then Return
 
@@ -216,7 +216,7 @@ Namespace WC3.Download
                                   Select peer)
         End Sub
 
-        Private Sub OnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal state As Protocol.MapTransferState, ByVal position As UInt32)
+        Private Sub OnReceiveClientMapInfo(player As IPlayerDownloadAspect, state As Protocol.MapTransferState, position As UInt32)
             Contract.Requires(player IsNot Nothing)
             If Not _playerClients.ContainsKey(player) Then Return
 
@@ -243,7 +243,7 @@ Namespace WC3.Download
                 SendMapFileData(client, position)
             End If
         End Sub
-        Private Sub OnFirstMapInfo(ByVal client As TransferClient, ByVal state As Protocol.MapTransferState, ByVal position As UInt32)
+        Private Sub OnFirstMapInfo(client As TransferClient, state As Protocol.MapTransferState, position As UInt32)
             Contract.Requires(client IsNot Nothing)
             Contract.Requires(client.Player IsNot Nothing)
             Contract.Requires(Not client.HasReported)
@@ -258,7 +258,7 @@ Namespace WC3.Download
                                               reasonDescription:="Downloads not allowed.")
             End If
         End Sub
-        Private Sub OnTypicalMapInfo(ByVal client As TransferClient, ByVal state As Protocol.MapTransferState, ByVal position As UInt32)
+        Private Sub OnTypicalMapInfo(client As TransferClient, state As Protocol.MapTransferState, position As UInt32)
             Contract.Requires(client IsNot Nothing)
             Contract.Requires(client.Player IsNot Nothing)
             Contract.Requires(client.HasReported)
@@ -391,7 +391,7 @@ Namespace WC3.Download
         End Sub
 #End Region
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueFunc(
                 Function()

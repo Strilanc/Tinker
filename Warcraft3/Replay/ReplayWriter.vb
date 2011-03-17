@@ -32,11 +32,11 @@ Namespace WC3.Replay
             Contract.Invariant(_blockSizeRemaining <= BlockSize)
         End Sub
 
-        Public Sub New(ByVal stream As IRandomWritableStream,
-                       ByVal settings As ReplaySettings,
-                       ByVal wc3Version As UInt32,
-                       ByVal replayVersion As UInt16,
-                       Optional ByVal duration As UInt32? = Nothing)
+        Public Sub New(stream As IRandomWritableStream,
+                       settings As ReplaySettings,
+                       wc3Version As UInt32,
+                       replayVersion As UInt16,
+                       Optional duration As UInt32? = Nothing)
             Contract.Requires(stream IsNot Nothing)
 
             Me._stream = stream
@@ -93,7 +93,7 @@ Namespace WC3.Replay
             Contract.Assume(_startPosition <= _stream.Length)
         End Sub
 
-        Public Sub WriteData(ByVal data As IRist(Of Byte))
+        Public Sub WriteData(data As IRist(Of Byte))
             Contract.Requires(data IsNot Nothing)
             If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
 
@@ -111,7 +111,7 @@ Namespace WC3.Replay
             End If
             Contract.Assume(_blockSizeRemaining >= 0)
         End Sub
-        Public Sub WriteEntry(ByVal entry As ReplayEntry)
+        Public Sub WriteEntry(entry As ReplayEntry)
             Contract.Requires(entry IsNot Nothing)
             WriteData(entryJar.Pack(entry).ToRist)
         End Sub
@@ -146,7 +146,7 @@ Namespace WC3.Replay
             End Using
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             EndBlock()
             _stream.WriteAt(position:=_startPosition, data:=GenerateHeader())
 

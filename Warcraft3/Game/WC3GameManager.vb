@@ -19,9 +19,9 @@ Namespace WC3
             Contract.Invariant(_control IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal bot As Bot.MainBot,
-                       ByVal game As WC3.Game)
+        Public Sub New(name As InvariantString,
+                       bot As Bot.MainBot,
+                       game As WC3.Game)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(game IsNot Nothing)
 
@@ -35,7 +35,7 @@ Namespace WC3
 
             game.ChainEventualDisposalTo(Me)
         End Sub
-        Private Async Sub HandleText(ByVal player As WC3.Player, ByVal text As String)
+        Private Async Sub HandleText(player As WC3.Player, text As String)
             Contract.Assume(player IsNot Nothing)
             Contract.Assume(text IsNot Nothing)
 
@@ -99,7 +99,7 @@ Namespace WC3
                 Return True
             End Get
         End Property
-        Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
+        Public Function IsArgumentPrivate(argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
             Return False
         End Function
         Public ReadOnly Property Control As Control Implements IBotComponent.Control
@@ -108,17 +108,17 @@ Namespace WC3
             End Get
         End Property
 
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(user As BotUser, argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return Game.QueueCommandProcessText(Me, Nothing, argument)
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             _game.Dispose()
             _control.DisposeControlAsync()
             Return _hooks.DisposeAllAsync()
         End Function
 
-        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+        Private Function IncludeCommandImpl(command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
             Throw New NotImplementedException("Game commands are admin/lobby/loading/etc specific.")
         End Function
     End Class

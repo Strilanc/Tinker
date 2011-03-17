@@ -4,11 +4,11 @@ Namespace WC3.Protocol
     Public NotInheritable Class GameObjectIdJar
         Inherits BaseJar(Of GameObjectId)
 
-        Public Overrides Function Pack(ByVal value As GameObjectId) As IRist(Of Byte)
+        Public Overrides Function Pack(value As GameObjectId) As IRist(Of Byte)
             Return value.AllocatedId.Bytes.Concat(value.CounterId.Bytes).ToRist()
         End Function
 
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of GameObjectId)
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of GameObjectId)
             If data.Count < 8 Then Throw New PicklingNotEnoughDataException("A GameObjectId requires 8 bytes.")
             Dim value = New GameObjectId(data.SubList(0, 4).ToUInt32,
                                          data.SubList(4, 4).ToUInt32)
@@ -16,7 +16,7 @@ Namespace WC3.Protocol
         End Function
 
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-84")>
-        Public Overrides Function Parse(ByVal text As String) As GameObjectId
+        Public Overrides Function Parse(text As String) As GameObjectId
             Try
                 Return GameObjectId.Parse(text)
             Catch ex As Exception When TypeOf ex Is FormatException OrElse

@@ -39,7 +39,7 @@ Namespace WC3.Replay
                 Return _allDefinitions.Values
             End Get
         End Property
-        Public Shared ReadOnly Property DefinitionFor(ByVal id As ReplayEntryId) As Definition
+        Public Shared ReadOnly Property DefinitionFor(id As ReplayEntryId) As Definition
             Get
                 Contract.Ensures(Contract.Result(Of Definition)() IsNot Nothing)
                 If Not _allDefinitions.ContainsKey(id) Then Throw New ArgumentException("No definition defined for id: {0}.".Frmt(id))
@@ -56,7 +56,7 @@ Namespace WC3.Replay
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As ReplayEntryId, ByVal jar As ISimpleJar)
+            Friend Sub New(id As ReplayEntryId, jar As ISimpleJar)
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -83,7 +83,7 @@ Namespace WC3.Replay
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As ReplayEntryId, ByVal jar As IJar(Of T))
+            Friend Sub New(id As ReplayEntryId, jar As IJar(Of T))
                 MyBase.New(id, jar)
                 Contract.Requires(jar IsNot Nothing)
                 Me._jar = jar
@@ -97,17 +97,17 @@ Namespace WC3.Replay
             End Property
         End Class
 
-        Private Shared Function Define(Of T)(ByVal id As ReplayEntryId, ByVal jar As IJar(Of T)) As Definition(Of T)
+        Private Shared Function Define(Of T)(id As ReplayEntryId, jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
             Dim result = New Definition(Of T)(id, jar)
             _allDefinitions.Add(id, result)
             Return result
         End Function
-        Private Shared Function Define(ByVal id As ReplayEntryId,
-                                       ByVal jar1 As ISimpleNamedJar,
-                                       ByVal jar2 As ISimpleNamedJar,
-                                       ByVal ParamArray jars() As ISimpleNamedJar) As Definition(Of NamedValueMap)
+        Private Shared Function Define(id As ReplayEntryId,
+                                       jar1 As ISimpleNamedJar,
+                                       jar2 As ISimpleNamedJar,
+                                       ParamArray jars() As ISimpleNamedJar) As Definition(Of NamedValueMap)
             Contract.Requires(jar1 IsNot Nothing)
             Contract.Requires(jar2 IsNot Nothing)
             Contract.Requires(jars IsNot Nothing)

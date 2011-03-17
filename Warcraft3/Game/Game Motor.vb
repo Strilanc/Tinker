@@ -8,7 +8,7 @@
             End Get
         End Property
 
-        Public Sub New(ByVal length As UShort, ByVal startTime As Integer)
+        Public Sub New(length As UShort, startTime As Integer)
             Me.length = length
             Me.startTime = startTime
         End Sub
@@ -31,12 +31,12 @@
         Private _lagClock As RelativeClock
         Private ReadOnly _init As New OnetimeLock
 
-        Public Event ReceivedPlayerActions(ByVal sender As GameMotor, ByVal player As Player, ByVal actions As IRist(Of Protocol.GameAction))
-        Public Event Tick(ByVal sender As GameMotor,
-                          ByVal timeSpan As UShort,
-                          ByVal actualActionStreaks As IRist(Of IRist(Of Protocol.SpecificPlayerActionSet)),
-                          ByVal visibleActionStreaks As IRist(Of IRist(Of Protocol.PlayerActionSet)))
-        Public Event RemovePlayer(ByVal sender As GameMotor, ByVal player As Player, ByVal wasExpected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
+        Public Event ReceivedPlayerActions(sender As GameMotor, player As Player, actions As IRist(Of Protocol.GameAction))
+        Public Event Tick(sender As GameMotor,
+                          timeSpan As UShort,
+                          actualActionStreaks As IRist(Of IRist(Of Protocol.SpecificPlayerActionSet)),
+                          visibleActionStreaks As IRist(Of IRist(Of Protocol.PlayerActionSet)))
+        Public Event RemovePlayer(sender As GameMotor, player As Player, wasExpected As Boolean, reportedReason As Protocol.PlayerLeaveReason, reasonDescription As String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_laggingPlayers IsNot Nothing)
@@ -50,11 +50,11 @@
             Contract.Invariant(_actionsForNextTick IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal defaultSpeedFactor As Double,
-                       ByVal defaultTickPeriod As TimeSpan,
-                       ByVal defaultLagLimit As TimeSpan,
-                       ByVal kernel As GameKernel,
-                       ByVal lobby As GameLobby)
+        Public Sub New(defaultSpeedFactor As Double,
+                       defaultTickPeriod As TimeSpan,
+                       defaultLagLimit As TimeSpan,
+                       kernel As GameKernel,
+                       lobby As GameLobby)
             Contract.Assume(defaultSpeedFactor > 0)
             Contract.Assume(defaultTickPeriod.Ticks > 0)
             Contract.Assume(defaultLagLimit.Ticks >= 0)
@@ -90,13 +90,13 @@
         Public Function QueueStart() As Task
             Return _kernel.InQueue.QueueAction(AddressOf Start)
         End Function
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return _kernel.InQueue.QueueAction(Sub() _tickClock = Nothing)
         End Function
 
         Private _asyncWaitTriggered As Boolean
-        Private Sub OnReceiveGameActions(ByVal sender As Player, ByVal actions As IRist(Of Protocol.GameAction))
+        Private Sub OnReceiveGameActions(sender As Player, actions As IRist(Of Protocol.GameAction))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(actions IsNot Nothing)
             _actionsForNextTick.Add(New Protocol.SpecificPlayerActionSet(sender, actions))
@@ -111,7 +111,7 @@
         End Sub
 
         <CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId:="sender")>
-        Private Sub OnReceiveRequestDropLagger(ByVal sender As Player)
+        Private Sub OnReceiveRequestDropLagger(sender As Player)
             Contract.Requires(sender IsNot Nothing)
             For Each player In _laggingPlayers
                 Contract.Assume(player IsNot Nothing)
@@ -119,7 +119,7 @@
             Next player
         End Sub
 
-        Private Function BroadcastPacket(ByVal packet As Protocol.Packet) As Task
+        Private Function BroadcastPacket(packet As Protocol.Packet) As Task
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return (From player In _kernel.Players Select player.QueueSendPacket(packet)).AsAggregateTask
@@ -185,9 +185,9 @@
         End Sub
 
         <CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", justification:="The analyzer doesn't see the maxDataSize parameter from within the lambda.")>
-        Private Function SplitSequenceByDataSize(Of TValue)(ByVal sequence As IEnumerable(Of TValue),
-                                                            ByVal measure As Func(Of TValue, Int32),
-                                                            ByVal maxDataSize As Int32) As IRist(Of IRist(Of TValue))
+        Private Function SplitSequenceByDataSize(Of TValue)(sequence As IEnumerable(Of TValue),
+                                                            measure As Func(Of TValue, Int32),
+                                                            maxDataSize As Int32) As IRist(Of IRist(Of TValue))
             Contract.Requires(sequence IsNot Nothing)
             Contract.Requires(maxDataSize > 0)
             Contract.Requires(measure IsNot Nothing)
@@ -215,7 +215,7 @@
                     Select subSequence.ToRist
                     ).ToRist
         End Function
-        Private Sub SendQueuedGameData(ByVal record As TickRecord)
+        Private Sub SendQueuedGameData(record As TickRecord)
             Contract.Requires(record IsNot Nothing)
             'Include all the data we can fit in a packet
             Dim totalDataLength = 0
@@ -256,17 +256,17 @@
             Return _kernel.InQueue.QueueFunc(Function() _lagLimit)
         End Function
 
-        Public Function QueueSetTickPeriod(ByVal value As TimeSpan) As Task
+        Public Function QueueSetTickPeriod(value As TimeSpan) As Task
             Contract.Requires(value.Ticks > 0)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _tickPeriod = value)
         End Function
-        Public Function QueueSetSpeedFactor(ByVal value As Double) As Task
+        Public Function QueueSetSpeedFactor(value As Double) As Task
             Contract.Requires(value > 0)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _speedFactor = value)
         End Function
-        Public Function QueueSetLagLimit(ByVal value As TimeSpan) As Task
+        Public Function QueueSetLagLimit(value As TimeSpan) As Task
             Contract.Requires(value.Ticks >= 0)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lagLimit = value)

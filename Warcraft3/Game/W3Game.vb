@@ -39,28 +39,28 @@ Namespace WC3
         Private _adminPlayer As Player
         Private _flagHasPlayerLeft As Boolean
 
-        Public Event Tick(ByVal sender As Game,
-                          ByVal timeSpan As UShort,
-                          ByVal actualActionStreaks As IRist(Of IRist(Of Protocol.SpecificPlayerActionSet)),
-                          ByVal visibleActionStreaks As IRist(Of IRist(Of Protocol.PlayerActionSet)))
-        Public Event Updated(ByVal sender As Game,
-                             ByVal slots As SlotSet)
-        Public Event PlayerLeft(ByVal sender As Game,
-                                ByVal state As GameState,
-                                ByVal leaver As Player,
-                                ByVal reportedReason As Protocol.PlayerLeaveReason,
-                                ByVal reasonDescription As String)
-        Public Event ChangedState(ByVal sender As Game,
-                                  ByVal oldState As GameState,
-                                  ByVal newState As GameState)
-        Public Event PlayerTalked(ByVal sender As Game,
-                                  ByVal speaker As Player,
-                                  ByVal text As String,
-                                  ByVal receivingGroup As Protocol.ChatGroup?)
-        Public Event RecordGameStarted(ByVal sender As Game)
-        Public Event ReceivedPlayerActions(ByVal sender As Game,
-                                           ByVal player As Player,
-                                           ByVal actions As IRist(Of Protocol.GameAction))
+        Public Event Tick(sender As Game,
+                          timeSpan As UShort,
+                          actualActionStreaks As IRist(Of IRist(Of Protocol.SpecificPlayerActionSet)),
+                          visibleActionStreaks As IRist(Of IRist(Of Protocol.PlayerActionSet)))
+        Public Event Updated(sender As Game,
+                             slots As SlotSet)
+        Public Event PlayerLeft(sender As Game,
+                                state As GameState,
+                                leaver As Player,
+                                reportedReason As Protocol.PlayerLeaveReason,
+                                reasonDescription As String)
+        Public Event ChangedState(sender As Game,
+                                  oldState As GameState,
+                                  newState As GameState)
+        Public Event PlayerTalked(sender As Game,
+                                  speaker As Player,
+                                  text As String,
+                                  receivingGroup As Protocol.ChatGroup?)
+        Public Event RecordGameStarted(sender As Game)
+        Public Event ReceivedPlayerActions(sender As Game,
+                                           player As Player,
+                                           actions As IRist(Of Protocol.GameAction))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_kernel IsNot Nothing)
@@ -73,12 +73,12 @@ Namespace WC3
             Contract.Invariant(_slotStateUpdateThrottle IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal settings As GameSettings,
-                       ByVal lobby As GameLobby,
-                       ByVal motor As GameMotor,
-                       ByVal loadScreen As GameLoadScreen,
-                       ByVal kernel As GameKernel)
+        Public Sub New(name As InvariantString,
+                       settings As GameSettings,
+                       lobby As GameLobby,
+                       motor As GameMotor,
+                       loadScreen As GameLoadScreen,
+                       kernel As GameKernel)
             Contract.Assume(settings IsNot Nothing)
             Contract.Assume(lobby IsNot Nothing)
             Contract.Assume(motor IsNot Nothing)
@@ -92,10 +92,10 @@ Namespace WC3
             Me._loadScreen = loadScreen
         End Sub
 
-        Public Shared Function FromSettings(ByVal settings As GameSettings,
-                                            ByVal name As InvariantString,
-                                            ByVal clock As IClock,
-                                            ByVal logger As Logger) As Game
+        Public Shared Function FromSettings(settings As GameSettings,
+                                            name As InvariantString,
+                                            clock As IClock,
+                                            logger As Logger) As Game
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(settings IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
@@ -199,7 +199,7 @@ Namespace WC3
             AddHandler _motor.ReceivedPlayerActions, Sub(sender, player, actions) _kernel.OutQueue.QueueAction(Sub() RaiseEvent ReceivedPlayerActions(Me, player, actions))
         End Sub
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return _kernel.OutQueue.QueueAction(Sub() _kernel.InQueue.QueueAction(
                 Sub()
@@ -245,9 +245,9 @@ Namespace WC3
             Return _kernel.InQueue.QueueAction(AddressOf ThrowUpdated)
         End Function
 
-        Private Function CommandProcessText(ByVal manager As GameManager,
-                                            ByVal player As Player,
-                                            ByVal argument As String) As Task(Of String)
+        Private Function CommandProcessText(manager As GameManager,
+                                            player As Player,
+                                            argument As String) As Task(Of String)
             Contract.Requires(manager IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
 
@@ -275,9 +275,9 @@ Namespace WC3
             Dim user = If(player Is Nothing, Nothing, New BotUser(player.Name))
             Return commands.Invoke(manager, user, argument)
         End Function
-        Public Function QueueCommandProcessText(ByVal manager As GameManager,
-                                                ByVal player As Player,
-                                                ByVal argument As String) As Task(Of String)
+        Public Function QueueCommandProcessText(manager As GameManager,
+                                                player As Player,
+                                                argument As String) As Task(Of String)
             Contract.Requires(manager IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
@@ -301,24 +301,24 @@ Namespace WC3
             Return _kernel.InQueue.QueueFunc(Function() _kernel.State)
         End Function
 
-        Public Function QueueBroadcastMessage(ByVal message As String) As Task
+        Public Function QueueBroadcastMessage(message As String) As Task
             Contract.Requires(message IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.BroadcastMessage(message))
         End Function
 
-        Public Function QueueSendMessageTo(ByVal message As String, ByVal player As Player) As Task
+        Public Function QueueSendMessageTo(message As String, player As Player) As Task
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.SendMessageTo(message, player))
         End Function
 
-        Private Sub OnReceiveChat(ByVal sender As Player,
-                                  ByVal text As String,
-                                  ByVal type As Protocol.ChatType,
-                                  ByVal receivingGroup As Protocol.ChatGroup?,
-                                  ByVal requestedReceivers As IRist(Of PlayerId))
+        Private Sub OnReceiveChat(sender As Player,
+                                  text As String,
+                                  type As Protocol.ChatType,
+                                  receivingGroup As Protocol.ChatGroup?,
+                                  requestedReceivers As IRist(Of PlayerId))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(requestedReceivers IsNot Nothing)
@@ -346,7 +346,7 @@ Namespace WC3
                 End If
             Next receiver
         End Sub
-        Private Sub OnReceiveNonGameAction(ByVal sender As Player, ByVal vals As NamedValueMap)
+        Private Sub OnReceiveNonGameAction(sender As Player, vals As NamedValueMap)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
 
@@ -388,10 +388,10 @@ Namespace WC3
 
 #Region "Players"
         '''<summary>Removes the given player from the instance</summary>
-        Private Sub RemovePlayer(ByVal player As Player,
-                                 ByVal wasExpected As Boolean,
-                                 ByVal reportedReason As Protocol.PlayerLeaveReason,
-                                 ByVal reasonDescription As String)
+        Private Sub RemovePlayer(player As Player,
+                                 wasExpected As Boolean,
+                                 reportedReason As Protocol.PlayerLeaveReason,
+                                 reasonDescription As String)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(reasonDescription IsNot Nothing)
             If Not _kernel.Players.Contains(player) Then
@@ -445,8 +445,8 @@ Namespace WC3
             End If
         End Sub
 
-        Private Sub ElevatePlayer(ByVal name As InvariantString,
-                                  Optional ByVal password As String = Nothing)
+        Private Sub ElevatePlayer(name As InvariantString,
+                                  Optional password As String = Nothing)
             Dim player = TryFindPlayer(name)
             If player Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
             If _adminPlayer IsNot Nothing Then Throw New InvalidOperationException("A player is already the admin.")
@@ -461,25 +461,25 @@ Namespace WC3
             _adminPlayer = player
             _lobby.SendMessageTo("You are now the admin.", player)
         End Sub
-        Public Function QueueElevatePlayer(ByVal name As InvariantString,
-                                           Optional ByVal password As String = Nothing) As Task
+        Public Function QueueElevatePlayer(name As InvariantString,
+                                           Optional password As String = Nothing) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() ElevatePlayer(name, password))
         End Function
 
-        Private Function TryFindPlayer(ByVal id As PlayerId) As Player
+        Private Function TryFindPlayer(id As PlayerId) As Player
             Return (From player In _kernel.Players Where player.Id = id).FirstOrDefault
         End Function
-        Private Function TryFindPlayer(ByVal userName As InvariantString) As Player
+        Private Function TryFindPlayer(userName As InvariantString) As Player
             Return (From player In _kernel.Players Where player.Name = userName).FirstOrDefault
         End Function
-        Public Function QueueTryFindPlayer(ByVal userName As InvariantString) As Task(Of Player)
+        Public Function QueueTryFindPlayer(userName As InvariantString) As Task(Of Player)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return _kernel.InQueue.QueueFunc(Function() TryFindPlayer(userName))
         End Function
 
         '''<summary>Boots players in the slot with the given index.</summary>
-        Private Sub Boot(ByVal slotQuery As InvariantString, ByVal shouldCloseEmptiedSlot As Boolean)
+        Private Sub Boot(slotQuery As InvariantString, shouldCloseEmptiedSlot As Boolean)
             Dim slot = _lobby.FindMatchingSlot(slotQuery)
             If Not slot.Contents.EnumPlayers.Any Then
                 Throw New InvalidOperationException("There is no player to boot in slot '{0}'.".Frmt(slotQuery))
@@ -502,14 +502,14 @@ Namespace WC3
                 _lobby.ThrowChangedPublicState()
             End If
         End Sub
-        Public Function QueueBoot(ByVal slotQuery As InvariantString, ByVal shouldCloseEmptiedSlot As Boolean) As Task
+        Public Function QueueBoot(slotQuery As InvariantString, shouldCloseEmptiedSlot As Boolean) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() Boot(slotQuery, shouldCloseEmptiedSlot))
         End Function
 #End Region
 
-        Public Function ObservePlayers(ByVal adder As Action(Of Player),
-                                       ByVal remover As Action(Of Player)) As Task(Of IDisposable)
+        Public Function ObservePlayers(adder As Action(Of Player),
+                                       remover As Action(Of Player)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
@@ -612,7 +612,7 @@ Namespace WC3
 #End Region
 
 #Region "Lobby"
-        Private Sub SetPlayerVoteToStart(ByVal name As InvariantString, ByVal val As Boolean)
+        Private Sub SetPlayerVoteToStart(name As InvariantString, val As Boolean)
             If Not Settings.IsAutoStarted Then Throw New InvalidOperationException("Game is not set to start automatically.")
             Dim p = TryFindPlayer(name)
             If p Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
@@ -625,8 +625,8 @@ Namespace WC3
                 TryStartCountdown()
             End If
         End Sub
-        Public Function QueueSetPlayerVoteToStart(ByVal name As InvariantString,
-                                                  ByVal wantsToStart As Boolean) As Task
+        Public Function QueueSetPlayerVoteToStart(name As InvariantString,
+                                                  wantsToStart As Boolean) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() SetPlayerVoteToStart(name, wantsToStart))
         End Function
@@ -636,20 +636,20 @@ Namespace WC3
                 Return _lobby.StartPlayerHoldPoint
             End Get
         End Property
-        Public Function QueueAddPlayer(ByVal knockData As Protocol.KnockData,
-                                       ByVal socket As W3Socket) As Task(Of Player)
+        Public Function QueueAddPlayer(knockData As Protocol.KnockData,
+                                       socket As W3Socket) As Task(Of Player)
             Contract.Requires(knockData IsNot Nothing)
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return _kernel.InQueue.QueueFunc(Function() _lobby.AddPlayer(knockData, socket))
         End Function
-        Public Function QueueSendMapPiece(ByVal player As Download.IPlayerDownloadAspect,
-                                          ByVal position As UInt32) As Task
+        Public Function QueueSendMapPiece(player As Download.IPlayerDownloadAspect,
+                                          position As UInt32) As Task
             Return _kernel.InQueue.QueueFunc(Function() _lobby.SendMapPiece(player, position)).Unwrap
         End Function
 
         '''<summary>Broadcasts new game state to players, and throws the updated event.</summary>
-        Private Sub SendLobbyState(ByVal randomSeed As UInt32)
+        Private Sub SendLobbyState(randomSeed As UInt32)
             If _kernel.State >= GameState.Loading Then Return
 
             For Each player In _kernel.Players
@@ -663,55 +663,55 @@ Namespace WC3
             TryBeginAutoStart()
         End Sub
 
-        Public Function QueueTrySetTeamSizes(ByVal sizes As IRist(Of Integer)) As Task
+        Public Function QueueTrySetTeamSizes(sizes As IRist(Of Integer)) As Task
             Contract.Requires(sizes IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.TrySetTeamSizes(sizes))
         End Function
 
-        Public Function QueueOpenSlot(ByVal slotQuery As InvariantString) As Task
+        Public Function QueueOpenSlot(slotQuery As InvariantString) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.OpenSlot(slotQuery))
         End Function
-        Public Function QueueSetSlotCpu(ByVal slotQuery As InvariantString, ByVal newCpuLevel As Protocol.ComputerLevel) As Task
+        Public Function QueueSetSlotCpu(slotQuery As InvariantString, newCpuLevel As Protocol.ComputerLevel) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.ComputerizeSlot(slotQuery, newCpuLevel))
         End Function
-        Public Function QueueCloseSlot(ByVal slotQuery As InvariantString) As Task
+        Public Function QueueCloseSlot(slotQuery As InvariantString) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.CloseSlot(slotQuery))
         End Function
-        Public Function QueueReserveSlot(ByVal userName As InvariantString,
-                                         Optional ByVal slotQuery As InvariantString? = Nothing) As Task
+        Public Function QueueReserveSlot(userName As InvariantString,
+                                         Optional slotQuery As InvariantString? = Nothing) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.ReserveSlot(userName, slotQuery))
         End Function
-        Public Function QueueSwapSlotContents(ByVal slotQuery1 As InvariantString,
-                                              ByVal slotQuery2 As InvariantString) As Task
+        Public Function QueueSwapSlotContents(slotQuery1 As InvariantString,
+                                              slotQuery2 As InvariantString) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.SwapSlotContents(slotQuery1, slotQuery2))
         End Function
-        Public Function QueueSetSlotColor(ByVal slotQuery As InvariantString, ByVal newColor As Protocol.PlayerColor) As Task
+        Public Function QueueSetSlotColor(slotQuery As InvariantString, newColor As Protocol.PlayerColor) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.SetSlotColor(slotQuery, newColor))
         End Function
-        Public Function QueueSetSlotRace(ByVal slotQuery As InvariantString, ByVal newRace As Protocol.Races) As Task
+        Public Function QueueSetSlotRace(slotQuery As InvariantString, newRace As Protocol.Races) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.SetSlotRace(slotQuery, newRace))
         End Function
-        Public Function QueueSetSlotTeam(ByVal slotQuery As InvariantString, ByVal newTeam As Byte) As Task
+        Public Function QueueSetSlotTeam(slotQuery As InvariantString, newTeam As Byte) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.SetSlotTeam(slotQuery, newTeam))
         End Function
-        Public Function QueueSetSlotHandicap(ByVal slotQuery As InvariantString, ByVal newHandicap As Byte) As Task
+        Public Function QueueSetSlotHandicap(slotQuery As InvariantString, newHandicap As Byte) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.SetSlotHandicap(slotQuery, newHandicap))
         End Function
-        Public Function QueueSetSlotLocked(ByVal slotQuery As InvariantString, ByVal newLockState As Slot.LockState) As Task
+        Public Function QueueSetSlotLocked(slotQuery As InvariantString, newLockState As Slot.LockState) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.SetSlotLocked(slotQuery, newLockState))
         End Function
-        Public Function QueueSetAllSlotsLocked(ByVal newLockState As Slot.LockState) As Task
+        Public Function QueueSetAllSlotsLocked(newLockState As Slot.LockState) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _lobby.SetAllSlotsLocked(newLockState))
         End Function

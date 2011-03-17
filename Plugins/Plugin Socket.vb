@@ -12,9 +12,9 @@ Namespace Plugins
         End Sub
 
         <CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId:="System.Reflection.Assembly.LoadFrom")>
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal bot As Bot.MainBot,
-                       ByVal assemblyPath As String)
+        Public Sub New(name As InvariantString,
+                       bot As Bot.MainBot,
+                       assemblyPath As String)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(assemblyPath IsNot Nothing)
             Me._name = name
@@ -42,7 +42,7 @@ Namespace Plugins
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             _plugin.Dispose()
             Return Nothing
         End Function

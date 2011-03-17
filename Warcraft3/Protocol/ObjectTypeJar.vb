@@ -6,14 +6,14 @@ Namespace WC3.Protocol
 
         Private Shared ReadOnly DataJar As New UInt32Jar()
 
-        Public Overrides Function Pack(ByVal value As UInteger) As IRist(Of Byte)
+        Public Overrides Function Pack(value As UInteger) As IRist(Of Byte)
             Return DataJar.Pack(value)
         End Function
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of UInt32)
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of UInt32)
             Return DataJar.Parse(data)
         End Function
 
-        Public Overrides Function Describe(ByVal value As UInt32) As String
+        Public Overrides Function Describe(value As UInt32) As String
             If value.Bytes.All(Function(b) b >= 32 AndAlso b <= 127) Then
                 Return "type '{0}'".Frmt(New String(System.Text.Encoding.ASCII.GetChars(value.Bytes(ByteOrder.BigEndian).ToArray())))
             Else
@@ -21,7 +21,7 @@ Namespace WC3.Protocol
             End If
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-263")>
-        Public Overrides Function Parse(ByVal text As String) As UInt32
+        Public Overrides Function Parse(text As String) As UInt32
             Try
                 If text Like New InvariantString("type '????'") Then
                     Contract.Assume(text.Length >= "type '".Length + "????".Length)

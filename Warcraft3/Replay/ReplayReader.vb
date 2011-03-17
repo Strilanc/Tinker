@@ -18,15 +18,15 @@ Namespace WC3.Replay
             Contract.Invariant(_gameDuration.Ticks >= 0)
         End Sub
 
-        Public Sub New(ByVal streamFactory As Func(Of IRandomReadableStream),
-                       ByVal description As Lazy(Of String),
-                       ByVal headerSize As UInt32,
-                       ByVal dataDecompressedSize As UInt32,
-                       ByVal dataBlockCount As UInt32,
-                       ByVal wc3Version As UInt32,
-                       ByVal replayVersion As UInt16,
-                       ByVal settings As ReplaySettings,
-                       ByVal gameDuration As TimeSpan)
+        Public Sub New(streamFactory As Func(Of IRandomReadableStream),
+                       description As Lazy(Of String),
+                       headerSize As UInt32,
+                       dataDecompressedSize As UInt32,
+                       dataBlockCount As UInt32,
+                       wc3Version As UInt32,
+                       replayVersion As UInt16,
+                       settings As ReplaySettings,
+                       gameDuration As TimeSpan)
             Contract.Requires(streamFactory IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
             Contract.Requires(gameDuration.Ticks >= 0)
@@ -41,12 +41,12 @@ Namespace WC3.Replay
             Me._gameDuration = gameDuration
         End Sub
 
-        Public Shared Function FromFile(ByVal path As String) As ReplayReader
+        Public Shared Function FromFile(path As String) As ReplayReader
             Contract.Requires(path IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayReader)() IsNot Nothing)
             Return ReplayReader.FromStreamFactory(Function() New IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream)
         End Function
-        Public Shared Function FromStreamFactory(ByVal streamFactory As Func(Of IRandomReadableStream)) As ReplayReader
+        Public Shared Function FromStreamFactory(streamFactory As Func(Of IRandomReadableStream)) As ReplayReader
             Contract.Requires(streamFactory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayReader)() IsNot Nothing)
 

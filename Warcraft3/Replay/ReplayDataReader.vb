@@ -20,11 +20,11 @@
                 Contract.Invariant(_dataLength > 0)
             End Sub
 
-            Public Sub New(ByVal blockPosition As Long,
-                           ByVal blockLength As Long,
-                           ByVal dataPosition As Long,
-                           ByVal dataLength As Long,
-                           ByVal checksum As UInt32)
+            Public Sub New(blockPosition As Long,
+                           blockLength As Long,
+                           dataPosition As Long,
+                           dataLength As Long,
+                           checksum As UInt32)
                 Contract.Requires(blockPosition >= 0)
                 Contract.Requires(blockLength > 0)
                 Contract.Requires(dataPosition >= 0)
@@ -101,10 +101,10 @@
             'Contract.Invariant(_loadedBlockData Is Nothing OrElse _position <= _blockInfoTable(_loadedBlockIndex).NextDataPosition)
         End Sub
 
-        Public Sub New(ByVal subStream As IRandomReadableStream,
-                       ByVal blockCount As UInt32,
-                       ByVal firstBlockOffset As UInt32,
-                       ByVal decompressedSize As UInt32)
+        Public Sub New(subStream As IRandomReadableStream,
+                       blockCount As UInt32,
+                       firstBlockOffset As UInt32,
+                       decompressedSize As UInt32)
             Contract.Requires(subStream IsNot Nothing)
             Contract.Requires(blockCount >= 0)
             Contract.Requires(firstBlockOffset >= 0)
@@ -121,7 +121,7 @@
         ''' </summary>
         ''' <param name="blockPosition">The starting position of the block, as determined by the previous block's end.</param>
         ''' <param name="dataPosition">The logical starting position of the data stored in the block.</param>
-        Private Sub LoadNextBlockInfo(ByVal blockPosition As Long, ByVal dataPosition As Long)
+        Private Sub LoadNextBlockInfo(blockPosition As Long, dataPosition As Long)
             Contract.Requires(blockPosition >= 0)
             Contract.Requires(dataPosition >= 0)
             Contract.Requires(_blockInfoTable.Count < _blockCount)
@@ -149,7 +149,7 @@
         ''' <summary>
         ''' Determines the block info for the given block, filling the block info table as necessary.
         ''' </summary>
-        Private Function ReadBlockInfo(ByVal blockIndex As Integer) As BlockInfo
+        Private Function ReadBlockInfo(blockIndex As Integer) As BlockInfo
             Contract.Requires(blockIndex >= 0)
             Contract.Requires(blockIndex < _blockCount)
             Contract.Ensures(_blockInfoTable.Count > blockIndex)
@@ -164,7 +164,7 @@
         ''' <summary>
         ''' Determines the block data for the given block, filling the block info table as necessary.
         ''' </summary>
-        Private Function ReadBlockData(ByVal blockIndex As Integer) As IRist(Of Byte)
+        Private Function ReadBlockData(blockIndex As Integer) As IRist(Of Byte)
             Contract.Requires(blockIndex >= 0)
             Contract.Requires(blockIndex < _blockCount)
             Contract.Ensures(_blockInfoTable.Count > blockIndex)
@@ -191,7 +191,7 @@
         End Function
 
         '''<summary>Determines the block which contains the given position.</summary>
-        Private Function FindBlockIndexAt(ByVal position As Long) As Integer
+        Private Function FindBlockIndexAt(position As Long) As Integer
             Contract.Requires(position >= 0)
             Contract.Requires(position < _length)
             Contract.Ensures(Contract.Result(Of Integer)() >= 0)
@@ -225,7 +225,7 @@
             Throw New UnreachableException("A valid position was not contained in any block.")
         End Function
 
-        Public Function Read(ByVal maxCount As Integer) As IRist(Of Byte) Implements IReadableStream.Read
+        Public Function Read(maxCount As Integer) As IRist(Of Byte) Implements IReadableStream.Read
             Dim result = New List(Of Byte)
             If _blockCount = 0 Then Return result.AsRist()
 
@@ -276,7 +276,7 @@
                 Contract.Assume(_position <= Length)
                 Return _position
             End Get
-            Set(ByVal value As Long)
+            Set(value As Long)
                 If value < _length Then
                     Dim newBlockIndex = FindBlockIndexAt(value)
                     If _loadedBlockData Is Nothing OrElse _loadedBlockIndex <> newBlockIndex Then
@@ -289,7 +289,7 @@
             End Set
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             _stream.Dispose()
             Return Nothing
         End Function
