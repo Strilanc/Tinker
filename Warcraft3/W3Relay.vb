@@ -11,14 +11,14 @@
                 Contract.Invariant(_localGame IsNot Nothing)
             End Sub
 
-            Public Sub New(ByVal remoteGame As RemoteGameDescription,
-                           ByVal localGame As LocalGameDescription)
+            Public Sub New(remoteGame As RemoteGameDescription,
+                           localGame As LocalGameDescription)
                 Contract.Requires(remoteGame IsNot Nothing)
                 Contract.Requires(localGame IsNot Nothing)
                 Me._remoteGame = remoteGame
                 Me._localGame = localGame
             End Sub
-            Public Sub Update(ByVal game As RemoteGameDescription)
+            Public Sub Update(game As RemoteGameDescription)
                 Contract.Requires(game IsNot Nothing)
                 Me._remoteGame = New RemoteGameDescription(_remoteGame.Name,
                                                            _remoteGame.GameStats,
@@ -68,8 +68,8 @@
             Contract.Invariant(_accepter IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal portHandle As PortPool.PortHandle,
-                       ByVal clock As IClock)
+        Public Sub New(portHandle As PortPool.PortHandle,
+                       clock As IClock)
             Contract.Requires(portHandle IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Me._portHandle = portHandle
@@ -77,7 +77,7 @@
             Me._accepter = New W3ConnectionAccepter(clock)
             Me._accepter.Accepter.OpenPort(portHandle.Port)
         End Sub
-        Public Function AddGame(ByVal game As RemoteGameDescription) As UInteger
+        Public Function AddGame(game As RemoteGameDescription) As UInteger
             Contract.Requires(game IsNot Nothing)
             _gameCount += 1UI
             Dim localGame = New LocalGameDescription(name:=game.Name,
@@ -93,7 +93,7 @@
             _games(_gameCount) = New GamePair(game, localGame)
             Return _gameCount
         End Function
-        Public ReadOnly Property TryGetLocalGameDescription(ByVal gameId As UInteger) As LocalGameDescription
+        Public ReadOnly Property TryGetLocalGameDescription(gameId As UInteger) As LocalGameDescription
             Get
                 If Not _games.ContainsKey(gameId) Then Return Nothing
                 Dim pair = _games(gameId)
@@ -101,7 +101,7 @@
                 Return pair.LocalGame()
             End Get
         End Property
-        Public Function TryUpdateGameDescription(ByVal gameId As UInteger, ByVal game As RemoteGameDescription) As Boolean
+        Public Function TryUpdateGameDescription(gameId As UInteger, game As RemoteGameDescription) As Boolean
             Contract.Requires(game IsNot Nothing)
             If Not _games.ContainsKey(gameId) Then Return False
             Dim pair = _games(gameId)
@@ -109,12 +109,12 @@
             pair.Update(game)
             Return True
         End Function
-        Public Sub RemoveGame(ByVal gameId As UInteger)
+        Public Sub RemoveGame(gameId As UInteger)
             If Not _games.ContainsKey(gameId) Then Return
             _games.Remove(gameId)
         End Sub
 
-        Private Sub Accept(ByVal knockData As Protocol.KnockData, ByVal socket As W3Socket)
+        Private Sub Accept(knockData As Protocol.KnockData, socket As W3Socket)
             Contract.Requires(knockData IsNot Nothing)
             Contract.Requires(socket IsNot Nothing)
             If Not _games.ContainsKey(knockData.GameId) Then Throw New IO.InvalidDataException()
@@ -154,7 +154,7 @@
         Private Sub New()
         End Sub
 
-        Public Shared Function InterShunt(ByVal stream1 As IO.Stream, ByVal stream2 As IO.Stream) As DisposableWithTask
+        Public Shared Function InterShunt(stream1 As IO.Stream, stream2 As IO.Stream) As DisposableWithTask
             Contract.Requires(stream1 IsNot Nothing)
             Contract.Requires(stream2 IsNot Nothing)
             Contract.Ensures(Contract.Result(Of DisposableWithTask)() IsNot Nothing)
@@ -165,7 +165,7 @@
             result.ChainEventualDisposalTo(stream2)
             Return result
         End Function
-        Private Shared Async Function Shunt(ByVal src As IO.Stream, ByVal dst As IO.Stream) As Task
+        Private Shared Async Function Shunt(src As IO.Stream, dst As IO.Stream) As Task
             Contract.Assume(src IsNot Nothing)
             Contract.Assume(dst IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing) 'AsyncCTP causes code contracts to fail in this case

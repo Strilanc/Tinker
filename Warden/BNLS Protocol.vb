@@ -55,7 +55,7 @@ Namespace Warden
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal id As WardenPacketId, ByVal payload As ISimplePickle)
+        Private Sub New(id As WardenPacketId, payload As ISimplePickle)
             Contract.Requires(payload IsNot Nothing)
             Me._payload = payload
             Me._id = id
@@ -94,7 +94,7 @@ Namespace Warden
                     New DataJar().Named("unspecified"))
         End Class
 
-        Public Shared Function MakeFullServiceConnect(ByVal cookie As UInteger, ByVal seed As UInteger) As ClientPacket
+        Public Shared Function MakeFullServiceConnect(cookie As UInteger, seed As UInteger) As ClientPacket
             Contract.Ensures(Contract.Result(Of ClientPacket)() IsNot Nothing)
             Return New ClientPacket(WardenPacketId.FullServiceConnect,
                                     ClientPackets.FullServerConnect.PackPickle(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
@@ -105,7 +105,7 @@ Namespace Warden
                     {"password", MakeRist(Of Byte)()},
                     {"unspecified", MakeRist(Of Byte)()}})))
         End Function
-        Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As IRist(Of Byte)) As ClientPacket
+        Public Shared Function MakeFullServiceHandleWardenPacket(cookie As UInteger, data As IRist(Of Byte)) As ClientPacket
             Contract.Ensures(Contract.Result(Of ClientPacket)() IsNot Nothing)
             Return New ClientPacket(WardenPacketId.FullServiceHandleWardenPacket,
                                     ClientPackets.FullServiceHandleWardenPacket.PackPickle(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
@@ -135,11 +135,11 @@ Namespace Warden
             Contract.Invariant(_unspecifiedData IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal id As WardenPacketId,
-                       ByVal cookie As UInt32,
-                       ByVal result As Byte,
-                       ByVal responseData As IRist(Of Byte),
-                       ByVal unspecifiedData As IRist(Of Byte))
+        Public Sub New(id As WardenPacketId,
+                       cookie As UInt32,
+                       result As Byte,
+                       responseData As IRist(Of Byte),
+                       unspecifiedData As IRist(Of Byte))
             Contract.Requires(responseData IsNot Nothing)
             Contract.Requires(unspecifiedData IsNot Nothing)
             Me._id = id
@@ -149,7 +149,7 @@ Namespace Warden
             Me._unspecifiedData = unspecifiedData
         End Sub
 
-        Public Shared Function FromData(ByVal packetData As IRist(Of Byte)) As ServerPacket
+        Public Shared Function FromData(packetData As IRist(Of Byte)) As ServerPacket
             Contract.Requires(packetData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ServerPacket)() IsNot Nothing)
             Dim vals = dataJar.Parse(packetData).Value

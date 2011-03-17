@@ -22,7 +22,7 @@
             End Get
         End Property
 
-        Public Overridable ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
+        Public Overridable ReadOnly Property DataState(Optional receiver As Player = Nothing) As Protocol.SlotState
             Get
                 Return Protocol.SlotState.Open
             End Get
@@ -32,12 +32,12 @@
                 Return Protocol.ComputerLevel.Normal
             End Get
         End Property
-        Public Overridable ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerId?
+        Public Overridable ReadOnly Property DataPlayerIndex(Optional receiver As Player = Nothing) As PlayerId?
             Get
                 Return Nothing
             End Get
         End Property
-        Public Overridable ReadOnly Property DataDownloadPercent(Optional ByVal receiver As Player = Nothing) As Byte
+        Public Overridable ReadOnly Property DataDownloadPercent(Optional receiver As Player = Nothing) As Byte
             Get
                 Return 255
             End Get
@@ -50,17 +50,17 @@
             ReservationForPlayer = 3
         End Enum
         <Pure()>
-        Public Overridable Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As WantPlayerPriority
+        Public Overridable Function WantPlayer(Optional name As InvariantString? = Nothing) As WantPlayerPriority
             Return WantPlayerPriority.Filled
         End Function
         <Pure()>
-        Public Overridable Function WithPlayer(ByVal player As Player) As SlotContents
+        Public Overridable Function WithPlayer(player As Player) As SlotContents
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotContents)() IsNot Nothing)
             Throw New InvalidOperationException()
         End Function
         <Pure()>
-        Public Overridable Function WithoutPlayer(ByVal player As Player) As SlotContents
+        Public Overridable Function WithoutPlayer(player As Player) As SlotContents
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotContents)() IsNot Nothing)
             Throw New InvalidOperationException()
@@ -74,7 +74,7 @@
         <Pure()>
         Public MustOverride Function AsyncGenerateDescription() As Task(Of String)
         <Pure()>
-        Public Overridable Function Matches(ByVal query As InvariantString) As Boolean
+        Public Overridable Function Matches(query As InvariantString) As Boolean
             Return False
         End Function
 
@@ -94,10 +94,10 @@
 
     Public Class SlotContentsOpen
         Inherits SlotContents
-        Public Overrides Function WithPlayer(ByVal player As Player) As SlotContents
+        Public Overrides Function WithPlayer(player As Player) As SlotContents
             Return New SlotContentsPlayer(player)
         End Function
-        Public Overrides Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As WantPlayerPriority
+        Public Overrides Function WantPlayer(Optional name As InvariantString? = Nothing) As WantPlayerPriority
             Return WantPlayerPriority.Open
         End Function
         Public Overrides Function AsyncGenerateDescription() As Task(Of String)
@@ -107,13 +107,13 @@
 
     Public Class SlotContentsClosed
         Inherits SlotContentsOpen
-        Public Overrides Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As WantPlayerPriority
+        Public Overrides Function WantPlayer(Optional name As InvariantString? = Nothing) As WantPlayerPriority
             Return WantPlayerPriority.Closed
         End Function
         Public Overrides Function AsyncGenerateDescription() As Task(Of String)
             Return "Closed".AsTask
         End Function
-        Public Overrides ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
+        Public Overrides ReadOnly Property DataState(Optional receiver As Player = Nothing) As Protocol.SlotState
             Get
                 Return Protocol.SlotState.Closed
             End Get
@@ -123,7 +123,7 @@
     Public NotInheritable Class SlotContentsComputer
         Inherits SlotContentsClosed
         Private ReadOnly level As Protocol.ComputerLevel
-        Public Sub New(ByVal level As Protocol.ComputerLevel)
+        Public Sub New(level As Protocol.ComputerLevel)
             Me.level = level
         End Sub
         Public Overrides Function AsyncGenerateDescription() As Task(Of String)
@@ -139,7 +139,7 @@
                 Return level
             End Get
         End Property
-        Public Overrides ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
+        Public Overrides ReadOnly Property DataState(Optional receiver As Player = Nothing) As Protocol.SlotState
             Get
                 Return Protocol.SlotState.Occupied
             End Get
@@ -154,7 +154,7 @@
             Contract.Invariant(_player IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal player As Player)
+        Public Sub New(player As Player)
             Contract.Requires(player IsNot Nothing)
             Me._player = player
         End Sub
@@ -169,7 +169,7 @@
                 Return _player.Id
             End Get
         End Property
-        Public Overrides Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As SlotContents.WantPlayerPriority
+        Public Overrides Function WantPlayer(Optional name As InvariantString? = Nothing) As SlotContents.WantPlayerPriority
             If _player IsNot Nothing AndAlso name IsNot Nothing AndAlso
                                             _player.isFake AndAlso
                                             _player.Name = name.Value Then
@@ -178,10 +178,10 @@
                 Return WantPlayerPriority.Filled
             End If
         End Function
-        Public Overrides Function Matches(ByVal query As InvariantString) As Boolean
+        Public Overrides Function Matches(query As InvariantString) As Boolean
             Return query = _player.Name
         End Function
-        Public Overrides Function WithoutPlayer(ByVal player As Player) As SlotContents
+        Public Overrides Function WithoutPlayer(player As Player) As SlotContents
             If Me._player Is player Then
                 Return New SlotContentsOpen()
             Else
@@ -193,17 +193,17 @@
                 Return Type.Player
             End Get
         End Property
-        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerId?
+        Public Overrides ReadOnly Property DataPlayerIndex(Optional receiver As Player = Nothing) As PlayerId?
             Get
                 Return _player.Id
             End Get
         End Property
-        Public Overrides ReadOnly Property DataDownloadPercent(Optional ByVal receiver As Player = Nothing) As Byte
+        Public Overrides ReadOnly Property DataDownloadPercent(Optional receiver As Player = Nothing) As Byte
             Get
                 Return _player.AdvertisedDownloadPercent
             End Get
         End Property
-        Public Overrides ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
+        Public Overrides ReadOnly Property DataState(Optional receiver As Player = Nothing) As Protocol.SlotState
             Get
                 Return Protocol.SlotState.Occupied
             End Get
@@ -220,7 +220,7 @@
             End Get
         End Property
 
-        Public Sub New(ByVal coveredSlotId As InvariantString, ByVal player As Player)
+        Public Sub New(coveredSlotId As InvariantString, player As Player)
             MyBase.New(player)
             Contract.Requires(player IsNot Nothing)
             Me._coveredSlotId = coveredSlotId
@@ -230,10 +230,10 @@
             Dim desc = Await MyBase.AsyncGenerateDescription
             Return "[Covering {0}] {1}".Frmt(CoveredSlotId, desc)
         End Function
-        Public Overrides Function WithoutPlayer(ByVal player As Player) As SlotContents
+        Public Overrides Function WithoutPlayer(player As Player) As SlotContents
             Throw New InvalidOperationException()
         End Function
-        Public Overrides ReadOnly Property DataDownloadPercent(Optional ByVal receiver As Player = Nothing) As Byte
+        Public Overrides ReadOnly Property DataDownloadPercent(Optional receiver As Player = Nothing) As Byte
             Get
                 If receiver Is Nothing Then Return MyBase.DataDownloadPercent(receiver)
                 Return receiver.AdvertisedDownloadPercent
@@ -256,9 +256,9 @@
             Contract.Invariant(_players IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal coveringSlotId As InvariantString,
-                       ByVal playerIndex As PlayerId,
-                       ByVal players As IEnumerable(Of Player))
+        Public Sub New(coveringSlotId As InvariantString,
+                       playerIndex As PlayerId,
+                       players As IEnumerable(Of Player))
             Contract.Requires(players IsNot Nothing)
             Me._coveringSlotId = coveringSlotId
             Me._players = players.ToList
@@ -273,15 +273,15 @@
         Public Overrides Function AsyncGenerateDescription() As Task(Of String)
             Return "[Covered by {0}] Players: {1}".Frmt(_coveringSlotId, (From player In _players Select player.Name).StringJoin(", ")).AsTask
         End Function
-        Public Overrides Function WithoutPlayer(ByVal player As Player) As SlotContents
+        Public Overrides Function WithoutPlayer(player As Player) As SlotContents
             If Not _players.Contains(player) Then Throw New InvalidOperationException()
             Return New SlotContentsCovered(_coveringSlotId, _playerIndex, (From p In _players Where p IsNot player))
         End Function
-        Public Overrides Function WithPlayer(ByVal player As Player) As SlotContents
+        Public Overrides Function WithPlayer(player As Player) As SlotContents
             If _players.Contains(player) Then Throw New InvalidOperationException()
             Return New SlotContentsCovered(_coveringSlotId, _playerIndex, _players.Concat(New Player() {player}))
         End Function
-        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerId?
+        Public Overrides ReadOnly Property DataPlayerIndex(Optional receiver As Player = Nothing) As PlayerId?
             Get
                 If receiver Is Nothing Then Return Nothing
                 Return If(_players.Contains(receiver), receiver.Id, Nothing)
@@ -292,12 +292,12 @@
                 Return _playerIndex
             End Get
         End Property
-        Public Overrides ReadOnly Property DataDownloadPercent(Optional ByVal receiver As Player = Nothing) As Byte
+        Public Overrides ReadOnly Property DataDownloadPercent(Optional receiver As Player = Nothing) As Byte
             Get
                 Return CByte(_players.Count)
             End Get
         End Property
-        Public Overrides ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
+        Public Overrides ReadOnly Property DataState(Optional receiver As Player = Nothing) As Protocol.SlotState
             Get
                 Return If(_players.Contains(receiver), Protocol.SlotState.Occupied, Protocol.SlotState.Closed)
             End Get

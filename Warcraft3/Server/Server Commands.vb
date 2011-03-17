@@ -28,7 +28,7 @@ Namespace WC3.ServerCommands
                                          WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As WC3.GameServerManager, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As WC3.GameServerManager, user As BotUser, argument As CommandArgument) As Task(Of String)
             Await target.QueueAddGameFromArguments(argument, user)
             Return "Game added."
         End Function

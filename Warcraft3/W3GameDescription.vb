@@ -22,15 +22,15 @@
             Contract.Invariant(_ageClock IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal gameStats As GameStats,
-                       ByVal gameId As UInt32,
-                       ByVal entryKey As UInteger,
-                       ByVal totalSlotCount As Integer,
-                       ByVal gameType As Protocol.GameTypes,
-                       ByVal state As Bnet.Protocol.GameStates,
-                       ByVal usedSlotCount As Integer,
-                       ByVal ageClock As IClock)
+        Public Sub New(name As InvariantString,
+                       gameStats As GameStats,
+                       gameId As UInt32,
+                       entryKey As UInteger,
+                       totalSlotCount As Integer,
+                       gameType As Protocol.GameTypes,
+                       state As Bnet.Protocol.GameStates,
+                       usedSlotCount As Integer,
+                       ageClock As IClock)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
@@ -50,15 +50,15 @@
         End Sub
         'Verification disabled because verifier doesn't seem to understand assumptions involving null coalescing
         <ContractVerification(False)>
-        Public Function [With](Optional ByVal name As InvariantString? = Nothing,
-                               Optional ByVal gameStats As GameStats = Nothing,
-                               Optional ByVal gameId As UInt32? = Nothing,
-                               Optional ByVal entryKey As UInt32? = Nothing,
-                               Optional ByVal totalSlotCount As Integer? = Nothing,
-                               Optional ByVal gameType As Protocol.GameTypes? = Nothing,
-                               Optional ByVal state As Bnet.Protocol.GameStates? = Nothing,
-                               Optional ByVal usedSlotCount As Integer? = Nothing,
-                               Optional ByVal ageClock As IClock = Nothing) As GameDescription
+        Public Function [With](Optional name As InvariantString? = Nothing,
+                               Optional gameStats As GameStats = Nothing,
+                               Optional gameId As UInt32? = Nothing,
+                               Optional entryKey As UInt32? = Nothing,
+                               Optional totalSlotCount As Integer? = Nothing,
+                               Optional gameType As Protocol.GameTypes? = Nothing,
+                               Optional state As Bnet.Protocol.GameStates? = Nothing,
+                               Optional usedSlotCount As Integer? = Nothing,
+                               Optional ageClock As IClock = Nothing) As GameDescription
             Contract.Requires(gameId Is Nothing OrElse gameId.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value <= 12)
@@ -76,10 +76,10 @@
                                        If(ageClock, _ageClock))
         End Function
 
-        Public Shared Function FromArguments(ByVal name As InvariantString,
-                                             ByVal map As Map,
-                                             ByVal stats As GameStats,
-                                             ByVal ageClock As IClock) As GameDescription
+        Public Shared Function FromArguments(name As InvariantString,
+                                             map As Map,
+                                             stats As GameStats,
+                                             ageClock As IClock) As GameDescription
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
             Contract.Requires(ageClock IsNot Nothing)
@@ -156,10 +156,10 @@
         Public Overrides Function GetHashCode() As Integer
             Return GameId.GetHashCode Xor Name.GetHashCode
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, GameDescription))
         End Function
-        Public Overloads Function Equals(ByVal other As GameDescription) As Boolean Implements IEquatable(Of GameDescription).Equals
+        Public Overloads Function Equals(other As GameDescription) As Boolean Implements IEquatable(Of GameDescription).Equals
             If other Is Nothing Then Return False
             If other Is Me Then Return True
             If Me.AgeClock.ElapsedTime <> other.AgeClock.ElapsedTime Then Return False
@@ -180,16 +180,16 @@
 
         Private ReadOnly _hostPort As UShort
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal gameStats As GameStats,
-                       ByVal hostPort As UShort,
-                       ByVal gameId As UInt32,
-                       ByVal entryKey As UInteger,
-                       ByVal totalSlotCount As Integer,
-                       ByVal gameType As Protocol.GameTypes,
-                       ByVal state As Bnet.Protocol.GameStates,
-                       ByVal usedSlotCount As Integer,
-                       ByVal ageClock As IClock)
+        Public Sub New(name As InvariantString,
+                       gameStats As GameStats,
+                       hostPort As UShort,
+                       gameId As UInt32,
+                       entryKey As UInteger,
+                       totalSlotCount As Integer,
+                       gameType As Protocol.GameTypes,
+                       state As Bnet.Protocol.GameStates,
+                       usedSlotCount As Integer,
+                       ageClock As IClock)
             MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, ageClock)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
@@ -202,16 +202,16 @@
         End Sub
         'Verification disabled because verifier doesn't seem to understand assumptions involving null coalescing
         <ContractVerification(False)>
-        Public Shadows Function [With](Optional ByVal name As InvariantString? = Nothing,
-                                       Optional ByVal gameStats As GameStats = Nothing,
-                                       Optional ByVal gameId As UInt32? = Nothing,
-                                       Optional ByVal entryKey As UInt32? = Nothing,
-                                       Optional ByVal totalSlotCount As Integer? = Nothing,
-                                       Optional ByVal gameType As Protocol.GameTypes? = Nothing,
-                                       Optional ByVal state As Bnet.Protocol.GameStates? = Nothing,
-                                       Optional ByVal usedSlotCount As Integer? = Nothing,
-                                       Optional ByVal ageClock As IClock = Nothing,
-                                       Optional ByVal hostPort As UShort? = Nothing) As LocalGameDescription
+        Public Shadows Function [With](Optional name As InvariantString? = Nothing,
+                                       Optional gameStats As GameStats = Nothing,
+                                       Optional gameId As UInt32? = Nothing,
+                                       Optional entryKey As UInt32? = Nothing,
+                                       Optional totalSlotCount As Integer? = Nothing,
+                                       Optional gameType As Protocol.GameTypes? = Nothing,
+                                       Optional state As Bnet.Protocol.GameStates? = Nothing,
+                                       Optional usedSlotCount As Integer? = Nothing,
+                                       Optional ageClock As IClock = Nothing,
+                                       Optional hostPort As UShort? = Nothing) As LocalGameDescription
             Contract.Requires(gameId Is Nothing OrElse gameId.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value <= 12)
@@ -230,11 +230,11 @@
                                             If(ageClock, Me.AgeClock))
         End Function
 
-        Public Shared Shadows Function FromArguments(ByVal name As InvariantString,
-                                                     ByVal map As Map,
-                                                     ByVal id As UInt32,
-                                                     ByVal stats As GameStats,
-                                                     ByVal ageClock As IClock) As LocalGameDescription
+        Public Shared Shadows Function FromArguments(name As InvariantString,
+                                                     map As Map,
+                                                     id As UInt32,
+                                                     stats As GameStats,
+                                                     ageClock As IClock) As LocalGameDescription
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
             Contract.Requires(ageClock IsNot Nothing)
@@ -266,10 +266,10 @@
         Public Overrides Function GetHashCode() As Integer
             Return Port.GetHashCode Xor MyBase.GetHashCode
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, LocalGameDescription))
         End Function
-        Public Overloads Function Equals(ByVal other As LocalGameDescription) As Boolean Implements IEquatable(Of LocalGameDescription).Equals
+        Public Overloads Function Equals(other As LocalGameDescription) As Boolean Implements IEquatable(Of LocalGameDescription).Equals
             If other Is Nothing Then Return False
             If Me.Port <> other.Port Then Return False
             Return MyBase.Equals(other)
@@ -285,16 +285,16 @@
             Contract.Invariant(_address IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal gameStats As GameStats,
-                       ByVal location As Net.IPEndPoint,
-                       ByVal gameId As UInt32,
-                       ByVal entryKey As UInteger,
-                       ByVal totalSlotCount As Integer,
-                       ByVal gameType As Protocol.GameTypes,
-                       ByVal state As Bnet.Protocol.GameStates,
-                       ByVal usedSlotCount As Integer,
-                       ByVal ageClock As IClock)
+        Public Sub New(name As InvariantString,
+                       gameStats As GameStats,
+                       location As Net.IPEndPoint,
+                       gameId As UInt32,
+                       entryKey As UInteger,
+                       totalSlotCount As Integer,
+                       gameType As Protocol.GameTypes,
+                       state As Bnet.Protocol.GameStates,
+                       usedSlotCount As Integer,
+                       ageClock As IClock)
             MyBase.new(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, ageClock)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
@@ -309,16 +309,16 @@
         End Sub
         'Verification disabled because verifier doesn't seem to understand assumptions involving null coalescing
         <ContractVerification(False)>
-        Public Shadows Function [With](Optional ByVal name As InvariantString? = Nothing,
-                                       Optional ByVal gameStats As GameStats = Nothing,
-                                       Optional ByVal gameId As UInt32? = Nothing,
-                                       Optional ByVal entryKey As UInt32? = Nothing,
-                                       Optional ByVal totalSlotCount As Integer? = Nothing,
-                                       Optional ByVal gameType As Protocol.GameTypes? = Nothing,
-                                       Optional ByVal state As Bnet.Protocol.GameStates? = Nothing,
-                                       Optional ByVal usedSlotCount As Integer? = Nothing,
-                                       Optional ByVal ageClock As IClock = Nothing,
-                                       Optional ByVal location As Net.IPEndPoint = Nothing) As RemoteGameDescription
+        Public Shadows Function [With](Optional name As InvariantString? = Nothing,
+                                       Optional gameStats As GameStats = Nothing,
+                                       Optional gameId As UInt32? = Nothing,
+                                       Optional entryKey As UInt32? = Nothing,
+                                       Optional totalSlotCount As Integer? = Nothing,
+                                       Optional gameType As Protocol.GameTypes? = Nothing,
+                                       Optional state As Bnet.Protocol.GameStates? = Nothing,
+                                       Optional usedSlotCount As Integer? = Nothing,
+                                       Optional ageClock As IClock = Nothing,
+                                       Optional location As Net.IPEndPoint = Nothing) As RemoteGameDescription
             Contract.Requires(gameId Is Nothing OrElse gameId.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value <= 12)
@@ -347,10 +347,10 @@
         Public Overrides Function GetHashCode() As Integer
             Return MyBase.GetHashCode
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, RemoteGameDescription))
         End Function
-        Public Overloads Function Equals(ByVal other As RemoteGameDescription) As Boolean Implements IEquatable(Of RemoteGameDescription).Equals
+        Public Overloads Function Equals(other As RemoteGameDescription) As Boolean Implements IEquatable(Of RemoteGameDescription).Equals
             If other Is Nothing Then Return False
             If Not Me.Address.GetAddressBytes.SequenceEqual(other.Address.GetAddressBytes) Then Return False
             Return MyBase.Equals(other)

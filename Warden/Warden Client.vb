@@ -2,9 +2,9 @@
     Public NotInheritable Class Client
         Inherits DisposableWithTask
 
-        Public Event ReceivedWardenData(ByVal sender As Warden.Client, ByVal wardenData As IRist(Of Byte))
-        Public Event Failed(ByVal sender As Warden.Client, ByVal exception As Exception)
-        Public Event Disconnected(ByVal sender As Warden.Client, ByVal expected As Boolean, ByVal reason As String)
+        Public Event ReceivedWardenData(sender As Warden.Client, wardenData As IRist(Of Byte))
+        Public Event Failed(sender As Warden.Client, exception As Exception)
+        Public Event Disconnected(sender As Warden.Client, expected As Boolean, reason As String)
 
         Private ReadOnly _socket As Task(Of Warden.Socket)
         Private ReadOnly _activated As New TaskCompletionSource(Of NoValue)()
@@ -16,9 +16,9 @@
             Contract.Invariant(_logger IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal socket As Task(Of Warden.Socket),
-                       ByVal activated As TaskCompletionSource(Of NoValue),
-                       ByVal logger As Logger)
+        Public Sub New(socket As Task(Of Warden.Socket),
+                       activated As TaskCompletionSource(Of NoValue),
+                       logger As Logger)
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(activated IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
@@ -26,7 +26,7 @@
             Me._activated = activated
             Me._logger = logger
         End Sub
-        Public Shared Function MakeMock(ByVal logger As Logger) As Warden.Client
+        Public Shared Function MakeMock(logger As Logger) As Warden.Client
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Warden.Client)() IsNot Nothing)
             Dim failedSocket = New TaskCompletionSource(Of Warden.Socket)
@@ -38,12 +38,12 @@
             activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem))
             Return New Warden.Client(failedSocket.Task, activated, logger)
         End Function
-        Public Shared Function MakeConnect(ByVal remoteHost As InvariantString,
-                                           ByVal remotePort As UInt16,
-                                           ByVal seed As UInt32,
-                                           ByVal cookie As UInt32,
-                                           ByVal clock As IClock,
-                                           ByVal logger As Logger) As Warden.Client
+        Public Shared Function MakeConnect(remoteHost As InvariantString,
+                                           remotePort As UInt16,
+                                           seed As UInt32,
+                                           cookie As UInt32,
+                                           clock As IClock,
+                                           logger As Logger) As Warden.Client
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Warden.Client)() IsNot Nothing)
@@ -112,7 +112,7 @@
             End Get
         End Property
 
-        Public Async Function QueueSendWardenData(ByVal wardenData As IRist(Of Byte)) As Task
+        Public Async Function QueueSendWardenData(wardenData As IRist(Of Byte)) As Task
             Contract.Assume(wardenData IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             _activated.TrySetResult(Nothing)
@@ -120,7 +120,7 @@
             Await wardenClient.QueueSendWardenData(wardenData)
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return _socket.DisposeAsync()
         End Function

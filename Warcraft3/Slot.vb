@@ -25,14 +25,14 @@
         End Sub
 
         '''<summary>Trivial constructor.</summary>
-        Public Sub New(ByVal index As Byte,
-                       ByVal contents As SlotContents,
-                       ByVal color As Protocol.PlayerColor,
-                       ByVal raceUnlocked As Boolean,
-                       ByVal team As Byte,
-                       Optional ByVal race As Protocol.Races = Protocol.Races.Random,
-                       Optional ByVal handicap As Byte = 100,
-                       Optional ByVal locked As LockState = LockState.Unlocked)
+        Public Sub New(index As Byte,
+                       contents As SlotContents,
+                       color As Protocol.PlayerColor,
+                       raceUnlocked As Boolean,
+                       team As Byte,
+                       Optional race As Protocol.Races = Protocol.Races.Random,
+                       Optional handicap As Byte = 100,
+                       Optional locked As LockState = LockState.Unlocked)
             Contract.Requires(index < 12)
             Contract.Requires(team <= 12)
             Contract.Requires(contents IsNot Nothing)
@@ -94,14 +94,14 @@
         '''<remarks>Verification disabled because the verifier doesn't seem to understand null coalescing.</remarks>
         <Pure()>
         <ContractVerification(False)>
-        Public Function [With](Optional ByVal index As Byte? = Nothing,
-                               Optional ByVal contents As SlotContents = Nothing,
-                               Optional ByVal color As Protocol.PlayerColor? = Nothing,
-                               Optional ByVal raceUnlocked As Boolean? = Nothing,
-                               Optional ByVal team As Byte? = Nothing,
-                               Optional ByVal race As Protocol.Races? = Nothing,
-                               Optional ByVal handicap As Byte? = Nothing,
-                               Optional ByVal locked As LockState? = Nothing) As Slot
+        Public Function [With](Optional index As Byte? = Nothing,
+                               Optional contents As SlotContents = Nothing,
+                               Optional color As Protocol.PlayerColor? = Nothing,
+                               Optional raceUnlocked As Boolean? = Nothing,
+                               Optional team As Byte? = Nothing,
+                               Optional race As Protocol.Races? = Nothing,
+                               Optional handicap As Byte? = Nothing,
+                               Optional locked As LockState? = Nothing) As Slot
             '[assumed instead of required due to stupid verifier]
             Contract.Assume(If(index, Me.Index) < 12)
             Contract.Assume(If(team, Me.Team) <= 12)
@@ -123,7 +123,7 @@
             Index = 4
         End Enum
         <Pure()>
-        Public Function Matches(ByVal query As InvariantString) As Match
+        Public Function Matches(query As InvariantString) As Match
             '[checked in decreasing order of importance]
             If query = (Index + 1).ToString(CultureInfo.InvariantCulture) Then Return Match.Index
             If query = Color.ToString Then Return Match.Color
@@ -149,7 +149,7 @@
             Return result + desc
         End Function
 
-        Public Overloads Function Equals(ByVal other As Slot) As Boolean Implements IEquatable(Of Slot).Equals
+        Public Overloads Function Equals(other As Slot) As Boolean Implements IEquatable(Of Slot).Equals
             Return Me._index = other._index AndAlso
                    Me._color = other._color AndAlso
                    Me._team = other._team AndAlso
@@ -159,13 +159,13 @@
                    Me._locked = other._locked AndAlso
                    Me._contents Is other._contents
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return TypeOf obj Is Slot AndAlso Me.Equals(DirectCast(obj, Slot))
         End Function
-        Public Shared Operator =(ByVal slot1 As Slot, ByVal slot2 As Slot) As Boolean
+        Public Shared Operator =(slot1 As Slot, slot2 As Slot) As Boolean
             Return slot1.Equals(slot2)
         End Operator
-        Public Shared Operator <>(ByVal slot1 As Slot, ByVal slot2 As Slot) As Boolean
+        Public Shared Operator <>(slot1 As Slot, slot2 As Slot) As Boolean
             Return Not slot1.Equals(slot2)
         End Operator
         Public Overrides Function GetHashCode() As Integer

@@ -40,19 +40,19 @@ Namespace WC3
         End Sub
 
         '''<summary>Trivial constructor.</summary>
-        Public Sub New(ByVal streamFactory As Func(Of NonNull(Of IRandomReadableStream)),
-                       ByVal advertisedPath As InvariantString,
-                       ByVal fileSize As UInteger,
-                       ByVal fileChecksumCRC32 As UInt32,
-                       ByVal mapChecksumXORO As UInt32,
-                       ByVal mapChecksumSHA1 As IRist(Of Byte),
-                       ByVal lobbySlots As IRist(Of Slot),
-                       ByVal playableWidth As UInt16,
-                       ByVal playableHeight As UInt16,
-                       ByVal isMelee As Boolean,
-                       ByVal usesCustomForces As Boolean,
-                       ByVal usesFixedPlayerSettings As Boolean,
-                       ByVal name As InvariantString)
+        Public Sub New(streamFactory As Func(Of NonNull(Of IRandomReadableStream)),
+                       advertisedPath As InvariantString,
+                       fileSize As UInteger,
+                       fileChecksumCRC32 As UInt32,
+                       mapChecksumXORO As UInt32,
+                       mapChecksumSHA1 As IRist(Of Byte),
+                       lobbySlots As IRist(Of Slot),
+                       playableWidth As UInt16,
+                       playableHeight As UInt16,
+                       isMelee As Boolean,
+                       usesCustomForces As Boolean,
+                       usesFixedPlayerSettings As Boolean,
+                       name As InvariantString)
             Contract.Requires(advertisedPath.StartsWith("Maps\"))
             Contract.Requires(fileSize > 0)
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
@@ -78,9 +78,9 @@ Namespace WC3
             Me._name = name
         End Sub
 
-        Public Shared Function FromFile(ByVal filePath As InvariantString,
-                                        ByVal wc3MapFolder As InvariantString,
-                                        ByVal wc3PatchMPQFolder As InvariantString) As Map
+        Public Shared Function FromFile(filePath As InvariantString,
+                                        wc3MapFolder As InvariantString,
+                                        wc3PatchMPQFolder As InvariantString) As Map
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
 
             Dim factory = Function() New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream.AsNonNull
@@ -118,7 +118,7 @@ Namespace WC3
                            Name:=info.name)
         End Function
 
-        Public Shared Function FromHostMapInfoPacket(ByVal data As IEnumerable(Of Byte)) As Map
+        Public Shared Function FromHostMapInfoPacket(data As IEnumerable(Of Byte)) As Map
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
 
@@ -169,7 +169,7 @@ Namespace WC3
                            name:=name)
         End Function
 
-        Public Shared Function FromArgument(ByVal arg As String) As Map
+        Public Shared Function FromArgument(arg As String) As Map
             Contract.Requires(arg IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
             If arg.Length <= 0 Then
@@ -320,7 +320,7 @@ Namespace WC3
 #End Region
 
 #Region "Read"
-        Public Function ReadChunk(ByVal pos As Int64, ByVal size As UInt32) As IRist(Of Byte)
+        Public Function ReadChunk(pos As Int64, size As UInt32) As IRist(Of Byte)
             Contract.Requires(pos >= 0)
             Contract.Requires(size > 0)
             Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
@@ -338,8 +338,8 @@ Namespace WC3
             End Using
         End Function
 
-        Private Shared Function MapChecksumOverridableFileStreams(ByVal mapArchive As MPQ.Archive,
-                                                                  ByVal war3PatchArchive As MPQ.Archive) As IEnumerable(Of IReadableStream)
+        Private Shared Function MapChecksumOverridableFileStreams(mapArchive As MPQ.Archive,
+                                                                  war3PatchArchive As MPQ.Archive) As IEnumerable(Of IReadableStream)
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of IReadableStream))() IsNot Nothing)
@@ -348,7 +348,7 @@ Namespace WC3
                    Let archive = If(mapArchive.Hashtable.Contains(filename), mapArchive, war3PatchArchive)
                    Select archive.OpenFileByName(filename)
         End Function
-        Private Shared Function MapChecksumFileStreams(ByVal mapArchive As MPQ.Archive) As IEnumerable(Of IReadableStream)
+        Private Shared Function MapChecksumFileStreams(mapArchive As MPQ.Archive) As IEnumerable(Of IReadableStream)
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of IReadableStream))() IsNot Nothing)
 
@@ -372,8 +372,8 @@ Namespace WC3
         End Function
 
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
-        Private Shared Function ComputeMapSha1Checksum(ByVal mapArchive As MPQ.Archive,
-                                                       ByVal war3PatchArchive As MPQ.Archive) As IRist(Of Byte)
+        Private Shared Function ComputeMapSha1Checksum(mapArchive As MPQ.Archive,
+                                                       war3PatchArchive As MPQ.Archive) As IRist(Of Byte)
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
@@ -391,13 +391,13 @@ Namespace WC3
         End Function
 
         '''<summary>Combines parts of the Xoro checksum.</summary>
-        Private Shared Function XoroAccumulate(ByVal accumulator As UInt32, ByVal value As UInt32) As UInt32
+        Private Shared Function XoroAccumulate(accumulator As UInt32, value As UInt32) As UInt32
             Dim result = accumulator Xor value
             result = (result << 3) Or (result >> 29)
             Return result
         End Function
         '''<summary>Computes parts of the Xoro checksum.</summary>
-        Private Shared Function ComputeStreamXoro(ByVal stream As IReadableStream) As UInt32
+        Private Shared Function ComputeStreamXoro(stream As IReadableStream) As UInt32
             Contract.Requires(stream IsNot Nothing)
             Dim result = 0UI
             Do
@@ -413,8 +413,8 @@ Namespace WC3
             Loop
         End Function
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
-        Private Shared Function ComputeMapXoro(ByVal mapArchive As MPQ.Archive,
-                                               ByVal war3PatchArchive As MPQ.Archive) As UInt32
+        Private Shared Function ComputeMapXoro(mapArchive As MPQ.Archive,
+                                               war3PatchArchive As MPQ.Archive) As UInt32
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
 
@@ -429,7 +429,7 @@ Namespace WC3
             Return allChecksums.Aggregate(0UI, AddressOf XoroAccumulate)
         End Function
 
-        Private Shared Function NormalizeMapStringKey(ByVal key As InvariantString) As InvariantString
+        Private Shared Function NormalizeMapStringKey(key As InvariantString) As InvariantString
             For Each prefix In {"TRIGSTR_", "STRING "}
                 If key.StartsWith(prefix) Then
                     Contract.Assume(prefix.Length <= key.Length)
@@ -445,8 +445,8 @@ Namespace WC3
             End If
         End Function
         '''<summary>Finds a string in the war3map.wts file. Returns null if the string is not found.</summary>
-        Private Shared Function TryGetMapString(ByVal mapArchive As MPQ.Archive,
-                                                ByVal key As InvariantString) As String
+        Private Shared Function TryGetMapString(mapArchive As MPQ.Archive,
+                                                key As InvariantString) As String
             Contract.Requires(mapArchive IsNot Nothing)
             key = NormalizeMapStringKey(key)
 
@@ -476,8 +476,8 @@ Namespace WC3
         ''' Returns the key if the string is not found.
         ''' Returns the key and an error description if an exception occurs.
         ''' </summary>
-        Private Shared Function SafeGetMapString(ByVal mapArchive As MPQ.Archive,
-                                                 ByVal nameKey As InvariantString) As String
+        Private Shared Function SafeGetMapString(mapArchive As MPQ.Archive,
+                                                 nameKey As InvariantString) As String
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Try
@@ -524,11 +524,11 @@ Namespace WC3
                 Contract.Invariant(slots.Count <= 12)
             End Sub
 
-            Public Sub New(ByVal name As InvariantString,
-                           ByVal playableWidth As UInt16,
-                           ByVal playableHeight As UInt16,
-                           ByVal options As MapOptions,
-                           ByVal slots As IRist(Of Slot))
+            Public Sub New(name As InvariantString,
+                           playableWidth As UInt16,
+                           playableHeight As UInt16,
+                           options As MapOptions,
+                           slots As IRist(Of Slot))
                 Contract.Requires(playableWidth > 0)
                 Contract.Requires(playableHeight > 0)
                 Contract.Requires(slots IsNot Nothing)
@@ -543,7 +543,7 @@ Namespace WC3
         End Class
         '''<summary>Reads map information from the "war3map.w3i" file in the map mpq archive.</summary>
         '''<source>war3map.w3i format found at http://www.wc3campaigns.net/tools/specs/index.html by Zepir/PitzerMike</source>
-        Private Shared Function ReadMapInfo(ByVal mapArchive As MPQ.Archive) As ReadMapInfoResult
+        Private Shared Function ReadMapInfo(mapArchive As MPQ.Archive) As ReadMapInfoResult
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
 
@@ -617,8 +617,8 @@ Namespace WC3
                 Return New ReadMapInfoResult(mapName, CUShort(playableWidth), CUShort(playableHeight), options, teamedSlots)
             End Using
         End Function
-        Private Shared Function ReadMapInfoLobbySlots(ByVal stream As IReadableStream,
-                                                      ByVal options As MapOptions) As IRist(Of Slot)
+        Private Shared Function ReadMapInfoLobbySlots(stream As IReadableStream,
+                                                      options As MapOptions) As IRist(Of Slot)
             Contract.Requires(stream IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Slot))().Count > 0)
@@ -682,9 +682,9 @@ Namespace WC3
             Return lobbySlots.AsRist()
         End Function
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IRist(Of Slot))().Count = lobbySlots.Count")>
-        Private Shared Function ReadMapInfoForces(ByVal stream As IReadableStream,
-                                                  ByVal lobbySlots As IRist(Of Slot),
-                                                  ByVal options As MapOptions) As IRist(Of Slot)
+        Private Shared Function ReadMapInfoForces(stream As IReadableStream,
+                                                  lobbySlots As IRist(Of Slot),
+                                                  options As MapOptions) As IRist(Of Slot)
             Contract.Requires(stream IsNot Nothing)
             Contract.Requires(lobbySlots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Slot))() IsNot Nothing)

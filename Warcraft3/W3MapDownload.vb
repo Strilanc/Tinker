@@ -19,11 +19,11 @@
             Contract.Invariant(destinationPath.Length > 0)
         End Sub
 
-        Public Sub New(ByVal path As String,
-                       ByVal size As UInteger,
-                       ByVal fileChecksumCRC32 As UInt32,
-                       ByVal mapChecksumXORO As UInt32,
-                       ByVal mapChecksumSHA1 As IRist(Of Byte))
+        Public Sub New(path As String,
+                       size As UInteger,
+                       fileChecksumCRC32 As UInt32,
+                       mapChecksumXORO As UInt32,
+                       mapChecksumSHA1 As IRist(Of Byte))
             Contract.Requires(path IsNot Nothing)
             Contract.Requires(size > 0)
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
@@ -52,8 +52,8 @@
             Me.file = New IO.FileStream(Me.downloadPath, IO.FileMode.OpenOrCreate, IO.FileAccess.Write, IO.FileShare.None)
         End Sub
 
-        Public Function ReceiveChunk(ByVal pos As Integer,
-                                     ByVal data As IRist(Of Byte)) As Boolean
+        Public Function ReceiveChunk(pos As Integer,
+                                     data As IRist(Of Byte)) As Boolean
             Contract.Requires(pos >= 0)
             Contract.Requires(data IsNot Nothing)
             If file Is Nothing Then Throw New InvalidOperationException("File is closed.")
@@ -77,7 +77,7 @@
             Return False
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             If file IsNot Nothing Then file.Dispose()
             Return Nothing

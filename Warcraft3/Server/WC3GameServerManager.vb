@@ -33,9 +33,9 @@ Namespace WC3
             Contract.Invariant(_commands IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal gameServer As WC3.GameServer,
-                       ByVal bot As Bot.MainBot)
+        Public Sub New(name As InvariantString,
+                       gameServer As WC3.GameServer,
+                       bot As Bot.MainBot)
             Contract.Requires(gameServer IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)
 
@@ -86,7 +86,7 @@ Namespace WC3
             End Try
         End Sub
 
-        Private Sub ChangeListenPort(ByVal portHandle As PortPool.PortHandle)
+        Private Sub ChangeListenPort(portHandle As PortPool.PortHandle)
             Contract.Requires(portHandle IsNot Nothing)
             If portHandle.Port = Me._portHandle.Port Then Return
 
@@ -132,7 +132,7 @@ Namespace WC3
                 Return _bot
             End Get
         End Property
-        Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
+        Public Function IsArgumentPrivate(argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
             Return _commands.IsArgumentPrivate(argument)
         End Function
         Public ReadOnly Property Control As System.Windows.Forms.Control Implements IBotComponent.Control
@@ -141,11 +141,11 @@ Namespace WC3
             End Get
         End Property
 
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(user As BotUser, argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return _commands.Invoke(Me, user, argument)
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
                 hook.Dispose()
@@ -154,10 +154,10 @@ Namespace WC3
             Return _control.DisposeControlAsync()
         End Function
 
-        Private Async Sub OnPlayerTalked(ByVal sender As WC3.GameServer,
-                                         ByVal game As WC3.Game,
-                                         ByVal player As WC3.Player,
-                                         ByVal text As String)
+        Private Async Sub OnPlayerTalked(sender As WC3.GameServer,
+                                         game As WC3.Game,
+                                         player As WC3.Player,
+                                         text As String)
             Contract.Assume(sender IsNot Nothing)
             Contract.Assume(game IsNot Nothing)
             Contract.Assume(player IsNot Nothing)
@@ -189,8 +189,8 @@ Namespace WC3
             If _gameIdCount > 1000 Then _gameIdCount = 1
             Return _gameIdCount * 10000UI + CUInt(_gameIdGenerator.Next(1000))
         End Function
-        Private Function AsyncAddGameFromArguments(ByVal argument As Commands.CommandArgument,
-                                                   ByVal user As BotUser) As Task(Of WC3.GameSet)
+        Private Function AsyncAddGameFromArguments(argument As Commands.CommandArgument,
+                                                   user As BotUser) As Task(Of WC3.GameSet)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of WC3.GameSet))() IsNot Nothing)
 
@@ -222,13 +222,13 @@ Namespace WC3
 
             Return _gameServer.QueueAddGameSet(gameSettings)
         End Function
-        Public Function QueueAddGameFromArguments(ByVal argument As Commands.CommandArgument,
-                                                  ByVal user As BotUser) As Task(Of WC3.GameSet)
+        Public Function QueueAddGameFromArguments(argument As Commands.CommandArgument,
+                                                  user As BotUser) As Task(Of WC3.GameSet)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of WC3.GameSet))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncAddGameFromArguments(argument, user)).Unwrap.AssumeNotNull
         End Function
-        Public Function QueueChangeListenPort(ByVal portHandle As PortPool.PortHandle) As Task
+        Public Function QueueChangeListenPort(portHandle As PortPool.PortHandle) As Task
             Contract.Requires(portHandle IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() ChangeListenPort(portHandle))
@@ -239,7 +239,7 @@ Namespace WC3
         End Function
 
         <SuppressMessage("Microsoft.Contracts", "Requires-23-223")>
-        Private Function AsyncAddAdminGame(ByVal name As InvariantString, ByVal password As String) As Task(Of GameSet)
+        Private Function AsyncAddAdminGame(name As InvariantString, password As String) As Task(Of GameSet)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
 
@@ -290,16 +290,16 @@ Namespace WC3
 
             Return _gameServer.QueueAddGameSet(gameSettings)
         End Function
-        Public Function QueueAddAdminGame(ByVal name As InvariantString, ByVal password As String) As Task(Of GameSet)
+        Public Function QueueAddAdminGame(name As InvariantString, password As String) As Task(Of GameSet)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Unwrap.AssumeNotNull
         End Function
 
-        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+        Private Function IncludeCommandImpl(command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
             Return IncludeCommand(command)
         End Function
-        Public Function IncludeCommand(ByVal command As ICommand(Of GameServerManager)) As Task(Of IDisposable)
+        Public Function IncludeCommand(command As ICommand(Of GameServerManager)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return _commands.IncludeCommand(command).AsTask()

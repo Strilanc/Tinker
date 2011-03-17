@@ -116,20 +116,20 @@
         End Property
 #End Region
 
-        Public Sub New(ByVal randomHero As Boolean,
-                       ByVal randomRace As Boolean,
-                       ByVal allowFullSharedControl As Boolean,
-                       ByVal lockTeams As Boolean,
-                       ByVal teamsTogether As Boolean,
-                       ByVal observers As GameObserverOption,
-                       ByVal visibility As GameVisibilityOption,
-                       ByVal speed As GameSpeedOption,
-                       ByVal playableWidth As UInt16,
-                       ByVal playableHeight As UInt16,
-                       ByVal mapChecksumXORO As UInt32,
-                       ByVal mapChecksumSHA1 As Maybe(Of IRist(Of Byte)),
-                       ByVal advertisedPath As InvariantString,
-                       ByVal hostName As InvariantString)
+        Public Sub New(randomHero As Boolean,
+                       randomRace As Boolean,
+                       allowFullSharedControl As Boolean,
+                       lockTeams As Boolean,
+                       teamsTogether As Boolean,
+                       observers As GameObserverOption,
+                       visibility As GameVisibilityOption,
+                       speed As GameSpeedOption,
+                       playableWidth As UInt16,
+                       playableHeight As UInt16,
+                       mapChecksumXORO As UInt32,
+                       mapChecksumSHA1 As Maybe(Of IRist(Of Byte)),
+                       advertisedPath As InvariantString,
+                       hostName As InvariantString)
             Contract.Requires(Not mapChecksumSHA1.HasValue OrElse mapChecksumSHA1.Value.Count = 20)
 
             Me._randomHero = randomHero
@@ -152,16 +152,16 @@
         ''' Constructs the game stats using some values from a map.
         ''' </summary>
         <SuppressMessage("Microsoft.Contracts", "Requires-35-78")>
-        Public Shared Function FromMapAndSettings(ByVal map As Map,
-                                                  ByVal randomHero As Boolean,
-                                                  ByVal randomRace As Boolean,
-                                                  ByVal allowFullSharedControl As Boolean,
-                                                  ByVal lockTeams As Boolean,
-                                                  ByVal teamsTogether As Boolean,
-                                                  ByVal observers As GameObserverOption,
-                                                  ByVal visibility As GameVisibilityOption,
-                                                  ByVal speed As GameSpeedOption,
-                                                  ByVal hostName As InvariantString) As GameStats
+        Public Shared Function FromMapAndSettings(map As Map,
+                                                  randomHero As Boolean,
+                                                  randomRace As Boolean,
+                                                  allowFullSharedControl As Boolean,
+                                                  lockTeams As Boolean,
+                                                  teamsTogether As Boolean,
+                                                  observers As GameObserverOption,
+                                                  visibility As GameVisibilityOption,
+                                                  speed As GameSpeedOption,
+                                                  hostName As InvariantString) As GameStats
             Contract.Requires(map IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)
             Return New GameStats(randomHero:=randomHero,
@@ -183,9 +183,9 @@
         ''' <summary>
         ''' Constructs the game stats based on a map and arguments.
         ''' </summary>
-        Public Shared Function FromMapAndArgument(ByVal map As Map,
-                                                  ByVal hostName As InvariantString,
-                                                  ByVal argument As Commands.CommandArgument) As GameStats
+        Public Shared Function FromMapAndArgument(map As Map,
+                                                  hostName As InvariantString,
+                                                  argument As Commands.CommandArgument) As GameStats
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)
@@ -258,10 +258,10 @@
         Public Overrides Function GetHashCode() As Integer
             Return AdvertisedPath.GetHashCode Xor HostName.GetHashCode Xor MapChecksumXORO.GetHashCode
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, GameStats))
         End Function
-        Public Overloads Function Equals(ByVal other As GameStats) As Boolean Implements IEquatable(Of GameStats).Equals
+        Public Overloads Function Equals(other As GameStats) As Boolean Implements IEquatable(Of GameStats).Equals
             If other Is Nothing Then Return False
             If Me.AdvertisedPath <> other.AdvertisedPath Then Return False
             If Me.AllowFullSharedControl <> other.AllowFullSharedControl Then Return False

@@ -5,9 +5,9 @@ Imports Tinker.Pickling
 Namespace WC3
     Public NotInheritable Class W3Socket
         Private WithEvents _socket As PacketSocket
-        Public Event Disconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
+        Public Event Disconnected(sender As W3Socket, expected As Boolean, reason As String)
 
-        Public Sub New(ByVal socket As PacketSocket)
+        Public Sub New(socket As PacketSocket)
             Contract.Assume(socket IsNot Nothing) 'bug in contracts required not using requires here
             Me._socket = socket
         End Sub
@@ -21,7 +21,7 @@ Namespace WC3
                 Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
                 Return _socket.Logger
             End Get
-            Set(ByVal value As Logger)
+            Set(value As Logger)
                 Contract.Requires(value IsNot Nothing)
                 _socket.Logger = value
             End Set
@@ -31,7 +31,7 @@ Namespace WC3
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _socket.Name
             End Get
-            Set(ByVal value As String)
+            Set(value As String)
                 Contract.Requires(value IsNot Nothing)
                 _socket.Name = value
             End Set
@@ -55,17 +55,17 @@ Namespace WC3
             Return _socket.IsConnected
         End Function
 
-        Private Sub OnSocketDisconnect(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
+        Private Sub OnSocketDisconnect(sender As PacketSocket, expected As Boolean, reason As String) Handles _socket.Disconnected
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(reason IsNot Nothing)
             RaiseEvent Disconnected(Me, expected, reason)
         End Sub
-        Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
+        Public Sub Disconnect(expected As Boolean, reason As String)
             Contract.Requires(reason IsNot Nothing)
             _socket.QueueDisconnect(expected, reason)
         End Sub
 
-        Public Sub SendPacket(ByVal packet As Protocol.Packet)
+        Public Sub SendPacket(packet As Protocol.Packet)
             Contract.Requires(packet IsNot Nothing)
 
             Try

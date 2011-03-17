@@ -10,7 +10,7 @@
         Private ReadOnly _viewPlayers As New ObservableCollection(Of Tuple(Of Game, Player))(outQueue:=outQueue)
         Private ReadOnly _clock As IClock
         Private allocId As Integer
-        Public Event StateChanged(ByVal sender As GameSet, ByVal acceptingPlayers As Boolean)
+        Public Event StateChanged(sender As GameSet, acceptingPlayers As Boolean)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_clock IsNot Nothing)
@@ -22,9 +22,9 @@
             Contract.Invariant(outQueue IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal gameSettings As GameSettings,
-                       ByVal clock As IClock,
-                       Optional ByVal logger As Logger = Nothing)
+        Public Sub New(gameSettings As GameSettings,
+                       clock As IClock,
+                       Optional logger As Logger = Nothing)
             Contract.Assume(gameSettings IsNot Nothing)
             Contract.Assume(clock IsNot Nothing)
             Me._gameSettings = gameSettings
@@ -49,7 +49,7 @@
             Get
                 Return _activeGameCount
             End Get
-            Set(ByVal value As Integer)
+            Set(value As Integer)
                 If (value = 0) <> (_activeGameCount = 0) Then
                     outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, acceptingPlayers:=value <> 0))
                 End If
@@ -57,8 +57,8 @@
             End Set
         End Property
 
-        Private Async Function AsyncTryAcceptPlayer(ByVal knockData As Protocol.KnockData,
-                                                    ByVal socket As W3Socket) As Task(Of Game)
+        Private Async Function AsyncTryAcceptPlayer(knockData As Protocol.KnockData,
+                                                    socket As W3Socket) As Task(Of Game)
             Contract.Assume(knockData IsNot Nothing)
             Contract.Assume(socket IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
@@ -74,15 +74,15 @@
                 Throw New OperationFailedException("Failed to find game for player.", ex)
             End Try
         End Function
-        Public Function QueueTryAcceptPlayer(ByVal knockData As Protocol.KnockData,
-                                             ByVal socket As W3Socket) As Task(Of Game)
+        Public Function QueueTryAcceptPlayer(knockData As Protocol.KnockData,
+                                             socket As W3Socket) As Task(Of Game)
             Contract.Requires(knockData IsNot Nothing)
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncTryAcceptPlayer(knockData, socket)).Unwrap.AssumeNotNull
         End Function
 
-        Private Function TryFindGame(ByVal name As InvariantString) As Game
+        Private Function TryFindGame(name As InvariantString) As Game
             Return (From game In _games Where game.Name = name).FirstOrDefault
         End Function
         Private Function AddInstance() As Game
@@ -123,7 +123,7 @@
             Return game
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(
                 Sub()
@@ -133,17 +133,17 @@
                 End Sub)
         End Function
 
-        Private Function AsyncTryFindPlayer(ByVal userName As InvariantString) As Task(Of Player)
+        Private Function AsyncTryFindPlayer(userName As InvariantString) As Task(Of Player)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return From futureFindResults In (From game In _games Select game.QueueTryFindPlayer(userName)).ToList.AsAggregateTask
                    Select (From player In futureFindResults Where player IsNot Nothing).FirstOrDefault
         End Function
-        Public Function QueueTryFindPlayer(ByVal userName As InvariantString) As Task(Of Player)
+        Public Function QueueTryFindPlayer(userName As InvariantString) As Task(Of Player)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncTryFindPlayer(userName)).Unwrap.AssumeNotNull
         End Function
 
-        Private Function AsyncTryFindPlayerGame(ByVal userName As InvariantString) As Task(Of Game)
+        Private Function AsyncTryFindPlayerGame(userName As InvariantString) As Task(Of Game)
             'Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
             Return _games.ToList.FirstMatchAsync(
                 Async Function(game)
@@ -151,25 +151,25 @@
                     Return player IsNot Nothing
                 End Function)
         End Function
-        Public Function QueueTryFindPlayerGame(ByVal userName As InvariantString) As Task(Of Game)
+        Public Function QueueTryFindPlayerGame(userName As InvariantString) As Task(Of Game)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncTryFindPlayerGame(userName)).Unwrap.AssumeNotNull
         End Function
 
-        Public Function ObserveGames(ByVal adder As Action(Of Game),
-                                     ByVal remover As Action(Of Game)) As Task(Of IDisposable)
+        Public Function ObserveGames(adder As Action(Of Game),
+                                     remover As Action(Of Game)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _games.Observe(adder, remover))
         End Function
-        Public Function QueueTryFindGame(ByVal gameName As InvariantString) As Task(Of Game)
+        Public Function QueueTryFindGame(gameName As InvariantString) As Task(Of Game)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() (From game In _games Where game.Name = gameName).FirstOrDefault)
         End Function
 
-        Public Function ObservePlayers(ByVal adder As Action(Of Game, Player),
-                                       ByVal remover As Action(Of Game, Player)) As Task(Of IDisposable)
+        Public Function ObservePlayers(adder As Action(Of Game, Player),
+                                       remover As Action(Of Game, Player)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)

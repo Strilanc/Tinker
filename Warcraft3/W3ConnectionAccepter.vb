@@ -19,8 +19,8 @@ Namespace WC3
             Contract.Invariant(lock IsNot Nothing)
         End Sub
 
-        Protected Sub New(ByVal clock As IClock,
-                          Optional ByVal logger As Logger = Nothing)
+        Protected Sub New(clock As IClock,
+                          Optional logger As Logger = Nothing)
             Contract.Assume(clock IsNot Nothing)
             Me._logger = If(logger, New Logger)
             Me._clock = clock
@@ -52,7 +52,7 @@ Namespace WC3
         End Property
 
         '''<summary>Handles new connections.</summary>
-        Private Async Sub OnAcceptConnection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
+        Private Async Sub OnAcceptConnection(sender As ConnectionAccepter, client As Net.Sockets.TcpClient)
             Contract.Assume(sender IsNot Nothing)
             Contract.Assume(client IsNot Nothing)
             Dim socket = New W3Socket(New PacketSocket(stream:=client.GetStream,
@@ -88,7 +88,7 @@ Namespace WC3
         End Sub
 
         '''<summary>Atomically checks if a socket has already been processed, and removes it if not.</summary>
-        Private Function TryRemoveSocket(ByVal socket As W3Socket) As Boolean
+        Private Function TryRemoveSocket(socket As W3Socket) As Boolean
             SyncLock lock
                 If Not _sockets.Contains(socket) Then Return False
                 _sockets.Remove(socket)
@@ -96,7 +96,7 @@ Namespace WC3
             Return True
         End Function
 
-        Protected MustOverride Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
+        Protected MustOverride Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As ISimplePickle
         <ContractClassFor(GetType(W3ConnectionAccepterBase))>
         Public MustInherit Class ContractClass
             Inherits W3ConnectionAccepterBase
@@ -104,7 +104,7 @@ Namespace WC3
                 MyBase.New(Nothing, Nothing)
                 Throw New NotSupportedException
             End Sub
-            Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
+            Protected Overrides Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As ISimplePickle
                 Contract.Requires(socket IsNot Nothing)
                 Contract.Requires(packetData IsNot Nothing)
                 Contract.Requires(packetData.Count >= 4)
@@ -117,15 +117,15 @@ Namespace WC3
     Public NotInheritable Class W3ConnectionAccepter
         Inherits W3ConnectionAccepterBase
 
-        Public Event Connection(ByVal sender As W3ConnectionAccepter, ByVal knockData As Protocol.KnockData, ByVal socket As W3Socket)
+        Public Event Connection(sender As W3ConnectionAccepter, knockData As Protocol.KnockData, socket As W3Socket)
 
-        Public Sub New(ByVal clock As IClock,
-                       Optional ByVal logger As Logger = Nothing)
+        Public Sub New(clock As IClock,
+                       Optional logger As Logger = Nothing)
             MyBase.New(clock, logger)
             Contract.Assume(clock IsNot Nothing)
         End Sub
 
-        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
+        Protected Overrides Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As ISimplePickle
             If packetData(1) <> Protocol.PacketId.Knock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
             End If
@@ -142,15 +142,15 @@ Namespace WC3
     Public NotInheritable Class W3PeerConnectionAccepter
         Inherits W3ConnectionAccepterBase
 
-        Public Event Connection(ByVal sender As W3PeerConnectionAccepter, ByVal player As W3ConnectingPeer)
+        Public Event Connection(sender As W3PeerConnectionAccepter, player As W3ConnectingPeer)
 
-        Public Sub New(ByVal clock As IClock,
-                       Optional ByVal logger As Logger = Nothing)
+        Public Sub New(clock As IClock,
+                       Optional logger As Logger = Nothing)
             MyBase.New(clock, logger)
             Contract.Assume(clock IsNot Nothing)
         End Sub
 
-        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IRist(Of Byte)) As ISimplePickle
+        Protected Overrides Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As ISimplePickle
             If packetData(1) <> Protocol.PacketId.PeerKnock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))
             End If

@@ -34,18 +34,18 @@ Namespace WC3
             Contract.Invariant(_packetHandlerLogger IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal poolPort As PortPool.PortHandle,
-                       Optional ByVal logger As Logger = Nothing,
-                       Optional ByVal mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
+        Public Sub New(name As InvariantString,
+                       poolPort As PortPool.PortHandle,
+                       Optional logger As Logger = Nothing,
+                       Optional mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
             Me.New(name, poolPort.Port, logger, mode)
             Contract.Requires(poolPort IsNot Nothing)
             Me.poolPort = poolPort
         End Sub
-        Public Sub New(ByVal name As InvariantString,
-                       Optional ByVal listenPort As UShort = 0,
-                       Optional ByVal logger As Logger = Nothing,
-                       Optional ByVal mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
+        Public Sub New(name As InvariantString,
+                       Optional listenPort As UShort = 0,
+                       Optional logger As Logger = Nothing,
+                       Optional mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
             Me.name = name
             Me.mode = mode
             Me.listenPort = listenPort
@@ -56,22 +56,22 @@ Namespace WC3
         End Sub
 
 #Region "Networking"
-        Private Function AddPacketHandler(Of T)(ByVal packet As Protocol.Packets.Definition(Of T),
-                                                ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
+        Private Function AddPacketHandler(Of T)(packet As Protocol.Packets.Definition(Of T),
+                                                handler As Func(Of IPickle(Of T), Task)) As IDisposable
             Contract.Requires(packet IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return _packetHandlerLogger.IncludeHandler(packet.Id, packet.Jar, handler)
         End Function
-        Private Function AddQueuedPacketHandler(Of T)(ByVal packet As Protocol.Packets.Definition(Of T),
-                                                      ByVal handler As Action(Of IPickle(Of T))) As IDisposable
+        Private Function AddQueuedPacketHandler(Of T)(packet As Protocol.Packets.Definition(Of T),
+                                                      handler As Action(Of IPickle(Of T))) As IDisposable
             Contract.Requires(packet IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return AddPacketHandler(packet, Function(pickle) inQueue.QueueAction(Sub() handler(pickle)))
         End Function
 
-        Public Function QueueConnect(ByVal hostName As String, ByVal port As UShort) As Task
+        Public Function QueueConnect(hostName As String, port As UShort) As Task
             Contract.Requires(hostName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub()
@@ -79,7 +79,7 @@ Namespace WC3
                                            Connect(hostName, port)
                                        End Sub)
         End Function
-        Private Async Sub Connect(ByVal hostName As String, ByVal port As UShort)
+        Private Async Sub Connect(hostName As String, port As UShort)
             Contract.Assume(hostName IsNot Nothing)
 
             Dim tcp = New Net.Sockets.TcpClient()
@@ -111,11 +111,11 @@ Namespace WC3
                 'ignore (to match old behavior, should fix)
             End Try
         End Sub
-        Private Sub OnReceiveGreet(ByVal pickle As IPickle(Of NamedValueMap))
+        Private Sub OnReceiveGreet(pickle As IPickle(Of NamedValueMap))
             Contract.Requires(pickle IsNot Nothing)
             Me.index = pickle.Value.ItemAs(Of PlayerId)("player index")
         End Sub
-        Private Sub OnReceiveHostMapInfo(ByVal pickle As IPickle(Of NamedValueMap))
+        Private Sub OnReceiveHostMapInfo(pickle As IPickle(Of NamedValueMap))
             Contract.Requires(pickle IsNot Nothing)
             If mode = DummyPlayerMode.DownloadMap Then
                 dl = New MapDownload(pickle.Value.ItemAs(Of String)("path"),
@@ -128,11 +128,11 @@ Namespace WC3
                 socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, pickle.Value.ItemAs(Of UInt32)("size")))
             End If
         End Sub
-        Private Sub OnReceivePing(ByVal pickle As IPickle(Of UInt32))
+        Private Sub OnReceivePing(pickle As IPickle(Of UInt32))
             Contract.Requires(pickle IsNot Nothing)
             socket.SendPacket(Protocol.MakePong(pickle.Value))
         End Sub
-        Private Sub OnReceiveOtherPlayerJoined(ByVal pickle As IPickle(Of NamedValueMap))
+        Private Sub OnReceiveOtherPlayerJoined(pickle As IPickle(Of NamedValueMap))
             Contract.Requires(pickle IsNot Nothing)
             Dim ext_addr = pickle.Value.ItemAs(Of Net.IPEndPoint)("external address")
             Dim player = New W3Peer(pickle.Value.ItemAs(Of String)("name"),
@@ -149,7 +149,7 @@ Namespace WC3
             hooks.Add(New DelegatedDisposable(Sub() RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect))
             _playerHooks(player) = hooks
         End Sub
-        Private Sub OnReceiveOtherPlayerLeft(ByVal pickle As IPickle(Of NamedValueMap))
+        Private Sub OnReceiveOtherPlayerLeft(pickle As IPickle(Of NamedValueMap))
             Dim player = (From p In otherPlayers Where p.Id = pickle.Value.ItemAs(Of PlayerId)("leaver")).FirstOrDefault
             If player IsNot Nothing Then
                 otherPlayers.Remove(player)
@@ -159,20 +159,20 @@ Namespace WC3
                 _playerHooks.Remove(player)
             End If
         End Sub
-        Private Sub OnReceiveStartLoading(ByVal pickle As ISimplePickle)
+        Private Sub OnReceiveStartLoading(pickle As ISimplePickle)
             If mode = DummyPlayerMode.DownloadMap Then
                 Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
             ElseIf mode = DummyPlayerMode.EnterGame Then
                 Call New SystemClock().AsyncWait(readyDelay).ContinueWithAction(Sub() socket.SendPacket(Protocol.MakeReady()))
             End If
         End Sub
-        Private Sub OnReceiveTick(ByVal pickle As IPickle(Of NamedValueMap))
+        Private Sub OnReceiveTick(pickle As IPickle(Of NamedValueMap))
             Contract.Requires(pickle IsNot Nothing)
             If pickle.Value.ItemAs(Of UInt16)("time span") > 0 Then
                 socket.SendPacket(Protocol.MakeTock(0, 0))
             End If
         End Sub
-        Private Sub OnReceiveMapFileData(ByVal pickle As IPickle(Of NamedValueMap))
+        Private Sub OnReceiveMapFileData(pickle As IPickle(Of NamedValueMap))
             Contract.Requires(pickle IsNot Nothing)
             Dim pos = CUInt(dl.file.Position)
             If ReceiveDLMapChunk(pickle.Value) Then
@@ -182,7 +182,7 @@ Namespace WC3
             End If
         End Sub
 
-        Private Function ReceiveDLMapChunk(ByVal vals As NamedValueMap) As Boolean
+        Private Function ReceiveDLMapChunk(vals As NamedValueMap) As Boolean
             Contract.Requires(vals IsNot Nothing)
             If dl Is Nothing OrElse dl.file Is Nothing Then Throw New InvalidOperationException()
             Dim position = CInt(vals.ItemAs(Of UInt32)("file position"))
@@ -202,13 +202,13 @@ Namespace WC3
             socket.SendPacket(Protocol.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.Id))
         End Sub
 
-        Private Sub OnDisconnect(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
+        Private Sub OnDisconnect(sender As W3Socket, expected As Boolean, reason As String) Handles socket.Disconnected
             inQueue.QueueAction(Sub()
                                     Contract.Assume(reason IsNot Nothing)
                                     Disconnect(expected, reason)
                                 End Sub)
         End Sub
-        Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
+        Private Sub Disconnect(expected As Boolean, reason As String)
             Contract.Requires(reason IsNot Nothing)
             socket.Disconnect(expected, reason)
             accepter.Accepter.CloseAllPorts()
@@ -231,8 +231,8 @@ Namespace WC3
 #End Region
 
 #Region "Peer Networking"
-        Private Sub OnPeerConnection(ByVal sender As W3PeerConnectionAccepter,
-                                     ByVal acceptedPlayer As W3ConnectingPeer) Handles accepter.Connection
+        Private Sub OnPeerConnection(sender As W3PeerConnectionAccepter,
+                                     acceptedPlayer As W3ConnectingPeer) Handles accepter.Connection
             inQueue.QueueAction(
                 Sub()
                     Dim player = (From p In otherPlayers Where p.Id = acceptedPlayer.id).FirstOrDefault
@@ -251,7 +251,7 @@ Namespace WC3
             )
         End Sub
 
-        Private Sub OnPeerDisconnect(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
+        Private Sub OnPeerDisconnect(sender As W3Peer, expected As Boolean, reason As String)
             inQueue.QueueAction(
                 Sub()
                     logger.Log("{0}'s peer connection has closed ({1}).".Frmt(sender.name, reason), LogMessageType.Negative)
@@ -261,16 +261,16 @@ Namespace WC3
             )
         End Sub
 
-        Private Sub OnPeerReceivePeerPing(ByVal sender As W3Peer,
-                                          ByVal pickle As IPickle(Of NamedValueMap))
+        Private Sub OnPeerReceivePeerPing(sender As W3Peer,
+                                          pickle As IPickle(Of NamedValueMap))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = pickle.Value
             sender.Socket.SendPacket(Protocol.MakePeerPing(vals.ItemAs(Of UInt32)("salt"), {New PlayerId(1)}))
             sender.Socket.SendPacket(Protocol.MakePeerPong(vals.ItemAs(Of UInt32)("salt")))
         End Sub
-        Private Sub OnPeerReceiveMapFileData(ByVal sender As W3Peer,
-                                             ByVal pickle As IPickle(Of NamedValueMap))
+        Private Sub OnPeerReceiveMapFileData(sender As W3Peer,
+                                             pickle As IPickle(Of NamedValueMap))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = pickle.Value
@@ -283,7 +283,7 @@ Namespace WC3
         End Sub
 #End Region
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             If dl IsNot Nothing Then dl.Dispose()
             Return Nothing

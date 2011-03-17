@@ -20,11 +20,11 @@ Namespace WC3
             Contract.Invariant(gameTabs IsNot Nothing)
         End Sub
 
-        Private Shadows Sub OnDisposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
+        Private Shadows Sub OnDisposed(sender As Object, e As System.EventArgs) Handles Me.Disposed
             _hooks.DisposeAllAsync()
         End Sub
 
-        Public Sub New(ByVal manager As WC3.GameServerManager)
+        Public Sub New(manager As WC3.GameServerManager)
             Contract.Assert(manager IsNot Nothing)
             InitializeComponent()
             'if games is nothing then games = new TabControlIHookableSet(tabsserver)
@@ -68,7 +68,7 @@ Namespace WC3
         Private Sub BeginUpdateStateDisplay()
             Me._manager.QueueGetListenPort().QueueContinueWithAction(inQueue, AddressOf UpdateStateDisplay)
         End Sub
-        Private Sub UpdateStateDisplay(ByVal port As UShort)
+        Private Sub UpdateStateDisplay(port As UShort)
             If IsDisposed Then Return
             Dim s = New System.Text.StringBuilder()
             s.AppendLine("Listen Port: {0}".Frmt(port))
@@ -82,32 +82,32 @@ Namespace WC3
             txtInfo.Text = s.ToString
         End Sub
 
-        Private Sub OnCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comServer.IssuedCommand
+        Private Sub OnCommand(sender As CommandControl, argument As String) Handles comServer.IssuedCommand
             Contract.Requires(argument IsNot Nothing)
             Tinker.Components.UIInvokeCommand(_manager, argument)
         End Sub
 
-        Private Sub OnAddedGame(ByVal gameSet As GameSet, ByVal game As Game)
+        Private Sub OnAddedGame(gameSet As GameSet, game As Game)
             inQueue.QueueAction(Sub()
                                     _games(game) = New WC3.GameManager(game.Name, _manager.Bot, game)
                                     gameTabs.Add(_games(game))
                                     BeginUpdateStateDisplay()
                                 End Sub)
         End Sub
-        Private Sub OnRemovedGame(ByVal gameSet As GameSet, ByVal game As Game)
+        Private Sub OnRemovedGame(gameSet As GameSet, game As Game)
             inQueue.QueueAction(Sub()
                                     gameTabs.Remove(_games(game))
                                     _games.Remove(game)
                                     BeginUpdateStateDisplay()
                                 End Sub)
         End Sub
-        Private Sub OnAddedGameSet(ByVal gameSet As GameSet)
+        Private Sub OnAddedGameSet(gameSet As GameSet)
             inQueue.QueueAction(Sub()
                                     _gameSets.Add(gameSet)
                                     BeginUpdateStateDisplay()
                                 End Sub)
         End Sub
-        Private Sub OnRemovedGameSet(ByVal gameSet As GameSet)
+        Private Sub OnRemovedGameSet(gameSet As GameSet)
             inQueue.QueueAction(Sub()
                                     _gameSets.Remove(gameSet)
                                     BeginUpdateStateDisplay()

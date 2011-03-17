@@ -5,10 +5,10 @@ Namespace WC3
         Public ReadOnly receiverPeerKey As Byte
         Public ReadOnly id As PlayerId
         Public ReadOnly connectionOptions As UInt32
-        Public Sub New(ByVal socket As W3Socket,
-                       ByVal receiverPeerKey As Byte,
-                       ByVal id As PlayerId,
-                       ByVal connectionOptions As UInt32)
+        Public Sub New(socket As W3Socket,
+                       receiverPeerKey As Byte,
+                       id As PlayerId,
+                       connectionOptions As UInt32)
             Me.socket = socket
             Me.receiverPeerKey = receiverPeerKey
             Me.id = id
@@ -24,18 +24,18 @@ Namespace WC3
         Public ReadOnly peerKey As UInteger
         Private WithEvents _socket As W3Socket
         Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
-        Public Event Disconnected(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
+        Public Event Disconnected(sender As W3Peer, expected As Boolean, reason As String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_packetHandlerLogger IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal id As PlayerId,
-                       ByVal listenPort As UShort,
-                       ByVal ip As Net.IPAddress,
-                       ByVal peerKey As UInt32,
-                       ByVal logger As Logger)
+        Public Sub New(name As InvariantString,
+                       id As PlayerId,
+                       listenPort As UShort,
+                       ip As Net.IPAddress,
+                       peerKey As UInt32,
+                       logger As Logger)
             Contract.Assume(ip IsNot Nothing)
             Contract.Assume(logger IsNot Nothing)
             Me.name = name
@@ -57,7 +57,7 @@ Namespace WC3
             End Get
         End Property
 
-        Public Async Sub SetSocket(ByVal socket As W3Socket)
+        Public Async Sub SetSocket(socket As W3Socket)
             Me._socket = socket
             If socket Is Nothing Then Return
             Try
@@ -70,15 +70,15 @@ Namespace WC3
             End Try
         End Sub
 
-        Public Function AddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                               ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
+        Public Function AddPacketHandler(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
+                                               handler As Func(Of IPickle(Of T), Task)) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return _packetHandlerLogger.IncludeHandler(packetDefinition.Id, packetDefinition.Jar, handler)
         End Function
 
-        Private Sub OnDisconnected(ByVal sender As WC3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
+        Private Sub OnDisconnected(sender As WC3.W3Socket, expected As Boolean, reason As String) Handles _socket.Disconnected
             RaiseEvent Disconnected(Me, expected, reason)
         End Sub
     End Class

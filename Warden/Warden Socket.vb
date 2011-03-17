@@ -4,9 +4,9 @@ Namespace Warden
     Public NotInheritable Class Socket
         Inherits DisposableWithTask
 
-        Public Event ReceivedWardenData(ByVal sender As Warden.Socket, ByVal wardenData As IRist(Of Byte))
-        Public Event Failed(ByVal sender As Warden.Socket, ByVal exception As Exception)
-        Public Event Disconnected(ByVal sender As Warden.Socket, ByVal expected As Boolean, ByVal reason As String)
+        Public Event ReceivedWardenData(sender As Warden.Socket, wardenData As IRist(Of Byte))
+        Public Event Failed(sender As Warden.Socket, exception As Exception)
+        Public Event Disconnected(sender As Warden.Socket, expected As Boolean, reason As String)
 
         Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
         Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue
@@ -23,10 +23,10 @@ Namespace Warden
             Contract.Invariant(_logger IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal socket As PacketSocket,
-                       ByVal seed As UInt32,
-                       ByVal cookie As UInt32,
-                       Optional ByVal logger As Logger = Nothing)
+        Public Sub New(socket As PacketSocket,
+                       seed As UInt32,
+                       cookie As UInt32,
+                       Optional logger As Logger = Nothing)
             Contract.Assume(socket IsNot Nothing)
             Me._logger = If(logger, New Logger())
             Me._socket = socket
@@ -70,7 +70,7 @@ Namespace Warden
             _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(pk.Id, _socket.Name, pk), LogMessageType.DataParsed)
             Return pk
         End Function
-        Private Sub OnReceivePacket(ByVal packet As ServerPacket)
+        Private Sub OnReceivePacket(packet As ServerPacket)
             Contract.Requires(packet IsNot Nothing)
 
             If packet.Cookie <> _cookie Then
@@ -92,7 +92,7 @@ Namespace Warden
             End Select
         End Sub
 
-        Private Sub WritePacket(ByVal packet As ClientPacket)
+        Private Sub WritePacket(packet As ClientPacket)
             Contract.Requires(packet IsNot Nothing)
 
             Try
@@ -106,13 +106,13 @@ Namespace Warden
                 Throw
             End Try
         End Sub
-        Public Function QueueSendWardenData(ByVal wardenData As IRist(Of Byte)) As Task
+        Public Function QueueSendWardenData(wardenData As IRist(Of Byte)) As Task
             Contract.Requires(wardenData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() WritePacket(ClientPacket.MakeFullServiceHandleWardenPacket(_cookie, wardenData)))
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(Sub() _socket.QueueDisconnect(expected:=True, reason:="Disposed"))
         End Function

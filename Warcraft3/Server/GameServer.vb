@@ -17,10 +17,10 @@ Namespace WC3
         Private ReadOnly _viewGames As New ObservableCollection(Of Tuple(Of GameSet, Game))(outQueue:=outQueue)
         Private ReadOnly _viewPlayers As New ObservableCollection(Of Tuple(Of GameSet, Game, Player))(outQueue:=outQueue)
 
-        Public Event PlayerTalked(ByVal sender As GameServer, ByVal game As Game, ByVal player As Player, ByVal text As String)
-        Public Event PlayerLeft(ByVal sender As GameServer, ByVal game As Game, ByVal gameState As GameState, ByVal player As Player, ByVal reportedResult As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
-        Public Event PlayerSentData(ByVal sever As GameServer, ByVal game As Game, ByVal player As Player, ByVal data As Byte())
-        Public Event PlayerEntered(ByVal sender As GameServer, ByVal game As Game, ByVal player As Player)
+        Public Event PlayerTalked(sender As GameServer, game As Game, player As Player, text As String)
+        Public Event PlayerLeft(sender As GameServer, game As Game, gameState As GameState, player As Player, reportedResult As Protocol.PlayerLeaveReason, reasonDescription As String)
+        Public Event PlayerSentData(sever As GameServer, game As Game, player As Player, data As Byte())
+        Public Event PlayerEntered(sender As GameServer, game As Game, player As Player)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_clock IsNot Nothing)
@@ -34,8 +34,8 @@ Namespace WC3
             Contract.Invariant(outQueue IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal clock As IClock,
-                       Optional ByVal logger As Logger = Nothing)
+        Public Sub New(clock As IClock,
+                       Optional logger As Logger = Nothing)
             Contract.Assume(clock IsNot Nothing)
             Me._logger = If(logger, New Logger)
             Me._clock = clock
@@ -55,7 +55,7 @@ Namespace WC3
         End Property
 
         '''<summary>Handles new connections to the server.</summary>
-        Private Async Sub AcceptSocket(ByVal socket As W3Socket)
+        Private Async Sub AcceptSocket(socket As W3Socket)
             Contract.Assume(socket IsNot Nothing)
 
             _logger.Log("Connection from {0}.".Frmt(socket.Name), LogMessageType.Positive)
@@ -77,12 +77,12 @@ Namespace WC3
                 socket.Disconnect(expected:=False, reason:=ex.Summarize)
             End Try
         End Sub
-        Public Function QueueAcceptSocket(ByVal socket As W3Socket) As Task
+        Public Function QueueAcceptSocket(socket As W3Socket) As Task
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() AcceptSocket(socket))
         End Function
-        Private Sub HandleFirstPacket(ByVal socket As W3Socket, ByVal data As IRist(Of Byte))
+        Private Sub HandleFirstPacket(socket As W3Socket, data As IRist(Of Byte))
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             If data.Count < 4 OrElse data(0) <> Protocol.Packets.PacketPrefix OrElse data(1) <> Protocol.PacketId.Knock Then
@@ -105,7 +105,7 @@ Namespace WC3
         End Sub
 
         '''<summary>Handles connecting players that have sent their Knock packet.</summary>
-        Private Async Sub OnPlayerIntroduction(ByVal knockData As Protocol.KnockData, ByVal socket As W3Socket)
+        Private Async Sub OnPlayerIntroduction(knockData As Protocol.KnockData, socket As W3Socket)
             Contract.Assume(knockData IsNot Nothing)
             Contract.Assume(socket IsNot Nothing)
 
@@ -130,7 +130,7 @@ Namespace WC3
             End Try
         End Sub
 
-        Private Function AddGameSet(ByVal gameSettings As GameSettings) As GameSet
+        Private Function AddGameSet(gameSettings As GameSettings) As GameSet
             Contract.Requires(gameSettings IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameSet)() IsNot Nothing)
 
@@ -172,13 +172,13 @@ Namespace WC3
 
             Return gameSet
         End Function
-        Public Function QueueAddGameSet(ByVal gameSettings As GameSettings) As Task(Of GameSet)
+        Public Function QueueAddGameSet(gameSettings As GameSettings) As Task(Of GameSet)
             Contract.Requires(gameSettings IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AddGameSet(gameSettings))
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(
                 Sub()
@@ -188,46 +188,46 @@ Namespace WC3
                 End Sub)
         End Function
 
-        Private Function AsyncFindPlayer(ByVal username As String) As Task(Of Player)
+        Private Function AsyncFindPlayer(username As String) As Task(Of Player)
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return From futureFindResults In (From entry In _gameSets.Values Select entry.QueueTryFindPlayer(username)).Cache.AsAggregateTask
                    Select (From player In futureFindResults Where player IsNot Nothing).FirstOrDefault
         End Function
-        Public Function QueueFindPlayer(ByVal userName As String) As Task(Of Player)
+        Public Function QueueFindPlayer(userName As String) As Task(Of Player)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncFindPlayer(userName)).Unwrap.AssumeNotNull
         End Function
 
-        Private Function AsyncFindPlayerGame(ByVal username As String) As Task(Of Game)
+        Private Function AsyncFindPlayerGame(username As String) As Task(Of Game)
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
             Return From futureFindResults In (From entry In _gameSets.Values Select entry.QueueTryFindPlayerGame(username)).Cache.AsAggregateTask
                    Select (From game In futureFindResults Where game IsNot Nothing).FirstOrDefault
         End Function
-        Public Function QueueFindPlayerGame(ByVal userName As String) As Task(Of Game)
+        Public Function QueueFindPlayerGame(userName As String) As Task(Of Game)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncFindPlayerGame(userName)).Unwrap.AssumeNotNull
         End Function
 
-        Public Function ObserveGameSets(ByVal adder As Action(Of GameSet),
-                                        ByVal remover As Action(Of GameSet)) As Task(Of IDisposable)
+        Public Function ObserveGameSets(adder As Action(Of GameSet),
+                                        remover As Action(Of GameSet)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _viewGameSets.Observe(adder, remover))
         End Function
 
-        Public Function ObserveActiveGameSets(ByVal adder As Action(Of GameSet),
-                                              ByVal remover As Action(Of GameSet)) As Task(Of IDisposable)
+        Public Function ObserveActiveGameSets(adder As Action(Of GameSet),
+                                              remover As Action(Of GameSet)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _viewActiveGameSets.Observe(adder, remover))
         End Function
 
-        Public Function ObserveGames(ByVal adder As Action(Of GameSet, Game),
-                                     ByVal remover As Action(Of GameSet, Game)) As Task(Of IDisposable)
+        Public Function ObserveGames(adder As Action(Of GameSet, Game),
+                                     remover As Action(Of GameSet, Game)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
@@ -236,8 +236,8 @@ Namespace WC3
                 remover:=Sub(item) remover(item.Item1, item.Item2)))
         End Function
 
-        Public Function ObservePlayers(ByVal adder As Action(Of GameSet, Game, Player),
-                                       ByVal remover As Action(Of GameSet, Game, Player)) As Task(Of IDisposable)
+        Public Function ObservePlayers(adder As Action(Of GameSet, Game, Player),
+                                       remover As Action(Of GameSet, Game, Player)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)

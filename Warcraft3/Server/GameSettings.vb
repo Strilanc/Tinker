@@ -74,29 +74,29 @@
         End Sub
 
         <CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId:="Multi")>
-        Public Sub New(ByVal gameDescription As LocalGameDescription,
-                       ByVal map As Map,
-                       ByVal isAdminGame As Boolean,
-                       ByVal allowDownloads As Boolean,
-                       ByVal allowUpload As Boolean,
-                       ByVal initialInstanceCount As Integer,
-                       ByVal isAutoStarted As Boolean,
-                       ByVal adminPassword As String,
-                       ByVal teamSizes As IRist(Of Integer),
-                       ByVal reservations As IRist(Of InvariantString),
-                       ByVal observerReservations As IRist(Of InvariantString),
-                       ByVal observerCount As Integer,
-                       ByVal usePermanent As Boolean,
-                       ByVal defaultSlotLockState As Slot.LockState,
-                       ByVal autoElevateUserName As InvariantString?,
-                       ByVal shouldGrabMap As Boolean,
-                       ByVal useLoadInGame As Boolean,
-                       ByVal mapMode As String,
-                       ByVal useMultiObs As Boolean,
-                       ByVal greeting As String,
-                       ByVal isPrivate As Boolean,
-                       ByVal shouldRecordReplay As Boolean,
-                       Optional ByVal replayDefaultFileName As String = Nothing)
+        Public Sub New(gameDescription As LocalGameDescription,
+                       map As Map,
+                       isAdminGame As Boolean,
+                       allowDownloads As Boolean,
+                       allowUpload As Boolean,
+                       initialInstanceCount As Integer,
+                       isAutoStarted As Boolean,
+                       adminPassword As String,
+                       teamSizes As IRist(Of Integer),
+                       reservations As IRist(Of InvariantString),
+                       observerReservations As IRist(Of InvariantString),
+                       observerCount As Integer,
+                       usePermanent As Boolean,
+                       defaultSlotLockState As Slot.LockState,
+                       autoElevateUserName As InvariantString?,
+                       shouldGrabMap As Boolean,
+                       useLoadInGame As Boolean,
+                       mapMode As String,
+                       useMultiObs As Boolean,
+                       greeting As String,
+                       isPrivate As Boolean,
+                       shouldRecordReplay As Boolean,
+                       Optional replayDefaultFileName As String = Nothing)
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Requires(adminPassword IsNot Nothing)
@@ -132,11 +132,11 @@
             Me._replayDefaultFileName = replayDefaultFileName
         End Sub
         <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", justification:="INCORRECT WARNING")>
-        Public Shared Function FromArgument(ByVal map As Map,
-                                            ByVal gameDescription As LocalGameDescription,
-                                            ByVal argument As Commands.CommandArgument,
-                                            Optional ByVal isAdminGame As Boolean = False,
-                                            Optional ByVal adminPassword As String = Nothing) As GameSettings
+        Public Shared Function FromArgument(map As Map,
+                                            gameDescription As LocalGameDescription,
+                                            argument As Commands.CommandArgument,
+                                            Optional isAdminGame As Boolean = False,
+                                            Optional adminPassword As String = Nothing) As GameSettings
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
@@ -166,7 +166,7 @@
                                     AutoElevateUserName:=ExtractAutoElevateUserName(gameDescription, argument))
         End Function
 
-        Private Shared Function ExtractGreet(ByVal argument As Commands.CommandArgument) As String
+        Private Shared Function ExtractGreet(argument As Commands.CommandArgument) As String
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             If argument.HasOptionalNamedValue("Greet") Then
@@ -175,7 +175,7 @@
                 Return My.Settings.DefaultGameGreet.AssumeNotNull
             End If
         End Function
-        Private Shared Function ExtractTeamSizes(ByVal argument As Commands.CommandArgument) As IRist(Of Integer)
+        Private Shared Function ExtractTeamSizes(argument As Commands.CommandArgument) As IRist(Of Integer)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of Integer))() IsNot Nothing)
             Dim teamArg = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
@@ -185,7 +185,7 @@
                 Return MakeRist(Of Integer)()
             End If
         End Function
-        Private Shared Function ExtractObserverCount(ByVal argument As Commands.CommandArgument) As Integer
+        Private Shared Function ExtractObserverCount(argument As Commands.CommandArgument) As Integer
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Integer)() >= 0)
             If argument.HasOptionalNamedValue("obs") Then
@@ -199,7 +199,7 @@
                 Return 0
             End If
         End Function
-        Private Shared Function ExtractObserverReservations(ByVal argument As Commands.CommandArgument) As IRist(Of InvariantString)
+        Private Shared Function ExtractObserverReservations(argument As Commands.CommandArgument) As IRist(Of InvariantString)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of InvariantString))() IsNot Nothing)
             If argument.HasOptionalNamedValue("obs") AndAlso Not Integer.TryParse(argument.OptionalNamedValue("obs"), NumberStyles.None, CultureInfo.InvariantCulture, 0) Then
@@ -210,8 +210,8 @@
                 Return MakeRist(Of InvariantString)()
             End If
         End Function
-        Private Shared Function ExtractReservations(ByVal argument As Commands.CommandArgument,
-                                                    ByVal gameDescription As GameDescription) As IRist(Of InvariantString)
+        Private Shared Function ExtractReservations(argument As Commands.CommandArgument,
+                                                    gameDescription As GameDescription) As IRist(Of InvariantString)
             Contract.Requires(argument IsNot Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of InvariantString))() IsNot Nothing)
@@ -225,7 +225,7 @@
             Next username
             Return result.AsRist()
         End Function
-        Private Shared Function ExtractInitialInstanceCount(ByVal argument As Commands.CommandArgument) As Integer
+        Private Shared Function ExtractInitialInstanceCount(argument As Commands.CommandArgument) As Integer
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Integer)() >= 0)
             If argument.HasOptionalNamedValue("Inst") Then
@@ -238,8 +238,8 @@
                 Return 1
             End If
         End Function
-        Private Shared Function ExtractAutoElevateUserName(ByVal gameDescription As GameDescription,
-                                                           ByVal argument As Commands.CommandArgument) As InvariantString
+        Private Shared Function ExtractAutoElevateUserName(gameDescription As GameDescription,
+                                                           argument As Commands.CommandArgument) As InvariantString
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             If argument.HasOptionalSwitch("Admin") OrElse argument.HasOptionalSwitch("a") Then
@@ -389,7 +389,7 @@
         End Property
 #End Region
 
-        Public Function EncodedHCLMode(ByVal handicaps As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
+        Public Function EncodedHCLMode(handicaps As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
             Contract.Requires(handicaps IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
 
