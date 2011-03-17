@@ -229,7 +229,7 @@ Namespace Bnet.Protocol
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As PacketId, ByVal jar As ISimpleJar)
+            Friend Sub New(id As PacketId, jar As ISimpleJar)
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -256,7 +256,7 @@ Namespace Bnet.Protocol
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As PacketId, ByVal jar As IJar(Of T))
+            Friend Sub New(id As PacketId, jar As IJar(Of T))
                 MyBase.New(id, jar)
                 Contract.Requires(jar IsNot Nothing)
                 Me._jar = jar
@@ -270,19 +270,19 @@ Namespace Bnet.Protocol
             End Property
         End Class
 
-        Private Shared Function Define(ByVal id As PacketId) As Definition(Of NoValue)
+        Private Shared Function Define(id As PacketId) As Definition(Of NoValue)
             Contract.Ensures(Contract.Result(Of Definition(Of NoValue))() IsNot Nothing)
             Return Define(id, New EmptyJar)
         End Function
-        Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IJar(Of T)) As Definition(Of T)
+        Private Shared Function Define(Of T)(id As PacketId, jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
             Return New Definition(Of T)(id, jar)
         End Function
-        Private Shared Function Define(ByVal id As PacketId,
-                                       ByVal jar1 As ISimpleNamedJar,
-                                       ByVal jar2 As ISimpleNamedJar,
-                                       ByVal ParamArray jars() As ISimpleNamedJar) As Definition(Of NamedValueMap)
+        Private Shared Function Define(id As PacketId,
+                                       jar1 As ISimpleNamedJar,
+                                       jar2 As ISimpleNamedJar,
+                                       ParamArray jars() As ISimpleNamedJar) As Definition(Of NamedValueMap)
             Contract.Requires(jar1 IsNot Nothing)
             Contract.Requires(jar2 IsNot Nothing)
             Contract.Requires(jars IsNot Nothing)

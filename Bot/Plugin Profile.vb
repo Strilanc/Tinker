@@ -9,13 +9,13 @@ Namespace Bot
             Contract.Invariant(argument IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString, ByVal location As InvariantString, ByVal argument As String)
+        Public Sub New(name As InvariantString, location As InvariantString, argument As String)
             Contract.Requires(argument IsNot Nothing)
             Me.name = name
             Me.location = location
             Me.argument = argument
         End Sub
-        Public Sub New(ByVal reader As IO.BinaryReader)
+        Public Sub New(reader As IO.BinaryReader)
             Contract.Requires(reader IsNot Nothing)
             Dim ver = reader.ReadUInt32()
             If ver > FormatVersion Then Throw New IO.InvalidDataException("Saved PlayerRecord has an unrecognized format version.")
@@ -23,7 +23,7 @@ Namespace Bot
             location = reader.ReadString()
             argument = reader.ReadString()
         End Sub
-        Public Sub Save(ByVal writer As IO.BinaryWriter)
+        Public Sub Save(writer As IO.BinaryWriter)
             Contract.Requires(writer IsNot Nothing)
             writer.Write(CUInt(FormatVersion))
             writer.Write(name)

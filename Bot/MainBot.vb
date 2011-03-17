@@ -34,7 +34,7 @@ Namespace Bot
             Contract.Invariant(_components IsNot Nothing)
         End Sub
 
-        Public Sub New(Optional ByVal logger As Logger = Nothing)
+        Public Sub New(Optional logger As Logger = Nothing)
             Me._logger = If(logger, New Logger)
         End Sub
 
@@ -63,7 +63,7 @@ Namespace Bot
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             _components.Dispose()
             Return _components.DisposalTask
@@ -72,7 +72,7 @@ Namespace Bot
 
     Public Module BotExtensions
         <Extension()>
-        Public Async Function InvokeCommand(ByVal this As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Public Async Function InvokeCommand(this As MainBot, user As BotUser, argument As String) As Task(Of String)
             Contract.Assume(this IsNot Nothing)
             Contract.Assume(argument IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing) 'Incompability between AsyncCTP and code contracts
@@ -80,16 +80,16 @@ Namespace Bot
             Return Await components.Single.InvokeCommand(user, argument)
         End Function
         <Extension()>
-        Public Function QueueGetOrConstructGameServer(ByVal this As MainBot) As Task(Of WC3.GameServerManager)
+        Public Function QueueGetOrConstructGameServer(this As MainBot) As Task(Of WC3.GameServerManager)
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of WC3.GameServerManager))() IsNot Nothing)
             Return this.Components.QueueFindOrElseConstructComponent(Of WC3.GameServerManager)(
                 factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer(New SystemClock()), this))
         End Function
         <Extension()>
-        Public Async Function ObserveGameSets(ByVal this As MainBot,
-                                              ByVal adder As Action(Of WC3.GameServer, WC3.GameSet),
-                                              ByVal remover As Action(Of WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
+        Public Async Function ObserveGameSets(this As MainBot,
+                                              adder As Action(Of WC3.GameServer, WC3.GameSet),
+                                              remover As Action(Of WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
             Contract.Assume(this IsNot Nothing)
             Contract.Assume(adder IsNot Nothing)
             Contract.Assume(remover IsNot Nothing)
@@ -126,7 +126,7 @@ Namespace Bot
         ''' Removes the commands when the result is disposed.
         ''' </summary>
         <Extension()>
-        Public Function IncludeCommandInAllComponentsOfType(Of T As IBotComponent)(ByVal this As MainBot, ByVal command As ICommand(Of T)) As IDisposable
+        Public Function IncludeCommandInAllComponentsOfType(Of T As IBotComponent)(this As MainBot, command As ICommand(Of T)) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(command IsNot Nothing)
             Dim weakCommand = command.ProjectedFrom(Function(x As IBotComponent) DirectCast(x, T))
@@ -156,7 +156,7 @@ Namespace Bot
         End Function
 
         <Extension()>
-        Public Function IncludeCommandsInAllComponentsOfType(Of T As IBotComponent)(ByVal this As MainBot, ByVal commands As IEnumerable(Of ICommand(Of T))) As IDisposable
+        Public Function IncludeCommandsInAllComponentsOfType(Of T As IBotComponent)(this As MainBot, commands As IEnumerable(Of ICommand(Of T))) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(commands IsNot Nothing)
             Dim weakCommands = (From command In commands
@@ -188,7 +188,7 @@ Namespace Bot
         End Function
 
         <Extension()>
-        Public Function IncludeBasicBotCommands(ByVal this As MainBot) As IDisposable
+        Public Function IncludeBasicBotCommands(this As MainBot) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As MainBotManager) x.Bot
@@ -213,7 +213,7 @@ Namespace Bot
             )
         End Function
         <Extension()>
-        Public Function IncludeBasicBnetClientCommands(ByVal this As MainBot) As IDisposable
+        Public Function IncludeBasicBnetClientCommands(this As MainBot) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As Bnet.ClientComponent) x.Client
@@ -247,7 +247,7 @@ Namespace Bot
             )
         End Function
         <Extension()>
-        Public Function IncludeBasicLanAdvertiserCommands(ByVal this As MainBot) As IDisposable
+        Public Function IncludeBasicLanAdvertiserCommands(this As MainBot) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As Lan.UDPAdvertiserComponent) x.Advertiser
@@ -265,7 +265,7 @@ Namespace Bot
             )
         End Function
         <Extension()>
-        Public Function IncludeBasicGameServerCommands(ByVal this As MainBot) As IDisposable
+        Public Function IncludeBasicGameServerCommands(this As MainBot) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return this.IncludeCommandsInAllComponentsOfType(Of WC3.GameServerManager)(
@@ -275,7 +275,7 @@ Namespace Bot
             )
         End Function
         <Extension()>
-        Public Function IncludeBasicCKLServerCommands(ByVal this As MainBot) As IDisposable
+        Public Function IncludeBasicCKLServerCommands(this As MainBot) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As CKL.ServerManager) x.Server

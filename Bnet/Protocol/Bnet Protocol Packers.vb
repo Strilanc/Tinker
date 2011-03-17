@@ -16,8 +16,8 @@
 Namespace Bnet.Protocol
     Public Module Packers
         <Pure()>
-        Public Function MakeAuthenticationBegin(ByVal majorVersion As UInteger,
-                                                ByVal localIPAddress As Net.IPAddress) As Packet
+        Public Function MakeAuthenticationBegin(majorVersion As UInteger,
+                                                localIPAddress As Net.IPAddress) As Packet
             Contract.Requires(localIPAddress IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.ProgramAuthenticationBegin, New Dictionary(Of InvariantString, Object) From {
@@ -36,12 +36,12 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeAuthenticationFinish(ByVal version As IRist(Of Byte),
-                                                 ByVal revisionCheckResponse As UInt32,
-                                                 ByVal clientCDKeySalt As UInt32,
-                                                 ByVal cdKeyOwner As String,
-                                                 ByVal exeInformation As String,
-                                                 ByVal productAuthentication As ProductCredentialPair) As Packet
+        Public Function MakeAuthenticationFinish(version As IRist(Of Byte),
+                                                 revisionCheckResponse As UInt32,
+                                                 clientCDKeySalt As UInt32,
+                                                 cdKeyOwner As String,
+                                                 exeInformation As String,
+                                                 productAuthentication As ProductCredentialPair) As Packet
             Contract.Requires(version IsNot Nothing)
             Contract.Requires(cdKeyOwner IsNot Nothing)
             Contract.Requires(exeInformation IsNot Nothing)
@@ -62,8 +62,8 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeGetFileTime(ByVal fileName As InvariantString,
-                                        ByVal requestId As UInt32) As Packet
+        Public Function MakeGetFileTime(fileName As InvariantString,
+                                        requestId As UInt32) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.GetFileTime, New Dictionary(Of InvariantString, Object) From {
                     {"request id", requestId},
@@ -73,7 +73,7 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeAccountLogOnBegin(ByVal credentials As ClientAuthenticator) As Packet
+        Public Function MakeAccountLogOnBegin(credentials As ClientAuthenticator) As Packet
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.UserAuthenticationBegin, New Dictionary(Of InvariantString, Object) From {
@@ -83,7 +83,7 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeAccountLogOnFinish(ByVal clientPasswordProof As IRist(Of Byte)) As Packet
+        Public Function MakeAccountLogOnFinish(clientPasswordProof As IRist(Of Byte)) As Packet
             Contract.Requires(clientPasswordProof IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.UserAuthenticationFinish, clientPasswordProof)
@@ -99,14 +99,14 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeNetGamePort(ByVal port As UInt16) As Packet
+        Public Function MakeNetGamePort(port As UInt16) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.NetGamePort, port)
         End Function
 
         <Pure()>
-        Public Function MakeQueryGamesList(Optional ByVal specificGameName As String = "",
-                                           Optional ByVal listCount As Integer = 20) As Packet
+        Public Function MakeQueryGamesList(Optional specificGameName As String = "",
+                                           Optional listCount As Integer = 20) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.QueryGamesList, New Dictionary(Of InvariantString, Object) From {
                     {"filter", WC3.Protocol.GameTypes.MaskFilterable},
@@ -119,8 +119,8 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeJoinChannel(ByVal joinType As JoinChannelType,
-                                        ByVal channel As InvariantString) As Packet
+        Public Function MakeJoinChannel(joinType As JoinChannelType,
+                                        channel As InvariantString) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Dim vals As New Dictionary(Of InvariantString, Object)
             Return Packet.FromValue(Packets.ClientToServer.JoinChannel, New Dictionary(Of InvariantString, Object) From {
@@ -129,7 +129,7 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeCreateGame3(ByVal game As WC3.GameDescription) As Packet
+        Public Function MakeCreateGame3(game As WC3.GameDescription) As Packet
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.CreateGame3, New Dictionary(Of InvariantString, Object) From {
@@ -152,7 +152,7 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeChatCommand(ByVal text As String) As Packet
+        Public Function MakeChatCommand(text As String) As Packet
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             If text.Length > Packets.ClientToServer.MaxChatCommandTextLength Then
@@ -162,13 +162,13 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakePing(ByVal salt As UInteger) As Packet
+        Public Function MakePing(salt As UInteger) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.Ping, salt)
         End Function
 
         <Pure()>
-        Public Function MakeWarden(ByVal encryptedData As IRist(Of Byte)) As Packet
+        Public Function MakeWarden(encryptedData As IRist(Of Byte)) As Packet
             Contract.Requires(encryptedData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.Warden, encryptedData)

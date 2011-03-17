@@ -10,7 +10,7 @@ Namespace Bnet.Protocol
                     New IPAddressJar().Named("ip"),
                     New DataJar().Fixed(exactDataCount:=8).Named("unknown"))
 
-        Public Overrides Function Pack(ByVal value As Net.IPEndPoint) As IRist(Of Byte)
+        Public Overrides Function Pack(value As Net.IPEndPoint) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
             Dim addrBytes = value.Address.AssumeNotNull().GetAddressBytes()
             Dim vals = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
@@ -21,14 +21,14 @@ Namespace Bnet.Protocol
             Return DataJar.Pack(vals)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Net.IPEndPoint)
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of Net.IPEndPoint)
             Dim parsed = DataJar.Parse(data)
             Dim address = parsed.Value.ItemAs(Of Net.IPAddress)("ip")
             Dim port = parsed.Value.ItemAs(Of UInt16)("port")
             Return parsed.WithValue(address.WithPort(port))
         End Function
 
-        Public Overrides Function Parse(ByVal text As String) As Net.IPEndPoint
+        Public Overrides Function Parse(text As String) As Net.IPEndPoint
             Try
                 Dim words = text.Split(":"c)
                 If words.Length <> 2 Then Throw New ArgumentException("Expected address:port format.", "text")

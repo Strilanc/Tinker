@@ -9,8 +9,8 @@ Namespace Bot
             Contract.Invariant(_pluginProfiles IsNot Nothing)
         End Sub
 
-        Public Sub UpdateProfiles(ByVal clientProfiles As IEnumerable(Of Bot.ClientProfile),
-                                  ByVal pluginProfiles As IEnumerable(Of Bot.PluginProfile))
+        Public Sub UpdateProfiles(clientProfiles As IEnumerable(Of Bot.ClientProfile),
+                                  pluginProfiles As IEnumerable(Of Bot.PluginProfile))
             Contract.Requires(clientProfiles IsNot Nothing)
             Contract.Requires(pluginProfiles IsNot Nothing)
             SyncLock lock
@@ -38,7 +38,7 @@ Namespace Bot
         Private Const FormatVersion As UInteger = 0
         Private Const FormatMinReadCompatibleVersion As UInteger = 0
         Private Const FormatMinWriteCompatibleVersion As UInteger = 0
-        Public Sub WriteTo(ByVal writer As IO.BinaryWriter)
+        Public Sub WriteTo(writer As IO.BinaryWriter)
             Contract.Requires(writer IsNot Nothing)
 
             SyncLock lock
@@ -60,7 +60,7 @@ Namespace Bot
                 Next profile
             End SyncLock
         End Sub
-        Public Sub ReadFrom(ByVal reader As IO.BinaryReader)
+        Public Sub ReadFrom(reader As IO.BinaryReader)
             Contract.Requires(reader IsNot Nothing)
 
             SyncLock lock

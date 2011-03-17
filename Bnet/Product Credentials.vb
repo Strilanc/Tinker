@@ -21,10 +21,10 @@
             Contract.Invariant(_proof.Count = 20)
         End Sub
 
-        Public Sub New(ByVal length As UInt32,
-                       ByVal product As ProductType,
-                       ByVal publicKey As UInteger,
-                       ByVal proof As IRist(Of Byte))
+        Public Sub New(length As UInt32,
+                       product As ProductType,
+                       publicKey As UInteger,
+                       proof As IRist(Of Byte))
             Contract.Requires(proof IsNot Nothing)
             Contract.Requires(proof.Count = 20)
             Me._product = product
@@ -63,10 +63,10 @@
         Public Overrides Function GetHashCode() As Integer
             Return _publicKey.GetHashCode()
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, ProductCredentials))
         End Function
-        Public Overloads Function Equals(ByVal other As ProductCredentials) As Boolean Implements IEquatable(Of ProductCredentials).Equals
+        Public Overloads Function Equals(other As ProductCredentials) As Boolean Implements IEquatable(Of ProductCredentials).Equals
             If other Is Nothing Then Return False
             If other.Length <> Me.Length Then Return False
             If other.Product <> Me.Product Then Return False
@@ -94,8 +94,8 @@
             Contract.Invariant(_authenticationTFT.Product = Bnet.ProductType.Warcraft3TFT)
         End Sub
 
-        Public Sub New(ByVal authenticationROC As Bnet.ProductCredentials,
-                       ByVal authenticationTFT As Bnet.ProductCredentials)
+        Public Sub New(authenticationROC As Bnet.ProductCredentials,
+                       authenticationTFT As Bnet.ProductCredentials)
             Contract.Requires(authenticationROC IsNot Nothing)
             Contract.Requires(authenticationTFT IsNot Nothing)
             Contract.Requires(authenticationROC.Product = Bnet.ProductType.Warcraft3ROC)
@@ -121,13 +121,13 @@
     '''<summary>Computes credential pairs used for answering a challenge to prove ownership of a product.</summary>
     <ContractClass(GetType(IProductAuthenticator.ContractClass))>
     Public Interface IProductAuthenticator
-        Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte), ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair)
+        Function AsyncAuthenticate(clientSalt As IEnumerable(Of Byte), serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair)
 
         <ContractClassFor(GetType(IProductAuthenticator))>
         MustInherit Class ContractClass
             Implements IProductAuthenticator
-            Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
-                                              ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+            Public Function AsyncAuthenticate(clientSalt As IEnumerable(Of Byte),
+                                              serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
                 Contract.Requires(clientSalt IsNot Nothing)
                 Contract.Requires(serverSalt IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Task(Of ProductCredentialPair))() IsNot Nothing)
@@ -147,7 +147,7 @@
             Contract.Invariant(_tftKey IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal cdKeyROC As String, ByVal cdKeyTFT As String)
+        Public Sub New(cdKeyROC As String, cdKeyTFT As String)
             Contract.Requires(cdKeyROC IsNot Nothing)
             Contract.Requires(cdKeyTFT IsNot Nothing)
             If cdKeyROC.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("Invalid ROC cd key.")
@@ -156,8 +156,8 @@
             Me._tftKey = cdKeyTFT
         End Sub
 
-        Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
-                                          ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+        Public Function AsyncAuthenticate(clientSalt As IEnumerable(Of Byte),
+                                          serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
             Dim rocCreds = _rocKey.ToWC3CDKeyCredentials(clientSalt, serverSalt)
             Dim tftCreds = _tftKey.ToWC3CDKeyCredentials(clientSalt, serverSalt)
             Contract.Assume(rocCreds.Product = ProductType.Warcraft3ROC)
@@ -220,7 +220,7 @@
         '''<remarks>This transformation is reversible if and only if the factor is coprime to the number of items.</remarks>
         <Extension()> <Pure()>
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of IRist(Of T))().Count = items.Count")>
-        Private Function Permute(Of T)(ByVal items As IRist(Of T), ByVal offset As Integer, ByVal factor As Integer) As IRist(Of T)
+        Private Function Permute(Of T)(items As IRist(Of T), offset As Integer, factor As Integer) As IRist(Of T)
             Contract.Requires(items IsNot Nothing)
             Contract.Requires(offset >= 0)
             Contract.Requires(factor > 0)
@@ -231,9 +231,9 @@
 
         '''<summary>Generates product credentials using a wc3 cd key.</summary>
         <Extension()> <Pure()>
-        Public Function ToWC3CDKeyCredentials(ByVal key As String,
-                                              ByVal clientSalt As IEnumerable(Of Byte),
-                                              ByVal serverSalt As IEnumerable(Of Byte)) As ProductCredentials
+        Public Function ToWC3CDKeyCredentials(key As String,
+                                              clientSalt As IEnumerable(Of Byte),
+                                              serverSalt As IEnumerable(Of Byte)) As ProductCredentials
             Contract.Requires(key IsNot Nothing)
             Contract.Requires(clientSalt IsNot Nothing)
             Contract.Requires(serverSalt IsNot Nothing)

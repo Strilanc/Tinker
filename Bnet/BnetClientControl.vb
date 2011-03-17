@@ -17,7 +17,7 @@ Namespace Bnet
             Contract.Invariant(_hooks IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal component As Bnet.ClientComponent)
+        Public Sub New(component As Bnet.ClientComponent)
             Contract.Assert(component IsNot Nothing)
             InitializeComponent()
 
@@ -44,13 +44,13 @@ Namespace Bnet
         Public Function QueueDispose() As Task
             Return inQueue.QueueAction(Sub() Me.Dispose())
         End Function
-        Private Sub BnetClientControl_Disposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
+        Private Sub BnetClientControl_Disposed(sender As Object, e As System.EventArgs) Handles Me.Disposed
             For Each hook In _hooks
                 hook.Dispose()
             Next hook
         End Sub
 
-        Private Sub OnClientReceivedQueryGamesList(ByVal sender As Bnet.Client, ByVal value As QueryGamesListResponse)
+        Private Sub OnClientReceivedQueryGamesList(sender As Bnet.Client, value As QueryGamesListResponse)
             If sender IsNot _client Then Return
             While lstState.Items.Count > numPrimaryStates
                 lstState.Items.RemoveAt(lstState.Items.Count - 1)
@@ -65,7 +65,7 @@ Namespace Bnet
                 lstState.Items.Add(game.GameStats.AdvertisedPath.ToString.Split("\"c).Last)
             Next game
         End Sub
-        Private Sub OnClientReceivedChatEvent(ByVal sender As Bnet.Client, ByVal vals As NamedValueMap)
+        Private Sub OnClientReceivedChatEvent(sender As Bnet.Client, vals As NamedValueMap)
             If IsDisposed Then Return
             If sender IsNot Me._client Then Return
             Dim id = vals.ItemAs(Of ChatEventId)("event id")
@@ -115,7 +115,7 @@ Namespace Bnet
             End Select
         End Sub
 
-        Private Sub txtTalk_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtTalk.KeyDown
+        Private Sub txtTalk_KeyDown(sender As Object, e As System.Windows.Forms.KeyEventArgs) Handles txtTalk.KeyDown
             If e.KeyCode <> Keys.Enter Then Return
             If e.Shift Then Return
             If txtTalk.Text = "" Then Return
@@ -134,9 +134,9 @@ Namespace Bnet
             )
         End Sub
 
-        Private Sub OnClientStateChanged(ByVal sender As Bnet.Client,
-                                         ByVal oldState As Bnet.ClientState,
-                                         ByVal newState As Bnet.ClientState)
+        Private Sub OnClientStateChanged(sender As Bnet.Client,
+                                         oldState As Bnet.ClientState,
+                                         newState As Bnet.ClientState)
             Contract.Requires(sender IsNot Nothing)
 
             If IsDisposed Then Return
@@ -156,10 +156,10 @@ Namespace Bnet
                     lstState.BackColor = SystemColors.ButtonFace
             End Select
         End Sub
-        Private Sub OnClientAdvertisedGame(ByVal sender As Bnet.Client,
-                                           ByVal gameDescription As WC3.LocalGameDescription,
-                                           ByVal [private] As Boolean,
-                                           ByVal refreshed As Boolean)
+        Private Sub OnClientAdvertisedGame(sender As Bnet.Client,
+                                           gameDescription As WC3.LocalGameDescription,
+                                           [private] As Boolean,
+                                           refreshed As Boolean)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
 
@@ -179,7 +179,7 @@ Namespace Bnet
             numPrimaryStates = lstState.Items.Count
         End Sub
 
-        Private Sub comClient_IssuedCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comClient.IssuedCommand
+        Private Sub comClient_IssuedCommand(sender As CommandControl, argument As String) Handles comClient.IssuedCommand
             Contract.Requires(argument IsNot Nothing)
             Tinker.Components.UIInvokeCommand(_component, argument)
         End Sub

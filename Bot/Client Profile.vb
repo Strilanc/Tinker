@@ -22,10 +22,10 @@ Namespace Bot
             Contract.Invariant(_cklServerAddress IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString)
+        Public Sub New(name As InvariantString)
             Me.name = name
         End Sub
-        Public Sub New(ByVal reader As IO.BinaryReader)
+        Public Sub New(reader As IO.BinaryReader)
             Contract.Requires(reader IsNot Nothing)
             Load(reader)
         End Sub
@@ -35,7 +35,7 @@ Namespace Bot
                 Contract.Ensures(Contract.Result(Of BotUserSet)() IsNot Nothing)
                 Return Me._users
             End Get
-            Set(ByVal value As BotUserSet)
+            Set(value As BotUserSet)
                 Contract.Requires(value IsNot Nothing)
                 Me._users = value
             End Set
@@ -45,13 +45,13 @@ Namespace Bot
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return Me._cklServerAddress
             End Get
-            Set(ByVal value As String)
+            Set(value As String)
                 Contract.Requires(value IsNot Nothing)
                 Me._cklServerAddress = value
             End Set
         End Property
 
-        Public Sub Load(ByVal reader As IO.BinaryReader)
+        Public Sub Load(reader As IO.BinaryReader)
             Contract.Requires(reader IsNot Nothing)
             Dim version = reader.ReadUInt16()
             name = reader.ReadString()
@@ -72,7 +72,7 @@ Namespace Bot
             End If
         End Sub
 
-        Public Sub Save(ByVal bw As IO.BinaryWriter)
+        Public Sub Save(bw As IO.BinaryWriter)
             Contract.Requires(bw IsNot Nothing)
             bw.Write(version)
             bw.Write(name)
@@ -93,7 +93,7 @@ Namespace Bot
             End If
         End Sub
 
-        Public Function Clone(Optional ByVal newName As InvariantString? = Nothing) As ClientProfile
+        Public Function Clone(Optional newName As InvariantString? = Nothing) As ClientProfile
             Dim newProfile = New ClientProfile("Default")
             With newProfile
                 .users = users.Clone()

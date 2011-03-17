@@ -48,7 +48,7 @@ Namespace Bnet
 
         '''<summary>Selects a seed based on the index string.</summary>
         <Pure()>
-        Private Function ParseChallengeSeed(ByVal challengeSeed As String) As UInt32
+        Private Function ParseChallengeSeed(challengeSeed As String) As UInt32
             Contract.Requires(challengeSeed IsNot Nothing)
 
             Dim invIndexString = challengeSeed.ToInvariant
@@ -67,7 +67,7 @@ Namespace Bnet
         ''' Any remaining space in the buffer is filled with generated data.
         ''' Returns false if there was no data in the stream.
         ''' </summary>
-        Private Function PaddedRead(ByVal stream As IO.Stream, ByVal buffer As Byte()) As Boolean
+        Private Function PaddedRead(stream As IO.Stream, buffer As Byte()) As Boolean
             Contract.Requires(stream IsNot Nothing)
             Contract.Requires(buffer IsNot Nothing)
             Dim n = stream.Read(buffer, 0, buffer.Length)
@@ -79,9 +79,9 @@ Namespace Bnet
         End Function
 
         '''<summary>Combines two expressions into a binary expression, using the given operator character to determine the operation.</summary>
-        Private Function ParseOperation(ByVal varLeft As Expression,
-                                        ByVal [operator] As Char,
-                                        ByVal varRight As Expression) As BinaryExpression
+        Private Function ParseOperation(varLeft As Expression,
+                                        [operator] As Char,
+                                        varRight As Expression) As BinaryExpression
             Contract.Requires(varLeft IsNot Nothing)
             Contract.Requires(varRight IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BinaryExpression)() IsNot Nothing)
@@ -97,8 +97,8 @@ Namespace Bnet
             End Select
         End Function
         '''<summary>Transforms a sequence of simple text statements, such as "A=A+B", into a block of binary expressions.</summary>
-        Private Function ParseStatements(ByVal statements As IEnumerable(Of String),
-                                         ByVal locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
+        Private Function ParseStatements(statements As IEnumerable(Of String),
+                                         locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
             Contract.Requires(statements IsNot Nothing)
             Contract.Requires(locals IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BlockExpression)() IsNot Nothing)
@@ -111,8 +111,8 @@ Namespace Bnet
                                     Select Expression.Assign(varResult, operation))
         End Function
         '''<summary>Transforms a sequence of simple text declarations, such as "A=52", into a block of assignment expressions.</summary>
-        Private Function ParseDeclarations(ByVal declarations As IEnumerable(Of String),
-                                           ByVal locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
+        Private Function ParseDeclarations(declarations As IEnumerable(Of String),
+                                           locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
             Contract.Requires(declarations IsNot Nothing)
             Contract.Requires(locals IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BlockExpression)() IsNot Nothing)
@@ -126,8 +126,8 @@ Namespace Bnet
         ''' Extracts all variable names from simple text declarations and statements.
         ''' Also includes some default important variables.
         ''' </summary>
-        Private Function ParseVariables(ByVal declarations As IEnumerable(Of String),
-                                        ByVal statements As IEnumerable(Of String)) As Dictionary(Of Char, ParameterExpression)
+        Private Function ParseVariables(declarations As IEnumerable(Of String),
+                                        statements As IEnumerable(Of String)) As Dictionary(Of Char, ParameterExpression)
             Contract.Requires(declarations IsNot Nothing)
             Contract.Requires(statements IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ParameterExpression))() IsNot Nothing)
@@ -146,8 +146,8 @@ Namespace Bnet
 
         '''<summary>Generates a dynamically compiled function specialized to hashing data using the given instructions.</summary>
         <ContractVerification(False)>
-        Private Function CompileInstructions(ByVal challengeInstructions As String,
-                                             ByVal challengeSeed As String) As Func(Of IEnumerator(Of IO.Stream), UInt32)
+        Private Function CompileInstructions(challengeInstructions As String,
+                                             challengeSeed As String) As Func(Of IEnumerator(Of IO.Stream), UInt32)
             Contract.Requires(challengeInstructions IsNot Nothing)
             Contract.Requires(challengeSeed IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Func(Of IEnumerator(Of IO.Stream), UInt32))() IsNot Nothing)
@@ -221,9 +221,9 @@ Namespace Bnet
         ''' <param name="challengeSeed">Seeds the initial hash state.</param>
         ''' <param name="challengeInstructions">Specifies initial hash state as well how the hash state is updated.</param>
         ''' <remarks>Example challenge: A=443747131 B=3328179921 C=1040998290 4 A=A^S B=B-C C=C^A A=A+B</remarks>
-        Public Function GenerateRevisionCheck(ByVal folder As String,
-                                              ByVal challengeSeed As String,
-                                              ByVal challengeInstructions As String) As UInteger
+        Public Function GenerateRevisionCheck(folder As String,
+                                              challengeSeed As String,
+                                              challengeInstructions As String) As UInteger
             Contract.Requires(folder IsNot Nothing)
             Contract.Requires(challengeSeed IsNot Nothing)
             Contract.Requires(challengeInstructions IsNot Nothing)

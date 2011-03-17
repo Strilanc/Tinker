@@ -11,7 +11,7 @@ Namespace Bnet.Protocol
             Contract.Invariant(_games IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal result As QueryGameResponse, ByVal games As IRist(Of WC3.RemoteGameDescription))
+        Public Sub New(result As QueryGameResponse, games As IRist(Of WC3.RemoteGameDescription))
             Contract.Requires(games IsNot Nothing)
             Me._games = games
             Me._result = result
@@ -29,13 +29,13 @@ Namespace Bnet.Protocol
             End Get
         End Property
 
-        Public Overloads Function Equals(ByVal other As QueryGamesListResponse) As Boolean Implements IEquatable(Of QueryGamesListResponse).Equals
+        Public Overloads Function Equals(other As QueryGamesListResponse) As Boolean Implements IEquatable(Of QueryGamesListResponse).Equals
             If other Is Nothing Then Return False
             If Me.Result <> other.Result Then Return False
             If Not Me.Games.SequenceEqual(other.Games) Then Return False
             Return True
         End Function
-        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Public Overrides Function Equals(obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, QueryGamesListResponse))
         End Function
         Public Overrides Function GetHashCode() As Integer
@@ -64,12 +64,12 @@ Namespace Bnet.Protocol
             Contract.Invariant(_clock IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal clock As IClock)
+        Public Sub New(clock As IClock)
             Contract.Requires(clock IsNot Nothing)
             Me._clock = clock
         End Sub
 
-        Public Overrides Function Pack(ByVal value As QueryGamesListResponse) As IRist(Of Byte)
+        Public Overrides Function Pack(value As QueryGamesListResponse) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
             If value.Games.Count = 0 Then
                 Return 0UI.Bytes().Concat(queryResultJar.Pack(value.Result))
@@ -78,7 +78,7 @@ Namespace Bnet.Protocol
             End If
         End Function
 
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of QueryGamesListResponse)
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of QueryGamesListResponse)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException("A QueryGamesListResponse requires at least 4 bytes.")
             If data.TakeExact(4).ToUInt32 = 0 Then
                 'result of a single-game query
@@ -93,32 +93,32 @@ Namespace Bnet.Protocol
             End If
         End Function
 
-        Public Overrides Function Describe(ByVal value As QueryGamesListResponse) As String
+        Public Overrides Function Describe(value As QueryGamesListResponse) As String
             Contract.Assume(value IsNot Nothing)
             Return MakeListDescription({queryResultJar.Describe(value.Result),
                                         gameDataJar.Describe(PackRawGameDescriptions(value.Games))})
         End Function
-        Public Overrides Function Parse(ByVal text As String) As QueryGamesListResponse
+        Public Overrides Function Parse(text As String) As QueryGamesListResponse
             Dim lines = SplitListDescription(text)
             If lines.LazyCount <> 2 Then Throw New PicklingException("Incorrect number of lines.")
             Return New QueryGamesListResponse(queryResultJar.Parse(lines.First.AssumeNotNull),
                                               ParseRawGameDescriptions(gameDataJar.Parse(lines.Last.AssumeNotNull), _clock))
         End Function
 
-        Private Shared Function PackRawGameDescriptions(ByVal games As IEnumerable(Of WC3.RemoteGameDescription)) As IRist(Of NamedValueMap)
+        Private Shared Function PackRawGameDescriptions(games As IEnumerable(Of WC3.RemoteGameDescription)) As IRist(Of NamedValueMap)
             Contract.Requires(games IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of NamedValueMap))() IsNot Nothing)
             Return (From game In games Select PackRawGameDescription(game)).ToRist
         End Function
-        Private Shared Function ParseRawGameDescriptions(ByVal games As IEnumerable(Of NamedValueMap),
-                                                         ByVal clock As IClock) As IRist(Of WC3.RemoteGameDescription)
+        Private Shared Function ParseRawGameDescriptions(games As IEnumerable(Of NamedValueMap),
+                                                         clock As IClock) As IRist(Of WC3.RemoteGameDescription)
             Contract.Requires(games IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IRist(Of WC3.RemoteGameDescription))() IsNot Nothing)
             Return games.Select(Function(game) ParseRawGameDescription(game, clock)).ToRist()
         End Function
 
-        Private Shared Function PackRawGameDescription(ByVal game As WC3.RemoteGameDescription) As NamedValueMap
+        Private Shared Function PackRawGameDescription(game As WC3.RemoteGameDescription) As NamedValueMap
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
             Return New Dictionary(Of InvariantString, Object) From {
@@ -133,7 +133,7 @@ Namespace Bnet.Protocol
                     {"game id", game.GameId},
                     {"game statstring", game.GameStats}}
         End Function
-        Private Shared Function ParseRawGameDescription(ByVal vals As NamedValueMap, ByVal clock As IClock) As WC3.RemoteGameDescription
+        Private Shared Function ParseRawGameDescription(vals As NamedValueMap, clock As IClock) As WC3.RemoteGameDescription
             Contract.Requires(vals IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of WC3.RemoteGameDescription)() IsNot Nothing)

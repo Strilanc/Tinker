@@ -3,13 +3,13 @@ Public Interface IProductInfoProvider
     ReadOnly Property ExeVersion As IRist(Of Byte)
     ReadOnly Property FileSize As UInt32
     ReadOnly Property LastModifiedTime As Date
-    Function GenerateRevisionCheck(ByVal folder As String, ByVal challengeSeed As String, ByVal challengeInstructions As String) As UInt32
+    Function GenerateRevisionCheck(folder As String, challengeSeed As String, challengeInstructions As String) As UInt32
 
     <ContractClassFor(GetType(IProductInfoProvider))>
     MustInherit Class ContractClass
         Implements IProductInfoProvider
 
-        Public Function GenerateRevisionCheck(ByVal folder As String, ByVal challengeSeed As String, ByVal challengeInstructions As String) As UInteger Implements IProductInfoProvider.GenerateRevisionCheck
+        Public Function GenerateRevisionCheck(folder As String, challengeSeed As String, challengeInstructions As String) As UInteger Implements IProductInfoProvider.GenerateRevisionCheck
             Contract.Requires(folder IsNot Nothing)
             Contract.Requires(challengeSeed IsNot Nothing)
             Contract.Requires(challengeInstructions IsNot Nothing)
@@ -40,7 +40,7 @@ End Interface
 
 Public Module WC3InfoProviderExtensions
     <Extension()> <Pure()>
-    Public Function MajorVersion(ByVal provider As IProductInfoProvider) As Byte
+    Public Function MajorVersion(provider As IProductInfoProvider) As Byte
         Contract.Requires(provider IsNot Nothing)
         Return provider.ExeVersion(2)
     End Function
@@ -60,7 +60,7 @@ Public Class CachedWC3InfoProvider
         End If
     End Sub
 
-    Public Shared Function TryCache(ByVal programFolder As String) As Boolean
+    Public Shared Function TryCache(programFolder As String) As Boolean
         Contract.Requires(programFolder IsNot Nothing)
         Contract.Ensures(Not Contract.Result(Of Boolean)() OrElse _exeVersion IsNot Nothing)
         Contract.Ensures(Not Contract.Result(Of Boolean)() OrElse _exeVersion.Count = 4)
@@ -89,9 +89,9 @@ Public Class CachedWC3InfoProvider
         End Get
     End Property
 
-    Public Function GenerateRevisionCheck(ByVal folder As String,
-                                          ByVal challengeSeed As String,
-                                          ByVal challengeInstructions As String) As UInt32 Implements IProductInfoProvider.GenerateRevisionCheck
+    Public Function GenerateRevisionCheck(folder As String,
+                                          challengeSeed As String,
+                                          challengeInstructions As String) As UInt32 Implements IProductInfoProvider.GenerateRevisionCheck
         Return Bnet.GenerateRevisionCheck(folder, challengeSeed, challengeInstructions)
     End Function
 

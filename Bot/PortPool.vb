@@ -55,7 +55,7 @@
         '''<summary>The port was still in use when removed from the pool, and is still in use now after being re-added.</summary>
         ReturnedWhileInUse
     End Enum
-    Public Function TryAddPort(ByVal port As UShort) As TryAddPortOutcome
+    Public Function TryAddPort(port As UShort) As TryAddPortOutcome
         SyncLock lock
             If PortPool.Contains(port) Then Return TryAddPortOutcome.WasAlreadyInPool
             PortPool.Add(port)
@@ -71,7 +71,7 @@
         '''<summary>The port was in use, but it is 'removed' in that it will not return to the pool when it is released.</summary>
         RemovedButStillInUse
     End Enum
-    Public Function TryRemovePort(ByVal port As UShort) As TryRemovePortOutcome
+    Public Function TryRemovePort(port As UShort) As TryRemovePortOutcome
         SyncLock lock
             If Not PortPool.Contains(port) Then Return TryRemovePortOutcome.WasAlreadyNotInPool
             PortPool.Remove(port)
@@ -101,7 +101,7 @@
             Contract.Invariant(_pool IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal pool As PortPool, ByVal port As UShort)
+        Public Sub New(pool As PortPool, port As UShort)
             Contract.Requires(pool IsNot Nothing)
             Me._pool = pool
             Me._port = port
@@ -114,7 +114,7 @@
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             SyncLock _pool.lock
                 Contract.Assume(_pool.OutPorts.Contains(_port))
                 Contract.Assume(Not _pool.InPorts.Contains(_port))

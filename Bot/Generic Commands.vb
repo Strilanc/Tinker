@@ -13,7 +13,7 @@ Namespace Bot
                            Description:="Recaches external and internal IP addresses",
                            Permissions:="root:5")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Function PerformInvoke(target As T, user As BotUser, argument As CommandArgument) As Task(Of String)
                 CacheIPAddresses()
                 Return "Recaching addresses.".AsTask
             End Function
@@ -28,7 +28,7 @@ Namespace Bot
                            Permissions:="root:2")
             End Sub
             <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-            Protected Overrides Async Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Protected Overrides Async Function PerformInvoke(target As T, user As BotUser, argument As CommandArgument) As Task(Of String)
                 Dim site = argument.NamedValue("site").ToInvariant
                 Dim mapId = argument.RawValue(0)
                 Select Case site
@@ -42,7 +42,7 @@ Namespace Bot
             End Function
 
             <SuppressMessage("Microsoft.Contracts", "Requires-31-203")>
-            Private Shared Function TryExtractDownloadLink(ByVal html As String) As String
+            Private Shared Function TryExtractDownloadLink(html As String) As String
                 Contract.Requires(html IsNot Nothing)
 
                 Dim posDownload = html.IndexAfter("alt=""Download""", 0, StringComparison.OrdinalIgnoreCase)
@@ -61,7 +61,7 @@ Namespace Bot
                 Return "http://epicwar.com{0}".Frmt(html.Substring(posLink.Value, posLinkEnd - posLink.Value))
             End Function
             <SuppressMessage("Microsoft.Contracts", "Requires-31-118")>
-            Private Shared Function TryExtractEpicWarFilename(ByVal html As String) As String
+            Private Shared Function TryExtractEpicWarFilename(html As String) As String
                 Contract.Requires(html IsNot Nothing)
 
                 Dim posName = html.IndexAfter("Download ", 0, StringComparison.OrdinalIgnoreCase)
@@ -74,7 +74,7 @@ Namespace Bot
 
                 Return html.Substring(posName.Value, posNameEnd - posName.Value)
             End Function
-            Private Shared Async Function DownloadEpicWarAsync(ByVal id As String) As Task(Of String)
+            Private Shared Async Function DownloadEpicWarAsync(id As String) As Task(Of String)
                 Using http As New Net.WebClient()
                     Dim html = Await http.DownloadStringTaskAsync("http://epicwar.com/maps/{0}/".Frmt(id))
                     Contract.Assume(html IsNot Nothing)
@@ -121,7 +121,7 @@ Namespace Bot
                            Format:="MapQuery...",
                            Permissions:="games:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+            Protected Overrides Function PerformInvoke(target As T, user As BotUser, argument As String) As Task(Of String)
                 Dim results = FindFilesMatching(fileQuery:="*{0}*".Frmt(argument),
                                                 likeQuery:="*.[wW]3[mxMX]",
                                                 directory:=My.Settings.mapPath.AssumeNotNull,

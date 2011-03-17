@@ -29,9 +29,9 @@ Namespace Bnet
             Contract.Invariant(_commands IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal bot As Bot.MainBot,
-                       ByVal client As Bnet.Client)
+        Public Sub New(name As InvariantString,
+                       bot As Bot.MainBot,
+                       client As Bnet.Client)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
 
@@ -45,10 +45,10 @@ Namespace Bnet
 
             client.ChainEventualDisposalTo(Me)
         End Sub
-        Public Shared Function FromProfile(ByVal clientName As InvariantString,
-                                           ByVal profileName As InvariantString,
-                                           ByVal clock As IClock,
-                                           ByVal bot As Bot.MainBot) As ClientComponent
+        Public Shared Function FromProfile(clientName As InvariantString,
+                                           profileName As InvariantString,
+                                           clock As IClock,
+                                           bot As Bot.MainBot) As ClientComponent
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientComponent)() IsNot Nothing)
@@ -96,7 +96,7 @@ Namespace Bnet
                 Return True
             End Get
         End Property
-        Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
+        Public Function IsArgumentPrivate(argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
             Return _commands.IsArgumentPrivate(argument)
         End Function
         Public ReadOnly Property Control As Control Implements IBotComponent.Control
@@ -105,11 +105,11 @@ Namespace Bnet
             End Get
         End Property
 
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(user As BotUser, argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return _commands.Invoke(Me, user, argument)
         End Function
 
-        Private Async Function OnReceivedChatEvent(ByVal vals As NamedValueMap) As Task
+        Private Async Function OnReceivedChatEvent(vals As NamedValueMap) As Task
             Contract.Assume(vals IsNot Nothing)
 
             Dim id = vals.ItemAs(Of Bnet.Protocol.ChatEventId)("event id")
@@ -154,7 +154,7 @@ Namespace Bnet
         End Function
 
         Private _autoHook As Task(Of IDisposable)
-        Private Async Sub SetAutomatic(ByVal slaved As Boolean)
+        Private Async Sub SetAutomatic(slaved As Boolean)
             'Do nothing if already in the correct state
             If slaved = (_autoHook IsNot Nothing) Then
                 Return
@@ -177,18 +177,18 @@ Namespace Bnet
                 oldHook.Dispose()
             End If
         End Sub
-        Public Function QueueSetAutomatic(ByVal slaved As Boolean) As Task
+        Public Function QueueSetAutomatic(slaved As Boolean) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SetAutomatic(slaved))
         End Function
 
-        Private Property UserGameSet(ByVal user As BotUser) As WC3.GameSet
+        Private Property UserGameSet(user As BotUser) As WC3.GameSet
             Get
                 Contract.Requires(user IsNot Nothing)
                 If Not _userGameSetMap.ContainsKey(user) Then Return Nothing
                 Return _userGameSetMap(user)
             End Get
-            Set(ByVal value As WC3.GameSet)
+            Set(value As WC3.GameSet)
                 Contract.Requires(user IsNot Nothing)
                 If value Is Nothing Then
                     _userGameSetMap.Remove(user)
@@ -197,32 +197,32 @@ Namespace Bnet
                 End If
             End Set
         End Property
-        Public Function QueueTryGetUserGameSet(ByVal user As BotUser) As Task(Of WC3.GameSet)
+        Public Function QueueTryGetUserGameSet(user As BotUser) As Task(Of WC3.GameSet)
             Contract.Requires(user IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of WC3.GameSet))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() UserGameSet(user))
         End Function
-        Public Function QueueSetUserGameSet(ByVal user As BotUser, ByVal gameSet As WC3.GameSet) As Task
+        Public Function QueueSetUserGameSet(user As BotUser, gameSet As WC3.GameSet) As Task
             Contract.Requires(user IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() UserGameSet(user) = gameSet)
         End Function
-        Public Function QueueResetUserGameSet(ByVal user As BotUser, ByVal gameSet As WC3.GameSet) As Task
+        Public Function QueueResetUserGameSet(user As BotUser, gameSet As WC3.GameSet) As Task
             Contract.Requires(user IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() If UserGameSet(user) Is gameSet Then UserGameSet(user) = Nothing)
         End Function
 
-        Private Function IncludeCommandImpl(ByVal command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+        Private Function IncludeCommandImpl(command As ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
             Return IncludeCommand(command)
         End Function
-        Public Function IncludeCommand(ByVal command As ICommand(Of ClientComponent)) As Task(Of IDisposable)
+        Public Function IncludeCommand(command As ICommand(Of ClientComponent)) As Task(Of IDisposable)
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return _commands.IncludeCommand(command).AsTask()
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             _client.Dispose()
             _control.DisposeControlAsync()
             Return _hooks.DisposeAllAsync()

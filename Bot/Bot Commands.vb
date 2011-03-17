@@ -10,7 +10,7 @@ Namespace Bot.Commands
                        Permissions:="root:4")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As String) As Task(Of String)
             Dim profileNames = (From word In argument.Split(" "c) Where word <> "").Cache
             If profileNames.None Then Throw New ArgumentException("No profiles specified.")
 
@@ -33,7 +33,7 @@ Namespace Bot.Commands
             Return "Connected"
         End Function
 
-        Private Async Function CreateLoggedOnClientManagerAsync(ByVal parent As MainBot, ByVal profileName As String) As Task(Of Bnet.ClientComponent)
+        Private Async Function CreateLoggedOnClientManagerAsync(parent As MainBot, profileName As String) As Task(Of Bnet.ClientComponent)
             Contract.Assume(parent IsNot Nothing)
             Contract.Assume(profileName IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task(Of Bnet.ClientComponent))() IsNot Nothing)
@@ -68,7 +68,7 @@ Namespace Bot.Commands
         End Sub
 
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim name = argument.RawValue(0)
             Dim password = argument.NamedValue("password")
             Dim server = Await target.QueueGetOrConstructGameServer()
@@ -86,7 +86,7 @@ Namespace Bot.Commands
                        Permissions:="root:5")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim port = target.PortPool.TryAcquireAnyPort()
             If port Is Nothing Then Throw New OperationFailedException("No available ports in the pool.")
             Dim name = argument.RawValue(0)
@@ -113,7 +113,7 @@ Namespace Bot.Commands
                        Permissions:="root:4")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim profileName = If(argument.TryGetOptionalNamedValue("profile"), "default").ToInvariant
             Dim clientName = argument.RawValue(0).ToInvariant
 
@@ -139,7 +139,7 @@ Namespace Bot.Commands
                        Permissions:="root:4")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim name = argument.RawValue(0)
             Dim remoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
             Dim auto = Not argument.HasOptionalSwitch("manual")
@@ -166,7 +166,7 @@ Namespace Bot.Commands
                        Permissions:="root:5")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             'parse
             Dim args = argument.RawValue(0).Split(":"c)
             If args.Length <> 2 Then Throw New ArgumentException("Expected a component argument like: type:name.")
@@ -187,7 +187,7 @@ Namespace Bot.Commands
                        Description:="Returns a global setting's value {tickperiod, laglimit, commandprefix, gamerate}.",
                        Permissions:="root:1")
         End Sub
-        Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim argSetting = argument.RawValue(0).ToInvariant
 
             Dim settingValue As Object
@@ -214,7 +214,7 @@ Namespace Bot.Commands
                        extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim server = Await target.QueueGetOrConstructGameServer()
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
             Dim name = gameSet.GameSettings.GameDescription.Name
@@ -232,7 +232,7 @@ Namespace Bot.Commands
                        Permissions:="root:1")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim typeFilter = argument.TryGetOptionalNamedValue("type")
             If typeFilter Is Nothing Then
                 Dim components = Await target.Components.QueueGetAllComponents()
@@ -258,7 +258,7 @@ Namespace Bot.Commands
                        Permissions:="root:5")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim profile = (From p In target.Settings.PluginProfiles Where p.name = argument.RawValue(0)).FirstOrDefault
             If profile Is Nothing Then Throw New InvalidOperationException("No such plugin profile.")
             Dim socket = New Plugins.Socket(profile.name, target, profile.location)
@@ -281,7 +281,7 @@ Namespace Bot.Commands
                        Description:="Sets a global setting {tickperiod, laglimit, commandprefix, gamerate}.",
                        Permissions:="root:2")
         End Sub
-        Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overrides Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim argSetting = argument.RawValue(0).ToInvariant
             Dim argValue = argument.RawValue(1)
 
@@ -317,7 +317,7 @@ Namespace Bot.Commands
                        Permissions:="root:3")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-53-89")>
-        Protected Overrides Async Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
+        Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argumentHead As String, argumentRest As String) As Task(Of String)
             'parse
             Dim args = argumentHead.Split(":"c)
             If args.Length <> 2 Then Throw New ArgumentException("Expected a component type:name.")

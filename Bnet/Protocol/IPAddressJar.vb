@@ -4,7 +4,7 @@ Namespace Bnet.Protocol
     Public Class IPAddressJar
         Inherits BaseFixedSizeJar(Of Net.IPAddress)
 
-        Public Overrides Function Pack(ByVal value As Net.IPAddress) As IRist(Of Byte)
+        Public Overrides Function Pack(value As Net.IPAddress) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
             Return value.GetAddressBytes().AsRist()
         End Function
@@ -13,12 +13,12 @@ Namespace Bnet.Protocol
                 Return 4
             End Get
         End Property
-        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Net.IPAddress
+        Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As Net.IPAddress
             Return New Net.IPAddress(data.ToArray)
         End Function
 
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-84")>
-        Public Overrides Function Parse(ByVal text As String) As Net.IPAddress
+        Public Overrides Function Parse(text As String) As Net.IPAddress
             Try
                 Return Net.IPAddress.Parse(text)
             Catch ex As Exception When TypeOf ex Is ArgumentException OrElse

@@ -61,9 +61,9 @@ Namespace Bnet
         ''' <param name="username">The client's username.</param>
         ''' <param name="password">The client's password.</param>
         ''' <param name="privateKey">The privateKey used for authentication.</param>
-        Public Sub New(ByVal userName As String,
-                       ByVal password As String,
-                       ByVal privateKey As BigInteger)
+        Public Sub New(userName As String,
+                       password As String,
+                       privateKey As BigInteger)
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Requires(privateKey > 0)
@@ -79,9 +79,9 @@ Namespace Bnet
         ''' <param name="username">The client's username.</param>
         ''' <param name="password">The client's password.</param>
         ''' <param name="randomNumberGenerator">The random number generator used to create the private key.</param>
-        Public Shared Function GeneratedFrom(ByVal userName As String,
-                                             ByVal password As String,
-                                             ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientAuthenticator
+        Public Shared Function GeneratedFrom(userName As String,
+                                             password As String,
+                                             randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientAuthenticator
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Requires(randomNumberGenerator IsNot Nothing)
@@ -92,8 +92,8 @@ Namespace Bnet
         ''' <summary>Creates client credentials for the given username and password, with a public/private key pair generated using a new Cryptograph.RNGCryptoServiceProvider.</summary>
         ''' <param name="username">The client's username.</param>
         ''' <param name="password">The client's password.</param>
-        Public Shared Function GeneratedFrom(ByVal userName As String,
-                                             ByVal password As String) As ClientAuthenticator
+        Public Shared Function GeneratedFrom(userName As String,
+                                             password As String) As ClientAuthenticator
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
@@ -130,7 +130,7 @@ Namespace Bnet
 
         '''<summary>Generates a new private crypto key.</summary>
         '''<remarks>1 bit of entropy is lost in the Mod operation, due to the bias towards lower values.</remarks>
-        Private Shared Function GeneratePrivateKey(ByVal rng As Cryptography.RandomNumberGenerator) As BigInteger
+        Private Shared Function GeneratePrivateKey(rng As Cryptography.RandomNumberGenerator) As BigInteger
             Contract.Requires(rng IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BigInteger)() > 0)
             Contract.Assume(N > 0)
@@ -141,7 +141,7 @@ Namespace Bnet
         End Function
 
         '''<summary>Creates credentials for the same client, but with a new key pair generated using the given random number generator.</summary>
-        Public Function WithNewGeneratedKeys(ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientAuthenticator
+        Public Function WithNewGeneratedKeys(randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientAuthenticator
             Contract.Requires(randomNumberGenerator IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = Me.UserName)
@@ -155,8 +155,8 @@ Namespace Bnet
         End Function
 
         '''<summary>A shared secret value, which can be computed by both the client and server.</summary>
-        Private ReadOnly Property SharedSecret(ByVal accountSalt As IEnumerable(Of Byte),
-                                               ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IRist(Of Byte)
+        Private ReadOnly Property SharedSecret(accountSalt As IEnumerable(Of Byte),
+                                               serverPublicKeyBytes As IEnumerable(Of Byte)) As IRist(Of Byte)
             Get
                 Contract.Requires(serverPublicKeyBytes IsNot Nothing)
                 Contract.Requires(accountSalt IsNot Nothing)
@@ -182,8 +182,8 @@ Namespace Bnet
             End Get
         End Property
         '''<summary>A proof for the server that the client knows the password.</summary>
-        Public ReadOnly Property ClientPasswordProof(ByVal accountSalt As IEnumerable(Of Byte),
-                                                     ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IRist(Of Byte)
+        Public ReadOnly Property ClientPasswordProof(accountSalt As IEnumerable(Of Byte),
+                                                     serverPublicKeyBytes As IEnumerable(Of Byte)) As IRist(Of Byte)
             Get
                 Contract.Requires(serverPublicKeyBytes IsNot Nothing)
                 Contract.Requires(accountSalt IsNot Nothing)
@@ -200,8 +200,8 @@ Namespace Bnet
             End Get
         End Property
         '''<summary>An expected proof of knowing the shared secret from the server.</summary>
-        Public ReadOnly Property ServerPasswordProof(ByVal accountSalt As IEnumerable(Of Byte),
-                                                     ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IRist(Of Byte)
+        Public ReadOnly Property ServerPasswordProof(accountSalt As IEnumerable(Of Byte),
+                                                     serverPublicKeyBytes As IEnumerable(Of Byte)) As IRist(Of Byte)
             Get
                 Contract.Requires(serverPublicKeyBytes IsNot Nothing)
                 Contract.Requires(accountSalt IsNot Nothing)

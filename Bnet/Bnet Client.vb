@@ -58,7 +58,7 @@ Namespace Bnet
             Public ReadOnly IsPrivate As Boolean
             Private ReadOnly _initialGameDescription As New TaskCompletionSource(Of WC3.LocalGameDescription)
             Private _failCount As UInt32
-            Public Sub New(ByVal gameDescription As WC3.LocalGameDescription, ByVal isPrivate As Boolean)
+            Public Sub New(gameDescription As WC3.LocalGameDescription, isPrivate As Boolean)
                 Me.BaseGameDescription = gameDescription
                 Me.IsPrivate = isPrivate
                 _initialGameDescription.IgnoreExceptions()
@@ -135,8 +135,8 @@ Namespace Bnet
         Private _connectResultAsync As New TaskCompletionSource(Of NoValue)
         Private _logOnResultAsync As New TaskCompletionSource(Of NoValue)
 
-        Public Event StateChanged(ByVal sender As Client, ByVal oldState As ClientState, ByVal newState As ClientState)
-        Public Event AdvertisedGame(ByVal sender As Client, ByVal gameDescription As WC3.LocalGameDescription, ByVal [private] As Boolean, ByVal refreshed As Boolean)
+        Public Event StateChanged(sender As Client, oldState As ClientState, newState As ClientState)
+        Public Event AdvertisedGame(sender As Client, gameDescription As WC3.LocalGameDescription, [private] As Boolean, refreshed As Boolean)
 
         Private _lastChannel As InvariantString
         Private _state As ClientState
@@ -159,11 +159,11 @@ Namespace Bnet
             Contract.Invariant((_curAdvertisement IsNot Nothing) = (_state >= ClientState.CreatingGame))
         End Sub
 
-        Public Sub New(ByVal profile As Bot.ClientProfile,
-                       ByVal productInfoProvider As IProductInfoProvider,
-                       ByVal productAuthenticator As IProductAuthenticator,
-                       ByVal clock As IClock,
-                       Optional ByVal logger As Logger = Nothing)
+        Public Sub New(profile As Bot.ClientProfile,
+                       productInfoProvider As IProductInfoProvider,
+                       productAuthenticator As IProductAuthenticator,
+                       clock As IClock,
+                       Optional logger As Logger = Nothing)
             Contract.Assume(profile IsNot Nothing)
             Contract.Assume(productInfoProvider IsNot Nothing)
             Contract.Assume(clock IsNot Nothing)
@@ -178,9 +178,9 @@ Namespace Bnet
             Me._packetHandlerLogger = Protocol.MakeBnetPacketHandlerLogger(Me._logger)
         End Sub
         <Pure()>
-        Public Shared Function MakeProductAuthenticator(ByVal profile As Bot.ClientProfile,
-                                                        ByVal clock As IClock,
-                                                        ByVal logger As Logger) As IProductAuthenticator
+        Public Shared Function MakeProductAuthenticator(profile As Bot.ClientProfile,
+                                                        clock As IClock,
+                                                        logger As Logger) As IProductAuthenticator
             Contract.Requires(profile IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
@@ -247,8 +247,8 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() _state)
         End Function
 
-        Private Function IncludeQueuedPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                          ByVal handler As Action(Of IPickle(Of T))) As IDisposable
+        Private Function IncludeQueuedPacketHandler(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
+                                                          handler As Action(Of IPickle(Of T))) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
@@ -258,8 +258,8 @@ Namespace Bnet
                 Function(value) inQueue.QueueAction(Sub() handler(value)))
         End Function
 
-        Public Function QueueIncludePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                        ByVal handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable)
+        Public Function QueueIncludePacketHandler(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
+                                                        handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable)
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
@@ -269,7 +269,7 @@ Namespace Bnet
                 handler))
         End Function
 
-        Private Sub SendText(ByVal text As String)
+        Private Sub SendText(text As String)
             Contract.Requires(_state >= ClientState.Channel)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(text.Length > 0)
@@ -294,14 +294,14 @@ Namespace Bnet
                 SendPacket(Protocol.MakeChatCommand(line))
             Next line
         End Sub
-        Public Function QueueSendText(ByVal text As String) As Task
+        Public Function QueueSendText(text As String) As Task
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(text.Length > 0)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SendText(text))
         End Function
 
-        Private Sub SendWhisper(ByVal username As String, ByVal text As String)
+        Private Sub SendWhisper(username As String, text As String)
             Contract.Requires(username IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(username.Length > 0)
@@ -319,7 +319,7 @@ Namespace Bnet
                 SendPacket(Protocol.MakeChatCommand(prefix + line))
             Next line
         End Sub
-        Public Function QueueSendWhisper(ByVal userName As String, ByVal text As String) As Task
+        Public Function QueueSendWhisper(userName As String, text As String) As Task
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(userName.Length > 0)
             Contract.Requires(text IsNot Nothing)
@@ -327,30 +327,30 @@ Namespace Bnet
             Return inQueue.QueueAction(Sub() SendWhisper(userName, text))
         End Function
 
-        Private Sub SetReportedListenPort(ByVal port As UShort)
+        Private Sub SetReportedListenPort(port As UShort)
             If port = Me._reportedListenPort Then Return
             Me._reportedListenPort = port
             SendPacket(Protocol.MakeNetGamePort(Me._reportedListenPort))
         End Sub
 
-        Private Sub OnSocketDisconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String)
+        Private Sub OnSocketDisconnected(sender As PacketSocket, expected As Boolean, reason As String)
             inQueue.QueueAction(Sub() Disconnect(expected, reason))
         End Sub
 
 #Region "State"
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return QueueDisconnect(expected:=True, reason:="Disposed")
         End Function
-        Private Sub ChangeState(ByVal newState As ClientState)
+        Private Sub ChangeState(newState As ClientState)
             Contract.Ensures(Me._state = newState)
             Dim oldState = _state
             _state = newState
             outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, oldState, newState))
         End Sub
 
-        Private Async Function ConnectToAsync(ByVal remoteHost As String,
-                                              ByVal remotePort As UInt16) As Task
+        Private Async Function ConnectToAsync(remoteHost As String,
+                                              remotePort As UInt16) As Task
             Contract.Assume(remoteHost IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If Me._state <> ClientState.Disconnected Then Throw New InvalidOperationException("Must disconnect before connecting again.")
@@ -387,15 +387,15 @@ Namespace Bnet
                 QueueDisconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
             End Try
         End Function
-        Public Function QueueConnectTo(ByVal remoteHost As String,
-                                     ByVal remotePort As UInt16) As Task
+        Public Function QueueConnectTo(remoteHost As String,
+                                     remotePort As UInt16) As Task
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueFunc(Function() ConnectToAsync(remoteHost, remotePort)).Unwrap
         End Function
 
-        Private Function ConnectWithAsync(ByVal socket As PacketSocket,
-                                          Optional ByVal clientCdKeySalt As UInt32? = Nothing) As Task
+        Private Function ConnectWithAsync(socket As PacketSocket,
+                                          Optional clientCdKeySalt As UInt32? = Nothing) As Task
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If Me._state <> ClientState.Disconnected AndAlso Me._state <> ClientState.FinishedInitiatingConnection Then
@@ -426,8 +426,8 @@ Namespace Bnet
             BeginHandlingPackets()
             Return Me._connectResultAsync.Task
         End Function
-        Public Function QueueConnectWith(ByVal socket As PacketSocket,
-                                         Optional ByVal clientCDKeySalt As UInt32? = Nothing) As Task
+        Public Function QueueConnectWith(socket As PacketSocket,
+                                         Optional clientCDKeySalt As UInt32? = Nothing) As Task
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueFunc(Function() ConnectWithAsync(socket, clientCDKeySalt)).Unwrap
@@ -445,7 +445,7 @@ Namespace Bnet
             End Try
         End Sub
 
-        Private Function BeginLogOn(ByVal credentials As ClientAuthenticator) As Task
+        Private Function BeginLogOn(credentials As ClientAuthenticator) As Task
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If _state <> ClientState.EnterUserCredentials Then
@@ -462,13 +462,13 @@ Namespace Bnet
             Logger.Log("Initiating logon with username {0}.".Frmt(credentials.UserName), LogMessageType.Typical)
             Return _logOnResultAsync.Task
         End Function
-        Public Function QueueLogOn(ByVal credentials As ClientAuthenticator) As Task
+        Public Function QueueLogOn(credentials As ClientAuthenticator) As Task
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueFunc(Function() BeginLogOn(credentials)).Unwrap
         End Function
 
-        Private Async Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
+        Private Async Sub Disconnect(expected As Boolean, reason As String)
             Contract.Assume(reason IsNot Nothing)
             If _socket IsNot Nothing Then
                 _socket.QueueDisconnect(expected, reason)
@@ -498,13 +498,13 @@ Namespace Bnet
                 Await QueueLogOn(_userCredentials.WithNewGeneratedKeys())
             End If
         End Sub
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As Task
+        Public Function QueueDisconnect(expected As Boolean, reason As String) As Task
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() Disconnect(expected, reason))
         End Function
 
-        Private Sub EnterChannel(ByVal channel As String)
+        Private Sub EnterChannel(channel As String)
             SendPacket(Protocol.MakeJoinChannel(Protocol.JoinChannelType.ForcedJoin, channel))
             ChangeState(ClientState.Channel)
             SyncAdvertisements()
@@ -532,7 +532,7 @@ Namespace Bnet
             End Select
         End Sub
 
-        Private Function AddAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription, ByVal isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
+        Private Function AddAdvertisableGame(gameDescription As WC3.LocalGameDescription, isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
             Contract.Requires(gameDescription IsNot Nothing)
             Dim entry = (From e In _advertisementList
                          Where e.BaseGameDescription.Equals(gameDescription)
@@ -544,14 +544,14 @@ Namespace Bnet
             End If
             Return entry.DescriptionAsync
         End Function
-        Public Function QueueAddAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                                 ByVal isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
+        Public Function QueueAddAdvertisableGame(gameDescription As WC3.LocalGameDescription,
+                                                 isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of WC3.LocalGameDescription))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AddAdvertisableGame(gameDescription, isPrivate)).Unwrap
         End Function
 
-        Private Function RemoveAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription) As Boolean
+        Private Function RemoveAdvertisableGame(gameDescription As WC3.LocalGameDescription) As Boolean
             Dim entry = (From e In _advertisementList.ToList
                          Where e.BaseGameDescription.Equals(gameDescription)
                          ).SingleOrDefault
@@ -561,7 +561,7 @@ Namespace Bnet
             SyncAdvertisements()
             Return True
         End Function
-        Public Function QueueRemoveAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription) As Task(Of Boolean)
+        Public Function QueueRemoveAdvertisableGame(gameDescription As WC3.LocalGameDescription) As Task(Of Boolean)
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueFunc(Function() RemoveAdvertisableGame(gameDescription))
@@ -577,7 +577,7 @@ Namespace Bnet
         End Function
 #End Region
 
-        Private Sub SendPacket(ByVal packet As Protocol.Packet)
+        Private Sub SendPacket(packet As Protocol.Packet)
             Contract.Requires(Me._state > ClientState.InitiatingConnection)
             Contract.Requires(packet IsNot Nothing)
 
@@ -594,14 +594,14 @@ Namespace Bnet
                 ex.RaiseAsUnexpected("Error sending {0} to {1}".Frmt(packet.Id, _socket.Name))
             End Try
         End Sub
-        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As Task
+        Public Function QueueSendPacket(packet As Protocol.Packet) As Task
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SendPacket(packet))
         End Function
 
 #Region "Networking (Connect)"
-        Private Async Sub ReceiveProgramAuthenticationBegin(ByVal value As IPickle(Of NamedValueMap))
+        Private Async Sub ReceiveProgramAuthenticationBegin(value As IPickle(Of NamedValueMap))
             Contract.Assume(value IsNot Nothing)
             Dim vals = value.Value
             If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
@@ -631,10 +631,10 @@ Namespace Bnet
                 QueueDisconnect(expected:=False, reason:="Error handling {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin, ex.Summarize))
             End Try
         End Sub
-        Private Sub EnterKeys(ByVal keys As ProductCredentialPair,
-                              ByVal revisionCheckSeed As String,
-                              ByVal revisionCheckInstructions As String,
-                              ByVal clientCdKeySalt As UInt32)
+        Private Sub EnterKeys(keys As ProductCredentialPair,
+                              revisionCheckSeed As String,
+                              revisionCheckInstructions As String,
+                              clientCdKeySalt As UInt32)
             Contract.Requires(keys IsNot Nothing)
             Contract.Requires(revisionCheckSeed IsNot Nothing)
             Contract.Requires(revisionCheckInstructions IsNot Nothing)
@@ -688,7 +688,7 @@ Namespace Bnet
             End If
         End Sub
 
-        Private Sub ReceiveProgramAuthenticationFinish(ByVal value As IPickle(Of NamedValueMap))
+        Private Sub ReceiveProgramAuthenticationFinish(value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Try
                 Dim vals = value.Value
@@ -708,7 +708,7 @@ Namespace Bnet
             End Try
         End Sub
 
-        Private Sub ReceiveUserAuthenticationBegin(ByVal value As IPickle(Of NamedValueMap))
+        Private Sub ReceiveUserAuthenticationBegin(value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Try
                 Dim vals = value.Value
@@ -736,7 +736,7 @@ Namespace Bnet
             End Try
         End Sub
 
-        Private Sub ReceiveUserAuthenticationFinish(ByVal value As IPickle(Of NamedValueMap))
+        Private Sub ReceiveUserAuthenticationFinish(value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Try
                 Dim vals = value.Value
@@ -775,7 +775,7 @@ Namespace Bnet
             End Try
         End Sub
 
-        Private Sub ReceiveEnterChat(ByVal value As IPickle(Of NamedValueMap))
+        Private Sub ReceiveEnterChat(value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             Logger.Log("Entered chat", LogMessageType.Typical)
@@ -784,17 +784,17 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Warden)"
-        Private Sub ReceiveWarden(ByVal pickle As IPickle(Of IRist(Of Byte)))
+        Private Sub ReceiveWarden(pickle As IPickle(Of IRist(Of Byte)))
             Contract.Requires(pickle IsNot Nothing)
             If _state < ClientState.WaitingForEnterChat Then Throw New IO.InvalidDataException("Warden packet in unexpected place.")
             Dim encryptedData = pickle.Value
             _wardenClient.QueueSendWardenData(encryptedData).IgnoreExceptions()
         End Sub
-        Private Sub OnWardenReceivedResponseData(ByVal sender As Warden.Client, ByVal data As IRist(Of Byte)) Handles _wardenClient.ReceivedWardenData
+        Private Sub OnWardenReceivedResponseData(sender As Warden.Client, data As IRist(Of Byte)) Handles _wardenClient.ReceivedWardenData
             Contract.Requires(data IsNot Nothing)
             inQueue.QueueAction(Sub() SendPacket(Protocol.MakeWarden(data)))
         End Sub
-        Private Sub OnWardenFail(ByVal sender As Warden.Client, ByVal exception As Exception) Handles _wardenClient.Failed
+        Private Sub OnWardenFail(sender As Warden.Client, exception As Exception) Handles _wardenClient.Failed
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(exception IsNot Nothing)
             sender.Activated.ContinueWithAction(Sub()
@@ -808,7 +808,7 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Games)"
-        Private Sub ReceiveCreateGame3(ByVal pickle As IPickle(Of UInt32))
+        Private Sub ReceiveCreateGame3(pickle As IPickle(Of UInt32))
             Contract.Requires(pickle IsNot Nothing)
             Dim result = pickle.Value
 
@@ -850,7 +850,7 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Misc)"
-        Private Sub ReceiveChatEvent(ByVal value As IPickle(Of NamedValueMap))
+        Private Sub ReceiveChatEvent(value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             Dim eventId = vals.ItemAs(Of Protocol.ChatEventId)("event id")
@@ -858,12 +858,12 @@ Namespace Bnet
             If eventId = Protocol.ChatEventId.Channel Then _lastChannel = text
         End Sub
 
-        Private Sub ReceivePing(ByVal value As IPickle(Of UInt32))
+        Private Sub ReceivePing(value As IPickle(Of UInt32))
             Contract.Requires(value IsNot Nothing)
             SendPacket(Protocol.MakePing(salt:=value.Value))
         End Sub
 
-        Private Sub ReceiveMessageBox(ByVal value As IPickle(Of NamedValueMap))
+        Private Sub ReceiveMessageBox(value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
