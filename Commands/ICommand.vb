@@ -9,9 +9,9 @@
         ReadOnly Property Format As InvariantString
         ReadOnly Property HelpTopics As IDictionary(Of InvariantString, String)
         ReadOnly Property Permissions As String
-        Function IsArgumentPrivate(ByVal argument As String) As Boolean
-        Function IsUserAllowed(ByVal user As BotUser) As Boolean
-        Function Invoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Function IsArgumentPrivate(argument As String) As Boolean
+        Function IsUserAllowed(user As BotUser) As Boolean
+        Function Invoke(target As T, user As BotUser, argument As String) As Task(Of String)
     End Interface
 
     <ContractClassFor(GetType(ICommand(Of )))>
@@ -34,17 +34,17 @@
                 Throw New NotSupportedException
             End Get
         End Property
-        Public Function Invoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements ICommand(Of T).Invoke
+        Public Function Invoke(target As T, user As BotUser, argument As String) As Task(Of String) Implements ICommand(Of T).Invoke
             Contract.Requires(target IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements ICommand(Of T).IsArgumentPrivate
+        Public Function IsArgumentPrivate(argument As String) As Boolean Implements ICommand(Of T).IsArgumentPrivate
             Contract.Requires(argument IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function IsUserAllowed(ByVal user As BotUser) As Boolean Implements ICommand(Of T).IsUserAllowed
+        Public Function IsUserAllowed(user As BotUser) As Boolean Implements ICommand(Of T).IsUserAllowed
             Throw New NotSupportedException
         End Function
         Public ReadOnly Property Name As InvariantString Implements ICommand(Of T).Name

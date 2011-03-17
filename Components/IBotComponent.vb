@@ -8,10 +8,10 @@
         ReadOnly Property HasControl As Boolean
         ReadOnly Property Control() As Control
         <Pure()>
-        Function IsArgumentPrivate(ByVal argument As String) As Boolean
-        Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Function IsArgumentPrivate(argument As String) As Boolean
+        Function InvokeCommand(user As BotUser, argument As String) As Task(Of String)
         '''<summary>Adds a command to the component and returns an IDisposable that removes the command upon disposal.</summary>
-        Function IncludeCommand(ByVal command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable)
+        Function IncludeCommand(command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable)
 
         <ContractClassFor(GetType(IBotComponent))>
         MustInherit Shadows Class ContractClass
@@ -37,14 +37,14 @@
                 End Get
             End Property
 
-            Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
+            Public Function InvokeCommand(user As BotUser, argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
                 Contract.Requires(argument IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
 
             <Pure()>
-            Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
+            Public Function IsArgumentPrivate(argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
                 Contract.Requires(argument IsNot Nothing)
                 Throw New NotSupportedException
             End Function
@@ -69,7 +69,7 @@
                 Throw New NotSupportedException
             End Sub
 
-            Public Function IncludeCommand(ByVal command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+            Public Function IncludeCommand(command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
                 Contract.Requires(command IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
                 Throw New NotSupportedException

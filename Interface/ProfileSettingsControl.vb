@@ -2,9 +2,9 @@
 <ContractVerification(False)>
 Public Class ProfileSettingsControl
     Public lastLoadedProfile As Bot.ClientProfile
-    Public Event Delete(ByVal sender As ProfileSettingsControl)
+    Public Event Delete(sender As ProfileSettingsControl)
 
-    Public Sub LoadFromProfile(ByVal profile As Bot.ClientProfile)
+    Public Sub LoadFromProfile(profile As Bot.ClientProfile)
         If profile Is Nothing Then Return
 
         txtUsername.Text = profile.userName
@@ -25,7 +25,7 @@ Public Class ProfileSettingsControl
 
         lastLoadedProfile = profile
     End Sub
-    Public Sub SaveToProfile(ByVal profile As Bot.ClientProfile)
+    Public Sub SaveToProfile(profile As Bot.ClientProfile)
         If profile Is Nothing Then Return
 
         profile.userName = txtUsername.Text.AssumeNotNull
@@ -50,7 +50,7 @@ Public Class ProfileSettingsControl
         profile.Users.RemoveAllExcept(From user In currentUsers Select user.name)
     End Sub
 
-    Private Sub btnDeleteProfile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnDeleteProfile.Click
+    Private Sub btnDeleteProfile_Click(sender As System.Object, e As System.EventArgs) Handles btnDeleteProfile.Click
         RaiseEvent Delete(Me)
     End Sub
 
@@ -93,7 +93,7 @@ Public Class ProfileSettingsControl
         End Try
     End Sub
 
-    Private Sub txtCKLServer_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles txtCKLServer.TextChanged
+    Private Sub txtCKLServer_TextChanged(sender As System.Object, e As System.EventArgs) Handles txtCKLServer.TextChanged
         txtRocKey_TextChanged()
         txtTftKey_TextChanged()
     End Sub

@@ -9,7 +9,7 @@ Friend Class StreamTester
     Private ReadOnly testStream As IO.Stream
     Private ReadOnly dataReader As IO.StreamReader
 
-    Public Sub New(ByVal testStream As IO.Stream, ByVal data As IO.StreamReader)
+    Public Sub New(testStream As IO.Stream, data As IO.StreamReader)
         Me.testStream = testStream
         Me.dataReader = data
     End Sub
@@ -19,7 +19,7 @@ Friend Class StreamTester
         ThreadPooledAction(Sub() RunContinue(result))
         Return result.Task
     End Function
-    Private Sub RunContinue(ByVal result As TaskCompletionSource(Of Boolean))
+    Private Sub RunContinue(result As TaskCompletionSource(Of Boolean))
         Try
             If dataReader.EndOfStream Then
                 result.SetResult(True)

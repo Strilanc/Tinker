@@ -27,9 +27,9 @@ Namespace CKL
             Contract.Invariant(_keyIndex >= 0)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal listenPort As PortPool.PortHandle,
-                       ByVal clock As IClock)
+        Public Sub New(name As InvariantString,
+                       listenPort As PortPool.PortHandle,
+                       clock As IClock)
             Contract.Assume(listenPort IsNot Nothing)
             Contract.Assume(clock IsNot Nothing)
             Me.name = name
@@ -45,7 +45,7 @@ Namespace CKL
             End Get
         End Property
 
-        Public Function QueueAddKey(ByVal keyName As InvariantString, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As Task
+        Public Function QueueAddKey(keyName As InvariantString, cdKeyROC As String, cdKeyTFT As String) As Task
             Contract.Requires(cdKeyROC IsNot Nothing)
             Contract.Requires(cdKeyTFT IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
@@ -59,7 +59,7 @@ Namespace CKL
                 End Sub
             )
         End Function
-        Public Function QueueRemoveKey(ByVal keyName As InvariantString) As Task
+        Public Function QueueRemoveKey(keyName As InvariantString) As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(
                 Sub()
@@ -70,8 +70,8 @@ Namespace CKL
             )
         End Function
 
-        Private Async Sub OnAcceptedConnection(ByVal sender As ConnectionAccepter,
-                                               ByVal acceptedClient As Net.Sockets.TcpClient) Handles _accepter.AcceptedConnection
+        Private Async Sub OnAcceptedConnection(sender As ConnectionAccepter,
+                                               acceptedClient As Net.Sockets.TcpClient) Handles _accepter.AcceptedConnection
             Contract.Assume(sender IsNot Nothing)
             Contract.Assume(acceptedClient IsNot Nothing)
             Contract.Assume(acceptedClient.Client IsNot Nothing)
@@ -92,7 +92,7 @@ Namespace CKL
                 Logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, ex.Summarize), LogMessageType.Problem)
             End Try
         End Sub
-        Private Sub HandlePacket(ByVal socket As PacketSocket, ByVal packetData As IRist(Of Byte))
+        Private Sub HandlePacket(socket As PacketSocket, packetData As IRist(Of Byte))
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(packetData IsNot Nothing)
             Contract.Assume(packetData.Count >= 4)

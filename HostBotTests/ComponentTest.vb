@@ -17,7 +17,7 @@ Public Class ComponentTest
         Private ReadOnly _logger As New Logger
         Private ReadOnly _name As InvariantString
         Private ReadOnly _type As InvariantString
-        Public Sub New(ByVal name As InvariantString, ByVal type As InvariantString)
+        Public Sub New(name As InvariantString, type As InvariantString)
             Me._name = name
             Me._type = type
         End Sub
@@ -32,11 +32,11 @@ Public Class ComponentTest
             End Get
         End Property
 
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(user As BotUser, argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return "".AsTask
         End Function
 
-        Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
+        Public Function IsArgumentPrivate(argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
             Return False
         End Function
 
@@ -56,19 +56,19 @@ Public Class ComponentTest
                 Return _type
             End Get
         End Property
-        Public Function IncludeCommand(ByVal command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
+        Public Function IncludeCommand(command As Commands.ICommand(Of IBotComponent)) As Task(Of IDisposable) Implements IBotComponent.IncludeCommand
             Throw New NotSupportedException
         End Function
     End Class
     Private Class TestComponent1
         Inherits BaseTestComponent
-        Public Sub New(ByVal name As InvariantString)
+        Public Sub New(name As InvariantString)
             MyBase.New(name, "t2")
         End Sub
     End Class
     Private Class TestComponent2
         Inherits BaseTestComponent
-        Public Sub New(ByVal name As InvariantString)
+        Public Sub New(name As InvariantString)
             MyBase.New(name, "t3")
         End Sub
     End Class

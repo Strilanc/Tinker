@@ -10,14 +10,14 @@ Public Class ExceptionForm
         AddHandler UnexpectedException, Sub(ex, context) inQueue.QueueAction(Sub() AddException(ex, context))
     End Sub
 
-    Public Event ExceptionCountChanged(ByVal sender As ExceptionForm)
+    Public Event ExceptionCountChanged(sender As ExceptionForm)
     Public ReadOnly Property ExceptionCount As Integer
         Get
             Return _exceptions.Count
         End Get
     End Property
 
-    Private Sub AddException(ByVal ex As Exception, ByVal context As String)
+    Private Sub AddException(ex As Exception, context As String)
         'Unwrap simple aggregated exceptions
         Dim ax = TryCast(ex, AggregateException)
         If ax IsNot Nothing AndAlso ax.InnerExceptions.Count = 1 AndAlso ax.Message = "One or more errors occurred." Then
@@ -51,14 +51,14 @@ Public Class ExceptionForm
         txtExceptions.Select(txtExceptions.TextLength, 0)
     End Sub
 
-    Private Sub ExceptionForm_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
+    Private Sub ExceptionForm_FormClosing(sender As Object, e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
         If e.CloseReason = CloseReason.UserClosing Then
             e.Cancel = True
             Me.Visible = False
         End If
     End Sub
 
-    Private Sub ExceptionForm_VisibleChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.VisibleChanged
+    Private Sub ExceptionForm_VisibleChanged(sender As Object, e As System.EventArgs) Handles Me.VisibleChanged
         UpdateExceptionText()
     End Sub
 End Class

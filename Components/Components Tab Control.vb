@@ -15,7 +15,7 @@ Namespace Components
             Contract.Invariant(inQueue IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal bot As Bot.MainBot)
+        Public Sub New(bot As Bot.MainBot)
             Contract.Assert(bot IsNot Nothing)
             InitializeComponent()
 
@@ -25,12 +25,12 @@ Namespace Components
                                 remover:=Sub(component) inQueue.QueueAction(Sub() OnBotRemovedComponent(component))))
         End Sub
 
-        Private Sub OnBotAddedComponent(ByVal component As Components.IBotComponent)
+        Private Sub OnBotAddedComponent(component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)
             If IsDisposed Then Return
             _botComponentTabs.Add(component)
         End Sub
-        Private Sub OnBotRemovedComponent(ByVal component As Components.IBotComponent)
+        Private Sub OnBotRemovedComponent(component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)
             If IsDisposed Then Return
             _botComponentTabs.Remove(component)

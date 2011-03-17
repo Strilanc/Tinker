@@ -11,13 +11,13 @@
             Contract.Invariant(_items IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal tabControl As Windows.Forms.TabControl)
+        Public Sub New(tabControl As Windows.Forms.TabControl)
             Contract.Requires(tabControl IsNot Nothing)
             Me._tabControl = tabControl
         End Sub
 
         <SuppressMessage("Microsoft.Contracts", "Requires-6-103")>
-        Public Sub Add(ByVal component As Components.IBotComponent)
+        Public Sub Add(component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)
             Contract.Ensures(Me.Contains(component))
             If _items.ContainsKey(component) Then Throw New InvalidOperationException("Already have a tab for the given component.")
@@ -38,14 +38,14 @@
         End Sub
 
         <Pure()>
-        Public Function Contains(ByVal component As Components.IBotComponent) As Boolean
+        Public Function Contains(component As Components.IBotComponent) As Boolean
             Contract.Requires(component IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Boolean)() = _items.ContainsKey(component))
             Return _items.ContainsKey(component)
         End Function
 
         <SuppressMessage("Microsoft.Contracts", "Requires-6-103")>
-        Public Sub Remove(ByVal component As Components.IBotComponent)
+        Public Sub Remove(component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)
             Contract.Ensures(Not Me.Contains(component))
             If Not _items.ContainsKey(component) Then Throw New InvalidOperationException("Don't have a tab for the given component.")

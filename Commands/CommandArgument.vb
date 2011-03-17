@@ -27,7 +27,7 @@ Namespace Commands
         ''' <summary>
         ''' Constructs the command argument by parsing the given text.
         ''' </summary>
-        Public Sub New(ByVal text As String)
+        Public Sub New(text As String)
             Contract.Requires(text IsNot Nothing)
             Me._text = text
 
@@ -70,7 +70,7 @@ Namespace Commands
         ''' Splits text into tokens separated by spaces and fused by brackets.
         ''' </summary>
         <Pure()>
-        Public Shared Function Tokenize(ByVal text As String) As IEnumerable(Of String) 'verification disabled due to stupid verifier
+        Public Shared Function Tokenize(text As String) As IEnumerable(Of String) 'verification disabled due to stupid verifier
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)
 
@@ -175,7 +175,7 @@ Namespace Commands
         End Property
 
         '''<summary>Returns the specified raw value from the argument.</summary>
-        Public ReadOnly Property RawValue(ByVal index As Integer) As String
+        Public ReadOnly Property RawValue(index As Integer) As String
             Get
                 Contract.Requires(index >= 0)
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
@@ -185,7 +185,7 @@ Namespace Commands
             End Get
         End Property
         '''<summary>Returns the specified raw value from the argument, or returns nothing if the raw value is not specified.</summary>
-        Public ReadOnly Property TryGetRawValue(ByVal index As Integer) As String
+        Public ReadOnly Property TryGetRawValue(index As Integer) As String
             Get
                 Contract.Requires(index >= 0)
                 If index >= _raw.Count Then Return Nothing
@@ -193,7 +193,7 @@ Namespace Commands
             End Get
         End Property
         '''<summary>Returns the value of the specified named value from the argument.</summary>
-        Public ReadOnly Property NamedValue(ByVal name As InvariantString) As String
+        Public ReadOnly Property NamedValue(name As InvariantString) As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 If Not _named.ContainsKey(name) Then Throw New InvalidOperationException("No such named argument.")
@@ -204,7 +204,7 @@ Namespace Commands
         End Property
         '''<summary>Determines if the argument contains the given optional switch.</summary>
         '''<param name="switch">The optional switch to check for. Do not include the leading '-'.</param>
-        Public ReadOnly Property HasOptionalSwitch(ByVal switch As InvariantString) As Boolean
+        Public ReadOnly Property HasOptionalSwitch(switch As InvariantString) As Boolean
             Get
                 Return _optionalSwitches.Contains(switch)
             End Get
@@ -213,7 +213,7 @@ Namespace Commands
         ''' Returns the value of the specified named value from the argument.
         ''' Returns nothing if the named value is not included in the argument.
         ''' </summary>
-        Public ReadOnly Property TryGetNamedValue(ByVal name As InvariantString) As String
+        Public ReadOnly Property TryGetNamedValue(name As InvariantString) As String
             Get
                 If Not _named.ContainsKey(name) Then Return Nothing
                 Return _named(name)
@@ -221,7 +221,7 @@ Namespace Commands
         End Property
         '''<summary>Determines if the given optional named value is included in the argument.</summary>
         '''<param name="name">The name of the optional value to check for. Do not include the leading '-'.</param>
-        Public ReadOnly Property HasOptionalNamedValue(ByVal name As InvariantString) As Boolean
+        Public ReadOnly Property HasOptionalNamedValue(name As InvariantString) As Boolean
             Get
                 Contract.Ensures(Contract.Result(Of Boolean)() = _optionalNamed.ContainsKey(name))
                 Return _optionalNamed.ContainsKey(name)
@@ -232,7 +232,7 @@ Namespace Commands
         ''' Returns nothing if the optional named value is not included in the argument.
         ''' </summary>
         ''' <param name="name">The name of the optional value to check for. Do not include the leading '-'.</param>
-        Public ReadOnly Property TryGetOptionalNamedValue(ByVal name As InvariantString) As String
+        Public ReadOnly Property TryGetOptionalNamedValue(name As InvariantString) As String
             Get
                 Contract.Ensures((Contract.Result(Of String)() IsNot Nothing) = HasOptionalNamedValue(name))
                 Return If(HasOptionalNamedValue(name), OptionalNamedValue(name), Nothing)
@@ -240,7 +240,7 @@ Namespace Commands
         End Property
         '''<summary>Returns the value of the given optional named value from the argument.</summary>
         '''<param name="name">The name of the optional value to check for. Do not include the leading '-'.</param>
-        Public ReadOnly Property OptionalNamedValue(ByVal name As InvariantString) As String
+        Public ReadOnly Property OptionalNamedValue(name As InvariantString) As String
             Get
                 Contract.Requires(HasOptionalNamedValue(name))
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)

@@ -9,7 +9,7 @@ Namespace CKL.ServerCommands
                        Description:="Removes a lendable key pair.")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Server, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As Server, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim name = argument.RawValue(0)
             Dim rocKey = argument.NamedValue("roc")
             Dim tftKey = argument.NamedValue("tft")
@@ -26,7 +26,7 @@ Namespace CKL.ServerCommands
                        Description:="Adds a lendable key pair.")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As Server, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As Server, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim name = argument.RawValue(0)
             Contract.Assume(target IsNot Nothing)
             Await target.QueueRemoveKey(name)

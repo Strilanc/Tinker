@@ -13,8 +13,8 @@
             Contract.Invariant(_projection IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal command As ICommand(Of TProjected),
-                       ByVal projection As Func(Of TInput, TProjected))
+        Public Sub New(command As ICommand(Of TProjected),
+                       projection As Func(Of TInput, TProjected))
             MyBase.New(command.Name, command.Format, command.Description, command.Permissions)
             Contract.Requires(command IsNot Nothing)
             Contract.Requires(projection IsNot Nothing)
@@ -22,7 +22,7 @@
             Me._projection = projection
         End Sub
 
-        Public Overrides Function IsArgumentPrivate(ByVal argument As String) As Boolean
+        Public Overrides Function IsArgumentPrivate(argument As String) As Boolean
             Return _command.IsArgumentPrivate(argument)
         End Function
         Public Overrides ReadOnly Property HelpTopics As IDictionary(Of InvariantString, String)
@@ -30,7 +30,7 @@
                 Return _command.HelpTopics
             End Get
         End Property
-        Protected Overrides Function PerformInvoke(ByVal target As TInput, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Protected Overrides Function PerformInvoke(target As TInput, user As BotUser, argument As String) As Task(Of String)
             Dim subTarget = _projection(target)
             Contract.Assume(subTarget IsNot Nothing)
             Return _command.Invoke(subTarget, user, argument)
@@ -38,7 +38,7 @@
     End Class
     Public Module ProjectedCommandExtensions
         <Extension()> <Pure()>
-        Public Function ProjectedFrom(Of TOuter, TInner)(ByVal command As ICommand(Of TInner), ByVal projection As Func(Of TOuter, TInner)) As ICommand(Of TOuter)
+        Public Function ProjectedFrom(Of TOuter, TInner)(command As ICommand(Of TInner), projection As Func(Of TOuter, TInner)) As ICommand(Of TOuter)
             Contract.Requires(command IsNot Nothing)
             Contract.Requires(projection IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ICommand(Of TOuter))() IsNot Nothing)

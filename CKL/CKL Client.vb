@@ -17,10 +17,10 @@ Namespace CKL
             Contract.Invariant(_logger IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal remoteHost As String,
-                       ByVal remotePort As UInt16,
-                       ByVal clock As IClock,
-                       Optional ByVal logger As Logger = Nothing)
+        Public Sub New(remoteHost As String,
+                       remotePort As UInt16,
+                       clock As IClock,
+                       Optional logger As Logger = Nothing)
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Me._remoteHost = remoteHost
@@ -30,8 +30,8 @@ Namespace CKL
         End Sub
 
         <SuppressMessage("Microsoft.Contracts", "Ensures-35-74")>
-        Public Async Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
-                                                ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+        Public Async Function AsyncAuthenticate(clientSalt As IEnumerable(Of Byte),
+                                                serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
 
             'Connect to CKL server
             Dim socket = Await PacketSocket.AsyncConnect(_remoteHost, _remotePort, _clock, timeout:=10.Seconds)
@@ -52,7 +52,7 @@ Namespace CKL
             End Try
         End Function
 
-        Private Shared Function ParseResponse(ByVal packetData As IRist(Of Byte)) As ProductCredentialPair
+        Private Shared Function ParseResponse(packetData As IRist(Of Byte)) As ProductCredentialPair
             Contract.Requires(packetData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ProductCredentialPair)() IsNot Nothing)
 

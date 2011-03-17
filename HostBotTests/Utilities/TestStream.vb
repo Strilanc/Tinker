@@ -15,7 +15,7 @@ Public Class TestStream
 
     Private ReadOnly lock As New Object()
 
-    Public Sub EnqueueRead(ByVal data() As Byte)
+    Public Sub EnqueueRead(data() As Byte)
         If data Is Nothing OrElse data.Length = 0 Then Return
         SyncLock lock
             If readBufferDone Then Throw New InvalidOperationException("Read buffer is done.")
@@ -25,7 +25,7 @@ Public Class TestStream
         End SyncLock
         readLock.Set()
     End Sub
-    Public Sub EnqueuedReadPacket(ByVal preheader As IEnumerable(Of Byte), ByVal sizeByteCount As Integer, ByVal body As IEnumerable(Of Byte))
+    Public Sub EnqueuedReadPacket(preheader As IEnumerable(Of Byte), sizeByteCount As Integer, body As IEnumerable(Of Byte))
         EnqueueRead(Concat(preheader,
                            CUInt(preheader.Count + sizeByteCount + body.Count).Bytes.Take(sizeByteCount),
                            body).ToArray)
@@ -36,9 +36,9 @@ Public Class TestStream
         End SyncLock
         readLock.Set()
     End Sub
-    Public Function RetrieveWritePacket(Optional ByVal preheaderByteCount As Integer = 2,
-                                   Optional ByVal sizeByteCount As Integer = 2,
-                                   Optional ByVal millisecondsTimeout As Integer = 10000) As Byte()
+    Public Function RetrieveWritePacket(Optional preheaderByteCount As Integer = 2,
+                                   Optional sizeByteCount As Integer = 2,
+                                   Optional millisecondsTimeout As Integer = 10000) As Byte()
         Dim headerSize = preheaderByteCount + sizeByteCount
         Dim header = Me.RetrieveWriteData(length:=headerSize, millisecondsTimeout:=millisecondsTimeout)
         Dim size = CInt(header.Skip(preheaderByteCount).Take(sizeByteCount).ToUValue)
@@ -46,7 +46,7 @@ Public Class TestStream
         Return header.Concat(body).ToArray
     End Function
 
-    Public Function RetrieveWriteData(ByVal length As Integer, Optional ByVal millisecondsTimeout As Integer = 10000) As Byte()
+    Public Function RetrieveWriteData(length As Integer, Optional millisecondsTimeout As Integer = 10000) As Byte()
         Dim n = writeBuffer.Count
         While n < length AndAlso writeLock.WaitOne(millisecondsTimeout)
             If writeBuffer.Count = n Then Throw New InvalidOperationException("Expected more stream data.")
@@ -65,13 +65,13 @@ Public Class TestStream
             Return result
         End SyncLock
     End Function
-    Public Function RetrieveClosed(Optional ByVal timeout As Integer = 10000) As Boolean
+    Public Function RetrieveClosed(Optional timeout As Integer = 10000) As Boolean
         If closed Then Return True
         writeLock.WaitOne()
         Return closed
     End Function
 
-    Public Overrides Function Read(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer) As Integer
+    Public Overrides Function Read(buffer() As Byte, offset As Integer, count As Integer) As Integer
         Dim numRead = 0
         While numRead < count
             While readBuffer.Count = 0
@@ -88,7 +88,7 @@ Public Class TestStream
         Return numRead
     End Function
 
-    Public Overrides Sub Write(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer)
+    Public Overrides Sub Write(buffer() As Byte, offset As Integer, count As Integer)
         SyncLock lock
             If count <= 0 Then Return
             For i = offset To offset + count - 1
@@ -133,14 +133,14 @@ Public Class TestStream
         Get
             Throw New NotSupportedException
         End Get
-        Set(ByVal value As Long)
+        Set(value As Long)
             Throw New NotSupportedException
         End Set
     End Property
-    Public Overrides Function Seek(ByVal offset As Long, ByVal origin As System.IO.SeekOrigin) As Long
+    Public Overrides Function Seek(offset As Long, origin As System.IO.SeekOrigin) As Long
         Throw New NotSupportedException
     End Function
-    Public Overrides Sub SetLength(ByVal value As Long)
+    Public Overrides Sub SetLength(value As Long)
         Throw New NotSupportedException
     End Sub
 #End Region

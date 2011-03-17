@@ -18,12 +18,12 @@
             Contract.Invariant(_extraHelp IsNot Nothing)
         End Sub
 
-        Protected Sub New(ByVal name As InvariantString,
-                          ByVal format As InvariantString,
-                          ByVal description As String,
-                          Optional ByVal permissions As String = Nothing,
-                          Optional ByVal extraHelp As String = Nothing,
-                          Optional ByVal hasPrivateArguments As Boolean = False)
+        Protected Sub New(name As InvariantString,
+                          format As InvariantString,
+                          description As String,
+                          Optional permissions As String = Nothing,
+                          Optional extraHelp As String = Nothing,
+                          Optional hasPrivateArguments As Boolean = False)
             Contract.Requires(description IsNot Nothing)
             If name.Value.Contains(" "c) Then Throw New ArgumentException("Command names can't contain spaces.")
 
@@ -68,17 +68,17 @@
         End Property
 
         <Pure()>
-        Public Overridable Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements ICommand(Of T).IsArgumentPrivate
+        Public Overridable Function IsArgumentPrivate(argument As String) As Boolean Implements ICommand(Of T).IsArgumentPrivate
             Return _hasPrivateArguments
         End Function
         <Pure()>
-        Public Function IsUserAllowed(ByVal user As BotUser) As Boolean Implements ICommand(Of T).IsUserAllowed
+        Public Function IsUserAllowed(user As BotUser) As Boolean Implements ICommand(Of T).IsUserAllowed
             If user Is Nothing Then Return True
             Return (From pair In _permissions Where user.Permission(pair.Key) < pair.Value).None
         End Function
 
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Public Async Function Invoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements ICommand(Of T).Invoke
+        Public Async Function Invoke(target As T, user As BotUser, argument As String) As Task(Of String) Implements ICommand(Of T).Invoke
             If Not IsUserAllowed(user) Then Throw New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions))
 
             Try
@@ -89,7 +89,7 @@
             End Try
         End Function
 
-        Protected MustOverride Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Protected MustOverride Function PerformInvoke(target As T, user As BotUser, argument As String) As Task(Of String)
     End Class
     <ContractClassFor(GetType(BaseCommand(Of )))>
     MustInherit Class ContractClassBaseCommand(Of T)
@@ -97,7 +97,7 @@
         Protected Sub New()
             MyBase.New("", "", "")
         End Sub
-        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Protected Overrides Function PerformInvoke(target As T, user As BotUser, argument As String) As Task(Of String)
             Contract.Requires(target IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)

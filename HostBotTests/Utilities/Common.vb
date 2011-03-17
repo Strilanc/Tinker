@@ -8,22 +8,22 @@ Imports Tinker
 Imports System.Collections.Generic
 
 Friend Module TestingCommon
-    Public Function ByteRist(ByVal ParamArray values As Byte()) As IRist(Of Byte)
+    Public Function ByteRist(ParamArray values As Byte()) As IRist(Of Byte)
         Return values.AsRist()
     End Function
 
     <Extension()>
-    Public Function FixedClock(ByVal t As TimeSpan) As Strilbrary.Time.IClock
+    Public Function FixedClock(t As TimeSpan) As Strilbrary.Time.IClock
         Dim c = New Strilbrary.Time.ManualClock()
         c.Advance(t)
         Return c
     End Function
     <Extension()>
-    Public Function WaitValue(Of T)(ByVal task As Task(Of T)) As T
+    Public Function WaitValue(Of T)(task As Task(Of T)) As T
         task.Wait()
         Return task.Result
     End Function
-    Public Sub ExpectException(Of E As Exception)(ByVal action As Action)
+    Public Sub ExpectException(Of E As Exception)(action As Action)
         Try
             Call action()
         Catch ex As E
@@ -33,7 +33,7 @@ Friend Module TestingCommon
         End Try
         Assert.Fail("Expected an exception of type " + GetType(E).ToString + " but hit no exception.")
     End Sub
-    Public Function BlockOnTaskValue(Of T)(ByVal task As Task(Of T)) As Task(Of T)
+    Public Function BlockOnTaskValue(Of T)(task As Task(Of T)) As Task(Of T)
         Dim b As Boolean
         Try
             b = task.Wait(millisecondsTimeout:=10000)
@@ -46,28 +46,28 @@ Friend Module TestingCommon
             Throw New InvalidOperationException("The future did not terminate properly.")
         End If
     End Function
-    Public Sub WaitUntilTaskSucceeds(ByVal task As Task)
+    Public Sub WaitUntilTaskSucceeds(task As Task)
         Assert.IsTrue(task.Wait(millisecondsTimeout:=10000))
         Assert.IsTrue(task.Status = TaskStatus.RanToCompletion)
     End Sub
-    Public Sub WaitUntilTaskFails(ByVal task As Task)
+    Public Sub WaitUntilTaskFails(task As Task)
         Try
             Assert.IsTrue(task.Wait(millisecondsTimeout:=10000))
         Catch ex As Exception
         End Try
         Assert.IsTrue(task.Status = TaskStatus.Faulted)
     End Sub
-    Public Sub ExpectTaskToIdle(ByVal task As Task)
+    Public Sub ExpectTaskToIdle(task As Task)
         Assert.IsTrue(Not task.Wait(millisecondsTimeout:=10))
     End Sub
 
-    Friend Sub JarTest(Of T)(ByVal jar As IJar(Of T),
-                             ByVal equater As Func(Of T, T, Boolean),
-                             ByVal value As T,
-                             ByVal data As IEnumerable(Of Byte),
-                             Optional ByVal appendSafe As Boolean = True,
-                             Optional ByVal requireAllData As Boolean = True,
-                             Optional ByVal description As String = Nothing)
+    Friend Sub JarTest(Of T)(jar As IJar(Of T),
+                             equater As Func(Of T, T, Boolean),
+                             value As T,
+                             data As IEnumerable(Of Byte),
+                             Optional appendSafe As Boolean = True,
+                             Optional requireAllData As Boolean = True,
+                             Optional description As String = Nothing)
         Dim parsed = jar.Parse(data.ToRist)
         Assert.IsTrue(equater(parsed.Value, value))
         Assert.IsTrue(parsed.UsedDataCount = data.Count)
@@ -108,19 +108,19 @@ Friend Module TestingCommon
             End Try
         End If
     End Sub
-    Friend Sub JarTest(Of T As IEquatable(Of T))(ByVal jar As IJar(Of T),
-                                                 ByVal value As T,
-                                                 ByVal data As IEnumerable(Of Byte),
-                                                 Optional ByVal appendSafe As Boolean = True,
-                                                 Optional ByVal requireAllData As Boolean = True,
-                                                 Optional ByVal description As String = Nothing)
+    Friend Sub JarTest(Of T As IEquatable(Of T))(jar As IJar(Of T),
+                                                 value As T,
+                                                 data As IEnumerable(Of Byte),
+                                                 Optional appendSafe As Boolean = True,
+                                                 Optional requireAllData As Boolean = True,
+                                                 Optional description As String = Nothing)
         JarTest(jar, Function(a As T, b As T) a.Equals(b), value, data, appendSafe, requireAllData, description)
     End Sub
-    Friend Sub JarTest(ByVal jar As IJar(Of NamedValueMap),
-                       ByVal value As NamedValueMap,
-                       ByVal data As IEnumerable(Of Byte),
-                       Optional ByVal appendSafe As Boolean = True,
-                       Optional ByVal requireAllData As Boolean = True)
+    Friend Sub JarTest(jar As IJar(Of NamedValueMap),
+                       value As NamedValueMap,
+                       data As IEnumerable(Of Byte),
+                       Optional appendSafe As Boolean = True,
+                       Optional requireAllData As Boolean = True)
         JarTest(jar,
                 Function(e1 As NamedValueMap, e2 As NamedValueMap) ObjectEqual(e1, e2),
                 value,
@@ -128,11 +128,11 @@ Friend Module TestingCommon
                 requireAllData:=requireAllData,
                 appendSafe:=appendSafe)
     End Sub
-    Friend Sub JarTest(ByVal jar As IJar(Of NamedValueMap),
-                       ByVal value As Dictionary(Of InvariantString, Object),
-                       ByVal data As IEnumerable(Of Byte),
-                       Optional ByVal appendSafe As Boolean = True,
-                       Optional ByVal requireAllData As Boolean = True)
+    Friend Sub JarTest(jar As IJar(Of NamedValueMap),
+                       value As Dictionary(Of InvariantString, Object),
+                       data As IEnumerable(Of Byte),
+                       Optional appendSafe As Boolean = True,
+                       Optional requireAllData As Boolean = True)
         JarTest(jar,
                 New NamedValueMap(value),
                 data,
@@ -140,7 +140,7 @@ Friend Module TestingCommon
                 appendSafe:=appendSafe)
     End Sub
 
-    Private Function TryCastToBigInteger(ByVal v As Object) As Numerics.BigInteger?
+    Private Function TryCastToBigInteger(v As Object) As Numerics.BigInteger?
         If TypeOf v Is SByte Then Return CSByte(v)
         If TypeOf v Is Int16 Then Return CShort(v)
         If TypeOf v Is Int32 Then Return CInt(v)
@@ -152,7 +152,7 @@ Friend Module TestingCommon
         If TypeOf v Is Numerics.BigInteger Then Return CType(v, Numerics.BigInteger)
         Return Nothing
     End Function
-    Public Function ObjectEqual(ByVal v1 As Object, ByVal v2 As Object) As Boolean
+    Public Function ObjectEqual(v1 As Object, v2 As Object) As Boolean
         If v1.GetType Is v2.GetType AndAlso v1.GetType.IsGenericType Then
             If v1.GetType.GetGenericTypeDefinition Is GetType(KeyValuePair(Of ,)) Then
                 Dim mKey = v1.GetType.GetProperty("Key")
@@ -185,7 +185,7 @@ Friend Module TestingCommon
             Return v1.Equals(v2)
         End If
     End Function
-    Private Function ListEqual(ByVal l1 As Collections.IEnumerable, ByVal l2 As Collections.IEnumerable) As Boolean
+    Private Function ListEqual(l1 As Collections.IEnumerable, l2 As Collections.IEnumerable) As Boolean
         Dim e1 = l1.GetEnumerator
         Dim e2 = l2.GetEnumerator
         Do
@@ -196,8 +196,8 @@ Friend Module TestingCommon
             If Not ObjectEqual(e1.Current, e2.Current) Then Return False
         Loop
     End Function
-    Friend Function DictionaryEqual(Of TKey, TVal)(ByVal d1 As Dictionary(Of TKey, TVal),
-                                                   ByVal d2 As Dictionary(Of TKey, TVal)) As Boolean
+    Friend Function DictionaryEqual(Of TKey, TVal)(d1 As Dictionary(Of TKey, TVal),
+                                                   d2 As Dictionary(Of TKey, TVal)) As Boolean
         For Each pair In d1
             If Not d2.ContainsKey(pair.Key) Then Return False
             If Not ObjectEqual(d2(pair.Key), pair.Value) Then Return False

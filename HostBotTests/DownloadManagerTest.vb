@@ -48,20 +48,20 @@ Public Class DownloadManagerTest
                 Return _startPlayerHoldPoint
             End Get
         End Property
-        Public Function QueueSendMapPiece(ByVal player As Download.IPlayerDownloadAspect, ByVal position As UInteger) As Task
+        Public Function QueueSendMapPiece(player As Download.IPlayerDownloadAspect, position As UInteger) As Task
             Return CType(player, TestPlayer).QueueSendPacket(MakeMapFileData(
                     position,
                     CByte(1).Repeated(CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToRist,
                     player.Id,
                     HostPid))
         End Function
-        Public Function AddPlayer(ByVal player As TestPlayer) As Task
+        Public Function AddPlayer(player As TestPlayer) As Task
             SyncLock Me
                 _players.Add(player)
                 Return _startPlayerHoldPoint.Hold(player)
             End SyncLock
         End Function
-        Public Sub RemovePlayer(ByVal player As TestPlayer)
+        Public Sub RemovePlayer(player As TestPlayer)
             SyncLock Me
                 _players.Remove(player)
             End SyncLock
@@ -78,9 +78,9 @@ Public Class DownloadManagerTest
         Private ReadOnly _handler As PacketHandlerLogger(Of Protocol.PacketId) = Protocol.MakeW3PacketHandlerLogger("TestSource", New Logger)
         Private ReadOnly _logger As Logger
         Private ReadOnly _name As InvariantString
-        Public Sub New(ByVal pid As PlayerId,
-                       ByVal logger As Logger,
-                       Optional ByVal name As InvariantString? = Nothing)
+        Public Sub New(pid As PlayerId,
+                       logger As Logger,
+                       Optional name As InvariantString? = Nothing)
             Me._pid = pid
             Me._logger = logger
             Me._name = If(name Is Nothing, "TestPlayer{0}".Frmt(pid.Index), name.Value.ToString)
@@ -104,8 +104,8 @@ Public Class DownloadManagerTest
                 Return _pid
             End Get
         End Property
-        Private Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Packets.Definition(Of T),
-                                                     ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _
+        Private Function QueueAddPacketHandler(Of T)(packetDefinition As Packets.Definition(Of T),
+                                                     handler As Func(Of T, Task)) As Task(Of IDisposable) _
                                                      Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
             SyncLock Me
                 Return _handler.IncludeHandler(
@@ -118,7 +118,7 @@ Public Class DownloadManagerTest
                     End Function).AsTask
             End SyncLock
         End Function
-        Public Function QueueSendPacket(ByVal packet As Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket
+        Public Function QueueSendPacket(packet As Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket
             SyncLock Me
                 _pq.Enqueue(packet)
                 _lock.Set()
@@ -126,7 +126,7 @@ Public Class DownloadManagerTest
             End SyncLock
         End Function
 
-        Public Function InjectReceivedPacket(ByVal packet As Packet) As Task
+        Public Function InjectReceivedPacket(packet As Packet) As Task
             SyncLock Me
                 Return _handler.HandlePacket(
                         New Byte() {Packets.PacketPrefix, packet.Id}.Concat(
@@ -135,7 +135,7 @@ Public Class DownloadManagerTest
                 ).Catch(Sub(ex) _failFuture.SetException(ex.InnerExceptions))
             End SyncLock
         End Function
-        Public Function TryInterceptSentPacket(Optional ByVal timeoutMilliseconds As Integer = 10000) As Packet
+        Public Function TryInterceptSentPacket(Optional timeoutMilliseconds As Integer = 10000) As Packet
             SyncLock Me
                 If _pq.Count > 0 Then Return _pq.Dequeue
                 _lock.Reset()
@@ -146,13 +146,13 @@ Public Class DownloadManagerTest
             End SyncLock
             Return Nothing
         End Function
-        Public Sub ExpectNoPacket(Optional ByVal timeoutMilliseconds As Integer = 10)
+        Public Sub ExpectNoPacket(Optional timeoutMilliseconds As Integer = 10)
             Dim packet = TryInterceptSentPacket(timeoutMilliseconds)
             If packet IsNot Nothing Then
                 Throw New IO.InvalidDataException("Unexpected packet.")
             End If
         End Sub
-        Public Sub ExpectSentPacket(ByVal expected As Packet, Optional ByVal timeoutMilliseconds As Integer = 10000)
+        Public Sub ExpectSentPacket(expected As Packet, Optional timeoutMilliseconds As Integer = 10000)
             Dim received = TryInterceptSentPacket(timeoutMilliseconds)
             If received Is Nothing Then Throw New IO.IOException("No sent packet intercepted.")
             If expected.id <> received.id Then
@@ -171,13 +171,13 @@ Public Class DownloadManagerTest
                 Return _discFuture.Task
             End Get
         End Property
-        Public Function InjectClientMapInfo(ByVal state As MapTransferState, ByVal position As UInt32) As Task
+        Public Function InjectClientMapInfo(state As MapTransferState, position As UInt32) As Task
             Return InjectReceivedPacket(MakeClientMapInfo(state, position))
         End Function
-        Public Function InjectMapDataReceived(ByVal position As UInt32, ByVal senderPid As PlayerId) As Task
+        Public Function InjectMapDataReceived(position As UInt32, senderPid As PlayerId) As Task
             Return InjectReceivedPacket(MakeMapFileDataReceived(senderPid, ID, position))
         End Function
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedResult As PlayerLeaveReason, ByVal reasonDescription As String) As Task Implements Download.IPlayerDownloadAspect.QueueDisconnect
+        Public Function QueueDisconnect(expected As Boolean, reportedResult As PlayerLeaveReason, reasonDescription As String) As Task Implements Download.IPlayerDownloadAspect.QueueDisconnect
             _logger.Log("{0} Disconnected: {1}, {2}".Frmt(Me.Name, reportedResult, reasonDescription), LogMessageType.Negative)
             _discFuture.TrySetResult(True)
             Return _discFuture.Task

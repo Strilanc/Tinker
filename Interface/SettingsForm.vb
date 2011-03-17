@@ -14,7 +14,7 @@ Public Class SettingsForm
 
     Public Shared Function ShowWithProfiles(ByRef clientProfiles As IEnumerable(Of Bot.ClientProfile),
                                             ByRef pluginProfiles As IEnumerable(Of Bot.PluginProfile),
-                                            ByVal portPool As PortPool) As Boolean
+                                            portPool As PortPool) As Boolean
         Contract.Requires(clientProfiles IsNot Nothing)
         Contract.Requires(pluginProfiles IsNot Nothing)
         Contract.Requires(portPool IsNot Nothing)
@@ -30,9 +30,9 @@ Public Class SettingsForm
         End Using
     End Function
 
-    Public Sub New(ByVal clientProfiles As IEnumerable(Of Bot.ClientProfile),
-                   ByVal pluginProfiles As IEnumerable(Of Bot.PluginProfile),
-                   ByVal portPool As PortPool)
+    Public Sub New(clientProfiles As IEnumerable(Of Bot.ClientProfile),
+                   pluginProfiles As IEnumerable(Of Bot.PluginProfile),
+                   portPool As PortPool)
         Contract.Assume(clientProfiles IsNot Nothing)
         Contract.Assume(pluginProfiles IsNot Nothing)
         Contract.Assume(portPool IsNot Nothing)
@@ -62,7 +62,7 @@ Public Class SettingsForm
         numReplayBuildNumber.Value = My.Settings.ReplayBuildNumber
     End Sub
 
-    Public Shared Function ParsePortList(ByVal text As String, ByRef refText As String) As IEnumerable(Of UShort)
+    Public Shared Function ParsePortList(text As String, ByRef refText As String) As IEnumerable(Of UShort)
         Contract.Requires(text IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of UShort))() IsNot Nothing)
         Contract.Ensures(Contract.ValueAtReturn(refText) IsNot Nothing)
@@ -91,10 +91,10 @@ Public Class SettingsForm
         refText = String.Join(",", out_words.ToArray())
         Return ports
     End Function
-    Private Function GetProfileWithName(ByVal name As InvariantString) As Bot.ClientProfile
+    Private Function GetProfileWithName(name As InvariantString) As Bot.ClientProfile
         Return (From profile In _clientProfiles Where profile.name = name).FirstOrDefault
     End Function
-    Private Sub btnCreateNewProfile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnCreateNewProfile.Click
+    Private Sub btnCreateNewProfile_Click(sender As System.Object, e As System.EventArgs) Handles btnCreateNewProfile.Click
         Dim name = txtNewProfileName.Text
         name = name.Trim()
         If name = "" Then
@@ -114,7 +114,7 @@ Public Class SettingsForm
         _clientProfiles.Add(newProfile)
         AddTabForProfile(newProfile)
     End Sub
-    Private Sub AddTabForProfile(ByVal profile As Bot.ClientProfile)
+    Private Sub AddTabForProfile(profile As Bot.ClientProfile)
         Dim tab = New TabPage("Profile:" + profile.name)
         Dim cntrl = New ProfileSettingsControl()
         cntrl.LoadFromProfile(profile)
@@ -127,7 +127,7 @@ Public Class SettingsForm
         page.Item(page.Count - 2) = t
         AddHandler cntrl.Delete, AddressOf remove_profile_tab
     End Sub
-    Private Sub remove_profile_tab(ByVal sender As ProfileSettingsControl)
+    Private Sub remove_profile_tab(sender As ProfileSettingsControl)
         If sender.lastLoadedProfile.name = "Default" Then
             MessageBox.Show("You can't delete the default profile.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Return
@@ -145,7 +145,7 @@ Public Class SettingsForm
         Next tab
     End Sub
 
-    Private Sub btnSave_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSave.Click
+    Private Sub btnSave_Click(sender As System.Object, e As System.EventArgs) Handles btnSave.Click
         _pluginProfiles.Clear()
         For Each row As DataGridViewRow In gridPlugins.Rows
             If row.Cells(0).Value Is Nothing Then Continue For
@@ -199,11 +199,11 @@ Public Class SettingsForm
         Dispose()
     End Sub
 
-    Private Sub btnCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+    Private Sub btnCancel_Click(sender As System.Object, e As System.EventArgs) Handles btnCancel.Click
         Dispose()
     End Sub
 
-    Private Sub btnUserHelp_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnUserHelp.Click
+    Private Sub btnUserHelp_Click(sender As System.Object, e As System.EventArgs) Handles btnUserHelp.Click
         MessageBox.Show(("Name: \n" _
                         + "\tThe user's name.\n" _
                     + "Permissions: \n" _
@@ -221,7 +221,7 @@ Public Class SettingsForm
                     + "").Replace("\n", Environment.NewLine).Replace("\t", Microsoft.VisualBasic.vbTab))
     End Sub
 
-    Private Sub btnPluginsHelp_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnPluginsHelp.Click
+    Private Sub btnPluginsHelp_Click(sender As System.Object, e As System.EventArgs) Handles btnPluginsHelp.Click
         MessageBox.Show(("Plugins placed in the 'available plugins' list can be loaded with the 'LoadPlugin' command, or loaded at startup.\n" _
                     + "Use the import button to browse for a dll file and copy it to the plugins folder.\n\n" _
                     + "Name: \n" _
@@ -231,7 +231,7 @@ Public Class SettingsForm
                     + "").Replace("\n", Environment.NewLine).Replace("\t", Microsoft.VisualBasic.vbTab))
     End Sub
 
-    Private Sub btnImportPlugin_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnImportPlugin.Click
+    Private Sub btnImportPlugin_Click(sender As System.Object, e As System.EventArgs) Handles btnImportPlugin.Click
         If Not IO.Directory.Exists(IO.Path.Combine(Application.StartupPath, "Plugins")) Then
             IO.Directory.CreateDirectory(IO.Path.Combine(Application.StartupPath, "Plugins"))
         End If
@@ -270,11 +270,11 @@ Public Class SettingsForm
         End If
     End Sub
 
-    Private Sub txtProgramPath_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles txtProgramPath.TextChanged
+    Private Sub txtProgramPath_TextChanged(sender As System.Object, e As System.EventArgs) Handles txtProgramPath.TextChanged
         lblWar3FolderPathError.Visible = Not CachedWC3InfoProvider.TryCache(txtProgramPath.Text)
     End Sub
 
-    Private Sub btnLoadReplayBuildNumber_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnLoadReplayBuildNumber.Click
+    Private Sub btnLoadReplayBuildNumber_Click(sender As System.Object, e As System.EventArgs) Handles btnLoadReplayBuildNumber.Click
         Try
             OpenFileDialog.InitialDirectory = IO.Path.Combine(My.Settings.war3path, "Replay")
             OpenFileDialog.Filter = "Replays (*.w3g)|*.w3g"
@@ -299,7 +299,7 @@ Public Class SettingsForm
         End Try
     End Sub
 
-    Private Sub numReplayBuildNumber_ValueChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles numReplayBuildNumber.ValueChanged
+    Private Sub numReplayBuildNumber_ValueChanged(sender As Object, e As System.EventArgs) Handles numReplayBuildNumber.ValueChanged
         If My.MySettings.Default.ReplayBuildNumber > numReplayBuildNumber.Value Then
             lblReplayBuildNumber.Text = "Default: {0}".Frmt(My.MySettings.Default.ReplayBuildNumber)
             lblReplayBuildNumber.Visible = True

@@ -13,14 +13,14 @@
             Contract.Invariant(_help IsNot Nothing)
         End Sub
 
-        Public Sub New(Optional ByVal name As InvariantString? = Nothing)
+        Public Sub New(Optional name As InvariantString? = Nothing)
             MyBase.New(name:=If(name Is Nothing, New InvariantString("CommandSet"), name.Value),
                        headType:="SubCommand",
                        Description:="Picks a sub-command using the first word in the argument and invokes it with the remaining argument.")
             IncludeCommand(Me._help)
         End Sub
 
-        Public Overrides Function IsArgumentPrivate(ByVal argument As String) As Boolean
+        Public Overrides Function IsArgumentPrivate(argument As String) As Boolean
             Dim i = argument.IndexOf(" "c)
             If i = -1 Then i = argument.Length
             Dim head = argument.Substring(0, i)
@@ -40,7 +40,7 @@
             End Get
         End Property
 
-        Public Function IncludeCommand(ByVal command As ICommand(Of T)) As IDisposable
+        Public Function IncludeCommand(command As ICommand(Of T)) As IDisposable
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             SyncLock lock
@@ -53,7 +53,7 @@
             Return New DelegatedDisposable(Sub() RemoveCommand(command))
         End Function
 
-        Public Sub RemoveCommand(ByVal command As ICommand(Of T))
+        Public Sub RemoveCommand(command As ICommand(Of T))
             Contract.Requires(command IsNot Nothing)
             SyncLock lock
                 If Not _commandMap.ContainsKey(command.Name) Then Return
@@ -63,7 +63,7 @@
             End SyncLock
         End Sub
 
-        Protected NotOverridable Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
+        Protected NotOverridable Overrides Function PerformInvoke(target As T, user As BotUser, argumentHead As String, argumentRest As String) As Task(Of String)
             Dim command As ICommand(Of T) = Nothing
             SyncLock lock
                 If Not _commandMap.TryGetValue(argumentHead, command) Then

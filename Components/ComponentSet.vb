@@ -36,7 +36,7 @@ Namespace Components
         ''' Throws an InvalidOperationException if the component is already included.
         ''' Throws an InvalidOperationException if a component with the same name and type identifiers is already included.
         ''' </summary>
-        Private Sub AddComponent(ByVal component As IBotComponent)
+        Private Sub AddComponent(component As IBotComponent)
             Contract.Requires(component IsNot Nothing)
             If _components.Contains(component) Then
                 Throw New InvalidOperationException("Component already added.")
@@ -52,7 +52,7 @@ Namespace Components
         ''' Asynchronously fails with an InvalidOperationException if the component is already included.
         ''' Asynchronously fails with an InvalidOperationException if a component with the same name and type identifiers is already included.
         ''' </summary>
-        Public Function QueueAddComponent(ByVal component As IBotComponent) As Task
+        Public Function QueueAddComponent(component As IBotComponent) As Task
             Contract.Requires(component IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() AddComponent(component))
@@ -69,8 +69,8 @@ Namespace Components
         ''' Returns null if there is no such component.
         ''' </summary>
         <Pure()>
-        Private Function TryFindComponent(ByVal type As InvariantString,
-                                          ByVal name As InvariantString) As Maybe(Of IBotComponent)
+        Private Function TryFindComponent(type As InvariantString,
+                                          name As InvariantString) As Maybe(Of IBotComponent)
             Contract.Ensures(Not Contract.Result(Of Maybe(Of IBotComponent))().HasValue OrElse Contract.Result(Of Maybe(Of IBotComponent)).Value.Name = name)
             Contract.Ensures(Not Contract.Result(Of Maybe(Of IBotComponent))().HasValue OrElse Contract.Result(Of Maybe(Of IBotComponent)).Value.Type = type)
             Return (From c In _components Where c.Type = type AndAlso c.Name = name).MaybeFirst()
@@ -80,8 +80,8 @@ Namespace Components
         ''' Throws an InvalidOperationException if there is no such component.
         ''' </summary>
         <Pure()>
-        Private Function FindComponent(ByVal type As InvariantString,
-                                       ByVal name As InvariantString) As IBotComponent
+        Private Function FindComponent(type As InvariantString,
+                                       name As InvariantString) As IBotComponent
             Contract.Ensures(Contract.Result(Of IBotComponent)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IBotComponent)().Name = name)
             Contract.Ensures(Contract.Result(Of IBotComponent)().Type = type)
@@ -95,8 +95,8 @@ Namespace Components
         ''' Asynchronously determines a component, from the set, with the given type and name identifiers.
         ''' Asynchronously fails with an InvalidOperationExceptionFails if there is no such component.
         ''' </summary>
-        Public Function QueueFindComponent(ByVal type As InvariantString,
-                                           ByVal name As InvariantString) As Task(Of IBotComponent)
+        Public Function QueueFindComponent(type As InvariantString,
+                                           name As InvariantString) As Task(Of IBotComponent)
             Contract.Ensures(Contract.Result(Of Task(Of IBotComponent))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() FindComponent(type, name))
         End Function
@@ -106,7 +106,7 @@ Namespace Components
         ''' Returns null if there is no such component.
         ''' </summary>
         <Pure()>
-        Private Function TryFindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As Maybe(Of T)
+        Private Function TryFindComponent(Of T As IBotComponent)(name As InvariantString) As Maybe(Of T)
             Contract.Ensures(Not Contract.Result(Of Maybe(Of T))().HasValue OrElse Contract.Result(Of Maybe(Of T))().Value.Name = name)
             Dim result = (From c In _components.OfType(Of T)() Where c.Name = name).MaybeFirst()
             Contract.Assume(Not result.HasValue OrElse result.Value.Name = name)
@@ -118,7 +118,7 @@ Namespace Components
         ''' </summary>
         <Pure()>
         <SuppressMessage("Microsoft.Contracts", "Ensures-46-114")>
-        Private Function FindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As T
+        Private Function FindComponent(Of T As IBotComponent)(name As InvariantString) As T
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T).Name = name)
             Dim result = TryFindComponent(Of T)(name)
@@ -130,7 +130,7 @@ Namespace Components
         ''' Asynchronously determines a component, from the set, with the given type and name.
         ''' Asynchronously fails with an InvalidOperationExceptionFails if there is no such component.
         ''' </summary>
-        Public Function QueueFindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As Task(Of T)
+        Public Function QueueFindComponent(Of T As IBotComponent)(name As InvariantString) As Task(Of T)
             Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() FindComponent(Of T)(name))
         End Function
@@ -139,7 +139,7 @@ Namespace Components
         ''' Determines a component, from the set, with the given type.
         ''' If there was no such component then the result is a new component produced by the given factory and added to the set.
         ''' </summary>
-        Private Function FindOrElseConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As T
+        Private Function FindOrElseConstructComponent(Of T As IBotComponent)(factory As Func(Of T)) As T
             Contract.Requires(factory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Dim result = _components.OfType(Of T)().MaybeFirst()
@@ -154,7 +154,7 @@ Namespace Components
         ''' Asynchronously determines a component, from the set, with the given type.
         ''' If there was no such component then the result is a new component produced by the given factory and added to the set.
         ''' </summary>
-        Public Function QueueFindOrElseConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As Task(Of T)
+        Public Function QueueFindOrElseConstructComponent(Of T As IBotComponent)(factory As Func(Of T)) As Task(Of T)
             Contract.Requires(factory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() FindOrElseConstructComponent(factory))
@@ -166,15 +166,15 @@ Namespace Components
         ''' </summary>
         ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
         ''' <param name="remover">Asynchronously called with components as they are removed.</param>
-        Public Function ObserveComponents(ByVal adder As Action(Of IBotComponent),
-                                          ByVal remover As Action(Of IBotComponent)) As Task(Of IDisposable)
+        Public Function ObserveComponents(adder As Action(Of IBotComponent),
+                                          remover As Action(Of IBotComponent)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _components.Observe(adder, remover))
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(
                 Sub()
@@ -192,9 +192,9 @@ Namespace Components
         ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
         ''' <param name="remover">Asynchronously called with components as they are removed.</param>
         <Extension()> <Pure()>
-        Public Function ObserveComponentsOfType(Of T As IBotComponent)(ByVal this As ComponentSet,
-                                                                       ByVal adder As Action(Of T),
-                                                                       ByVal remover As Action(Of T)) As Task(Of IDisposable)
+        Public Function ObserveComponentsOfType(Of T As IBotComponent)(this As ComponentSet,
+                                                                       adder As Action(Of T),
+                                                                       remover As Action(Of T)) As Task(Of IDisposable)
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)

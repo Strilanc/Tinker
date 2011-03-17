@@ -11,7 +11,7 @@ Public Class BnetClientTest
     Private Class TestExternalProvider
         Implements Tinker.IProductInfoProvider
 
-        Public Function GenerateRevisionCheck(ByVal folder As String, ByVal seedString As String, ByVal challengeString As String) As UInteger Implements IProductInfoProvider.GenerateRevisionCheck
+        Public Function GenerateRevisionCheck(folder As String, seedString As String, challengeString As String) As UInteger Implements IProductInfoProvider.GenerateRevisionCheck
             Return 0
         End Function
 

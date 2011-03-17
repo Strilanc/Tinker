@@ -9,7 +9,7 @@ Public Class CommandTests
         Public Sub New()
             MyBase.New("TestTemplatedCommand", "arg1 arg2=value -arg3=value -arg4", "description", hasPrivateArguments:=True)
         End Sub
-        Protected Overloads Overrides Function PerformInvoke(ByVal target As UInteger, ByVal user As Tinker.BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Function PerformInvoke(target As UInteger, user As Tinker.BotUser, argument As CommandArgument) As Task(Of String)
             Dim result = target.ToString + " " + argument.RawValue(0)
             result += " "+argument.NamedValue("arg2")
             If argument.HasOptionalNamedValue("arg3") Then result += " " + argument.OptionalNamedValue("arg3")
@@ -29,7 +29,7 @@ Public Class CommandTests
         Public Sub New()
             MyBase.New("TestPartialCommand", "head", "description")
         End Sub
-        Protected Overloads Overrides Function PerformInvoke(ByVal target As UInteger, ByVal user As Tinker.BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
+        Protected Overloads Overrides Function PerformInvoke(target As UInteger, user As Tinker.BotUser, argumentHead As String, argumentRest As String) As Task(Of String)
             Return (argumentRest + target.ToString + argumentHead).AsTask
         End Function
     End Class
@@ -46,7 +46,7 @@ Public Class CommandTests
         Public Sub New()
             MyBase.New("TestPermissionCommand", "format", "description", "perm:3")
         End Sub
-        Protected Overrides Function PerformInvoke(ByVal target As UInteger, ByVal user As Tinker.BotUser, ByVal argument As String) As System.Threading.Tasks.Task(Of String)
+        Protected Overrides Function PerformInvoke(target As UInteger, user As Tinker.BotUser, argument As String) As System.Threading.Tasks.Task(Of String)
             InvokeCount += 1
             Return "allowed".AsTask
         End Function

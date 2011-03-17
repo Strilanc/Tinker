@@ -6,12 +6,12 @@
     Public MustInherit Class PartialCommand(Of TTarget)
         Inherits BaseCommand(Of TTarget)
 
-        Protected Sub New(ByVal name As InvariantString,
-                          ByVal headType As String,
-                          ByVal description As String,
-                          Optional ByVal permissions As String = Nothing,
-                          Optional ByVal extraHelp As String = Nothing,
-                          Optional ByVal hasPrivateArguments As Boolean = False)
+        Protected Sub New(name As InvariantString,
+                          headType As String,
+                          description As String,
+                          Optional permissions As String = Nothing,
+                          Optional extraHelp As String = Nothing,
+                          Optional hasPrivateArguments As Boolean = False)
             MyBase.New(name:=name,
                        Format:="{0} ...".Frmt(headType),
                        description:=description,
@@ -22,7 +22,7 @@
             Contract.Requires(description IsNot Nothing)
         End Sub
 
-        Protected NotOverridable Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Protected NotOverridable Overrides Function PerformInvoke(target As TTarget, user As BotUser, argument As String) As Task(Of String)
             Dim i = argument.IndexOf(" "c)
             If i = -1 Then i = argument.Length
             Dim head = argument.Substring(0, i)
@@ -30,7 +30,7 @@
             Return PerformInvoke(target, user, head, rest)
         End Function
 
-        Protected MustOverride Overloads Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
+        Protected MustOverride Overloads Function PerformInvoke(target As TTarget, user As BotUser, argumentHead As String, argumentRest As String) As Task(Of String)
     End Class
     <ContractClassFor(GetType(PartialCommand(Of )))>
     Public MustInherit Class ContractClassPartialCommand(Of TTarget)
@@ -38,7 +38,7 @@
         Protected Sub New()
             MyBase.New("", "", "")
         End Sub
-        Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
+        Protected Overrides Function PerformInvoke(target As TTarget, user As BotUser, argumentHead As String, argumentRest As String) As Task(Of String)
             Contract.Requires(target IsNot Nothing)
             Contract.Requires(argumentHead IsNot Nothing)
             Contract.Requires(argumentRest IsNot Nothing)

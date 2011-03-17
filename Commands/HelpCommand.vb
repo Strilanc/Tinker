@@ -18,7 +18,7 @@
                        Description:="Provides help for using commands.")
         End Sub
 
-        Public Sub AddCommand(ByVal command As ICommand(Of T))
+        Public Sub AddCommand(command As ICommand(Of T))
             Contract.Requires(command IsNot Nothing)
             SyncLock lock
                 If _commandMap.ContainsKey(command.Name) Then
@@ -27,7 +27,7 @@
                 _commandMap.Add(command.Name, command)
             End SyncLock
         End Sub
-        Public Sub RemoveCommand(ByVal command As ICommand(Of T))
+        Public Sub RemoveCommand(command As ICommand(Of T))
             Contract.Requires(command IsNot Nothing)
             SyncLock lock
                 If Not _commandMap.ContainsKey(command.Name) Then Return
@@ -36,11 +36,11 @@
             End SyncLock
         End Sub
 
-        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+        Protected Overrides Function PerformInvoke(target As T, user As BotUser, argument As String) As Task(Of String)
             Return GetHelp(user, argument).AsTask
         End Function
 
-        Private Function GetHelp(ByVal user As BotUser, ByVal argument As String) As String
+        Private Function GetHelp(user As BotUser, argument As String) As String
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
 
@@ -84,7 +84,7 @@
             End Select
         End Function
 
-        Private Function GetSpecificHelp(ByVal argument As String) As String
+        Private Function GetSpecificHelp(argument As String) As String
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
 

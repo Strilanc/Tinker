@@ -122,7 +122,7 @@ Public Class ClientForm
         Next pluginName
     End Sub
 
-    Private Shadows Sub OnClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
+    Private Shadows Sub OnClosing(sender As Object, e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
         If _bot Is Nothing Then Return
 
         If e.CloseReason = CloseReason.UserClosing Then
@@ -170,7 +170,7 @@ Public Class ClientForm
         Me.Visible = False
     End Sub
 
-    Private Sub btnShowExceptionLog_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnShowExceptionLog.Click
+    Private Sub btnShowExceptionLog_Click(sender As System.Object, e As System.EventArgs) Handles btnShowExceptionLog.Click
         _exceptionForm.Left = Me.Left + Me.Width \ 4
         _exceptionForm.Top = Me.Top + Me.Height \ 4
         _exceptionForm.Width = Me.Width \ 2

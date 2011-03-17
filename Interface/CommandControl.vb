@@ -4,7 +4,7 @@ Public Class CommandControl
     Private _historyPointer As Integer
     Private ReadOnly _history As New List(Of String) From {""}
 
-    Public Event IssuedCommand(ByVal sender As CommandControl, ByVal argument As String)
+    Public Event IssuedCommand(sender As CommandControl, argument As String)
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(_history IsNot Nothing)
@@ -13,7 +13,7 @@ Public Class CommandControl
         Contract.Invariant(_historyPointer < _history.Count)
     End Sub
 
-    Private Sub txtCommand_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtCommand.KeyDown
+    Private Sub txtCommand_KeyDown(sender As Object, e As System.Windows.Forms.KeyEventArgs) Handles txtCommand.KeyDown
         Select Case e.KeyCode
             Case Keys.Enter
                 e.Handled = True
@@ -40,7 +40,7 @@ Public Class CommandControl
         End Select
     End Sub
 
-    Private Sub BotWidgetControl_Resize(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Resize
+    Private Sub BotWidgetControl_Resize(sender As Object, e As System.EventArgs) Handles Me.Resize
         If Me.Height <> txtCommand.Height Then Me.Height = txtCommand.Height
     End Sub
 End Class

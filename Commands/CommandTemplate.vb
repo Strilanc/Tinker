@@ -17,13 +17,13 @@ Namespace Commands
         ''' <summary>
         ''' Constructs a command template using a format string.
         ''' </summary>
-        Public Sub New(ByVal format As InvariantString)
+        Public Sub New(format As InvariantString)
             Me.New(New CommandArgument(format))
         End Sub
         ''' <summary>
         ''' Constructs a command template using a representative command argument.
         ''' </summary>
-        Public Sub New(ByVal representativeArgument As CommandArgument)
+        Public Sub New(representativeArgument As CommandArgument)
             Contract.Requires(representativeArgument IsNot Nothing)
             Me.template = representativeArgument
             Me.rawMaxCount = Me.template.RawValueCount
@@ -37,7 +37,7 @@ Namespace Commands
         ''' Determines an exception for any mismatch between an argument and the template.
         ''' Returns nothing if the argument matches the template.
         ''' </summary>
-        Public Function TryFindMismatch(ByVal text As String) As ArgumentException
+        Public Function TryFindMismatch(text As String) As ArgumentException
             Contract.Requires(text IsNot Nothing)
             Return TryFindMismatch(New CommandArgument(text))
         End Function
@@ -45,7 +45,7 @@ Namespace Commands
         ''' Determines an exception for any mismatch between an argument and the template.
         ''' Returns nothing if the argument matches the template.
         ''' </summary>
-        Public Function TryFindMismatch(ByVal argument As CommandArgument) As ArgumentException
+        Public Function TryFindMismatch(argument As CommandArgument) As ArgumentException
             Contract.Requires(argument IsNot Nothing)
 
             'Optional named argument keys must be understood

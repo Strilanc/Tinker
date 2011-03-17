@@ -33,7 +33,7 @@ Public Class LoggerControl
             Contract.Invariant(_message IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal message As String, ByVal color As Color, Optional ByVal replacement As QueuedMessage = Nothing)
+        Public Sub New(message As String, color As Color, Optional replacement As QueuedMessage = Nothing)
             Contract.Requires(message IsNot Nothing)
             Contract.Ensures(Me.Message = message)
             Contract.Ensures(Me.Color = color)
@@ -68,7 +68,7 @@ Public Class LoggerControl
                 Contract.Ensures(Contract.Result(Of QueuedMessage)() Is _nextMessage)
                 Return _nextMessage
             End Get
-            Set(ByVal value As QueuedMessage)
+            Set(value As QueuedMessage)
                 Contract.Requires(value IsNot Nothing)
                 Contract.Requires(NextMessage Is Nothing)
                 _nextMessage = value
@@ -101,11 +101,11 @@ Public Class LoggerControl
     End Sub
 
 #Region "State"
-    Public Sub SetLogger(ByVal logger As Logger,
-                         ByVal name As InvariantString,
-                         Optional ByVal dataEventsMode As CallbackMode = CallbackMode.Unspecified,
-                         Optional ByVal parsedDataMode As CallbackMode = CallbackMode.Unspecified,
-                         Optional ByVal rawDataMode As CallbackMode = CallbackMode.Unspecified)
+    Public Sub SetLogger(logger As Logger,
+                         name As InvariantString,
+                         Optional dataEventsMode As CallbackMode = CallbackMode.Unspecified,
+                         Optional parsedDataMode As CallbackMode = CallbackMode.Unspecified,
+                         Optional rawDataMode As CallbackMode = CallbackMode.Unspecified)
         SyncLock lock
             If Me._logger IsNot Nothing Then
                 If filestream IsNot Nothing Then
@@ -171,20 +171,20 @@ Public Class LoggerControl
         End Get
     End Property
 
-    Public Sub LogMessage(ByVal message As Lazy(Of String),
-                          ByVal color As Color,
-                          Optional ByVal fileOnly As Boolean = False)
+    Public Sub LogMessage(message As Lazy(Of String),
+                          color As Color,
+                          Optional fileOnly As Boolean = False)
         Contract.Requires(message IsNot Nothing)
         LogMessage(message.Value, color, fileOnly)
     End Sub
-    Public Sub LogMessage(ByVal message As String,
-                          ByVal color As Color,
-                          Optional ByVal fileOnly As Boolean = False)
+    Public Sub LogMessage(message As String,
+                          color As Color,
+                          Optional fileOnly As Boolean = False)
         Contract.Requires(message IsNot Nothing)
         LogMessage(New QueuedMessage(message, color), fileOnly)
     End Sub
-    Private Sub LogMessage(ByVal message As QueuedMessage,
-                           Optional ByVal fileOnly As Boolean = False)
+    Private Sub LogMessage(message As QueuedMessage,
+                           Optional fileOnly As Boolean = False)
         Contract.Requires(message IsNot Nothing)
         SyncLock lock
             If Not fileOnly Then
@@ -271,7 +271,7 @@ Public Class LoggerControl
             e.RaiseAsUnexpected("Exception rose post LoggerControl.emptyQueue")
         End Try
     End Sub
-    Private Sub LogFutureMessage(ByVal placeholder As String, ByVal futureMessage As Task(Of String))
+    Private Sub LogFutureMessage(placeholder As String, futureMessage As Task(Of String))
         Contract.Requires(placeholder IsNot Nothing)
         Contract.Requires(futureMessage IsNot Nothing)
 
@@ -294,8 +294,8 @@ Public Class LoggerControl
 #End Region
 
 #Region "Log Events"
-    Private Sub OnLoggedMessage(ByVal type As LogMessageType,
-                                ByVal message As Lazy(Of String)) Handles _logger.LoggedMessage
+    Private Sub OnLoggedMessage(type As LogMessageType,
+                                message As Lazy(Of String)) Handles _logger.LoggedMessage
         Dim color As Color
         Dim fileOnly As Boolean
         SyncLock lock
@@ -305,8 +305,8 @@ Public Class LoggerControl
         End SyncLock
         LogMessage(message, color, fileOnly)
     End Sub
-    Private Sub OnLoggedFutureMessage(ByVal placeholder As String,
-                                      ByVal out As Task(Of String)) Handles _logger.LoggedFutureMessage
+    Private Sub OnLoggedFutureMessage(placeholder As String,
+                                      out As Task(Of String)) Handles _logger.LoggedFutureMessage
         uiRef.QueueAction(Sub() LogFutureMessage(placeholder, out))
     End Sub
 #End Region
@@ -322,7 +322,7 @@ Public Class LoggerControl
         SyncFromCheckbox(chkRawData, LogMessageType.DataRaw)
     End Sub
 
-    Private Sub SyncFromCheckbox(ByVal c As CheckBox, ByVal e As LogMessageType)
+    Private Sub SyncFromCheckbox(c As CheckBox, e As LogMessageType)
         SyncLock lock
             Select Case c.CheckState
                 Case CheckState.Checked : callbackModeMap(e) = CallbackMode.On
@@ -331,7 +331,7 @@ Public Class LoggerControl
             End Select
         End SyncLock
     End Sub
-    Private Sub SyncToCheckbox(ByVal c As CheckBox, ByVal e As LogMessageType)
+    Private Sub SyncToCheckbox(c As CheckBox, e As LogMessageType)
         SyncLock lock
             Select Case callbackModeMap(e)
                 Case CallbackMode.On : c.CheckState = CheckState.Checked
@@ -379,7 +379,7 @@ Public Class LoggerControl
         End If
     End Sub
 
-    Private Sub btnUnbuffer_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnUnbuffer.Click
+    Private Sub btnUnbuffer_Click(sender As System.Object, e As System.EventArgs) Handles btnUnbuffer.Click
         txtLog.Select(txtLog.TextLength, 0)
     End Sub
 #End Region

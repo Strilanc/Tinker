@@ -9,12 +9,12 @@ Public Class HelpCommandTest
         Public Sub New()
             MyBase.New("Test", "arg -option", "A test command.", "root:1", "x=test")
         End Sub
-        Protected Overrides Function PerformInvoke(ByVal target As Object, ByVal user As Tinker.BotUser, ByVal argument As String) As System.Threading.Tasks.Task(Of String)
+        Protected Overrides Function PerformInvoke(target As Object, user As Tinker.BotUser, argument As String) As System.Threading.Tasks.Task(Of String)
             Return "".AsTask
         End Function
     End Class
     Private Shared ReadOnly TestCommandFactory As Func(Of ICommand(Of Object)) = Function() New TestCommand()
-    Private Shared Function BlockingInvoke(ByVal command As ICommand(Of Object), ByVal arg As String) As Task(Of String)
+    Private Shared Function BlockingInvoke(command As ICommand(Of Object), arg As String) As Task(Of String)
         Return BlockOnTaskValue(command.Invoke(New Object, Nothing, arg))
     End Function
 
