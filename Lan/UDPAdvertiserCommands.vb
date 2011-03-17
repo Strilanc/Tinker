@@ -10,7 +10,7 @@ Namespace Lan.Commands
                        Description:="Causes the advertiser to automatically advertise all games on any server when 'On'.")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As UDPAdvertiserComponent, user As BotUser, argument As CommandArgument) As Task(Of String)
             Select Case New InvariantString(argument.RawValue(0))
                 Case "On"
                     Await target.QueueSetAutomatic(True)
@@ -32,7 +32,7 @@ Namespace Lan.Commands
                        Description:="Adds a game to be advertised, but doesn't create a new server to go with it.")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As UDPAdvertiser, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim id = UInt32.Parse(argument.NamedValue("id"))
             Dim name = argument.NamedValue("name")
             Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
@@ -53,7 +53,7 @@ Namespace Lan.Commands
                        Description:="Removes a game being advertised.")
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiser, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As UDPAdvertiser, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim id As UInteger
             If Not UInteger.TryParse(argument.RawValue(0), id) Then Throw New InvalidOperationException("Invalid game id.")
 
@@ -76,7 +76,7 @@ Namespace Lan.Commands
                        extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
-        Protected Overloads Overrides Async Function PerformInvoke(ByVal target As UDPAdvertiserComponent, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+        Protected Overloads Overrides Async Function PerformInvoke(target As UDPAdvertiserComponent, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim server = Await target.Bot.QueueGetOrConstructGameServer()
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
             Try

@@ -4,11 +4,11 @@
         Inherits BaseFixedSizeJar(Of Byte)
         Private ReadOnly _showHex As Boolean
 
-        Public Sub New(Optional ByVal showHex As Boolean = False)
+        Public Sub New(Optional showHex As Boolean = False)
             Me._showHex = showHex
         End Sub
 
-        Public Overrides Function Pack(ByVal value As Byte) As IRist(Of Byte)
+        Public Overrides Function Pack(value As Byte) As IRist(Of Byte)
             Return MakeRist(value)
         End Function
 
@@ -18,17 +18,17 @@
             End Get
         End Property
         <SuppressMessage("Microsoft.Contracts", "Ensures-47-6")>
-        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Byte
+        Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As Byte
             Return data.Single
         End Function
 
-        Public Overrides Function Describe(ByVal value As Byte) As String
+        Public Overrides Function Describe(value As Byte) As String
             Return If(_showHex,
                       "0x" + value.ToString("X4", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-164")>
-        Public Overrides Function Parse(ByVal text As String) As Byte
+        Public Overrides Function Parse(text As String) As Byte
             Try
                 If New InvariantString(text).StartsWith("0x") Then
                     Contract.Assume(text.Length >= 2)
@@ -64,13 +64,13 @@
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly _showHex As Boolean
 
-        Public Sub New(Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian,
-                       Optional ByVal showHex As Boolean = False)
+        Public Sub New(Optional byteOrder As ByteOrder = byteOrder.LittleEndian,
+                       Optional showHex As Boolean = False)
             Me._showHex = showHex
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(ByVal value As UShort) As IRist(Of Byte)
+        Public Overrides Function Pack(value As UShort) As IRist(Of Byte)
             Return value.Bytes(byteOrder)
         End Function
 
@@ -80,18 +80,18 @@
             End Get
         End Property
         <SuppressMessage("Microsoft.Contracts", "Ensures-47-26")>
-        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInt16
+        Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As UInt16
             Contract.Assume(data.Count = 2)
             Return data.ToUInt16(byteOrder)
         End Function
 
-        Public Overrides Function Describe(ByVal value As UInt16) As String
+        Public Overrides Function Describe(value As UInt16) As String
             Return If(_showHex,
                       "0x" + value.ToString("X4", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-164")>
-        Public Overrides Function Parse(ByVal text As String) As UInt16
+        Public Overrides Function Parse(text As String) As UInt16
             Try
                 If New InvariantString(text).StartsWith("0x") Then
                     Contract.Assume(text.Length >= 2)
@@ -127,13 +127,13 @@
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly _showHex As Boolean
 
-        Public Sub New(Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian,
-                       Optional ByVal showHex As Boolean = False)
+        Public Sub New(Optional byteOrder As ByteOrder = byteOrder.LittleEndian,
+                       Optional showHex As Boolean = False)
             Me._showHex = showHex
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(ByVal value As UInt32) As IRist(Of Byte)
+        Public Overrides Function Pack(value As UInt32) As IRist(Of Byte)
             Return value.Bytes(byteOrder)
         End Function
 
@@ -143,18 +143,18 @@
             End Get
         End Property
         <SuppressMessage("Microsoft.Contracts", "Ensures-47-26")>
-        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInt32
+        Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As UInt32
             Contract.Assume(data.Count = 4)
             Return data.ToUInt32(byteOrder)
         End Function
 
-        Public Overrides Function Describe(ByVal value As UInt32) As String
+        Public Overrides Function Describe(value As UInt32) As String
             Return If(_showHex,
                       "0x" + value.ToString("X8", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-164")>
-        Public Overrides Function Parse(ByVal text As String) As UInt32
+        Public Overrides Function Parse(text As String) As UInt32
             Try
                 If New InvariantString(text).StartsWith("0x") Then
                     Contract.Assume(text.Length >= 2)
@@ -190,13 +190,13 @@
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly _showHex As Boolean
 
-        Public Sub New(Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian,
-                       Optional ByVal showHex As Boolean = False)
+        Public Sub New(Optional byteOrder As ByteOrder = byteOrder.LittleEndian,
+                       Optional showHex As Boolean = False)
             Me._showHex = showHex
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(ByVal value As UInt64) As IRist(Of Byte)
+        Public Overrides Function Pack(value As UInt64) As IRist(Of Byte)
             Return value.Bytes(byteOrder)
         End Function
 
@@ -206,18 +206,18 @@
             End Get
         End Property
         <SuppressMessage("Microsoft.Contracts", "Ensures-47-26")>
-        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As UInt64
+        Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As UInt64
             Contract.Assume(data.Count = 8)
             Return data.ToUInt64(byteOrder)
         End Function
 
-        Public Overrides Function Describe(ByVal value As UInt64) As String
+        Public Overrides Function Describe(value As UInt64) As String
             Return If(_showHex,
                       "0x" + value.ToString("X16", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-164")>
-        Public Overrides Function Parse(ByVal text As String) As UInt64
+        Public Overrides Function Parse(text As String) As UInt64
             Try
                 If New InvariantString(text).StartsWith("0x") Then
                     Contract.Assume(text.Length >= 2)
@@ -236,7 +236,7 @@
     Public NotInheritable Class Float32Jar
         Inherits BaseFixedSizeJar(Of Single)
 
-        Public Overrides Function Pack(ByVal value As Single) As IRist(Of Byte)
+        Public Overrides Function Pack(value As Single) As IRist(Of Byte)
             Return BitConverter.GetBytes(value).AsRist()
         End Function
 
@@ -246,17 +246,17 @@
             End Get
         End Property
         <SuppressMessage("Microsoft.Contracts", "Ensures-47-25")>
-        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Single
+        Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As Single
             Dim buffer = data.ToArray()
             Contract.Assume(buffer.Length = 4)
             Return BitConverter.ToSingle(buffer, 0)
         End Function
 
-        Public Overrides Function Describe(ByVal value As Single) As String
+        Public Overrides Function Describe(value As Single) As String
             Return value.ToString("r", CultureInfo.InvariantCulture)
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-94")>
-        Public Overrides Function Parse(ByVal text As String) As Single
+        Public Overrides Function Parse(text As String) As Single
             Try
                 Return Single.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)
             Catch ex As Exception When TypeOf ex Is ArgumentException OrElse
@@ -270,7 +270,7 @@
     Public NotInheritable Class Float64Jar
         Inherits BaseFixedSizeJar(Of Double)
 
-        Public Overrides Function Pack(ByVal value As Double) As IRist(Of Byte)
+        Public Overrides Function Pack(value As Double) As IRist(Of Byte)
             Return BitConverter.GetBytes(value).AsRist()
         End Function
 
@@ -280,17 +280,17 @@
             End Get
         End Property
         <SuppressMessage("Microsoft.Contracts", "Ensures-47-25")>
-        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As Double
+        Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As Double
             Dim buffer = data.ToArray()
             Contract.Assume(buffer.Length = 8)
             Return BitConverter.ToDouble(buffer, 0)
         End Function
 
-        Public Overrides Function Describe(ByVal value As Double) As String
+        Public Overrides Function Describe(value As Double) As String
             Return value.ToString("r", CultureInfo.InvariantCulture)
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-94")>
-        Public Overrides Function Parse(ByVal text As String) As Double
+        Public Overrides Function Parse(text As String) As Double
             Try
                 Return Double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)
             Catch ex As Exception When TypeOf ex Is ArgumentException OrElse

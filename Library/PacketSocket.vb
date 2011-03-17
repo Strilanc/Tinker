@@ -14,7 +14,7 @@ Public NotInheritable Class PacketSocket
 
     Public Const DefaultBufferSize As Integer = 1460 '[sending more data in a packet causes wc3 clients to disc; happens to be maximum ethernet header size]
     Public ReadOnly bufferSize As Integer
-    Public Event Disconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String)
+    Public Event Disconnected(sender As PacketSocket, expected As Boolean, reason As String)
     Private WithEvents deadManSwitch As DeadManSwitch
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -33,16 +33,16 @@ Public NotInheritable Class PacketSocket
         Contract.Invariant(Logger IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal stream As IO.Stream,
-                   ByVal localEndPoint As Net.IPEndPoint,
-                   ByVal remoteEndPoint As Net.IPEndPoint,
-                   ByVal clock As IClock,
-                   Optional ByVal timeout As TimeSpan? = Nothing,
-                   Optional ByVal logger As Logger = Nothing,
-                   Optional ByVal bufferSize As Integer = DefaultBufferSize,
-                   Optional ByVal preheaderLength As Integer = 2,
-                   Optional ByVal sizeHeaderLength As Integer = 2,
-                   Optional ByVal name As InvariantString? = Nothing)
+    Public Sub New(stream As IO.Stream,
+                   localEndPoint As Net.IPEndPoint,
+                   remoteEndPoint As Net.IPEndPoint,
+                   clock As IClock,
+                   Optional timeout As TimeSpan? = Nothing,
+                   Optional logger As Logger = Nothing,
+                   Optional bufferSize As Integer = DefaultBufferSize,
+                   Optional preheaderLength As Integer = 2,
+                   Optional sizeHeaderLength As Integer = 2,
+                   Optional name As InvariantString? = Nothing)
         Contract.Assume(clock IsNot Nothing)
         Contract.Assume(stream IsNot Nothing)
         Contract.Assume(localEndPoint IsNot Nothing)
@@ -79,15 +79,15 @@ Public NotInheritable Class PacketSocket
         End If
         Me._name = If(name, New InvariantString(Me.RemoteEndPoint.ToString))
     End Sub
-    Public Shared Async Function AsyncConnect(ByVal remoteHost As String,
-                                              ByVal remotePort As UShort,
-                                              ByVal clock As IClock,
-                                              Optional ByVal timeout As TimeSpan? = Nothing,
-                                              Optional ByVal logger As Logger = Nothing,
-                                              Optional ByVal bufferSize As Integer = DefaultBufferSize,
-                                              Optional ByVal preheaderLength As Integer = 2,
-                                              Optional ByVal sizeHeaderLength As Integer = 2,
-                                              Optional ByVal name As InvariantString? = Nothing) As Task(Of PacketSocket)
+    Public Shared Async Function AsyncConnect(remoteHost As String,
+                                              remotePort As UShort,
+                                              clock As IClock,
+                                              Optional timeout As TimeSpan? = Nothing,
+                                              Optional logger As Logger = Nothing,
+                                              Optional bufferSize As Integer = DefaultBufferSize,
+                                              Optional preheaderLength As Integer = 2,
+                                              Optional sizeHeaderLength As Integer = 2,
+                                              Optional name As InvariantString? = Nothing) As Task(Of PacketSocket)
         Contract.Assume(remoteHost IsNot Nothing)
         Contract.Assume(clock IsNot Nothing)
         Contract.Assume(preheaderLength >= 0)
@@ -134,7 +134,7 @@ Public NotInheritable Class PacketSocket
         End Get
     End Property
 
-    Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
+    Private Sub Disconnect(expected As Boolean, reason As String)
         Contract.Requires(reason IsNot Nothing)
         If Not _isConnected Then Return
         _isConnected = False
@@ -142,12 +142,12 @@ Public NotInheritable Class PacketSocket
         _stream.Close()
         outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, expected, reason))
     End Sub
-    Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As Task
+    Public Function QueueDisconnect(expected As Boolean, reason As String) As Task
         Contract.Requires(reason IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Return inQueue.QueueAction(Sub() Disconnect(expected, reason))
     End Function
-    Private Sub DeadManSwitch_Triggered(ByVal sender As DeadManSwitch) Handles deadManSwitch.Triggered
+    Private Sub DeadManSwitch_Triggered(sender As DeadManSwitch) Handles deadManSwitch.Triggered
         Disconnect(expected:=False, reason:="Connection went idle.")
     End Sub
 
@@ -170,14 +170,14 @@ Public NotInheritable Class PacketSocket
         Return result
     End Function
 
-    Public Sub WritePacket(ByVal preheader As IEnumerable(Of Byte), ByVal payload As IEnumerable(Of Byte))
+    Public Sub WritePacket(preheader As IEnumerable(Of Byte), payload As IEnumerable(Of Byte))
         Contract.Requires(preheader IsNot Nothing)
         Contract.Requires(payload IsNot Nothing)
         Dim writtenData = packetStreamer.WritePacket(preheader, payload)
         Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, writtenData.ToHexString), LogMessageType.DataRaw)
     End Sub
 
-    Public Sub WriteRawData(ByVal data() As Byte)
+    Public Sub WriteRawData(data() As Byte)
         Contract.Requires(data IsNot Nothing)
         _stream.Write(data, 0, data.Length)
         Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)

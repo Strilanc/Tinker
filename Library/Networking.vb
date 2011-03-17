@@ -48,7 +48,7 @@ Public Module NetworkingCommon
             Return Net.IPAddress.Loopback
         End If
     End Function
-    Public Function GetCachedIPAddressBytes(ByVal external As Boolean) As Byte()
+    Public Function GetCachedIPAddressBytes(external As Boolean) As Byte()
         Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
         If cachedInternalIP Is Nothing Then Return GetInternalIPAddress().GetAddressBytes
 
@@ -61,8 +61,8 @@ Public Module NetworkingCommon
 
     '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
     <Pure()>
-    Public Function AsyncTcpConnect(ByVal host As String,
-                                    ByVal port As UShort) As Task(Of TcpClient)
+    Public Function AsyncTcpConnect(host As String,
+                                    port As UShort) As Task(Of TcpClient)
         Contract.Requires(host IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
         Dim result = New TaskCompletionSource(Of TcpClient)
@@ -78,8 +78,8 @@ Public Module NetworkingCommon
 
     '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
     <Pure()>
-    Public Function AsyncTcpConnect(ByVal address As Net.IPAddress,
-                                    ByVal port As UShort) As Task(Of TcpClient)
+    Public Function AsyncTcpConnect(address As Net.IPAddress,
+                                    port As UShort) As Task(Of TcpClient)
         Contract.Requires(address IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
         Dim result = New TaskCompletionSource(Of TcpClient)
@@ -95,7 +95,7 @@ Public Module NetworkingCommon
 
     '''<summary>Asynchronously accepts an incoming connection attempt.</summary>
     <Extension()>
-    Public Function AsyncAcceptConnection(ByVal listener As TcpListener) As Task(Of TcpClient)
+    Public Function AsyncAcceptConnection(listener As TcpListener) As Task(Of TcpClient)
         Contract.Requires(listener IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
         Dim result = New TaskCompletionSource(Of TcpClient)
@@ -104,7 +104,7 @@ Public Module NetworkingCommon
         Return result.Task.AssumeNotNull
     End Function
 
-    Public Function AsyncDnsLookup(ByVal remoteHost As String) As Task(Of Net.IPHostEntry)
+    Public Function AsyncDnsLookup(remoteHost As String) As Task(Of Net.IPHostEntry)
         Contract.Requires(remoteHost IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task(Of Net.IPHostEntry))() IsNot Nothing)
         Dim result = New TaskCompletionSource(Of Net.IPHostEntry)()
@@ -113,8 +113,8 @@ Public Module NetworkingCommon
         Return result.Task.AssumeNotNull
     End Function
 
-    Public Async Function DNSLookupAddressAsync(ByVal remoteHost As String,
-                                                ByVal addressSelector As Random) As Task(Of Net.IPAddress)
+    Public Async Function DNSLookupAddressAsync(remoteHost As String,
+                                                addressSelector As Random) As Task(Of Net.IPAddress)
         Contract.Assume(remoteHost IsNot Nothing)
         Contract.Assume(addressSelector IsNot Nothing)
         'Contract.Ensures(Contract.Result(Of Task(Of Net.IPAddress))() IsNot Nothing)
@@ -123,9 +123,9 @@ Public Module NetworkingCommon
     End Function
 
     <Pure()>
-    Public Async Function TCPConnectAsync(ByVal remoteHost As String,
-                                          ByVal addressSelector As Random,
-                                          ByVal port As UShort) As Task(Of TcpClient)
+    Public Async Function TCPConnectAsync(remoteHost As String,
+                                          addressSelector As Random,
+                                          port As UShort) As Task(Of TcpClient)
         Contract.Assume(remoteHost IsNot Nothing)
         Contract.Assume(addressSelector IsNot Nothing)
         'Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)

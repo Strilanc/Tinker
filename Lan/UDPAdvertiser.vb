@@ -40,8 +40,8 @@ Namespace Lan
                 Contract.Invariant(_targetHosts IsNot Nothing)
             End Sub
 
-            Public Sub New(ByVal gameDescription As WC3.LocalGameDescription,
-                           ByVal targetHosts As IRist(Of String))
+            Public Sub New(gameDescription As WC3.LocalGameDescription,
+                           targetHosts As IRist(Of String))
                 Contract.Requires(gameDescription IsNot Nothing)
                 Contract.Requires(targetHosts IsNot Nothing)
                 Me._gameDescription = gameDescription
@@ -62,10 +62,10 @@ Namespace Lan
             End Property
         End Class
 
-        Public Sub New(ByVal infoProvider As IProductInfoProvider,
-                       ByVal clock As IClock,
-                       Optional ByVal defaultTargetHost As String = "localhost",
-                       Optional ByVal logger As Logger = Nothing)
+        Public Sub New(infoProvider As IProductInfoProvider,
+                       clock As IClock,
+                       Optional defaultTargetHost As String = "localhost",
+                       Optional logger As Logger = Nothing)
             Contract.Requires(infoProvider IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(defaultTargetHost IsNot Nothing)
@@ -84,8 +84,8 @@ Namespace Lan
             End Get
         End Property
 
-        Private Sub AddGame(ByVal gameDescription As WC3.LocalGameDescription,
-                            Optional ByVal targets As IRist(Of String) = Nothing)
+        Private Sub AddGame(gameDescription As WC3.LocalGameDescription,
+                            Optional targets As IRist(Of String) = Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
             If _games.ContainsKey(gameDescription.GameId) Then
                 Dim gameSet = _games(gameDescription.GameId)
@@ -101,14 +101,14 @@ Namespace Lan
             _logger.Log("Added game {0}".Frmt(gameDescription.Name), LogMessageType.Positive)
             _viewGames.Add(lanGame)
         End Sub
-        Public Function QueueAddGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                     Optional ByVal targetHosts As IRist(Of String) = Nothing) As Task
+        Public Function QueueAddGame(gameDescription As WC3.LocalGameDescription,
+                                     Optional targetHosts As IRist(Of String) = Nothing) As Task
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() AddGame(gameDescription, targetHosts))
         End Function
 
-        Private Function RemoveGame(ByVal id As UInt32) As Boolean
+        Private Function RemoveGame(id As UInt32) As Boolean
             If Not _games.ContainsKey(id) Then Return False
             Dim game = _games(id)
             Contract.Assume(game IsNot Nothing)
@@ -124,7 +124,7 @@ Namespace Lan
             _viewGames.Remove(game)
             Return True
         End Function
-        Public Function QueueRemoveGame(ByVal id As UInt32) As Task(Of Boolean)
+        Public Function QueueRemoveGame(id As UInt32) As Task(Of Boolean)
             Contract.Ensures(Contract.Result(Of Task(Of Boolean))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() RemoveGame(id))
         End Function
@@ -145,14 +145,14 @@ Namespace Lan
                 RefreshGame(game)
             Next game
         End Sub
-        Private Sub RefreshGame(ByVal game As LanGame)
+        Private Sub RefreshGame(game As LanGame)
             Contract.Requires(game IsNot Nothing)
             Dim pk = WC3.Protocol.MakeLanGameDetails(_infoProvider.MajorVersion, game.GameDescription)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host
         End Sub
-        Private Sub SendPacket(ByVal pk As WC3.Protocol.Packet, ByVal targetHost As String, ByVal targetPort As UShort)
+        Private Sub SendPacket(pk As WC3.Protocol.Packet, targetHost As String, targetPort As UShort)
             Contract.Requires(pk IsNot Nothing)
             Try
                 'pack
@@ -176,15 +176,15 @@ Namespace Lan
             End Try
         End Sub
 
-        Public Function ObserveGames(ByVal adder As Action(Of LanGame),
-                                     ByVal remover As Action(Of LanGame)) As Task(Of IDisposable)
+        Public Function ObserveGames(adder As Action(Of LanGame),
+                                     remover As Action(Of LanGame)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _viewGames.Observe(adder, remover))
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(
                 Sub()

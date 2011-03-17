@@ -2,16 +2,16 @@
     <Serializable()>
     Public Class PicklingException
         Inherits Exception
-        Public Sub New(Optional ByVal message As String = Nothing,
-                       Optional ByVal innerException As Exception = Nothing)
+        Public Sub New(Optional message As String = Nothing,
+                       Optional innerException As Exception = Nothing)
             MyBase.New(message, innerException)
         End Sub
     End Class
     <Serializable()>
     Public Class PicklingNotEnoughDataException
         Inherits PicklingException
-        Public Sub New(Optional ByVal message As String = Nothing,
-                       Optional ByVal innerException As Exception = Nothing)
+        Public Sub New(Optional message As String = Nothing,
+                       Optional innerException As Exception = Nothing)
             MyBase.New(If(message, "Not enough data."), innerException)
         End Sub
     End Class
@@ -31,9 +31,9 @@
             Contract.Invariant(_value IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal jar As ISimpleJar,
-                       ByVal value As T,
-                       ByVal data As IRist(Of Byte))
+        Public Sub New(jar As ISimpleJar,
+                       value As T,
+                       data As IRist(Of Byte))
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
@@ -81,7 +81,7 @@
             Contract.Invariant(_usedDataCount >= 0)
         End Sub
 
-        Public Sub New(ByVal value As T, ByVal usedDataCount As Int32)
+        Public Sub New(value As T, usedDataCount As Int32)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(usedDataCount >= 0)
             Contract.Ensures(Me.UsedDataCount = usedDataCount)
@@ -111,10 +111,10 @@
     Public MustInherit Class BaseJar(Of T)
         Implements IJar(Of T)
 
-        Public MustOverride Function Pack(ByVal value As T) As IRist(Of Byte) Implements IJar(Of T).Pack
-        Public MustOverride Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
-        Public MustOverride Function Parse(ByVal text As String) As T Implements IJar(Of T).Parse
-        Public Overridable Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
+        Public MustOverride Function Pack(value As T) As IRist(Of Byte) Implements IJar(Of T).Pack
+        Public MustOverride Function Parse(data As IRist(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
+        Public MustOverride Function Parse(text As String) As T Implements IJar(Of T).Parse
+        Public Overridable Function Describe(value As T) As String Implements IJar(Of T).Describe
             Return value.ToString()
         End Function
         Public Overridable Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
@@ -135,17 +135,17 @@
         Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
             Return MakeControl()
         End Function
-        Private Function SimplePack(ByVal value As Object) As IRist(Of Byte) Implements ISimpleJar.Pack
+        Private Function SimplePack(value As Object) As IRist(Of Byte) Implements ISimpleJar.Pack
             Return Pack(DirectCast(value, T).AssumeNotNull)
         End Function
-        Private Function SimpleParse(ByVal data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
+        Private Function SimpleParse(data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
             Dim result = Parse(data)
             Return New ParsedValue(Of Object)(result.Value, result.UsedDataCount)
         End Function
-        Public Function SimpleDescribe(ByVal value As Object) As String Implements ISimpleJar.Describe
+        Public Function SimpleDescribe(value As Object) As String Implements ISimpleJar.Describe
             Return Describe(DirectCast(value, T).AssumeNotNull)
         End Function
-        Public Function SimpleParse(ByVal text As String) As Object Implements ISimpleJar.Parse
+        Public Function SimpleParse(text As String) As Object Implements ISimpleJar.Parse
             Return Parse(text)
         End Function
     End Class
@@ -155,8 +155,8 @@
     Public MustInherit Class BaseFixedSizeJar(Of T)
         Inherits BaseJar(Of T)
         Protected MustOverride ReadOnly Property DataSize As UInt16
-        Protected MustOverride Function FixedSizeParse(ByVal data As IRist(Of Byte)) As T
-        Public NotOverridable Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of T)
+        Protected MustOverride Function FixedSizeParse(data As IRist(Of Byte)) As T
+        Public NotOverridable Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < DataSize Then Throw New PicklingNotEnoughDataException("{0} requires {1} bytes.".Frmt(Me.GetType.Name, DataSize))
             Dim usedDataCount = CInt(DataSize)
             Contract.Assume(usedDataCount >= 0)
@@ -171,16 +171,16 @@
                 Throw New NotSupportedException
             End Get
         End Property
-        Protected Overrides Function FixedSizeParse(ByVal data As IRist(Of Byte)) As T
+        Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As T
             Contract.Requires(data IsNot Nothing)
             Contract.Requires(data.Count = DataSize)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Overrides Function Pack(ByVal value As T) As IRist(Of Byte)
+        Public Overrides Function Pack(value As T) As IRist(Of Byte)
             Throw New NotSupportedException
         End Function
-        Public Overloads Overrides Function Parse(ByVal text As String) As T
+        Public Overloads Overrides Function Parse(text As String) As T
             Throw New NotSupportedException
         End Function
     End Class
@@ -190,20 +190,20 @@
         Inherits BaseJar(Of TExposed)
 
         MustOverride Function SubJar() As IJar(Of TUsed)
-        MustOverride Function ParseRaw(ByVal value As TUsed) As TExposed
-        MustOverride Function PackRaw(ByVal value As TExposed) As TUsed
+        MustOverride Function ParseRaw(value As TUsed) As TExposed
+        MustOverride Function PackRaw(value As TExposed) As TUsed
 
-        Public NotOverridable Overrides Function Pack(ByVal value As TExposed) As IRist(Of Byte)
+        Public NotOverridable Overrides Function Pack(value As TExposed) As IRist(Of Byte)
             Return SubJar.Pack(PackRaw(value))
         End Function
-        Public NotOverridable Overloads Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of TExposed)
+        Public NotOverridable Overloads Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of TExposed)
             Dim parsed = SubJar.Parse(data)
             Return parsed.WithValue(ParseRaw(parsed.Value))
         End Function
-        Public NotOverridable Overloads Overrides Function Parse(ByVal text As String) As TExposed
+        Public NotOverridable Overloads Overrides Function Parse(text As String) As TExposed
             Return ParseRaw(SubJar.Parse(text))
         End Function
-        Public NotOverridable Overrides Function Describe(ByVal value As TExposed) As String
+        Public NotOverridable Overrides Function Describe(value As TExposed) As String
             Return SubJar.Describe(PackRaw(value))
         End Function
         Public NotOverridable Overrides Function MakeControl() As IValueEditor(Of TExposed)
@@ -220,12 +220,12 @@
     Public MustInherit Class BaseConversionJarContractClass(Of TExposed, TUsed)
         Inherits BaseConversionJar(Of TExposed, TUsed)
 
-        Public Overrides Function PackRaw(ByVal value As TExposed) As TUsed
+        Public Overrides Function PackRaw(value As TExposed) As TUsed
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of TUsed)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Overrides Function ParseRaw(ByVal value As TUsed) As TExposed
+        Public Overrides Function ParseRaw(value As TUsed) As TExposed
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of TExposed)() IsNot Nothing)
             Throw New NotSupportedException
@@ -247,8 +247,8 @@
 
         Private _blockEvents As Boolean
 
-        Public Event ValueChanged(ByVal sender As IValueEditor(Of T)) Implements IValueEditor(Of T).ValueChanged
-        Private Event ValueChangedSimple(ByVal sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
+        Public Event ValueChanged(sender As IValueEditor(Of T)) Implements IValueEditor(Of T).ValueChanged
+        Private Event ValueChangedSimple(sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_getter IsNot Nothing)
@@ -257,11 +257,11 @@
             Contract.Invariant(_disposer IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal control As Control,
-                       ByVal getter As Func(Of T),
-                       ByVal setter As Action(Of T),
-                       ByVal eventAdder As Action(Of Action),
-                       ByVal disposer As Action)
+        Public Sub New(control As Control,
+                       getter As Func(Of T),
+                       setter As Action(Of T),
+                       eventAdder As Action(Of Action),
+                       disposer As Action)
             Contract.Requires(control IsNot Nothing)
             Contract.Requires(getter IsNot Nothing)
             Contract.Requires(setter IsNot Nothing)
@@ -289,7 +289,7 @@
             Get
                 Return _getter().AssumeNotNull
             End Get
-            Set(ByVal value As T)
+            Set(value As T)
                 Try
                     _blockEvents = True
                     _setter(value)
@@ -303,12 +303,12 @@
             Get
                 Return Me.Value
             End Get
-            Set(ByVal value As Object)
+            Set(value As Object)
                 Me.Value = DirectCast(value, T).AssumeNotNull
             End Set
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Call _disposer()
             Return Nothing

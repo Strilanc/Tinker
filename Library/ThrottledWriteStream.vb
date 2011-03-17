@@ -26,12 +26,12 @@ Public NotInheritable Class ThrottledWriteStream
         Contract.Invariant(_timer IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal subStream As IO.Stream,
-                   ByVal costEstimator As Func(Of Byte(), Integer),
-                   ByVal clock As IClock,
-                   Optional ByVal initialSlack As Double = 0,
-                   Optional ByVal costLimit As Double = 0,
-                   Optional ByVal costRecoveredPerMillisecond As Double = 1)
+    Public Sub New(subStream As IO.Stream,
+                   costEstimator As Func(Of Byte(), Integer),
+                   clock As IClock,
+                   Optional initialSlack As Double = 0,
+                   Optional costLimit As Double = 0,
+                   Optional costRecoveredPerMillisecond As Double = 1)
         Contract.Requires(clock IsNot Nothing)
         Contract.Requires(subStream IsNot Nothing)
         Contract.Requires(initialSlack >= 0)
@@ -47,14 +47,14 @@ Public NotInheritable Class ThrottledWriteStream
         Me._recoveryRatePerMillisecond = costRecoveredPerMillisecond
     End Sub
 
-    Public Overrides Sub Write(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer)
+    Public Overrides Sub Write(buffer() As Byte, offset As Integer, count As Integer)
         Dim data = buffer.Skip(offset).Take(count).ToArray
         inQueue.QueueAction(Sub()
                                 _queuedWrites.Enqueue(data)
                                 PerformWrites(isWaitCallback:=False)
                             End Sub)
     End Sub
-    Private Sub PerformWrites(ByVal isWaitCallback As Boolean)
+    Private Sub PerformWrites(isWaitCallback As Boolean)
         If _throttled AndAlso Not isWaitCallback Then Return
         _throttled = False
 
@@ -87,15 +87,15 @@ Public NotInheritable Class ThrottledWriteStream
         End While
     End Sub
 
-    Public Overrides Function BeginRead(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult
+    Public Overrides Function BeginRead(buffer() As Byte, offset As Integer, count As Integer, callback As System.AsyncCallback, state As Object) As System.IAsyncResult
         Return _substream.BeginRead(buffer, offset, count, callback, state)
     End Function
-    Public Overrides Function EndRead(ByVal asyncResult As System.IAsyncResult) As Integer
+    Public Overrides Function EndRead(asyncResult As System.IAsyncResult) As Integer
         Return _substream.EndRead(asyncResult)
     End Function
 
 #Region "Not Supported"
-    Public Overrides Function Read(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer) As Integer
+    Public Overrides Function Read(buffer() As Byte, offset As Integer, count As Integer) As Integer
         Return _substream.Read(buffer, offset, count)
     End Function
     Public Overrides Sub Flush()
@@ -125,17 +125,17 @@ Public NotInheritable Class ThrottledWriteStream
         Get
             Throw New NotSupportedException
         End Get
-        Set(ByVal value As Long)
+        Set(value As Long)
             Throw New NotSupportedException
         End Set
     End Property
-    Public Overrides Function Seek(ByVal offset As Long, ByVal origin As System.IO.SeekOrigin) As Long
+    Public Overrides Function Seek(offset As Long, origin As System.IO.SeekOrigin) As Long
         Throw New NotSupportedException
     End Function
-    Public Overrides Sub SetLength(ByVal value As Long)
+    Public Overrides Sub SetLength(value As Long)
         Throw New NotSupportedException
     End Sub
-    Public Overrides Function BeginWrite(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult
+    Public Overrides Function BeginWrite(buffer() As Byte, offset As Integer, count As Integer, callback As System.AsyncCallback, state As Object) As System.IAsyncResult
         Throw New NotSupportedException
     End Function
 #End Region

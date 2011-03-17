@@ -11,9 +11,9 @@ Namespace Pickling
             Contract.Invariant(_valueJars IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal keyJar As IJar(Of TKey),
-                       ByVal valueJars As Dictionary(Of TKey, ISimpleJar),
-                       Optional ByVal useSingleLineDescription As Boolean = True)
+        Public Sub New(keyJar As IJar(Of TKey),
+                       valueJars As Dictionary(Of TKey, ISimpleJar),
+                       Optional useSingleLineDescription As Boolean = True)
             Contract.Requires(keyJar IsNot Nothing)
             Contract.Requires(valueJars IsNot Nothing)
             Me._keyJar = keyJar
@@ -21,7 +21,7 @@ Namespace Pickling
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        Public Overrides Function Pack(ByVal value As KeyValuePair(Of TKey, Object)) As IRist(Of Byte)
+        Public Overrides Function Pack(value As KeyValuePair(Of TKey, Object)) As IRist(Of Byte)
             If value.Key Is Nothing Then Throw New ArgumentNullException("value.Key")
             If value.Value Is Nothing Then Throw New ArgumentNullException("value.Value")
             If Not _valueJars.ContainsKey(value.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(value.Key))
@@ -29,7 +29,7 @@ Namespace Pickling
             Dim valueData = _valueJars(value.Key).Value.Pack(value.Value)
             Return keyData.Concat(valueData).ToRist()
         End Function
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of KeyValuePair(Of TKey, Object))
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of KeyValuePair(Of TKey, Object))
             Dim parsedKey = _keyJar.Parse(data)
             If Not _valueJars.ContainsKey(parsedKey.Value) Then Throw New PicklingException("No subjar with key {0}.".Frmt(parsedKey.Value))
             Dim parsedValue = _valueJars(parsedKey.Value).Value.Parse(data.SkipExact(parsedKey.UsedDataCount))
@@ -39,7 +39,7 @@ Namespace Pickling
             Return value.ParsedWithDataCount(parsedKey.UsedDataCount + parsedValue.UsedDataCount)
         End Function
 
-        Public Overrides Function Describe(ByVal value As KeyValuePair(Of TKey, Object)) As String
+        Public Overrides Function Describe(value As KeyValuePair(Of TKey, Object)) As String
             If value.Key Is Nothing Then Throw New ArgumentNullException("value.Key")
             If value.Value Is Nothing Then Throw New ArgumentNullException("value.Value")
             Dim keyDesc = _keyJar.Describe(value.Key)
@@ -50,7 +50,7 @@ Namespace Pickling
         End Function
         <SuppressMessage("Microsoft.Contracts", "Requires-36-179")>
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-210")>
-        Public Overrides Function Parse(ByVal text As String) As KeyValuePair(Of TKey, Object)
+        Public Overrides Function Parse(text As String) As KeyValuePair(Of TKey, Object)
             Dim divider = If(_useSingleLineDescription, ":", ",")
             Dim p = text.IndexOf(divider, StringComparison.Ordinal)
             If p < 0 Then Throw New PicklingException("Expected key{0}value style.".Frmt(divider))

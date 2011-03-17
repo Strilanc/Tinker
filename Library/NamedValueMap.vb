@@ -7,7 +7,7 @@
         Contract.Invariant(_dictionary IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal dictionary As Dictionary(Of InvariantString, Object))
+    Public Sub New(dictionary As Dictionary(Of InvariantString, Object))
         Contract.Requires(dictionary IsNot Nothing)
         If (From v In dictionary Where v.Value Is Nothing).Any Then
             Throw New ArgumentException("Dictionary contained a null value.", "dictionary")
@@ -15,7 +15,7 @@
         Me._dictionary = dictionary
     End Sub
 
-    Public ReadOnly Property ItemRaw(ByVal key As InvariantString) As Object
+    Public ReadOnly Property ItemRaw(key As InvariantString) As Object
         Get
             Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
             If Not _dictionary.ContainsKey(key) Then Throw New InvalidOperationException("No item with key '{0}'".Frmt(key))
@@ -25,7 +25,7 @@
         End Get
     End Property
     <Pure()>
-    Public Function ItemAs(Of TResult)(ByVal key As InvariantString) As TResult
+    Public Function ItemAs(Of TResult)(key As InvariantString) As TResult
         Contract.Ensures(Contract.Result(Of TResult)() IsNot Nothing)
         Dim item = Me.ItemRaw(key)
         Try
@@ -38,7 +38,7 @@
         End Try
     End Function
 
-    Public ReadOnly Property ContainsKey(ByVal key As InvariantString) As Boolean
+    Public ReadOnly Property ContainsKey(key As InvariantString) As Boolean
         Get
             Return _dictionary.ContainsKey(key)
         End Get
@@ -57,7 +57,7 @@
         Return GetEnumerator()
     End Function
 
-    Public Shared Widening Operator CType(ByVal dictionary As Dictionary(Of InvariantString, Object)) As NamedValueMap
+    Public Shared Widening Operator CType(dictionary As Dictionary(Of InvariantString, Object)) As NamedValueMap
         Contract.Requires(dictionary IsNot Nothing)
         Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
         Return New NamedValueMap(dictionary)

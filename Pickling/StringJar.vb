@@ -15,9 +15,9 @@ Namespace Pickling
             'Contract.Invariant(Not _maxCharCount.HasValue OrElse _maxCharCount.Value >= _minCharCount)
         End Sub
 
-        Public Sub New(ByVal encoding As Encoding,
-                       Optional ByVal minCharCount As Integer = 0,
-                       Optional ByVal maxCharCount As Integer? = Nothing)
+        Public Sub New(encoding As Encoding,
+                       Optional minCharCount As Integer = 0,
+                       Optional maxCharCount As Integer? = Nothing)
             Contract.Requires(encoding IsNot Nothing)
             Contract.Requires(minCharCount >= 0)
             Contract.Assume(Not maxCharCount.HasValue OrElse maxCharCount.Value >= minCharCount)
@@ -26,7 +26,7 @@ Namespace Pickling
             Me._maxCharCount = maxCharCount
         End Sub
 
-        Public Overrides Function Pack(ByVal value As String) As IRist(Of Byte)
+        Public Overrides Function Pack(value As String) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
             If value.Length < _minCharCount Then Throw New PicklingException("Need at least {0} characters.".Frmt(_minCharCount))
             If _maxCharCount.HasValue AndAlso value.Length > _maxCharCount Then Throw New PicklingException("Need at most {0} characters.".Frmt(_maxCharCount))
@@ -35,7 +35,7 @@ Namespace Pickling
             Return data.AsRist()
         End Function
 
-        Public NotOverridable Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of String)
+        Public NotOverridable Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of String)
             Dim value = New String(_encoding.GetChars(data.ToArray))
             If value.Length < _minCharCount Then Throw New PicklingException("Need at least {0} characters.".Frmt(_minCharCount))
             If _maxCharCount.HasValue AndAlso value.Length > _maxCharCount Then Throw New PicklingException("Need at most {0} characters.".Frmt(_maxCharCount))
@@ -43,10 +43,10 @@ Namespace Pickling
             Return value.ParsedWithDataCount(data.Count)
         End Function
 
-        Public Overrides Function Describe(ByVal value As String) As String
+        Public Overrides Function Describe(value As String) As String
             Return """{0}""".Frmt(value)
         End Function
-        Public Overrides Function Parse(ByVal text As String) As String
+        Public Overrides Function Parse(text As String) As String
             If text.Length >= 2 AndAlso text.StartsWith("""", StringComparison.Ordinal) AndAlso text.EndsWith("""", StringComparison.Ordinal) Then
                 Return text.Substring(1, text.Length - 2)
             Else
@@ -71,8 +71,8 @@ Namespace Pickling
     Public NotInheritable Class UTF8Jar
         Inherits StringJar
 
-        Public Sub New(Optional ByVal minCharCount As Integer = 0,
-                       Optional ByVal maxCharCount As Integer? = Nothing)
+        Public Sub New(Optional minCharCount As Integer = 0,
+                       Optional maxCharCount As Integer? = Nothing)
             MyBase.New(New UTF8Encoding(), minCharCount, maxCharCount)
             Contract.Requires(minCharCount >= 0)
             Contract.Assume(Not maxCharCount.HasValue OrElse maxCharCount.Value >= minCharCount)
@@ -83,8 +83,8 @@ Namespace Pickling
     Public NotInheritable Class ASCIIJar
         Inherits StringJar
 
-        Public Sub New(Optional ByVal minCharCount As Integer = 0,
-                       Optional ByVal maxCharCount As Integer? = Nothing)
+        Public Sub New(Optional minCharCount As Integer = 0,
+                       Optional maxCharCount As Integer? = Nothing)
             MyBase.New(New ASCIIEncoding(), minCharCount, maxCharCount)
             Contract.Requires(minCharCount >= 0)
             Contract.Assume(Not maxCharCount.HasValue OrElse maxCharCount.Value >= minCharCount)

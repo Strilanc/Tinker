@@ -21,12 +21,12 @@ Public Class ObservableCollection(Of T)
     ''' Constructs an AsyncViewableCollection which queues synchronizing events on an action queue.
     ''' </summary>
     ''' <param name="outQueue">The action queue async events are queued on. Uses a MakeTaskedCallQueue if null.</param>
-    Public Sub New(Optional ByVal outQueue As CallQueue = Nothing)
+    Public Sub New(Optional outQueue As CallQueue = Nothing)
         Me.outQueue = If(outQueue, MakeTaskedCallQueue())
     End Sub
 
     <SuppressMessage("Microsoft.Contracts", "Ensures-28-62")>
-    Public Sub Add(ByVal item As T) Implements ICollection(Of T).Add
+    Public Sub Add(item As T) Implements ICollection(Of T).Add
         _items.Add(item)
         outQueue.QueueAction(Sub() RaiseEvent Added(item))
     End Sub
@@ -37,16 +37,16 @@ Public Class ObservableCollection(Of T)
         Next e
         _items.Clear()
     End Sub
-    Public Function Remove(ByVal item As T) As Boolean Implements ICollection(Of T).Remove
+    Public Function Remove(item As T) As Boolean Implements ICollection(Of T).Remove
         Dim result = _items.Remove(item)
         If result Then outQueue.QueueAction(Sub() RaiseEvent Removed(item))
         Return result
     End Function
 
-    Public Function Contains(ByVal item As T) As Boolean Implements ICollection(Of T).Contains
+    Public Function Contains(item As T) As Boolean Implements ICollection(Of T).Contains
         Return _items.Contains(item)
     End Function
-    Public Sub CopyTo(ByVal array() As T, ByVal arrayIndex As Integer) Implements ICollection(Of T).CopyTo
+    Public Sub CopyTo(array() As T, arrayIndex As Integer) Implements ICollection(Of T).CopyTo
         _items.CopyTo(array, arrayIndex)
     End Sub
     Public ReadOnly Property Count As Integer Implements ICollection(Of T).Count
@@ -74,8 +74,8 @@ Public Class ObservableCollection(Of T)
     ''' <param name="remover">A callback for items removed from the collection. Never called concurrently, but calls may migrate across threads.</param>
     ''' <returns>An IDisposable which, when disposed, begins unregistering 'adder' and 'remover'.</returns>
     ''' <remarks>The 'never called concurrently' clause applies between adder and remover (eg. adder will not be called during remover).</remarks>
-    Public Function Observe(ByVal adder As Action(Of T),
-                            ByVal remover As Action(Of T)) As IDisposable
+    Public Function Observe(adder As Action(Of T),
+                            remover As Action(Of T)) As IDisposable
         Contract.Requires(adder IsNot Nothing)
         Contract.Requires(remover IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)

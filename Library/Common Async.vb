@@ -1,6 +1,6 @@
 ﻿Public Module FutureExtensionsEx
     <Extension()>
-    Public Async Function ReadExactAsync(ByVal stream As IO.Stream, ByVal size As Integer) As Task(Of Byte())
+    Public Async Function ReadExactAsync(stream As IO.Stream, size As Integer) As Task(Of Byte())
         Contract.Assume(stream IsNot Nothing)
         Contract.Assume(size > 0)
         'Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
@@ -12,7 +12,7 @@
     End Function
 
     <Extension()>
-    Public Async Function ReadBestEffortAsync(ByVal stream As IO.Stream, ByVal maxSize As Integer) As Task(Of Byte())
+    Public Async Function ReadBestEffortAsync(stream As IO.Stream, maxSize As Integer) As Task(Of Byte())
         Contract.Assume(stream IsNot Nothing)
         Contract.Assume(maxSize > 0)
         'Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
@@ -33,8 +33,8 @@
     ''' Doesn't evaluate the filter on futures past the matching future.
     ''' </summary>
     <Extension()>
-    Public Async Function FirstMatchAsync(Of T)(ByVal sequence As IEnumerable(Of T),
-                                                ByVal filterFunction As Func(Of T, Task(Of Boolean))) As Task(Of T)
+    Public Async Function FirstMatchAsync(Of T)(sequence As IEnumerable(Of T),
+                                                filterFunction As Func(Of T, Task(Of Boolean))) As Task(Of T)
         Contract.Assume(sequence IsNot Nothing)
         Contract.Assume(filterFunction IsNot Nothing)
         'Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
@@ -48,20 +48,20 @@
     End Function
 
     <Extension()>
-    Public Sub ChainEventualDisposalTo(ByVal source As DisposableWithTask, ByVal dest As IDisposable)
+    Public Sub ChainEventualDisposalTo(source As DisposableWithTask, dest As IDisposable)
         Contract.Requires(source IsNot Nothing)
         Contract.Requires(dest IsNot Nothing)
         source.ChainEventualDisposalTo(AddressOf dest.Dispose)
     End Sub
     <Extension()>
-    Public Sub ChainEventualDisposalTo(ByVal source As DisposableWithTask, ByVal action As Action)
+    Public Sub ChainEventualDisposalTo(source As DisposableWithTask, action As Action)
         Contract.Requires(source IsNot Nothing)
         Contract.Requires(action IsNot Nothing)
         source.DisposalTask.ContinueWith(Sub() action(), TaskContinuationOptions.OnlyOnRanToCompletion)
     End Sub
 
     <Extension()>
-    Public Function DisposeControlAsync(ByVal control As Control) As Task
+    Public Function DisposeControlAsync(control As Control) As Task
         Contract.Requires(control IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Dim result = New TaskCompletionSource(Of NoValue)
@@ -77,13 +77,13 @@
         Return result.Task.AssumeNotNull()
     End Function
     <Extension()>
-    Public Function DisposeAsync(Of T As IDisposable)(ByVal value As Task(Of T)) As Task
+    Public Function DisposeAsync(Of T As IDisposable)(value As Task(Of T)) As Task
         Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Return value.ContinueWith(Sub(task) task.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion).AssumeNotNull()
     End Function
     <Extension()>
-    Public Function DisposeAllAsync(ByVal values As IEnumerable(Of Task(Of IDisposable))) As Task
+    Public Function DisposeAllAsync(values As IEnumerable(Of Task(Of IDisposable))) As Task
         Contract.Requires(values IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Dim results = New List(Of Task)
@@ -103,14 +103,14 @@
     End Function
 
     <Extension()>
-    Public Function IgnoreExceptions(Of T)(ByVal task As TaskCompletionSource(Of T)) As task
+    Public Function IgnoreExceptions(Of T)(task As TaskCompletionSource(Of T)) As task
         Contract.Requires(task IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Contract.Assume(task.Task IsNot Nothing)
         Return task.Task.IgnoreExceptions()
     End Function
     <Extension()>
-    Public Function IgnoreExceptions(ByVal task As Task) As task
+    Public Function IgnoreExceptions(task As Task) As task
         Contract.Requires(task IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Return task.Catch(Sub()

@@ -9,7 +9,7 @@ Public NotInheritable Class DeadManSwitch
     Private _waitRunning As Boolean
     Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
 
-    Public Event Triggered(ByVal sender As DeadManSwitch)
+    Public Event Triggered(sender As DeadManSwitch)
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(_period.Ticks > 0)
@@ -17,7 +17,7 @@ Public NotInheritable Class DeadManSwitch
         Contract.Invariant(inQueue IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal period As TimeSpan, ByVal clock As IClock)
+    Public Sub New(period As TimeSpan, clock As IClock)
         Contract.Assume(period.Ticks > 0)
         Contract.Assume(clock IsNot Nothing)
         Me._period = period

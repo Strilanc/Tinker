@@ -2,14 +2,14 @@
 
 Public Module StreamExtensions
     <Extension()>
-    Public Sub WriteNullTerminatedString(ByVal bw As IWritableStream, ByVal data As String)
+    Public Sub WriteNullTerminatedString(bw As IWritableStream, data As String)
         Contract.Requires(bw IsNot Nothing)
         Contract.Requires(data IsNot Nothing)
         bw.Write(data.ToAsciiBytes.Append(0).ToRist)
     End Sub
     <Extension()>
-    Public Function ReadNullTerminatedString(ByVal reader As IReadableStream,
-                                             ByVal maxLength As Integer) As String
+    Public Function ReadNullTerminatedString(reader As IReadableStream,
+                                             maxLength As Integer) As String
         Contract.Requires(reader IsNot Nothing)
         Contract.Requires(maxLength >= 0)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
@@ -46,9 +46,9 @@ Public Module StreamExtensions
             Contract.Invariant(_offset <= _stream.Length)
         End Sub
 
-        Public Sub New(ByVal stream As IRandomReadableStream,
-                       ByVal offset As Long,
-                       ByVal takeOwnershipOfStream As Boolean)
+        Public Sub New(stream As IRandomReadableStream,
+                       offset As Long,
+                       takeOwnershipOfStream As Boolean)
             Contract.Requires(stream IsNot Nothing)
             Contract.Requires(offset >= 0)
             Contract.Requires(offset <= stream.Length)
@@ -63,7 +63,7 @@ Public Module StreamExtensions
             End Get
         End Property
 
-        Default Public ReadOnly Property Item(ByVal index As Integer) As Byte Implements IRist(Of Byte).Item
+        Default Public ReadOnly Property Item(index As Integer) As Byte Implements IRist(Of Byte).Item
             Get
                 If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.FullName)
                 Contract.Assume(_offset + index + 1 <= _stream.Length)
@@ -87,7 +87,7 @@ Public Module StreamExtensions
         End Function
 
         <SuppressMessage("Microsoft.Contracts", "Invariant-57-23")>
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If Not finalizing AndAlso _takeOwnershipofStream Then _stream.Dispose()
             Return Nothing
         End Function
@@ -95,7 +95,7 @@ Public Module StreamExtensions
 
     <Extension()>
     <SuppressMessage("Microsoft.Contracts", "Ensures-76-188")>
-    Public Function ReadPickle(ByVal stream As IRandomReadableStream, ByVal jar As ISimpleJar) As ISimplePickle
+    Public Function ReadPickle(stream As IRandomReadableStream, jar As ISimpleJar) As ISimplePickle
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
@@ -113,7 +113,7 @@ Public Module StreamExtensions
     End Function
     <Extension()>
     <SuppressMessage("Microsoft.Contracts", "Ensures-76-188")>
-    Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IJar(Of T)) As IPickle(Of T)
+    Public Function ReadPickle(Of T)(stream As IRandomReadableStream, jar As IJar(Of T)) As IPickle(Of T)
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
@@ -131,7 +131,7 @@ Public Module StreamExtensions
     End Function
 
     <Extension()>
-    Public Function WritePickle(Of T)(ByVal stream As IWritableStream, ByVal jar As IJar(Of T), ByVal value As T) As IPickle(Of T)
+    Public Function WritePickle(Of T)(stream As IWritableStream, jar As IJar(Of T), value As T) As IPickle(Of T)
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Requires(value IsNot Nothing)

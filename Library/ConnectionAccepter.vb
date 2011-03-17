@@ -6,7 +6,7 @@ Public NotInheritable Class ConnectionAccepter
     Private ReadOnly listeners As New HashSet(Of TcpListener)
     Private ReadOnly lock As New Object
 
-    Public Event AcceptedConnection(ByVal sender As ConnectionAccepter, ByVal acceptedClient As TcpClient)
+    Public Event AcceptedConnection(sender As ConnectionAccepter, acceptedClient As TcpClient)
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(listeners IsNot Nothing)
@@ -14,7 +14,7 @@ Public NotInheritable Class ConnectionAccepter
     End Sub
 
     '''<summary>Tries to start listening for connections on the given port.</summary>
-    Public Async Sub OpenPort(ByVal port As UShort)
+    Public Async Sub OpenPort(port As UShort)
         Dim listener As TcpListener
         SyncLock lock
             'already open?
@@ -55,7 +55,7 @@ Public NotInheritable Class ConnectionAccepter
     End Function
 
     '''<summary>Stops listening for connections on the given port.</summary>
-    Public Sub ClosePort(ByVal port As UShort)
+    Public Sub ClosePort(port As UShort)
         SyncLock lock
             'already not listening?
             Dim listener = TryGetListenerOnPort(port)
@@ -81,7 +81,7 @@ Public NotInheritable Class ConnectionAccepter
     End Sub
 
     '''<summary>Returns the listener on the given port.</summary>
-    Private Function TryGetListenerOnPort(ByVal port As UShort) As TcpListener
+    Private Function TryGetListenerOnPort(port As UShort) As TcpListener
         SyncLock lock
             Return (From listener In listeners
                     Where DirectCast(listener.LocalEndpoint, Net.IPEndPoint).Port = port).

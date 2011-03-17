@@ -6,8 +6,8 @@
         Contract.Invariant(handlers IsNot Nothing)
     End Sub
 
-    Public Function [AddHandler](ByVal key As TKey,
-                                 ByVal handler As Func(Of TArg, Task)) As IDisposable
+    Public Function [AddHandler](key As TKey,
+                                 handler As Func(Of TArg, Task)) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
@@ -28,8 +28,8 @@
     End Function
 
     <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")>
-    Public Function Raise(ByVal key As TKey,
-                          ByVal value As TArg) As IRist(Of Task)
+    Public Function Raise(key As TKey,
+                          value As TArg) As IRist(Of Task)
         Contract.Requires(key IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IRist(Of Task))() IsNot Nothing)
         SyncLock lock

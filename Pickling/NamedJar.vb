@@ -5,7 +5,7 @@ Namespace Pickling
         Implements INamedJar(Of T)
         Private ReadOnly _name As InvariantString
 
-        Public Sub New(ByVal name As InvariantString, ByVal subJar As IJar(Of T))
+        Public Sub New(name As InvariantString, subJar As IJar(Of T))
             MyBase.New(subJar)
             Contract.Requires(subJar IsNot Nothing)
             Me._name = name
@@ -17,10 +17,10 @@ Namespace Pickling
             End Get
         End Property
 
-        Public Overrides Function Describe(ByVal value As T) As String
+        Public Overrides Function Describe(value As T) As String
             Return "{0}: {1}".Frmt(Name, SubJar.Describe(value))
         End Function
-        Public Overrides Function Parse(ByVal text As String) As T
+        Public Overrides Function Parse(text As String) As T
             Dim prefix = "{0}: ".Frmt(Name)
             If Not text.StartsWith(prefix, StringComparison.Ordinal) Then Throw New ArgumentException("Incorrect named format.")
             Return SubJar.Parse(text.Substring(prefix.Length))

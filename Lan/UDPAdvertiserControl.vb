@@ -16,7 +16,7 @@ Namespace Lan
             Contract.Invariant(_syncedGames IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal component As Lan.UDPAdvertiserComponent)
+        Public Sub New(component As Lan.UDPAdvertiserComponent)
             Contract.Assert(component IsNot Nothing)
             InitializeComponent()
 
@@ -32,15 +32,15 @@ Namespace Lan
         Public Function QueueDispose() As Task
             Return inQueue.QueueAction(Sub() Me.Dispose())
         End Function
-        Private Sub BnetClientControl_Disposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
+        Private Sub BnetClientControl_Disposed(sender As Object, e As System.EventArgs) Handles Me.Disposed
             _hooks.DisposeAllAsync()
         End Sub
 
-        Private Sub OnAddedGame(ByVal game As Lan.UDPAdvertiser.LanGame)
+        Private Sub OnAddedGame(game As Lan.UDPAdvertiser.LanGame)
             Me._syncedGames.Add(game)
             RefreshGamesLists()
         End Sub
-        Private Sub OnRemovedGame(ByVal game As Lan.UDPAdvertiser.LanGame)
+        Private Sub OnRemovedGame(game As Lan.UDPAdvertiser.LanGame)
             Me._syncedGames.Remove(game)
             RefreshGamesLists()
         End Sub
@@ -54,7 +54,7 @@ Namespace Lan
             Next game
         End Sub
 
-        Private Sub OnIssuedCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comLanAdvertiser.IssuedCommand
+        Private Sub OnIssuedCommand(sender As CommandControl, argument As String) Handles comLanAdvertiser.IssuedCommand
             Contract.Requires(argument IsNot Nothing)
             Tinker.Components.UIInvokeCommand(_component, argument)
         End Sub

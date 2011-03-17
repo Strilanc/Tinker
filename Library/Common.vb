@@ -3,7 +3,7 @@ Imports System.Numerics
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
     <Extension()> <Pure()>
-    Public Function MaybeFirst(Of T)(ByVal sequence As IEnumerable(Of T)) As Maybe(Of T)
+    Public Function MaybeFirst(Of T)(sequence As IEnumerable(Of T)) As Maybe(Of T)
         Contract.Requires(sequence IsNot Nothing)
         Using e = sequence.GetEnumerator()
             If Not e.MoveNext() Then Return Maybe(Of T).Empty
@@ -15,7 +15,7 @@ Public Module PoorlyCategorizedFunctions
     'verification disabled due to inadequate verifier
     <ContractVerification(False)>
     <Pure()>
-    Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IEnumerable(Of String)
+    Public Function SplitText(body As String, maxLineLength As Integer) As IEnumerable(Of String)
         Contract.Requires(body IsNot Nothing)
         Contract.Requires(maxLineLength > 0)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)
@@ -79,14 +79,14 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    Public Function StartingAt(ByVal clock As IClock, ByVal time As TimeSpan) As IClock
+    Public Function StartingAt(clock As IClock, time As TimeSpan) As IClock
         Contract.Requires(clock IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
         Dim offset = time - clock.ElapsedTime
         Return New RelativeClock(clock, offset)
     End Function
     <Pure()> <Extension()>
-    Public Function Stopped(ByVal clock As IClock) As IClock
+    Public Function Stopped(clock As IClock) As IClock
         Contract.Requires(clock IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
         Dim r = New ManualClock()
@@ -97,7 +97,7 @@ Public Module PoorlyCategorizedFunctions
     <Pure()> <Extension()>
     <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Net.IPEndPoint)().Address Is address")>
     <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Net.IPEndPoint)().Port = port")>
-    Public Function WithPort(ByVal address As Net.IPAddress, ByVal port As UShort) As Net.IPEndPoint
+    Public Function WithPort(address As Net.IPAddress, port As UShort) As Net.IPEndPoint
         Contract.Requires(address IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Address Is address)
@@ -106,10 +106,10 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()>
-    Public Function BuildDictionaryFromString(Of T)(ByVal text As String,
-                                                    ByVal parser As Func(Of String, T),
-                                                    ByVal pairDivider As String,
-                                                    ByVal valueDivider As String) As IDictionary(Of InvariantString, T)
+    Public Function BuildDictionaryFromString(Of T)(text As String,
+                                                    parser As Func(Of String, T),
+                                                    pairDivider As String,
+                                                    valueDivider As String) As IDictionary(Of InvariantString, T)
         Contract.Requires(parser IsNot Nothing)
         Contract.Requires(text IsNot Nothing)
         Contract.Requires(pairDivider IsNot Nothing)
@@ -128,12 +128,12 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    Public Function Times(ByVal timeSpan As TimeSpan, ByVal factor As Double) As TimeSpan
+    Public Function Times(timeSpan As TimeSpan, factor As Double) As TimeSpan
         Return New TimeSpan(CLng(timeSpan.Ticks * factor))
     End Function
     <Pure()> <Extension()>
-    Public Function ToUValue(ByVal data As IEnumerable(Of Byte),
-                             Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian) As UInt64
+    Public Function ToUValue(data As IEnumerable(Of Byte),
+                             Optional byteOrder As ByteOrder = ByteOrder.LittleEndian) As UInt64
         Contract.Requires(data IsNot Nothing)
         If data.LazyCount > 8 Then Throw New ArgumentException("Too many bytes.", "data")
         Contract.Assume(8 - data.Count > 0)
@@ -147,7 +147,7 @@ Public Module PoorlyCategorizedFunctions
                 Throw byteOrder.MakeArgumentValueException("byteOrder")
         End Select
     End Function
-    Public Function FindFileMatching(ByVal fileQuery As String, ByVal likeQuery As String, ByVal directory As String) As String
+    Public Function FindFileMatching(fileQuery As String, likeQuery As String, directory As String) As String
         Contract.Requires(fileQuery IsNot Nothing)
         Contract.Requires(likeQuery IsNot Nothing)
         Contract.Requires(directory IsNot Nothing)
@@ -158,11 +158,11 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
-    Public Function EnumUInt32Includes(Of T)(ByVal value As T, ByVal [option] As UInt32) As Boolean
+    Public Function EnumUInt32Includes(Of T)(value As T, [option] As UInt32) As Boolean
         Return (value.DynamicDirectCastTo(Of UInt32)() And [option]) = [option]
     End Function
     <Extension()> <Pure()>
-    Public Function EnumIncludes(Of TEnum)(ByVal value As TEnum, ByVal [option] As TEnum) As Boolean
+    Public Function EnumIncludes(Of TEnum)(value As TEnum, [option] As TEnum) As Boolean
         Select Case [Enum].GetUnderlyingType(GetType(TEnum))
             Case GetType(SByte) : Return (value.DynamicDirectCastTo(Of SByte)() And [option].DynamicDirectCastTo(Of SByte)()) <> 0
             Case GetType(Int16) : Return (value.DynamicDirectCastTo(Of Int16)() And [option].DynamicDirectCastTo(Of Int16)()) <> 0
@@ -177,7 +177,7 @@ Public Module PoorlyCategorizedFunctions
         End Select
     End Function
     <Extension()> <Pure()>
-    Public Function AssumeAny(Of T)(ByVal sequence As IEnumerable(Of T)) As IEnumerable(Of T)
+    Public Function AssumeAny(Of T)(sequence As IEnumerable(Of T)) As IEnumerable(Of T)
         Contract.Requires(sequence IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of T))().Any())
         Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
@@ -186,13 +186,13 @@ Public Module PoorlyCategorizedFunctions
         Return sequence
     End Function
     <Extension()> <Pure()>
-    Public Function EnumUInt32WithSet(Of T)(ByVal value As T, ByVal [option] As UInt32, ByVal include As Boolean) As T
+    Public Function EnumUInt32WithSet(Of T)(value As T, [option] As UInt32, include As Boolean) As T
         Dim v = value.DynamicDirectCastTo(Of UInt32)()
         v = If(include, v Or [option], v And Not [option])
         Return v.DynamicDirectCastTo(Of T)()
     End Function
     <Extension()> <Pure()>
-    Public Function EnumWith(Of TEnum)(ByVal value As TEnum, ByVal [option] As TEnum) As TEnum
+    Public Function EnumWith(Of TEnum)(value As TEnum, [option] As TEnum) As TEnum
         Select Case [Enum].GetUnderlyingType(GetType(TEnum))
             Case GetType(SByte) : Return (value.DynamicDirectCastTo(Of SByte)() Or [option].DynamicDirectCastTo(Of SByte)()).DynamicDirectCastTo(Of TEnum)()
             Case GetType(Int16) : Return (value.DynamicDirectCastTo(Of Int16)() Or [option].DynamicDirectCastTo(Of Int16)()).DynamicDirectCastTo(Of TEnum)()
@@ -208,7 +208,7 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
-    Public Function Summarize(ByVal ex As Exception) As String
+    Public Function Summarize(ex As Exception) As String
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
 
         If ex Is Nothing Then Return "Null Exception"
@@ -228,10 +228,10 @@ Public Module PoorlyCategorizedFunctions
         Return "({0}) {1}".Frmt(ex.GetType.Name, ex.Message)
     End Function
 
-    Public Function FindFilesMatching(ByVal fileQuery As String,
-                                      ByVal likeQuery As InvariantString,
-                                      ByVal directory As InvariantString,
-                                      ByVal maxResults As Integer) As IList(Of String)
+    Public Function FindFilesMatching(fileQuery As String,
+                                      likeQuery As InvariantString,
+                                      directory As InvariantString,
+                                      maxResults As Integer) As IList(Of String)
         Contract.Requires(fileQuery IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
 
@@ -258,7 +258,7 @@ Public Module PoorlyCategorizedFunctions
                 Where relativePath Like dirQuery
                 ).Take(maxResults).ToList
     End Function
-    Public Function GetDataFolderPath(ByVal subfolder As String) As String
+    Public Function GetDataFolderPath(subfolder As String) As String
         Contract.Requires(subfolder IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Dim path = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
@@ -276,8 +276,8 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    Public Function ToUnsignedBigInteger(ByVal digits As IEnumerable(Of Byte),
-                                         ByVal base As UInt32) As BigInteger
+    Public Function ToUnsignedBigInteger(digits As IEnumerable(Of Byte),
+                                         base As UInt32) As BigInteger
         Contract.Requires(digits IsNot Nothing)
         Contract.Requires(base >= 2)
         Contract.Requires(base <= 256)
@@ -287,8 +287,8 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
     <Pure()> <Extension()>
-    Public Function UnsignedDigits(ByVal value As BigInteger,
-                                   ByVal base As UInt32) As IEnumerable(Of Byte)
+    Public Function UnsignedDigits(value As BigInteger,
+                                   base As UInt32) As IEnumerable(Of Byte)
         Contract.Requires(value >= 0)
         Contract.Requires(base >= 2)
         Contract.Requires(base <= 256)
@@ -306,9 +306,9 @@ Public Module PoorlyCategorizedFunctions
     ''' Determines the little-endian digits in one base from the little-endian digits in another base.
     ''' </summary>
     <Pure()> <Extension()>
-    Public Function ConvertFromBaseToBase(ByVal digits As IEnumerable(Of Byte),
-                                          ByVal inputBase As UInteger,
-                                          ByVal outputBase As UInteger) As IRist(Of Byte)
+    Public Function ConvertFromBaseToBase(digits As IEnumerable(Of Byte),
+                                          inputBase As UInteger,
+                                          outputBase As UInteger) As IRist(Of Byte)
         Contract.Requires(digits IsNot Nothing)
         Contract.Requires(inputBase >= 2)
         Contract.Requires(inputBase <= 256)
@@ -321,9 +321,9 @@ Public Module PoorlyCategorizedFunctions
     ''' Determines a list starting with the elements of the given list but padded with default values to meet a minimum length.
     ''' </summary>
     <Pure()> <Extension()>
-    Public Function PaddedTo(Of T)(ByVal this As IRist(Of T),
-                                   ByVal minimumLength As Integer,
-                                   Optional ByVal paddingValue As T = Nothing) As IRist(Of T)
+    Public Function PaddedTo(Of T)(this As IRist(Of T),
+                                   minimumLength As Integer,
+                                   Optional paddingValue As T = Nothing) As IRist(Of T)
         Contract.Requires(this IsNot Nothing)
         Contract.Requires(minimumLength >= 0)
         Contract.Ensures(Contract.Result(Of IRist(Of T))() IsNot Nothing)
@@ -335,13 +335,13 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    Public Function ToUnsignedBigInteger(ByVal digits As IEnumerable(Of Byte)) As BigInteger
+    Public Function ToUnsignedBigInteger(digits As IEnumerable(Of Byte)) As BigInteger
         Contract.Requires(digits IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
         Return digits.ToArray.ToUnsignedBigInteger
     End Function
     <Pure()> <Extension()>
-    Public Function ToUnsignedBigInteger(ByVal digits As Byte()) As BigInteger
+    Public Function ToUnsignedBigInteger(digits As Byte()) As BigInteger
         Contract.Requires(digits IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
         If digits.Length = 0 Then
@@ -359,7 +359,7 @@ Public Module PoorlyCategorizedFunctions
         End If
     End Function
     <Pure()> <Extension()>
-    Public Function ToUnsignedBytes(ByVal value As BigInteger) As IRist(Of Byte)
+    Public Function ToUnsignedBytes(value As BigInteger) As IRist(Of Byte)
         Contract.Requires(value >= 0)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
         Dim result = value.ToByteArray().AssumeNotNull().AsRist()
@@ -370,7 +370,7 @@ Public Module PoorlyCategorizedFunctions
         End If
     End Function
     <Pure()> <Extension()>
-    Public Function AssumeNotNull(Of T)(ByVal arg As T) As T
+    Public Function AssumeNotNull(Of T)(arg As T) As T
         Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
         Contract.Assume(arg IsNot Nothing)
         Return arg
@@ -378,7 +378,7 @@ Public Module PoorlyCategorizedFunctions
 
     '''<summary>Determines the SHA-1 hash of a sequence of bytes.</summary>
     <Extension()> <Pure()>
-    Public Function SHA1(ByVal data As IEnumerable(Of Byte)) As IRist(Of Byte)
+    Public Function SHA1(data As IEnumerable(Of Byte)) As IRist(Of Byte)
         Contract.Requires(data IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count = 20)
@@ -389,8 +389,8 @@ Public Module PoorlyCategorizedFunctions
         End Using
     End Function
 
-    Public Function CRC32Table(Optional ByVal poly As UInteger = &H4C11DB7,
-                               Optional ByVal polyAlreadyReversed As Boolean = False) As UInt32()
+    Public Function CRC32Table(Optional poly As UInteger = &H4C11DB7,
+                               Optional polyAlreadyReversed As Boolean = False) As UInt32()
         'Reverse the polynomial
         If Not polyAlreadyReversed Then
             poly = poly.Bits.Aggregate(0UI, Function(acc, bit) (acc << 1) + If(bit, 1UI, 0UI))
@@ -411,9 +411,9 @@ Public Module PoorlyCategorizedFunctions
     End Function
     '''<summary>Reads all remaining data from a stream, computing its CRC32 checksum.</summary>
     <Extension()>
-    Public Function ReadCRC32(ByVal data As IReadableStream,
-                              Optional ByVal poly As UInteger = &H4C11DB7,
-                              Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
+    Public Function ReadCRC32(data As IReadableStream,
+                              Optional poly As UInteger = &H4C11DB7,
+                              Optional polyAlreadyReversed As Boolean = False) As UInteger
         Contract.Requires(data IsNot Nothing)
         Dim xorTable = CRC32Table(poly, polyAlreadyReversed)
 
@@ -431,15 +431,15 @@ Public Module PoorlyCategorizedFunctions
     End Function
     '''<summary>Determines the CRC32 checksum of a sequence of bytes.</summary>
     <Extension()> <Pure()>
-    Public Function CRC32(ByVal data As IEnumerable(Of Byte),
-                          Optional ByVal poly As UInteger = &H4C11DB7,
-                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
+    Public Function CRC32(data As IEnumerable(Of Byte),
+                          Optional poly As UInteger = &H4C11DB7,
+                          Optional polyAlreadyReversed As Boolean = False) As UInteger
         Contract.Requires(data IsNot Nothing)
         Return data.AsReadableStream.ReadCRC32(poly, polyAlreadyReversed)
     End Function
 
     '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>
-    Public Function TeamVersusStringToTeamSizes(ByVal value As String) As IRist(Of Integer)
+    Public Function TeamVersusStringToTeamSizes(value As String) As IRist(Of Integer)
         Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of Integer))() IsNot Nothing)
 
@@ -449,7 +449,7 @@ Public Module PoorlyCategorizedFunctions
                 ).ToRist
     End Function
 
-    Public Sub CheckIOData(ByVal clause As Boolean, ByVal message As String)
+    Public Sub CheckIOData(clause As Boolean, message As String)
         Contract.Requires(message IsNot Nothing)
         Contract.Ensures(clause)
         Contract.EnsuresOnThrow(Of IO.InvalidDataException)(Not clause)
@@ -457,11 +457,11 @@ Public Module PoorlyCategorizedFunctions
     End Sub
 
     <Extension()>
-    Public Function PanelWithControls(ByVal controls As IEnumerable(Of Control),
-                                      Optional ByVal leftToRight As Boolean = False,
-                                      Optional ByVal spacing As Int32 = 3,
-                                      Optional ByVal margin As Int32 = 3,
-                                      Optional ByVal borderStyle As BorderStyle = BorderStyle.None) As Panel
+    Public Function PanelWithControls(controls As IEnumerable(Of Control),
+                                      Optional leftToRight As Boolean = False,
+                                      Optional spacing As Int32 = 3,
+                                      Optional margin As Int32 = 3,
+                                      Optional borderStyle As BorderStyle = BorderStyle.None) As Panel
         Contract.Requires(controls IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Panel)() IsNot Nothing)
 
@@ -471,11 +471,11 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
     <Extension()>
-    Public Sub LayoutPanel(ByVal panel As Panel,
-                           Optional ByVal leftToRight As Boolean = False,
-                           Optional ByVal spacing As Int32 = 3,
-                           Optional ByVal margin As Int32 = 3,
-                           Optional ByVal borderStyle As BorderStyle = BorderStyle.None)
+    Public Sub LayoutPanel(panel As Panel,
+                           Optional leftToRight As Boolean = False,
+                           Optional spacing As Int32 = 3,
+                           Optional margin As Int32 = 3,
+                           Optional borderStyle As BorderStyle = BorderStyle.None)
         Contract.Requires(panel IsNot Nothing)
 
         panel.BorderStyle = borderStyle
@@ -531,7 +531,7 @@ Public Module PoorlyCategorizedFunctions
     End Sub
 
     <Extension()>
-    Public Function ReplaceDirectorySeparatorWith(ByVal path As String, ByVal separator As Char) As String
+    Public Function ReplaceDirectorySeparatorWith(path As String, separator As Char) As String
         Contract.Requires(path IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Return path.ToString.
@@ -543,7 +543,7 @@ Public Module PoorlyCategorizedFunctions
     ''' Determines the relative path to a file from a directory.
     ''' Returns null if the file is not nested within the directory.
     ''' </summary>
-    Public Function FilePathRelativeToDirectoryPath(ByVal path As String, ByVal baseDirectoryPath As String) As String
+    Public Function FilePathRelativeToDirectoryPath(path As String, baseDirectoryPath As String) As String
         Contract.Requires(path IsNot Nothing)
         Contract.Requires(baseDirectoryPath IsNot Nothing)
 
@@ -566,10 +566,10 @@ Public Module PoorlyCategorizedFunctions
     <Pure()> <Extension()>
     <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value >= startIndex + substring.Length")>
     <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value <= text.Length")>
-    Public Function IndexAfter(ByVal text As String,
-                               ByVal substring As String,
-                               ByVal startIndex As Integer,
-                               ByVal comparisonType As StringComparison) As Integer?
+    Public Function IndexAfter(text As String,
+                               substring As String,
+                               startIndex As Integer,
+                               comparisonType As StringComparison) As Integer?
         Contract.Requires(text IsNot Nothing)
         Contract.Requires(substring IsNot Nothing)
         Contract.Requires(startIndex >= 0)

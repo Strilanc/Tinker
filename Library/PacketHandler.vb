@@ -17,7 +17,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
     End Sub
 
     <Pure()>
-    Public Sub New(ByVal handler As PacketHandlerRaw(Of TKey), ByVal sourceName As String, ByVal logger As Logger)
+    Public Sub New(handler As PacketHandlerRaw(Of TKey), sourceName As String, logger As Logger)
         Contract.Requires(handler IsNot Nothing)
         Contract.Requires(sourceName IsNot Nothing)
         Contract.Requires(logger IsNot Nothing)
@@ -30,7 +30,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
     ''' Adds a logger to the underlying packet handler, if one has not already been added for the given key type.
     ''' Returns null on failure.
     ''' </summary>
-    Public Function TryIncludeLogger(ByVal key As TKey, ByVal jar As ISimpleJar) As IDisposable
+    Public Function TryIncludeLogger(key As TKey, jar As ISimpleJar) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
 
@@ -60,7 +60,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
             End Sub)
     End Function
 
-    Public Function IncludeHandler(Of T)(ByVal key As TKey, ByVal jar As IJar(Of T), ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
+    Public Function IncludeHandler(Of T)(key As TKey, jar As IJar(Of T), handler As Func(Of IPickle(Of T), Task)) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
@@ -74,7 +74,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
             End Sub)
     End Function
 
-    Public Function HandlePacket(ByVal packetData As IRist(Of Byte)) As Task
+    Public Function HandlePacket(packetData As IRist(Of Byte)) As Task
         Contract.Requires(packetData IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         If packetData.Count < _handler.HeaderSize Then Throw New ArgumentException("Not enough data.")
@@ -93,7 +93,7 @@ Public NotInheritable Class PacketHandlerRaw(Of TKey)
         Contract.Invariant(_handlers IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal headerSize As Integer, ByVal keyExtractor As Func(Of IRist(Of Byte), TKey))
+    Public Sub New(headerSize As Integer, keyExtractor As Func(Of IRist(Of Byte), TKey))
         Contract.Requires(headerSize >= 0)
         Contract.Requires(keyExtractor IsNot Nothing)
         Contract.Ensures(Me.HeaderSize = _headerSize)
@@ -108,14 +108,14 @@ Public NotInheritable Class PacketHandlerRaw(Of TKey)
         End Get
     End Property
 
-    Public Function IncludeHandler(ByVal key As TKey, ByVal handler As Func(Of IRist(Of Byte), Task)) As IDisposable
+    Public Function IncludeHandler(key As TKey, handler As Func(Of IRist(Of Byte), Task)) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Return _handlers.AddHandler(key, handler)
     End Function
 
-    Public Async Function HandlePacket(ByVal packetData As IRist(Of Byte)) As Task
+    Public Async Function HandlePacket(packetData As IRist(Of Byte)) As Task
         Contract.Assume(packetData IsNot Nothing)
         Contract.Assume(packetData.Count >= HeaderSize)
         'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)

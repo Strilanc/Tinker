@@ -14,10 +14,10 @@ Public NotInheritable Class PacketStreamer
         Contract.Invariant(_subStream IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal subStream As IO.Stream,
-                   ByVal preheaderLength As Integer,
-                   ByVal sizeHeaderLength As Integer,
-                   ByVal maxPacketSize As Integer)
+    Public Sub New(subStream As IO.Stream,
+                   preheaderLength As Integer,
+                   sizeHeaderLength As Integer,
+                   maxPacketSize As Integer)
         Contract.Requires(subStream IsNot Nothing)
         Contract.Requires(preheaderLength >= 0)
         Contract.Requires(sizeHeaderLength > 0)
@@ -47,7 +47,7 @@ Public NotInheritable Class PacketStreamer
         Return Concat(header, body).ToRist()
     End Function
 
-    Public Function WritePacket(ByVal preheader As IEnumerable(Of Byte), ByVal payload As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
+    Public Function WritePacket(preheader As IEnumerable(Of Byte), payload As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
         Contract.Requires(preheader IsNot Nothing)
         Contract.Requires(payload IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)

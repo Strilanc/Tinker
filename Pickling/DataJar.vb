@@ -3,18 +3,18 @@ Namespace Pickling
     Public Class DataJar
         Inherits BaseJar(Of IRist(Of Byte))
 
-        Public Overrides Function Pack(ByVal value As IRist(Of Byte)) As IRist(Of Byte)
+        Public Overrides Function Pack(value As IRist(Of Byte)) As IRist(Of Byte)
             Return value.AssumeNotNull
         End Function
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of IRist(Of Byte))
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of IRist(Of Byte))
             Return data.ParsedWithDataCount(data.Count)
         End Function
 
-        Public Overrides Function Describe(ByVal value As IRist(Of Byte)) As String
+        Public Overrides Function Describe(value As IRist(Of Byte)) As String
             Contract.Assume(value IsNot Nothing)
             Return "[{0}]".Frmt(value.ToHexString)
         End Function
-        Public Overrides Function Parse(ByVal text As String) As IRist(Of Byte)
+        Public Overrides Function Parse(text As String) As IRist(Of Byte)
             Try
                 Dim byteText = text
                 If byteText.StartsWith("[", StringComparison.Ordinal) Then byteText = byteText.Substring(1)

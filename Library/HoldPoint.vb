@@ -1,18 +1,18 @@
 ﻿<ContractClass(GetType(IHoldPointContracts(Of )))>
 Public Interface IHoldPoint(Of Out TArg)
-    Function IncludeTaskHandler(ByVal handler As Func(Of TArg, Task)) As IDisposable
-    Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable
+    Function IncludeTaskHandler(handler As Func(Of TArg, Task)) As IDisposable
+    Function IncludeActionHandler(handler As Action(Of TArg)) As IDisposable
 End Interface
 <ContractClassFor(GetType(IHoldPoint(Of )))>
 Public MustInherit Class IHoldPointContracts(Of TArg)
     Implements IHoldPoint(Of TArg)
-    Public Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionHandler
+    Public Function IncludeActionHandler(handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionHandler
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Throw New NotSupportedException
     End Function
 
-    Public Function IncludeFutureHandler(ByVal handler As Func(Of TArg, Task)) As IDisposable Implements IHoldPoint(Of TArg).IncludeTaskHandler
+    Public Function IncludeFutureHandler(handler As Func(Of TArg, Task)) As IDisposable Implements IHoldPoint(Of TArg).IncludeTaskHandler
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Throw New NotSupportedException
@@ -34,7 +34,7 @@ Public Class HoldPoint(Of TArg)
     ''' Includes a handler which is run before the resulting future from calling 'Hold' will become ready.
     ''' Returns an IDisposable which removes the handler when disposed.
     ''' </summary>
-    Public Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionHandler
+    Public Function IncludeActionHandler(handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionHandler
         Return IncludeTaskHandler(Function(arg)
                                       Dim result = New TaskCompletionSource(Of NoValue)()
                                       result.SetByCalling(Sub() handler(arg))
@@ -45,7 +45,7 @@ Public Class HoldPoint(Of TArg)
     ''' Includes a handler whose future result must become ready before the resulting future from calling 'Hold' will become ready.
     ''' Returns an IDisposable which removes the handler when disposed.
     ''' </summary>
-    Public Function IncludeTaskHandler(ByVal handler As Func(Of TArg, Task)) As IDisposable Implements IHoldPoint(Of TArg).IncludeTaskHandler
+    Public Function IncludeTaskHandler(handler As Func(Of TArg, Task)) As IDisposable Implements IHoldPoint(Of TArg).IncludeTaskHandler
         Dim safeHandler = Async Function(arg As TArg)
                               Await handler(arg)
                           End Function
@@ -60,7 +60,7 @@ Public Class HoldPoint(Of TArg)
     End Function
 
     '''<summary>Evaluates all handlers and returns a future which becomes ready once all handlers have finished.</summary>
-    Public Function Hold(ByVal argument As TArg) As Task
+    Public Function Hold(argument As TArg) As Task
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Dim handlers As IEnumerable(Of Func(Of TArg, Task))
         SyncLock _lock

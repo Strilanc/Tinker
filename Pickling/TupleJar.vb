@@ -10,18 +10,18 @@ Namespace Pickling
             Contract.Invariant(_subJars IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal useSingleLineDescription As Boolean,
-                       ByVal ParamArray subJars() As ISimpleNamedJar)
+        Public Sub New(useSingleLineDescription As Boolean,
+                       ParamArray subJars() As ISimpleNamedJar)
             Contract.Requires(subJars IsNot Nothing)
             Me._subJars = subJars
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
-        Public Sub New(ByVal ParamArray subJars() As ISimpleNamedJar)
+        Public Sub New(ParamArray subJars() As ISimpleNamedJar)
             Me.New(False, subJars)
             Contract.Requires(subJars IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(ByVal value As NamedValueMap) As IRist(Of Byte)
+        Public Overrides Function Pack(value As NamedValueMap) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)
             If value.Count > _subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
             Dim missingKeys = From subJar In _subJars Where Not value.ContainsKey(subJar.Name)
@@ -29,7 +29,7 @@ Namespace Pickling
             Return Concat(From subJar In _subJars Select subJar.Pack(value.ItemRaw(subJar.Name))).ToRist()
         End Function
 
-        Public Overrides Function Parse(ByVal data As IRist(Of Byte)) As ParsedValue(Of NamedValueMap)
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of NamedValueMap)
             Dim vals = New Dictionary(Of InvariantString, Object)
             Dim usedDataCount = 0
             For Each subjar In _subJars
@@ -43,10 +43,10 @@ Namespace Pickling
             Return New NamedValueMap(vals).ParsedWithDataCount(usedDataCount)
         End Function
 
-        Public Overrides Function Describe(ByVal value As NamedValueMap) As String
+        Public Overrides Function Describe(value As NamedValueMap) As String
             Return (From subJar In _subJars Select subJar.Describe(value.ItemRaw(subJar.Name))).MakeListDescription(_useSingleLineDescription)
         End Function
-        Public Overrides Function Parse(ByVal text As String) As NamedValueMap
+        Public Overrides Function Parse(text As String) As NamedValueMap
             Dim lines = text.SplitListDescription(_useSingleLineDescription)
             Dim result = _subJars.Zip(lines).ToDictionary(
                 keySelector:=Function(pair) pair.Item1.Name,
