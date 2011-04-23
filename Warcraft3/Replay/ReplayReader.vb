@@ -67,7 +67,8 @@ Namespace WC3.Replay
                 If headerSize <> Format.HeaderSize Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect header size).")
 
                 'Check header checksum
-                Dim actualChecksum = stream.ReadExactAt(position:=0, exactCount:=CInt(headerSize - 4)).Concat({0, 0, 0, 0}).CRC32
+                Contract.Assume(CInt(headerSize) >= 4)
+                Dim actualChecksum = stream.ReadExactAt(position:=0, exactCount:=CInt(headerSize) - 4).Concat({0, 0, 0, 0}).CRC32
                 If actualChecksum <> header.ItemAs(Of UInt32)("header crc32") Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect checksum).")
 
                 Return New ReplayReader(streamFactory:=streamFactory,

@@ -214,7 +214,6 @@ Namespace WC3
                            Description:="Returns the current value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
-                Contract.Assume(target IsNot Nothing)
                 Dim val As Task(Of Double)
                 Dim argSetting = argument.RawValue(0).ToInvariant
                 Select Case argSetting
@@ -293,7 +292,6 @@ Namespace WC3
                            Description:="Returns estimated network round trip times for each player.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
-                Contract.Assume(target IsNot Nothing)
                 Return From players In target.QueueGetPlayers()
                        From latencies In (From player In players Select player.QueueGetLatencyDescription).Cache.AsAggregateTask
                        Select "Estimated RTT: {0}".Frmt((From pair In players.Zip(latencies)
@@ -347,7 +345,6 @@ Namespace WC3
                            Description:="Sets the value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
-                Contract.Assume(target IsNot Nothing)
                 Dim val_us As UShort
                 Dim vald As Double
                 Dim isShort = UShort.TryParse(argument.RawValue(1), val_us)

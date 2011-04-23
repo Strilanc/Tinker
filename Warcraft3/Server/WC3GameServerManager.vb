@@ -189,6 +189,8 @@ Namespace WC3
             If _gameIdCount > 1000 Then _gameIdCount = 1
             Return _gameIdCount * 10000UI + CUInt(_gameIdGenerator.Next(1000))
         End Function
+
+        <ContractVerification(False)>
         Private Function AsyncAddGameFromArguments(argument As Commands.CommandArgument,
                                                    user As BotUser) As Task(Of WC3.GameSet)
             Contract.Requires(argument IsNot Nothing)
@@ -239,6 +241,7 @@ Namespace WC3
         End Function
 
         <SuppressMessage("Microsoft.Contracts", "Requires-23-223")>
+        <ContractVerification(False)>
         Private Function AsyncAddAdminGame(name As InvariantString, password As String) As Task(Of GameSet)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)

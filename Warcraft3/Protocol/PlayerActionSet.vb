@@ -83,13 +83,11 @@ Namespace WC3.Protocol
             Return DataJar
         End Function
         Public Overrides Function PackRaw(value As PlayerActionSet) As NamedValueMap
-            Contract.Assume(value IsNot Nothing)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"source", value.Id},
                     {"actions", value.Actions}}
         End Function
         Public Overrides Function ParseRaw(value As NamedValueMap) As PlayerActionSet
-            Contract.Assume(value IsNot Nothing)
             Return New PlayerActionSet(value.ItemAs(Of PlayerId)("source"),
                                        value.ItemAs(Of IRist(Of GameAction))("actions"))
         End Function

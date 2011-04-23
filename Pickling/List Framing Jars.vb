@@ -284,7 +284,6 @@
                 Return (From e In subControls Select (e.SubControl.Value)).ToRist
             End Get
             Set(value As IRist(Of T))
-                Contract.Assume(value IsNot Nothing)
                 Dim needLayout = False
                 Try
                     _ignoreValueChanged = True

@@ -46,11 +46,14 @@
             If _settings.UseMultiObs Then
                 If _settings.Map.LobbySlots.Count <= 10 Then
                     For Each i In 10.Range.Skip(_settings.Map.LobbySlots.Count)
+                        Contract.Assume(i >= 0)
                         CloseSlot(_slots(i).MatchableId)
                     Next i
                     Dim playerIndex = _freeIndexes.First
                     _freeIndexes.Remove(playerIndex)
                     AddFakePlayer("# multi obs", slot:=_slots(10))
+                    Contract.Assume(_slots(10).Contents.EnumPlayers().Count() = 1)
+                    Contract.Assume(_slots(11).Contents.EnumPlayers().None())
                     _slots = GameLobby.SetupCoveredSlot(_slots, _slots(10), _slots(11), playerIndex)
                 End If
             End If
@@ -329,8 +332,8 @@
                                                 coveredSlot As Slot,
                                                 coveredPlayersId As PlayerId) As SlotSet
             Contract.Requires(slots IsNot Nothing)
-            Contract.Requires(coveringSlot.Contents.EnumPlayers.None)
-            Contract.Requires(coveringSlot.Contents.EnumPlayers.Count = 1)
+            Contract.Requires(coveredSlot.Contents.EnumPlayers().None())
+            Contract.Requires(coveringSlot.Contents.EnumPlayers().Count() = 1)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
 
             Dim coveringPlayer = coveringSlot.Contents.EnumPlayers.Single
@@ -467,7 +470,6 @@
                 'swap with next open slot from target team
                 For Each offset_mod In _slots.Count.Range
                     Dim nextIndex = (slot.Index + offset_mod) Mod _slots.Count
-                    Contract.Assume(nextIndex >= 0)
                     Dim nextSlot = _slots(nextIndex)
                     If nextSlot.Team = newTeam AndAlso nextSlot.Contents.WantPlayer(sender.Name) >= SlotContents.WantPlayerPriority.Open Then
                         SwapSlotContents(nextSlot, slot)

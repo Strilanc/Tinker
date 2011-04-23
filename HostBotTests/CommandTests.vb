@@ -11,7 +11,7 @@ Public Class CommandTests
         End Sub
         Protected Overloads Overrides Function PerformInvoke(target As UInteger, user As Tinker.BotUser, argument As CommandArgument) As Task(Of String)
             Dim result = target.ToString + " " + argument.RawValue(0)
-            result += " "+argument.NamedValue("arg2")
+            result += " " + argument.NamedValue("arg2")
             If argument.HasOptionalNamedValue("arg3") Then result += " " + argument.OptionalNamedValue("arg3")
             If argument.HasOptionalSwitch("arg4") Then result += " " + "arg4"
             Return result.AsTask

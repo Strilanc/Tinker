@@ -83,7 +83,6 @@ Namespace WC3.Protocol
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-33-18")>
         Public Overrides Function PackRaw(value As GameAction) As KeyValuePair(Of GameActionId, Object)
-            Contract.Assume(value IsNot Nothing)
             Return value
         End Function
         Public Overrides Function ParseRaw(value As KeyValuePair(Of GameActionId, Object)) As GameAction

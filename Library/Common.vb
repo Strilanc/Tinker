@@ -2,6 +2,11 @@ Imports System.Numerics
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
+    Public Event UnexpectedException(ex As Exception, reason As String)
+    <Extension()>
+    Public Sub RaiseAsUnexpected(ex As Exception, reason As String)
+        RaiseEvent UnexpectedException(ex, reason)
+    End Sub
     <Extension()> <Pure()>
     Public Function MaybeFirst(Of T)(sequence As IEnumerable(Of T)) As Maybe(Of T)
         Contract.Requires(sequence IsNot Nothing)
@@ -252,7 +257,7 @@ Public Module PoorlyCategorizedFunctions
         End If
 
         'Check files in folder
-        Return (From filepath In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
+        Return (From filepath In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories).AssumeNotNull()
                 Select relativePath = filepath.Substring(directory.Length)
                 Where relativePath Like likeQuery
                 Where relativePath Like dirQuery
@@ -441,7 +446,7 @@ Public Module PoorlyCategorizedFunctions
     '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>
     Public Function TeamVersusStringToTeamSizes(value As String) As IRist(Of Integer)
         Contract.Requires(value IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IList(Of Integer))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IRist(Of Integer))() IsNot Nothing)
 
         'parse numbers between 'v's
         Return (From e In value.ToUpperInvariant.Split("V"c)
@@ -563,9 +568,9 @@ Public Module PoorlyCategorizedFunctions
         Loop
     End Function
 
+    '''<remarks>Verification disabled due to incorrect contract in IndexOf</remarks>
     <Pure()> <Extension()>
-    <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value >= startIndex + substring.Length")>
-    <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Integer?)() Is Nothing OrElse Contract.Result(Of Integer?)().Value <= text.Length")>
+    <ContractVerification(False)>
     Public Function IndexAfter(text As String,
                                substring As String,
                                startIndex As Integer,

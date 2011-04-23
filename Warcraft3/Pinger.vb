@@ -64,6 +64,7 @@
         _latency *= 1 - lambda
         _latency += lambda * stored.Item2.ElapsedTime.TotalMilliseconds
         If _latency <= 0 Then _latency = Double.Epsilon
+        Contract.Assume(_latency >= 0)
     End Sub
     Public Function QueueReceivedPong(salt As UInteger) As Task
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)

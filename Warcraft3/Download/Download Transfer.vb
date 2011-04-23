@@ -102,11 +102,9 @@ Namespace WC3.Download
 
         Public Sub Dispose() Implements IDisposable.Dispose
             If Downloader.Transfer Is Me Then
-                Contract.Assume(Downloader.Transfer IsNot Nothing)
                 Downloader.ClearTransfer()
             End If
             If Uploader.Transfer Is Me Then
-                Contract.Assume(Uploader.Transfer IsNot Nothing)
                 Uploader.ClearTransfer()
             End If
         End Sub

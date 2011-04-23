@@ -76,7 +76,7 @@ Public NotInheritable Class ThrottledWriteStream
                 Dim delay = New TimeSpan(ticks:=CLng((_usedCost - _costLimit) / _recoveryRatePerMillisecond * TimeSpan.TicksPerMillisecond))
                 _timer.AsyncWait(delay).QueueContinueWithAction(inQueue, Sub() PerformWrites(isWaitCallback:=True))
                 _throttled = True
-                Return
+                Exit While
             End If
 
             'Perform write
@@ -85,6 +85,8 @@ Public NotInheritable Class ThrottledWriteStream
             _usedCost += _costEstimator(data)
             _substream.Write(data, 0, data.Length)
         End While
+        Contract.Assume(_availableSlack >= 0)
+        Contract.Assume(_usedCost >= 0)
     End Sub
 
     Public Overrides Function BeginRead(buffer() As Byte, offset As Integer, count As Integer, callback As System.AsyncCallback, state As Object) As System.IAsyncResult

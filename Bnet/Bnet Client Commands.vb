@@ -11,7 +11,6 @@ Namespace Bnet.Commands
                        Permissions:="root:1")
         End Sub
         Protected Overrides Function PerformInvoke(target As Bnet.ClientComponent, user As BotUser, argument As String) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Return target.Bot.InvokeCommand(user, argument).AssumeNotNull()
         End Function
     End Class
@@ -40,7 +39,6 @@ Namespace Bnet.Commands
                        Permissions:="users:2")
         End Sub
         Protected Overrides Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             Dim newUser = target.Profile.Users.CreateNewUser(argument.RawValue(0))
             Return "Created {0}".Frmt(newUser.Name).AsTask
         End Function
@@ -55,7 +53,6 @@ Namespace Bnet.Commands
                        Permissions:="users:4")
         End Sub
         Protected Overrides Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Contract.Assume(target IsNot Nothing)
             If Not target.Profile.Users.ContainsUser(argument.RawValue(0)) Then
                 Throw New ArgumentException("That user does not exist")
             End If
@@ -79,7 +76,6 @@ Namespace Bnet.Commands
         End Sub
         Protected Overrides Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
             'Target user
-            Contract.Assume(target IsNot Nothing)
             If Not target.Profile.Users.ContainsUser(argument.RawValue(0)) Then
                 Throw New ArgumentException("That user does not exist")
             End If
@@ -117,7 +113,6 @@ Namespace Bnet.Commands
         End Sub
         Protected Overrides Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
             'Target user
-            Contract.Assume(target IsNot Nothing)
             If Not target.Profile.Users.ContainsUser(argument.RawValue(0)) Then
                 Throw New ArgumentException("That user does not exist")
             End If
@@ -158,7 +153,6 @@ Namespace Bnet.Commands
             If username Is Nothing Then
                 Throw New ArgumentException("No user specified.")
             End If
-            Contract.Assume(target IsNot Nothing)
             If target.Profile.Users.ContainsUser(username) Then
                 Dim targetUser = target.Profile.Users(username)
                 Contract.Assume(targetUser IsNot Nothing)

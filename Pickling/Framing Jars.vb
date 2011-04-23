@@ -124,7 +124,6 @@
             Dim dataSize = data.TakeExact(_prefixSize).ToUValue
             If data.Count < _prefixSize + dataSize Then Throw New PicklingNotEnoughDataException("The size-prefixed data requires the {0} bytes specified by the prefix.".Frmt(dataSize))
 
-            Contract.Assume(CInt(dataSize) >= 0)
             Contract.Assume(_prefixSize + CInt(dataSize) <= data.Count)
             Dim parsed = SubJar.Parse(data.SubList(_prefixSize, CInt(dataSize)))
             If parsed.UsedDataCount < dataSize Then Throw New PicklingException("Fragmented data.")

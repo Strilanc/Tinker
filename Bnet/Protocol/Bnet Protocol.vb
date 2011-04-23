@@ -365,6 +365,8 @@ Namespace Bnet.Protocol
                     New EnumByteJar(Of ClanRank)().Named("rank"))
         End Class
 
+        '''<remarks>Verification disabled due to causing out of memory.</remarks>
+        <ContractVerification(False)>
         Public NotInheritable Class ClientToServer
             Private Sub New()
             End Sub

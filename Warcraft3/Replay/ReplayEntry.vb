@@ -83,7 +83,6 @@ Namespace WC3.Replay
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-33-18")>
         Public Overrides Function PackRaw(value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
-            Contract.Assume(value IsNot Nothing)
             Return value
         End Function
         Public Overrides Function ParseRaw(value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry

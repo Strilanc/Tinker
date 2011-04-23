@@ -159,7 +159,6 @@
         Public NotOverridable Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of T)
             If data.Count < DataSize Then Throw New PicklingNotEnoughDataException("{0} requires {1} bytes.".Frmt(Me.GetType.Name, DataSize))
             Dim usedDataCount = CInt(DataSize)
-            Contract.Assume(usedDataCount >= 0)
             Return FixedSizeParse(data.TakeExact(usedDataCount)).ParsedWithDataCount(usedDataCount)
         End Function
     End Class

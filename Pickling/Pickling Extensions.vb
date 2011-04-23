@@ -61,6 +61,7 @@
             End If
         End Function
         <Extension()> <Pure()>
+        <SuppressMessage("Microsoft.Contracts", "Requires-45-196")>
         Public Function SplitListDescription(text As String, Optional usedSingleLineDescription As Boolean = False) As IEnumerable(Of String)
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)

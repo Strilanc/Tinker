@@ -184,6 +184,8 @@ Namespace WC3.Download
                                   Where sign <> 0).FirstOrDefault)
         End Function
 
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Transfer)().Downloader Is downloader")>
+        <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of Transfer)().Uploader Is uploader")>
         Public Shared Function StartTransfer(downloader As TransferClient, uploader As TransferClient) As Transfer
             Contract.Requires(downloader IsNot Nothing)
             Contract.Requires(uploader IsNot Nothing)

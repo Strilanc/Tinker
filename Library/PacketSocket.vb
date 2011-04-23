@@ -147,7 +147,7 @@ Public NotInheritable Class PacketSocket
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Return inQueue.QueueAction(Sub() Disconnect(expected, reason))
     End Function
-    Private Sub DeadManSwitch_Triggered(sender As DeadManSwitch) Handles deadManSwitch.Triggered
+    Private Sub DeadManSwitch_Triggered(sender As DeadManSwitch) Handles DeadManSwitch.Triggered
         Disconnect(expected:=False, reason:="Connection went idle.")
     End Sub
 

@@ -121,6 +121,8 @@
         ''' </summary>
         ''' <param name="blockPosition">The starting position of the block, as determined by the previous block's end.</param>
         ''' <param name="dataPosition">The logical starting position of the data stored in the block.</param>
+        ''' <remarks>Verification disabled due to unsuppressable suggested precondition notice.</remarks>
+        <ContractVerification(False)>
         Private Sub LoadNextBlockInfo(blockPosition As Long, dataPosition As Long)
             Contract.Requires(blockPosition >= 0)
             Contract.Requires(dataPosition >= 0)
@@ -128,19 +130,20 @@
             Contract.Ensures(_blockInfoTable.Count = Contract.OldValue(_blockInfoTable.Count) + 1)
             'Read block header
             If blockPosition + Format.BlockHeaderSize > _stream.Length Then Throw New IO.IOException("Invalid block position.")
+            Contract.Assume(blockPosition <= _stream.Length)
             _stream.Position = blockPosition
             Dim compressedDataSize = _stream.ReadUInt16()
             Dim decompressedDataSize = _stream.ReadUInt16()
             Dim checksum = _stream.ReadUInt32()
             If decompressedDataSize <= 0 Then Throw New IO.IOException("Invalid block info.")
             'Remember
-            Contract.Assume(CLng(Format.BlockHeaderSize + compressedDataSize) > 0)
             Dim block = New BlockInfo(blockPosition:=blockPosition,
                                       blockLength:=Format.BlockHeaderSize + compressedDataSize,
                                       dataPosition:=dataPosition,
                                       dataLength:=decompressedDataSize,
                                       checksum:=checksum)
             _blockInfoTable.Add(block)
+            Contract.Assume(_blockInfoTable.Count <= _blockCount)
             If _blockInfoTable.Count = _blockCount AndAlso block.NextDataPosition < _length Then
                 Throw New IO.InvalidDataException("Less data than indicated by header.")
             End If
@@ -149,6 +152,8 @@
         ''' <summary>
         ''' Determines the block info for the given block, filling the block info table as necessary.
         ''' </summary>
+        ''' <remarks>Verification disabled due to unsuppressable and incorrect suggested precondition notice.</remarks>
+        <ContractVerification(False)>
         Private Function ReadBlockInfo(blockIndex As Integer) As BlockInfo
             Contract.Requires(blockIndex >= 0)
             Contract.Requires(blockIndex < _blockCount)

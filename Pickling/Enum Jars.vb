@@ -18,6 +18,7 @@
             Me._checkDefined = checkDefined
         End Sub
 
+        <SuppressMessage("Microsoft.Contracts", "Requires-12-33")>
         Public Overrides Function Pack(value As TEnum) As IRist(Of Byte)
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(Describe(value), GetType(TEnum)))
@@ -25,9 +26,10 @@
             Return _subJar.Pack(value)
         End Function
 
+        <SuppressMessage("Microsoft.Contracts", "Requires-12-58")>
         Public NotOverridable Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of TEnum)
             Dim parsed = _subJar.Parse(data)
-            Dim value = DirectCast(parsed.Value, TEnum).AssumeNotNull
+            Dim value = DirectCast(parsed.Value, TEnum)
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(Describe(value), GetType(TEnum)))
             End If
@@ -38,6 +40,7 @@
             Return If(_isFlagEnum, value.EnumFlagsToString(), value.ToString)
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-211")>
+        <SuppressMessage("Microsoft.Contracts", "Requires-12-176")>
         Public Overrides Function Parse(text As String) As TEnum
             Dim result As TEnum
             If _isFlagEnum Then

@@ -17,7 +17,6 @@
                 Return 1
             End Get
         End Property
-        <SuppressMessage("Microsoft.Contracts", "Ensures-47-6")>
         Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As Byte
             Return data.Single
         End Function
@@ -142,7 +141,6 @@
                 Return 4
             End Get
         End Property
-        <SuppressMessage("Microsoft.Contracts", "Ensures-47-26")>
         Protected Overrides Function FixedSizeParse(data As IRist(Of Byte)) As UInt32
             Contract.Assume(data.Count = 4)
             Return data.ToUInt32(byteOrder)

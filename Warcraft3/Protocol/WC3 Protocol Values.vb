@@ -131,7 +131,6 @@ Namespace WC3.Protocol
             Return DataJar
         End Function
         Public Overrides Function PackRaw(value As KnockData) As NamedValueMap
-            Contract.Assume(value IsNot Nothing)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"game id", value.GameId},
                     {"entry key", value.EntryKey},
@@ -143,7 +142,6 @@ Namespace WC3.Protocol
                     {"internal address", value.InternalEndPoint}}
         End Function
         Public Overrides Function ParseRaw(value As NamedValueMap) As KnockData
-            Contract.Assume(value IsNot Nothing)
             Return New KnockData(GameId:=value.ItemAs(Of UInt32)("game id"),
                                  EntryKey:=value.ItemAs(Of UInt32)("entry key"),
                                  Unknown:=value.ItemAs(Of Byte)("unknown value"),

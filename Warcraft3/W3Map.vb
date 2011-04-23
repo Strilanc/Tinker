@@ -53,7 +53,6 @@ Namespace WC3
                        usesCustomForces As Boolean,
                        usesFixedPlayerSettings As Boolean,
                        name As InvariantString)
-            Contract.Requires(advertisedPath.StartsWith("Maps\"))
             Contract.Requires(fileSize > 0)
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
@@ -62,6 +61,7 @@ Namespace WC3
             Contract.Requires(lobbySlots.Count <= 12)
             Contract.Requires(playableWidth > 0)
             Contract.Requires(playableHeight > 0)
+            If Not advertisedPath.StartsWith("Maps\") Then Throw New ArgumentException("Not advertisedPath.StartsWith(""Maps\"")")
 
             Me._streamFactory = streamFactory
             Me._advertisedPath = advertisedPath
@@ -96,6 +96,7 @@ Namespace WC3
             Using crcStream = factory().Value
                 fileSize = CUInt(crcStream.Length)
                 fileChecksumCRC32 = crcStream.ReadCRC32
+                If fileSize = 0 Then Throw New UnreachableException("Empty files can't be mpq archives.")
             End Using
 
             Contract.Assume(info.slots IsNot Nothing)
@@ -124,7 +125,7 @@ Namespace WC3
 
             'Parse map values
             Dim vals = Protocol.ServerPackets.HostMapInfo.Jar.Parse(data.ToRist).Value
-            Dim path = vals.ItemAs(Of String)("path").ToInvariant
+            Dim path = vals.ItemAs(Of String)("path").ToInvariant()
             Dim size = vals.ItemAs(Of UInt32)("size")
             Dim crc32 = vals.ItemAs(Of UInt32)("crc32")
             Dim xoro = vals.ItemAs(Of UInt32)("xoro checksum")
@@ -134,7 +135,7 @@ Namespace WC3
             If size <= 0 Then Throw New IO.InvalidDataException("Invalid file size.")
 
             'Mock the remaining values
-            Dim name = path.ToString.Split("\"c).Last
+            Dim name = path.ToString.Split("\"c).Last().AssumeNotNull().ToInvariant()
             Dim isMelee = True
             Dim usesCustomForces = False
             Dim usesFixedPlayerSettings = False
@@ -151,7 +152,6 @@ Namespace WC3
                                    color:=Protocol.PlayerColor.Teal,
                                    contents:=New SlotContentsComputer(Protocol.ComputerLevel.Normal))
             Dim lobbySlots = MakeRist(slot1, slot2, slot3)
-            Contract.Assume(lobbySlots.Count = 3)
 
             'Finish
             Return New Map(streamFactory:=Nothing,
@@ -327,7 +327,6 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IRist(Of Byte))().Count <= size)
             If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
             If Not FileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
-            Contract.Assume(_streamFactory IsNot Nothing)
 
             Using stream = _streamFactory().Value
                 If stream Is Nothing Then Throw New InvalidStateException("Invalid stream factory.")
@@ -610,8 +609,6 @@ Namespace WC3
 
                 '... more data in the file but it isn't needed ...
 
-                Contract.Assume(CUShort(playableWidth) > 0)
-                Contract.Assume(CUShort(playableHeight) > 0)
                 Contract.Assume(teamedSlots.Count > 0)
                 Contract.Assume(teamedSlots.Count <= 12)
                 Return New ReadMapInfoResult(mapName, CUShort(playableWidth), CUShort(playableHeight), options, teamedSlots)
