@@ -3,23 +3,27 @@ Namespace Pickling
     Public Class TupleJar
         Inherits BaseJar(Of NamedValueMap)
 
-        Private ReadOnly _subJars As IEnumerable(Of ISimpleNamedJar)
+        Private ReadOnly _subJars As IEnumerable(Of INamedJar(Of Object))
         Private ReadOnly _useSingleLineDescription As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_subJars IsNot Nothing)
         End Sub
 
-        Public Sub New(useSingleLineDescription As Boolean,
-                       ParamArray subJars() As ISimpleNamedJar)
-            Contract.Requires(subJars IsNot Nothing)
-            Me._subJars = subJars
+        Public Sub New(Optional subJars As IEnumerable(Of INamedJar(Of Object)) = Nothing,
+                       Optional useSingleLineDescription As Boolean = False)
+            Me._subJars = If(subJars, {})
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
-        Public Sub New(ParamArray subJars() As ISimpleNamedJar)
-            Me.New(False, subJars)
-            Contract.Requires(subJars IsNot Nothing)
-        End Sub
+        Public Function [Then](Of T)(jar As INamedJar(Of T)) As TupleJar
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of TupleJar)() IsNot Nothing)
+            Return New TupleJar(Me._subJars.Append(jar.Weaken()).ToArray())
+        End Function
+        Public Function WithSingleLineDescription(Optional value As Boolean = True) As TupleJar
+            Contract.Ensures(Contract.Result(Of TupleJar)() IsNot Nothing)
+            Return New TupleJar(Me._subJars, value)
+        End Function
 
         Public Overrides Function Pack(value As NamedValueMap) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)

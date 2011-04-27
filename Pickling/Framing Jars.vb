@@ -32,6 +32,30 @@
         End Function
     End Class
 
+    Public NotInheritable Class DirectCastJar(Of TExposed, TUsed)
+        Inherits BaseConversionJar(Of TExposed, TUsed)
+        Private ReadOnly _subJar As IJar(Of TUsed)
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_subJar IsNot Nothing)
+        End Sub
+
+        Public Sub New(subJar As IJar(Of TUsed))
+            Contract.Requires(subJar IsNot Nothing)
+            Me._subJar = subJar
+        End Sub
+
+        Public Overrides Function PackRaw(value As TExposed) As TUsed
+            Return DirectCast(DirectCast(value, Object), TUsed).AssumeNotNull()
+        End Function
+        Public Overrides Function ParseRaw(value As TUsed) As TExposed
+            Return DirectCast(DirectCast(value, Object), TExposed).AssumeNotNull()
+        End Function
+        Public Overrides Function SubJar() As IJar(Of TUsed)
+            Return _subJar
+        End Function
+    End Class
+
     '''<summary>Pickles values with data of a specified size.</summary>
     Public NotInheritable Class FixedSizeFramingJar(Of T)
         Inherits BaseFramingJar(Of T)

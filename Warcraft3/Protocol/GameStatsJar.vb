@@ -27,16 +27,16 @@ Namespace WC3.Protocol
             ObserversReferees = 1 << 30
         End Enum
 
-        Private Shared ReadOnly DataJar As New TupleJar(
-                    New EnumUInt32Jar(Of GameSettings)().Named("settings"),
-                    New ByteJar().Named("unknown1"),
-                    New UInt16Jar().Named("playable height"),
-                    New UInt16Jar().Named("playable width"),
-                    New UInt32Jar(showHex:=True).Named("xoro checksum"),
-                    New UTF8Jar().NullTerminated.Named("relative path"),
-                    New UTF8Jar().NullTerminated.Named("host name"),
-                    New ByteJar().Named("unknown2"),
-                    New DataJar().Fixed(exactDataCount:=20).Optional.Named("sha1 checksum"))
+        Private Shared ReadOnly DataJar As TupleJar =
+                    New EnumUInt32Jar(Of GameSettings)().Named("settings").
+                    Then(New ByteJar().Named("unknown1")).
+                    Then(New UInt16Jar().Named("playable height")).
+                    Then(New UInt16Jar().Named("playable width")).
+                    Then(New UInt32Jar(showHex:=True).Named("xoro checksum")).
+                    Then(New UTF8Jar().NullTerminated.Named("relative path")).
+                    Then(New UTF8Jar().NullTerminated.Named("host name")).
+                    Then(New ByteJar().Named("unknown2")).
+                    Then(New DataJar().Fixed(exactDataCount:=20).Optional.Named("sha1 checksum"))
 
         Public Overrides Function Pack(value As GameStats) As IRist(Of Byte)
             Contract.Assume(value IsNot Nothing)

@@ -75,9 +75,9 @@ Namespace WC3.Protocol
     Public Class PlayerActionSetJar
         Inherits BaseConversionJar(Of PlayerActionSet, NamedValueMap)
 
-        Private Shared ReadOnly DataJar As New TupleJar(
-                New PlayerIdJar().Named("source"),
-                New GameActionJar().Repeated.DataSizePrefixed(prefixSize:=2).Named("actions"))
+        Private Shared ReadOnly DataJar As TupleJar =
+                New PlayerIdJar().Named("source").
+                Then(New GameActionJar().Repeated.DataSizePrefixed(prefixSize:=2).Named("actions"))
 
         Public Overrides Function SubJar() As IJar(Of NamedValueMap)
             Return DataJar

@@ -21,7 +21,7 @@
     Public NotInheritable Class Pickle(Of T)
         Implements IPickle(Of T)
 
-        Private ReadOnly _jar As ISimpleJar
+        Private ReadOnly _jar As IJar(Of Object)
         Private ReadOnly _data As IRist(Of Byte)
         Private ReadOnly _value As T
 
@@ -31,7 +31,7 @@
             Contract.Invariant(_value IsNot Nothing)
         End Sub
 
-        Public Sub New(jar As ISimpleJar,
+        Public Sub New(jar As IJar(Of Object),
                        value As T,
                        data As IRist(Of Byte))
             Contract.Requires(jar IsNot Nothing)
@@ -43,7 +43,7 @@
             Me._value = value
         End Sub
 
-        Public ReadOnly Property Data As IRist(Of Byte) Implements ISimplePickle.Data
+        Public ReadOnly Property Data As IRist(Of Byte) Implements IPickle(Of T).Data
             Get
                 Contract.Ensures(Contract.Result(Of IRist(Of Byte))() Is _data)
                 Return _data
@@ -54,14 +54,9 @@
                 Return _value
             End Get
         End Property
-        Private ReadOnly Property SimpleValue As Object Implements ISimplePickle.Value
+        Public ReadOnly Property Jar As IJar(Of Object) Implements IPickle(Of T).Jar
             Get
-                Return _value
-            End Get
-        End Property
-        Public ReadOnly Property Jar As ISimpleJar Implements ISimplePickle.Jar
-            Get
-                Contract.Ensures(Contract.Result(Of ISimpleJar)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IJar(Of Object))() IsNot Nothing)
                 Return _jar
             End Get
         End Property
@@ -130,23 +125,6 @@
                 getter:=Function() Parse(control.Text),
                 setter:=Sub(value) control.Text = Describe(value),
                 disposer:=Sub() control.Dispose())
-        End Function
-
-        Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
-            Return MakeControl()
-        End Function
-        Private Function SimplePack(value As Object) As IRist(Of Byte) Implements ISimpleJar.Pack
-            Return Pack(DirectCast(value, T).AssumeNotNull)
-        End Function
-        Private Function SimpleParse(data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
-            Dim result = Parse(data)
-            Return New ParsedValue(Of Object)(result.Value, result.UsedDataCount)
-        End Function
-        Public Function SimpleDescribe(value As Object) As String Implements ISimpleJar.Describe
-            Return Describe(DirectCast(value, T).AssumeNotNull)
-        End Function
-        Public Function SimpleParse(text As String) As Object Implements ISimpleJar.Parse
-            Return Parse(text)
         End Function
     End Class
 

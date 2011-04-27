@@ -117,15 +117,15 @@ Namespace WC3.Protocol
     Public NotInheritable Class KnockDataJar
         Inherits BaseConversionJar(Of KnockData, NamedValueMap)
 
-        Private Shared ReadOnly DataJar As New TupleJar(
-                New UInt32Jar().Named("game id"),
-                New UInt32Jar(showhex:=True).Named("entry key"),
-                New ByteJar().Named("unknown value"),
-                New UInt16Jar().Named("listen port"),
-                New UInt32Jar(showhex:=True).Named("peer key"),
-                New UTF8Jar(maxCharCount:=Protocol.MaxPlayerNameLength).NullTerminated.Limited(maxDataCount:=Protocol.MaxSerializedPlayerNameLength).Named("name"),
-                New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data"),
-                New Bnet.Protocol.IPEndPointJar().Named("internal address"))
+        Private Shared ReadOnly DataJar As TupleJar =
+                New UInt32Jar().Named("game id").
+                Then(New UInt32Jar(showhex:=True).Named("entry key")).
+                Then(New ByteJar().Named("unknown value")).
+                Then(New UInt16Jar().Named("listen port")).
+                Then(New UInt32Jar(showhex:=True).Named("peer key")).
+                Then(New UTF8Jar(maxCharCount:=Protocol.MaxPlayerNameLength).NullTerminated.Limited(maxDataCount:=Protocol.MaxSerializedPlayerNameLength).Named("name")).
+                Then(New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data")).
+                Then(New Bnet.Protocol.IPEndPointJar().Named("internal address"))
 
         Public Overrides Function SubJar() As Pickling.IJar(Of NamedValueMap)
             Return DataJar

@@ -4,12 +4,12 @@ Namespace Bnet.Protocol
     Public NotInheritable Class ProductCredentialsJar
         Inherits BaseConversionJar(Of ProductCredentials, NamedValueMap)
 
-        Private Shared ReadOnly DataJar As New TupleJar(
-                New UInt32Jar().Named("length"),
-                New EnumUInt32Jar(Of ProductType)().Named("product"),
-                New UInt32Jar().Named("public key"),
-                New UInt32Jar().Named("unknown"),
-                New DataJar().Fixed(exactDataCount:=20).Named("proof"))
+        Private Shared ReadOnly DataJar As TupleJar =
+                New UInt32Jar().Named("length").
+                Then(New EnumUInt32Jar(Of ProductType)().Named("product")).
+                Then(New UInt32Jar().Named("public key")).
+                Then(New UInt32Jar().Named("unknown")).
+                Then(New DataJar().Fixed(exactDataCount:=20).Named("proof"))
 
         Public Overrides Function SubJar() As IJar(Of NamedValueMap)
             Return DataJar

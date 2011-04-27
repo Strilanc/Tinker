@@ -210,21 +210,21 @@ Namespace WC3.Protocol
     <ContractVerification(False)>
     Public Module Packets
         Public Const PacketPrefix As Byte = &HF7
-        Public ReadOnly LobbyStateTupleJar As New TupleJar(
-                New SlotJar().RepeatedWithCountPrefix(prefixSize:=1).Named("slots"),
-                New UInt32Jar(showHex:=True).Named("random seed"),
-                New EnumByteJar(Of LobbyLayoutStyle)().Named("layout style"),
-                New ByteJar().Named("num player slots"))
+        Public ReadOnly LobbyStateTupleJar As TupleJar =
+                New SlotJar().RepeatedWithCountPrefix(prefixSize:=1).Named("slots").
+                Then(New UInt32Jar(showHex:=True).Named("random seed")).
+                Then(New EnumByteJar(Of LobbyLayoutStyle)().Named("layout style")).
+                Then(New ByteJar().Named("num player slots"))
 
         Public MustInherit Class Definition
             Private ReadOnly _id As PacketId
-            Private ReadOnly _jar As ISimpleJar
+            Private ReadOnly _jar As IJar(Of Object)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(id As PacketId, jar As ISimpleJar)
+            Friend Sub New(id As PacketId, jar As IJar(Of Object))
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -235,9 +235,9 @@ Namespace WC3.Protocol
                     Return _id
                 End Get
             End Property
-            Public ReadOnly Property Jar As ISimpleJar
+            Public ReadOnly Property Jar As IJar(Of Object)
                 Get
-                    Contract.Ensures(Contract.Result(Of ISimpleJar)() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IJar(Of Object))() IsNot Nothing)
                     Return _jar
                 End Get
             End Property
@@ -251,7 +251,7 @@ Namespace WC3.Protocol
             End Sub
 
             Friend Sub New(id As PacketId, jar As IJar(Of T))
-                MyBase.New(id, jar)
+                MyBase.New(id, jar.Weaken())
                 Contract.Requires(jar IsNot Nothing)
                 Me._jar = jar
             End Sub
@@ -274,16 +274,6 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
             Return New Definition(Of T)(id, jar)
         End Function
-        Private Function Define(id As PacketId,
-                                jar1 As ISimpleNamedJar,
-                                jar2 As ISimpleNamedJar,
-                                ParamArray jars() As ISimpleNamedJar) As Definition(Of NamedValueMap)
-            Contract.Requires(jar1 IsNot Nothing)
-            Contract.Requires(jar2 IsNot Nothing)
-            Contract.Requires(jars IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Definition(Of NamedValueMap))() IsNot Nothing)
-            Return Define(id, New TupleJar(jars.Prepend(jar1, jar2).ToArray))
-        End Function
 
         Public Const MaxSerializedPlayerNameLength As Integer = 16
         Public Const MaxPlayerNameLength As Integer = MaxSerializedPlayerNameLength - 1
@@ -305,9 +295,9 @@ Namespace WC3.Protocol
             ''' This packet has two forms: one includes the data from the <see cref="LobbyState"/> packet, and the other doesn't.
             ''' </summary>
             Public Shared ReadOnly Greet As Definition(Of NamedValueMap) = Define(PacketId.Greet,
-                    LobbyStateTupleJar.Optional.DataSizePrefixed(prefixSize:=2).Named("lobby state"),
-                    New PlayerIdJar().Named("assigned id"),
-                    New Bnet.Protocol.IPEndPointJar().Named("external address"))
+                    LobbyStateTupleJar.Optional.DataSizePrefixed(prefixSize:=2).Named("lobby state").
+                    Then(New PlayerIdJar().Named("assigned id")).
+                    Then(New Bnet.Protocol.IPEndPointJar().Named("external address")))
             ''' <summary>
             ''' Response to ClientConfirmHostLeaving.
             ''' </summary>
@@ -318,52 +308,51 @@ Namespace WC3.Protocol
             ''' Specifies the map transfer key, which is included in all map-related packets (players ignore them if it does not match)
             ''' </summary>
             Public Shared ReadOnly HostMapInfo As Definition(Of NamedValueMap) = Define(PacketId.HostMapInfo,
-                    New UInt32Jar().Named("map transfer key"),
-                    New UTF8Jar().NullTerminated.Named("path"),
-                    New UInt32Jar().Named("size"),
-                    New UInt32Jar(showhex:=True).Named("crc32"),
-                    New UInt32Jar(showhex:=True).Named("xoro checksum"),
-                    New DataJar().Fixed(exactDataCount:=20).Named("sha1 checksum"))
+                    New UInt32Jar().Named("map transfer key").
+                    Then(New UTF8Jar().NullTerminated.Named("path")).
+                    Then(New UInt32Jar().Named("size")).
+                    Then(New UInt32Jar(showhex:=True).Named("crc32")).
+                    Then(New UInt32Jar(showhex:=True).Named("xoro checksum")).
+                    Then(New DataJar().Fixed(exactDataCount:=20).Named("sha1 checksum")))
             '''<summary>Broadcast on lan when a game is created.</summary>
             Public Shared ReadOnly LanCreateGame As Definition(Of NamedValueMap) = Define(PacketId.LanCreateGame,
-                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),
-                    New UInt32Jar().Named("major version"),
-                    New UInt32Jar().Named("game id"))
+                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id").
+                    Then(New UInt32Jar().Named("major version")).
+                    Then(New UInt32Jar().Named("game id")))
             '''<summary>Broadcast on lan when a game is cancelled.</summary>
             Public Shared ReadOnly LanDestroyGame As Definition(Of UInt32) = Define(PacketId.LanDestroyGame,
                     New UInt32Jar().Named("game id"))
             '''<summary>Response to LanRequestGame containing detailed game information.</summary>
             Public Shared ReadOnly LanGameDetails As Definition(Of NamedValueMap) = Define(PacketId.LanGameDetails,
-                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),
-                    New UInt32Jar().Named("major version"),
-                    New UInt32Jar().Named("game id"),
-                    New UInt32Jar(showhex:=True).Named("entry key"),
-                    New UTF8Jar().NullTerminated.Named("name"),
-                    New UTF8Jar().NullTerminated.Named("password"),
-                    New GameStatsJar().Named("statstring"),
-                    New UInt32Jar().Named("num slots"),
-                    New EnumUInt32Jar(Of GameTypes)().Named("game type"),
-                    New UInt32Jar().Named("num players + 1"),
-                    New UInt32Jar().Named("free slots + 1"),
-                    New UInt32Jar().Named("age"),
-                    New UInt16Jar().Named("listen port"))
+                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id").
+                    Then(New UInt32Jar().Named("major version")).
+                    Then(New UInt32Jar().Named("game id")).
+                    Then(New UInt32Jar(showhex:=True).Named("entry key")).
+                    Then(New UTF8Jar().NullTerminated.Named("name")).
+                    Then(New UTF8Jar().NullTerminated.Named("password")).
+                    Then(New GameStatsJar().Named("statstring")).
+                    Then(New UInt32Jar().Named("num slots")).
+                    Then(New EnumUInt32Jar(Of GameTypes)().Named("game type")).
+                    Then(New UInt32Jar().Named("num players + 1")).
+                    Then(New UInt32Jar().Named("free slots + 1")).
+                    Then(New UInt32Jar().Named("age")).
+                    Then(New UInt16Jar().Named("listen port")))
             ''' <summary>
             ''' Broadcast on lan periodically to inform new listening wc3 clients a game exists.
             ''' Contains only very basic information about the game [no map, name, etc].
             ''' </summary>
             Public Shared ReadOnly LanRefreshGame As Definition(Of NamedValueMap) = Define(PacketId.LanRefreshGame,
-                    New UInt32Jar().Named("game id"),
-                    New UInt32Jar().Named("num players"),
-                    New UInt32Jar().Named("free slots"))
+                    New UInt32Jar().Named("game id").
+                    Then(New UInt32Jar().Named("num players")).
+                    Then(New UInt32Jar().Named("free slots")))
             '''<summary>Broadcast by server to all clients when the lobby state changes.</summary>
             Public Shared ReadOnly LobbyState As Definition(Of NamedValueMap) = Define(PacketId.LobbyState,
                     LobbyStateTupleJar.DataSizePrefixed(prefixSize:=2))
             '''<summary>Sent from server in ladder games before <see cref="StartCountdown"/>.</summary>
             Public Shared ReadOnly MeleePlayerInfo As Definition(Of IRist(Of NamedValueMap)) = Define(PacketId.MeleePlayerInfo,
-                    New TupleJar(
-                            New PlayerIdJar().Named("player"),
-                            New DataJar().DataSizePrefixed(prefixSize:=1).Named("info")
-                        ).RepeatedWithCountPrefix(prefixSize:=1))
+                    New PlayerIdJar().Named("player").
+                    Then(New DataJar().DataSizePrefixed(prefixSize:=1).Named("info")).
+                    RepeatedWithCountPrefix(prefixSize:=1))
             ''' <summary>
             ''' Sent by the host when leaving, telling players who the new host will be.
             ''' </summary>
@@ -371,16 +360,16 @@ Namespace WC3.Protocol
                     New PlayerIdJar().Named("player"))
             '''<summary>Broadcast by server to other clients when a client enters the game.</summary>
             Public Shared ReadOnly OtherPlayerJoined As Definition(Of NamedValueMap) = Define(PacketId.OtherPlayerJoined,
-                    New UInt32Jar(showhex:=True).Named("peer key"),
-                    New PlayerIdJar().Named("joiner id"),
-                    New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedPlayerNameLength).Named("name"),
-                    New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data"),
-                    New Bnet.Protocol.IPEndPointJar().Named("external address"),
-                    New Bnet.Protocol.IPEndPointJar().Named("internal address"))
+                    New UInt32Jar(showhex:=True).Named("peer key").
+                    Then(New PlayerIdJar().Named("joiner id")).
+                    Then(New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedPlayerNameLength).Named("name")).
+                    Then(New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data")).
+                    Then(New Bnet.Protocol.IPEndPointJar().Named("external address")).
+                    Then(New Bnet.Protocol.IPEndPointJar().Named("internal address")))
             '''<summary>Broadcast server to other clients when a client leaves the game.</summary>
             Public Shared ReadOnly OtherPlayerLeft As Definition(Of NamedValueMap) = Define(PacketId.OtherPlayerLeft,
-                    New PlayerIdJar().Named("leaver"),
-                    New EnumUInt32Jar(Of PlayerLeaveReason)().Named("reason"))
+                    New PlayerIdJar().Named("leaver").
+                    Then(New EnumUInt32Jar(Of PlayerLeaveReason)().Named("reason")))
             ''' <summary>
             ''' Broadcast by server to all clients in response to a client sending <see cref="ClientPackets.Ready"/>.
             ''' Clients start playing as soon as they have received this packet for each client.
@@ -399,16 +388,17 @@ Namespace WC3.Protocol
             ''' Sent by the server when one or more players have stopped responding in a timely fashion.
             ''' </summary>
             Public Shared ReadOnly PlayersLagging As Definition(Of IRist(Of NamedValueMap)) = Define(PacketId.PlayersLagging,
-                    New TupleJar(True,
-                            New PlayerIdJar().Named("id"),
-                            New UInt32Jar().Named("initial milliseconds used")
-                        ).RepeatedWithCountPrefix(prefixSize:=1).Named("laggers"))
+                    New PlayerIdJar().Named("id").
+                    Then(New UInt32Jar().Named("initial milliseconds used")).
+                    WithSingleLineDescription().
+                    RepeatedWithCountPrefix(prefixSize:=1).
+                    Named("laggers"))
             ''' <summary>
             ''' Sent by the server when a player has resumed responding in a timely fashion.
             ''' </summary>
             Public Shared ReadOnly PlayerStoppedLagging As Definition(Of NamedValueMap) = Define(PacketId.PlayerStoppedLagging,
-                    New PlayerIdJar().Named("lagger"),
-                    New UInt32Jar().Named("marginal milliseconds used"))
+                    New PlayerIdJar().Named("lagger").
+                    Then(New UInt32Jar().Named("marginal milliseconds used")))
             '''<summary>Sent by server in response to <see cref="ClientPackets.Knock"/> to indicate the client did not enter the game.</summary>
             Public Shared ReadOnly RejectEntry As Definition(Of RejectReason) = Define(PacketId.RejectEntry,
                     New EnumUInt32Jar(Of RejectReason)().Named("reason"))
@@ -417,16 +407,16 @@ Namespace WC3.Protocol
             ''' <see cref="SetUploadTarget"/> must be sent to the other client for the peer to peer transfer to work.
             ''' </summary>
             Public Shared ReadOnly SetDownloadSource As Definition(Of NamedValueMap) = Define(PacketId.SetDownloadSource,
-                    New UInt32Jar().Named("map transfer key"),
-                    New PlayerIdJar().Named("uploader"))
+                    New UInt32Jar().Named("map transfer key").
+                    Then(New PlayerIdJar().Named("uploader")))
             ''' <summary>
             ''' Sent by the server to tell a client to start uploading to another client.
             ''' <see cref="SetDownloadSource"/> must be sent to the other client for the transfer to work.
             ''' </summary>
             Public Shared ReadOnly SetUploadTarget As Definition(Of NamedValueMap) = Define(PacketId.SetUploadTarget,
-                    New UInt32Jar().Named("map transfer key"),
-                    New PlayerIdJar().Named("downloader"),
-                    New UInt32Jar().Named("starting file pos"))
+                    New UInt32Jar().Named("map transfer key").
+                    Then(New PlayerIdJar().Named("downloader")).
+                    Then(New UInt32Jar().Named("starting file pos")))
             ''' <summary>
             ''' Broadcast by server to all clients to start the countdown.
             ''' Clients will disconnect if they receive this packet more than once.
@@ -444,17 +434,17 @@ Namespace WC3.Protocol
             ''' Different formats in game and in lobby.
             ''' Clients will only request relay to clients who should receive the message (eg. only allies for ally chat).
             ''' </summary>
-            Public Shared ReadOnly Text As Definition(Of NamedValueMap) = Define(PacketId.Text, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("speaker"),
-                    New KeyPrefixedJar(Of ChatType)(
+            Public Shared ReadOnly Text As Definition(Of NamedValueMap) = Define(PacketId.Text,
+                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers").
+                    Then(New PlayerIdJar().Named("speaker")).
+                    Then(New KeyPrefixedJar(Of ChatType)(
                             useSingleLineDescription:=False,
                             keyJar:=New EnumByteJar(Of ChatType)().Named("type"),
-                            valueJars:=New Dictionary(Of ChatType, ISimpleJar) From {
-                                {ChatType.Game, New EnumUInt32Jar(Of ChatGroup)().Named("receiving group")},
-                                {ChatType.Lobby, New EmptyJar().Named("receiving group")}}
-                        ).Named("type group"),
-                    New UTF8Jar(maxCharCount:=MaxChatTextLength).NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
+                            valueJars:=New Dictionary(Of ChatType, IJar(Of Object)) From {
+                                {ChatType.Game, New EnumUInt32Jar(Of ChatGroup)().Named("receiving group").Weaken()},
+                                {ChatType.Lobby, New EmptyJar().Named("receiving group").Weaken()}}
+                        ).Named("type group")).
+                    Then(New UTF8Jar(maxCharCount:=MaxChatTextLength).NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
             ''' <summary>
             ''' Broadcast by server to all clients periodically during game play.
             ''' Contains client actions received by the server, which will be applied at the current game time.
@@ -464,19 +454,19 @@ Namespace WC3.Protocol
             ''' Significantly altering the reported timespan to real time ratio can have weird effects, including game time stopping and losing apparent game time.
             ''' </summary>
             Public Shared ReadOnly Tick As Definition(Of NamedValueMap) = Define(PacketId.Tick,
-                    New UInt16Jar().Named("time span"),
-                    New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Optional.Named("player action sets"))
+                    New UInt16Jar().Named("time span").
+                    Then(New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Optional.Named("player action sets")))
             ''' <summary>
             ''' Same format as tick, except time span is always 0.
             ''' Used when there is too much action data to fit in a single tick.
             ''' </summary>
             Public Shared ReadOnly TickPreOverflow As Definition(Of NamedValueMap) = Define(PacketId.TickPreOverflow,
-                    New UInt16Jar().Named("time span"),
-                    New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Named("player action sets"))
+                    New UInt16Jar().Named("time span").
+                    Then(New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Named("player action sets")))
             '''<summary>Tells players the time remaining in a tournament game. Causes players to disc in custom games.</summary>
             Public Shared ReadOnly TournamentCountdown As Definition(Of NamedValueMap) = Define(PacketId.TournamentCountdown,
-                    New UInt32Jar().Named("unknown"),
-                    New UInt32Jar().Named("time left"))
+                    New UInt32Jar().Named("unknown").
+                    Then(New UInt32Jar().Named("time left")))
         End Class
         Public NotInheritable Class ClientPackets
             Private Sub New()
@@ -489,9 +479,9 @@ Namespace WC3.Protocol
             Public Shared ReadOnly ClientConfirmHostLeaving As Definition(Of NoValue) = Define(PacketId.ClientConfirmHostLeaving)
             '''<summary>Sent by clients to the server in response to <see cref="ServerPackets.HostMapInfo"/> and when the client has received more of the map file.</summary>
             Public Shared ReadOnly ClientMapInfo As Definition(Of NamedValueMap) = Define(PacketId.ClientMapInfo,
-                    New UInt32Jar().Named("map transfer key"),
-                    New EnumByteJar(Of MapTransferState)().Named("transfer state"),
-                    New UInt32Jar().Named("total downloaded"))
+                    New UInt32Jar().Named("map transfer key").
+                    Then(New EnumByteJar(Of MapTransferState)().Named("transfer state")).
+                    Then(New UInt32Jar().Named("total downloaded")))
             '''<summary>Response to <see cref="ServerPackets.EncryptedServerMeleeData"/>.</summary>
             Public Shared ReadOnly EncryptedClientMeleeData As Definition(Of IRist(Of Byte)) = Define(PacketId.EncryptedClientMeleeData,
                     New DataJar().Named("encrypted data"))
@@ -508,31 +498,31 @@ Namespace WC3.Protocol
                     New KnockDataJar())
             '''<summary>Response to <see cref="ServerPackets.LanRefreshGame"/> or <see cref="ServerPackets.LanCreateGame"/> when clients want to know game info.</summary>
             Public Shared ReadOnly LanRequestGame As Definition(Of NamedValueMap) = Define(PacketId.LanRequestGame,
-                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),
-                    New UInt32Jar().Named("major version"),
-                    New UInt32Jar().Named("unknown1"))
+                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id").
+                    Then(New UInt32Jar().Named("major version")).
+                    Then(New UInt32Jar().Named("unknown1")))
             '''<summary>Sent by clients before they intentionally disconnect.</summary>
             Public Shared ReadOnly Leaving As Definition(Of PlayerLeaveReason) = Define(PacketId.Leaving,
                     New EnumUInt32Jar(Of PlayerLeaveReason)().Named("reason"))
             ''' <summary>
             ''' Sent when clients chat or perform lobby actions.
             ''' </summary>
-            Public Shared ReadOnly NonGameAction As Definition(Of NamedValueMap) = Define(PacketId.NonGameAction, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("sender"),
-                    New KeyPrefixedJar(Of NonGameActionType)(
+            Public Shared ReadOnly NonGameAction As Definition(Of NamedValueMap) = Define(PacketId.NonGameAction,
+                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers").
+                    Then(New PlayerIdJar().Named("sender")).
+                    Then(New KeyPrefixedJar(Of NonGameActionType)(
                         useSingleLineDescription:=False,
                         keyJar:=New EnumByteJar(Of NonGameActionType),
-                        valueJars:=New Dictionary(Of NonGameActionType, ISimpleJar) From {
-                                {NonGameActionType.GameChat, New TupleJar(
-                                        New EnumUInt32Jar(Of ChatGroup)().Named("receiving group"),
-                                        New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message"))},
-                                {NonGameActionType.LobbyChat, New TupleJar(
-                                        New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message"))},
-                                {NonGameActionType.SetTeam, New ByteJar().Named("team")},
-                                {NonGameActionType.SetHandicap, New ByteJar().Named("handicap")},
-                                {NonGameActionType.SetRace, New EnumByteJar(Of Races)().Named("race")},
-                                {NonGameActionType.SetColor, New EnumByteJar(Of PlayerColor)().Named("color")}
+                        valueJars:=New Dictionary(Of NonGameActionType, IJar(Of Object)) From {
+                                {NonGameActionType.GameChat,
+                                        New EnumUInt32Jar(Of ChatGroup)().Named("receiving group").
+                                        Then(New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")).Weaken()},
+                                {NonGameActionType.LobbyChat,
+                                        New TupleJar({New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message").Weaken()}).Weaken()},
+                                {NonGameActionType.SetTeam, New ByteJar().Named("team").Weaken()},
+                                {NonGameActionType.SetHandicap, New ByteJar().Named("handicap").Weaken()},
+                                {NonGameActionType.SetRace, New EnumByteJar(Of Races)().Named("race").Weaken()},
+                                {NonGameActionType.SetColor, New EnumByteJar(Of PlayerColor)().Named("color").Weaken()}
                             }).Named("value")))
             '''<summary>Sent by clients to the server to inform the server when the set of other clients they are interconnected with changes.</summary>
             Public Shared ReadOnly PeerConnectionInfo As Definition(Of UInt16) = Define(PacketId.PeerConnectionInfo,
@@ -549,8 +539,8 @@ Namespace WC3.Protocol
             ''' The lag screen is shown if a client takes too long to send a response <see cref="Tock"/>.
             ''' </summary>
             Public Shared ReadOnly Tock As Definition(Of NamedValueMap) = Define(PacketId.Tock,
-                    New ByteJar().Named("unknown"),
-                    New UInt32Jar(showhex:=True).Named("game state checksum"))
+                    New ByteJar().Named("unknown").
+                    Then(New UInt32Jar(showhex:=True).Named("game state checksum")))
         End Class
         Public NotInheritable Class PeerPackets
             Private Sub New()
@@ -558,36 +548,36 @@ Namespace WC3.Protocol
 
             '''<summary>Sent to to downloaders during map transfer. Contains map file data.</summary>
             Public Shared ReadOnly MapFileData As Definition(Of NamedValueMap) = Define(PacketId.MapFileData,
-                    New PlayerIdJar().Named("downloader"),
-                    New PlayerIdJar().Named("uploader"),
-                    New UInt32Jar().Named("map transfer key"),
-                    New UInt32Jar().Named("file position"),
-                    New DataJar().Limited(maxDataCount:=MaxFileDataSize).CRC32ChecksumPrefixed.Named("file data"))
+                    New PlayerIdJar().Named("downloader").
+                    Then(New PlayerIdJar().Named("uploader")).
+                    Then(New UInt32Jar().Named("map transfer key")).
+                    Then(New UInt32Jar().Named("file position")).
+                    Then(New DataJar().Limited(maxDataCount:=MaxFileDataSize).CRC32ChecksumPrefixed.Named("file data")))
             ''' <summary>
             ''' Negative response to <see cref="MapFileData"/>.
             ''' This can be caused by corrupted data or by sending <see cref="MapFileData"/> before <see cref="ServerPackets.SetDownloadSource"/> is sent.
             ''' Even though wc3 clients send this packet if data is sent before <see cref="ServerPackets.SetDownloadSource"/>, they still accept and use the data.
             ''' </summary>
             Public Shared ReadOnly MapFileDataProblem As Definition(Of NamedValueMap) = Define(PacketId.MapFileDataProblem,
-                    New PlayerIdJar().Named("downloader"),
-                    New PlayerIdJar().Named("uploader"),
-                    New UInt32Jar().Named("map transfer key"))
+                    New PlayerIdJar().Named("downloader").
+                    Then(New PlayerIdJar().Named("uploader")).
+                    Then(New UInt32Jar().Named("map transfer key")))
             '''<summary>Positive response to <see cref="MapFileData"/>.</summary>
             Public Shared ReadOnly MapFileDataReceived As Definition(Of NamedValueMap) = Define(PacketId.MapFileDataReceived,
-                    New PlayerIdJar().Named("downloader"),
-                    New PlayerIdJar().Named("uploader"),
-                    New UInt32Jar().Named("map transfer key"),
-                    New UInt32Jar().Named("total downloaded"))
+                    New PlayerIdJar().Named("downloader").
+                    Then(New PlayerIdJar().Named("uploader")).
+                    Then(New UInt32Jar().Named("map transfer key")).
+                    Then(New UInt32Jar().Named("total downloaded")))
             Public Shared ReadOnly PeerKnock As Definition(Of NamedValueMap) = Define(PacketId.PeerKnock,
-                    New UInt32Jar(showhex:=True).Named("receiver peer key"),
-                    New UInt32Jar().Named("unknown1"),
-                    New PlayerIdJar().Named("sender id"),
-                    New ByteJar().Named("unknown3"),
-                    New UInt32Jar().Named("sender peer connection flags"))
+                    New UInt32Jar(showhex:=True).Named("receiver peer key").
+                    Then(New UInt32Jar().Named("unknown1")).
+                    Then(New PlayerIdJar().Named("sender id")).
+                    Then(New ByteJar().Named("unknown3")).
+                    Then(New UInt32Jar().Named("sender peer connection flags")))
             Public Shared ReadOnly PeerPing As Definition(Of NamedValueMap) = Define(PacketId.PeerPing,
-                    New UInt32Jar(showhex:=True).Named("salt"),
-                    New UInt32Jar().Named("sender peer connection flags"),
-                    New UInt32Jar().Named("unknown2"))
+                    New UInt32Jar(showhex:=True).Named("salt").
+                    Then(New UInt32Jar().Named("sender peer connection flags")).
+                    Then(New UInt32Jar().Named("unknown2")))
             Public Shared ReadOnly PeerPong As Definition(Of UInt32) = Define(PacketId.PeerPong,
                     New UInt32Jar(showhex:=True).Named("salt"))
         End Class

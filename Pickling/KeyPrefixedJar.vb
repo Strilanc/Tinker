@@ -3,7 +3,7 @@ Namespace Pickling
         Inherits BaseJar(Of KeyValuePair(Of TKey, Object))
 
         Private ReadOnly _keyJar As IJar(Of TKey)
-        Private ReadOnly _valueJars As New Dictionary(Of TKey, NonNull(Of ISimpleJar))
+        Private ReadOnly _valueJars As New Dictionary(Of TKey, NonNull(Of IJar(Of Object)))
         Private ReadOnly _useSingleLineDescription As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -12,7 +12,7 @@ Namespace Pickling
         End Sub
 
         Public Sub New(keyJar As IJar(Of TKey),
-                       valueJars As Dictionary(Of TKey, ISimpleJar),
+                       valueJars As Dictionary(Of TKey, IJar(Of Object)),
                        Optional useSingleLineDescription As Boolean = True)
             Contract.Requires(keyJar IsNot Nothing)
             Contract.Requires(valueJars IsNot Nothing)
@@ -35,7 +35,6 @@ Namespace Pickling
             Dim parsedValue = _valueJars(parsedKey.Value).Value.Parse(data.SkipExact(parsedKey.UsedDataCount))
 
             Dim value = parsedKey.Value.KeyValue(parsedValue.Value)
-            Contract.Assume(parsedKey.UsedDataCount + parsedValue.UsedDataCount <= data.Count)
             Return value.ParsedWithDataCount(parsedKey.UsedDataCount + parsedValue.UsedDataCount)
         End Function
 

@@ -1,15 +1,45 @@
 ﻿Namespace Pickling
     Public Module PicklingExtensions
         <Extension()> <Pure()>
+        Public Function [Then](Of T1, T2)(jar As INamedJar(Of T1), jar2 As INamedJar(Of T2)) As TupleJar
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(jar2 IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of TupleJar)() IsNot Nothing)
+            Return New TupleJar({jar.Weaken(), jar2.Weaken()})
+        End Function
+
+        <Extension()> <Pure()>
+        Public Function Weaken(Of T)(jar As IJar(Of T)) As IJar(Of Object)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IJar(Of Object))() IsNot Nothing)
+            Return If(TryCast(jar, IJar(Of Object)),
+                      New DirectCastJar(Of Object, T)(jar))
+        End Function
+        <Extension()> <Pure()>
+        Public Function Weaken(Of T)(pickle As IPickle(Of T)) As IPickle(Of Object)
+            Contract.Requires(pickle IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+            Return If(TryCast(pickle, IPickle(Of Object)),
+                      New Pickle(Of Object)(pickle.Jar, pickle.Value, pickle.Data))
+        End Function
+        <Extension()> <Pure()>
+        Public Function Weaken(Of T)(jar As INamedJar(Of T)) As INamedJar(Of Object)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of INamedJar(Of Object))() IsNot Nothing)
+            Return If(TryCast(jar, INamedJar(Of Object)),
+                      DirectCast(jar, IJar(Of T)).Weaken().Named(jar.Name))
+        End Function
+
+        <Extension()> <Pure()>
         <SuppressMessage("Microsoft.Contracts", "Requires-12-59")>
         Public Function PackPickle(Of T, TValue As T)(jar As IJar(Of T), value As TValue) As IPickle(Of TValue)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of TValue))() IsNot Nothing)
-            Return New Pickle(Of TValue)(jar, value, jar.Pack(value).ToRist)
+            Return New Pickle(Of TValue)(jar.Weaken(), value, jar.Pack(value).ToRist)
         End Function
         <Extension()> <Pure()>
-        Public Function PackPickle(Of T)(jar As ISimpleJar, value As T) As IPickle(Of T)
+        Public Function PackPickle(Of T)(jar As IJar(Of Object), value As T) As IPickle(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
@@ -21,15 +51,7 @@
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             Dim parsed = jar.Parse(data)
-            Return New Pickle(Of T)(jar, parsed.Value, data.TakeExact(parsed.UsedDataCount))
-        End Function
-        <Extension()> <Pure()>
-        Public Function ParsePickle(jar As ISimpleJar, data As IRist(Of Byte)) As ISimplePickle
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
-            Dim parsed = jar.Parse(data)
-            Return New Pickle(Of Object)(jar, parsed.Value, data.TakeExact(parsed.UsedDataCount))
+            Return New Pickle(Of T)(jar.Weaken(), parsed.Value, data.TakeExact(parsed.UsedDataCount))
         End Function
         <Extension()> <Pure()>
         Public Function ParsedWithDataCount(Of T)(value As T, usedDataCount As Int32) As ParsedValue(Of T)
@@ -92,7 +114,7 @@
         End Function
 
         <Extension()> <Pure()>
-        Public Function Description(pickle As ISimplePickle) As String
+        Public Function Description(pickle As IPickle(Of Object)) As String
             Contract.Requires(pickle IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Return pickle.Jar.Describe(pickle.Value)

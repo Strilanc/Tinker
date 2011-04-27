@@ -18,13 +18,13 @@ Imports Tinker.Pickling
 Namespace Bnet.Protocol
     Public NotInheritable Class Packet
         Private ReadOnly _id As PacketId
-        Private ReadOnly _payload As ISimplePickle
+        Private ReadOnly _payload As IPickle(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(id As PacketId, payload As ISimplePickle)
+        Private Sub New(id As PacketId, payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
             Me._id = id
             Me._payload = payload
@@ -35,12 +35,12 @@ Namespace Bnet.Protocol
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(packetDefinition.Id, packetDefinition.Jar.PackPickle(value))
+            Return New Packet(packetDefinition.Id, packetDefinition.Jar.PackPickle(value).Weaken())
         End Function
 
-        Public ReadOnly Property Payload As ISimplePickle
+        Public ReadOnly Property Payload As IPickle(Of Object)
             Get
-                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
                 Return _payload
             End Get
         End Property

@@ -96,7 +96,7 @@ Namespace WC3
             Return True
         End Function
 
-        Protected MustOverride Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As ISimplePickle
+        Protected MustOverride Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As IPickle(Of Object)
         <ContractClassFor(GetType(W3ConnectionAccepterBase))>
         Public MustInherit Class ContractClass
             Inherits W3ConnectionAccepterBase
@@ -104,11 +104,11 @@ Namespace WC3
                 MyBase.New(Nothing, Nothing)
                 Throw New NotSupportedException
             End Sub
-            Protected Overrides Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As ISimplePickle
+            Protected Overrides Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As IPickle(Of Object)
                 Contract.Requires(socket IsNot Nothing)
                 Contract.Requires(packetData IsNot Nothing)
                 Contract.Requires(packetData.Count >= 4)
-                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
         End Class
@@ -125,7 +125,7 @@ Namespace WC3
             Contract.Assume(clock IsNot Nothing)
         End Sub
 
-        Protected Overrides Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As ISimplePickle
+        Protected Overrides Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As IPickle(Of Object)
             If packetData(1) <> Protocol.PacketId.Knock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
             End If
@@ -150,7 +150,7 @@ Namespace WC3
             Contract.Assume(clock IsNot Nothing)
         End Sub
 
-        Protected Overrides Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As ISimplePickle
+        Protected Overrides Function ProcessConnectingPlayer(socket As W3Socket, packetData As IRist(Of Byte)) As IPickle(Of Object)
             If packetData(1) <> Protocol.PacketId.PeerKnock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))
             End If

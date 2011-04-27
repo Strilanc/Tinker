@@ -5,16 +5,16 @@ Namespace WC3.Protocol
         Inherits TupleJar
 
         Public Sub New()
-            MyBase.New(True,
-                    New ByteJar().Named("pid"),
-                    New ByteJar().Named("dl"),
-                    New EnumByteJar(Of Protocol.SlotState)().Named("state"),
-                    New ByteJar().Named("cpu"),
-                    New ByteJar().Named("team"),
-                    New EnumByteJar(Of Protocol.PlayerColor)().Named("color"),
-                    New EnumByteJar(Of Protocol.Races)().Named("race"),
-                    New EnumByteJar(Of Protocol.ComputerLevel)().Named("difficulty"),
-                    New ByteJar().Named("handicap"))
+            MyBase.New({New ByteJar().Named("pid").Weaken(),
+                        New ByteJar().Named("dl").Weaken(),
+                        New EnumByteJar(Of Protocol.SlotState)().Named("state").Weaken(),
+                        New ByteJar().Named("cpu").Weaken(),
+                        New ByteJar().Named("team").Weaken(),
+                        New EnumByteJar(Of Protocol.PlayerColor)().Named("color").Weaken(),
+                        New EnumByteJar(Of Protocol.Races)().Named("race").Weaken(),
+                        New EnumByteJar(Of Protocol.ComputerLevel)().Named("difficulty").Weaken(),
+                        New ByteJar().Named("handicap").Weaken()},
+                       useSingleLineDescription:=True)
         End Sub
 
         Public Shared Function PackSlot(slot As Slot,

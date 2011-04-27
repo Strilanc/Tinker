@@ -223,13 +223,13 @@ Namespace Bnet.Protocol
         '''<completionlist cref="Packets"/>
         Public MustInherit Class Definition
             Private ReadOnly _id As PacketId
-            Private ReadOnly _jar As ISimpleJar
+            Private ReadOnly _jar As IJar(Of Object)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(id As PacketId, jar As ISimpleJar)
+            Friend Sub New(id As PacketId, jar As IJar(Of Object))
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -240,9 +240,9 @@ Namespace Bnet.Protocol
                     Return _id
                 End Get
             End Property
-            Public ReadOnly Property Jar As ISimpleJar
+            Public ReadOnly Property Jar As IJar(Of Object)
                 Get
-                    Contract.Ensures(Contract.Result(Of ISimpleJar)() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IJar(Of Object))() IsNot Nothing)
                     Return _jar
                 End Get
             End Property
@@ -257,7 +257,7 @@ Namespace Bnet.Protocol
             End Sub
 
             Friend Sub New(id As PacketId, jar As IJar(Of T))
-                MyBase.New(id, jar)
+                MyBase.New(id, jar.Weaken())
                 Contract.Requires(jar IsNot Nothing)
                 Me._jar = jar
             End Sub
@@ -279,69 +279,59 @@ Namespace Bnet.Protocol
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
             Return New Definition(Of T)(id, jar)
         End Function
-        Private Shared Function Define(id As PacketId,
-                                       jar1 As ISimpleNamedJar,
-                                       jar2 As ISimpleNamedJar,
-                                       ParamArray jars() As ISimpleNamedJar) As Definition(Of NamedValueMap)
-            Contract.Requires(jar1 IsNot Nothing)
-            Contract.Requires(jar2 IsNot Nothing)
-            Contract.Requires(jars IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Definition(Of NamedValueMap))() IsNot Nothing)
-            Return Define(id, New TupleJar(jars.Prepend(jar1, jar2).ToArray))
-        End Function
 
         Public NotInheritable Class ServerToClient
             Private Sub New()
             End Sub
 
             Public Shared ReadOnly ProgramAuthenticationBegin As Definition(Of NamedValueMap) = Define(PacketId.ProgramAuthenticationBegin,
-                    New EnumUInt32Jar(Of ProgramAuthenticationBeginLogOnType)().Named("logon type"),
-                    New UInt32Jar(showHex:=True).Named("server cd key salt"),
-                    New UInt32Jar(showHex:=True).Named("udp value"),
-                    New FileTimeJar().Named("mpq filetime"),
-                    New UTF8Jar().NullTerminated.Named("revision check seed"),
-                    New UTF8Jar().NullTerminated.Named("revision check challenge"),
-                    New DataJar().Fixed(exactDataCount:=128).Named("server signature"))
+                    New EnumUInt32Jar(Of ProgramAuthenticationBeginLogOnType)().Named("logon type").
+                    Then(New UInt32Jar(showHex:=True).Named("server cd key salt")).
+                    Then(New UInt32Jar(showHex:=True).Named("udp value")).
+                    Then(New FileTimeJar().Named("mpq filetime")).
+                    Then(New UTF8Jar().NullTerminated.Named("revision check seed")).
+                    Then(New UTF8Jar().NullTerminated.Named("revision check challenge")).
+                    Then(New DataJar().Fixed(exactDataCount:=128).Named("server signature")))
             Public Shared ReadOnly ProgramAuthenticationFinish As Definition(Of NamedValueMap) = Define(PacketId.ProgramAuthenticationFinish,
-                    New EnumUInt32Jar(Of ProgramAuthenticationFinishResult)().Named("result"),
-                    New UTF8Jar().NullTerminated.Named("info"))
+                    New EnumUInt32Jar(Of ProgramAuthenticationFinishResult)().Named("result").
+                    Then(New UTF8Jar().NullTerminated.Named("info")))
             Public Shared ReadOnly UserAuthenticationBegin As Definition(Of NamedValueMap) = Define(PacketId.UserAuthenticationBegin,
-                    New EnumUInt32Jar(Of UserAuthenticationBeginResult)().Named("result"),
-                    New DataJar().Fixed(exactDataCount:=32).Named("account password salt"),
-                    New DataJar().Fixed(exactDataCount:=32).Named("server public key"))
+                    New EnumUInt32Jar(Of UserAuthenticationBeginResult)().Named("result").
+                    Then(New DataJar().Fixed(exactDataCount:=32).Named("account password salt")).
+                    Then(New DataJar().Fixed(exactDataCount:=32).Named("server public key")))
             Public Shared ReadOnly UserAuthenticationFinish As Definition(Of NamedValueMap) = Define(PacketId.UserAuthenticationFinish,
-                    New EnumUInt32Jar(Of UserAuthenticationFinishResult)().Named("result"),
-                    New DataJar().Fixed(exactDataCount:=20).Named("server password proof"),
-                    New UTF8Jar().NullTerminated.Optional.Named("custom error info"))
+                    New EnumUInt32Jar(Of UserAuthenticationFinishResult)().Named("result").
+                    Then(New DataJar().Fixed(exactDataCount:=20).Named("server password proof")).
+                    Then(New UTF8Jar().NullTerminated.Optional.Named("custom error info")))
             Public Shared ReadOnly RequiredWork As Definition(Of String) = Define(PacketId.RequiredWork,
                     New UTF8Jar().NullTerminated.Named("filename"))
 
             Public Shared ReadOnly ChatEvent As Definition(Of NamedValueMap) = Define(PacketId.ChatEvent,
-                    New EnumUInt32Jar(Of ChatEventId)().Named("event id"),
-                    New UInt32Jar(showhex:=True).Named("flags"),
-                    New UInt32Jar().Named("ping"),
-                    New IPAddressJar().Named("ip"),
-                    New UInt32Jar(showhex:=True).Named("acc#"),
-                    New UInt32Jar(showhex:=True).Named("authority"),
-                    New UTF8Jar().NullTerminated.Named("username"),
-                    New UTF8Jar().NullTerminated.Named("text"))
+                    New EnumUInt32Jar(Of ChatEventId)().Named("event id").
+                    Then(New UInt32Jar(showhex:=True).Named("flags")).
+                    Then(New UInt32Jar().Named("ping")).
+                    Then(New IPAddressJar().Named("ip")).
+                    Then(New UInt32Jar(showhex:=True).Named("acc#")).
+                    Then(New UInt32Jar(showhex:=True).Named("authority")).
+                    Then(New UTF8Jar().NullTerminated.Named("username")).
+                    Then(New UTF8Jar().NullTerminated.Named("text")))
             Public Shared ReadOnly MessageBox As Definition(Of NamedValueMap) = Define(PacketId.MessageBox,
-                    New UInt32Jar().Named("style"),
-                    New UTF8Jar().NullTerminated.Named("text"),
-                    New UTF8Jar().NullTerminated.Named("caption"))
+                    New UInt32Jar().Named("style").
+                    Then(New UTF8Jar().NullTerminated.Named("text")).
+                    Then(New UTF8Jar().NullTerminated.Named("caption")))
             Public Shared ReadOnly FriendsUpdate As Definition(Of NamedValueMap) = Define(PacketId.FriendsUpdate,
-                    New ByteJar().Named("entry number"),
-                    New ByteJar().Named("location id"),
-                    New ByteJar().Named("status"),
-                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),
-                    New UTF8Jar().NullTerminated.Named("location"))
+                    New ByteJar().Named("entry number").
+                    Then(New ByteJar().Named("location id")).
+                    Then(New ByteJar().Named("status")).
+                    Then(New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id")).
+                    Then(New UTF8Jar().NullTerminated.Named("location")))
             Public Shared ReadOnly QueryGamesList As Definition(Of QueryGamesListResponse) = Define(PacketId.QueryGamesList,
                     New QueryGamesListResponseJar(New SystemClock()))
 
             Public Shared ReadOnly EnterChat As Definition(Of NamedValueMap) = Define(PacketId.EnterChat,
-                    New UTF8Jar().NullTerminated.Named("chat username"),
-                    New UTF8Jar().NullTerminated.Named("statstring"),
-                    New UTF8Jar().NullTerminated.Named("account username"))
+                    New UTF8Jar().NullTerminated.Named("chat username").
+                    Then(New UTF8Jar().NullTerminated.Named("statstring")).
+                    Then(New UTF8Jar().NullTerminated.Named("account username")))
             Public Shared ReadOnly CreateGame3 As Definition(Of UInt32) = Define(PacketId.CreateGame3,
                     New UInt32Jar().Named("result"))
 
@@ -352,17 +342,17 @@ Namespace Bnet.Protocol
                     New DataJar().Named("encrypted data"))
 
             Public Shared ReadOnly GetFileTime As Definition(Of NamedValueMap) = Define(PacketId.GetFileTime,
-                    New UInt32Jar().Named("request id"),
-                    New UInt32Jar().Named("unknown"),
-                    New FileTimeJar().Named("filetime"),
-                    New UTF8Jar().NullTerminated.Named("filename"))
+                    New UInt32Jar().Named("request id").
+                    Then(New UInt32Jar().Named("unknown")).
+                    Then(New FileTimeJar().Named("filetime")).
+                    Then(New UTF8Jar().NullTerminated.Named("filename")))
             Public Shared ReadOnly GetIconData As Definition(Of NamedValueMap) = Define(PacketId.GetIconData,
-                    New FileTimeJar().Named("filetime"),
-                    New UTF8Jar().NullTerminated.Named("filename"))
+                    New FileTimeJar().Named("filetime").
+                    Then(New UTF8Jar().NullTerminated.Named("filename")))
             Public Shared ReadOnly ClanInfo As Definition(Of NamedValueMap) = Define(PacketId.ClanInfo,
-                    New ByteJar().Named("unknown"),
-                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("clan tag"),
-                    New EnumByteJar(Of ClanRank)().Named("rank"))
+                    New ByteJar().Named("unknown").
+                    Then(New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("clan tag")).
+                    Then(New EnumByteJar(Of ClanRank)().Named("rank")))
         End Class
 
         '''<remarks>Verification disabled due to causing out of memory.</remarks>
@@ -372,30 +362,30 @@ Namespace Bnet.Protocol
             End Sub
 
             Public Shared ReadOnly ProgramAuthenticationBegin As Definition(Of NamedValueMap) = Define(PacketId.ProgramAuthenticationBegin,
-                    New UInt32Jar().Named("protocol"),
-                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("platform"),
-                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product"),
-                    New UInt32Jar().Named("product major version"),
-                    New ASCIIJar().Fixed(exactDataCount:=4).Named("product language"),
-                    New IPAddressJar().Named("internal ip"),
-                    New UInt32Jar().Named("time zone offset"),
-                    New UInt32Jar().Named("location id"),
-                    New EnumUInt32Jar(Of MPQ.LanguageId)(checkDefined:=False).Named("language id"),
-                    New UTF8Jar().NullTerminated.Named("country abrev"),
-                    New UTF8Jar().NullTerminated.Named("country name"))
+                    New UInt32Jar().Named("protocol").
+                    Then(New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("platform")).
+                    Then(New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product")).
+                    Then(New UInt32Jar().Named("product major version")).
+                    Then(New ASCIIJar().Fixed(exactDataCount:=4).Named("product language")).
+                    Then(New IPAddressJar().Named("internal ip")).
+                    Then(New UInt32Jar().Named("time zone offset")).
+                    Then(New UInt32Jar().Named("location id")).
+                    Then(New EnumUInt32Jar(Of MPQ.LanguageId)(checkDefined:=False).Named("language id")).
+                    Then(New UTF8Jar().NullTerminated.Named("country abrev")).
+                    Then(New UTF8Jar().NullTerminated.Named("country name")))
             Public Shared ReadOnly ProgramAuthenticationFinish As Definition(Of NamedValueMap) = Define(PacketId.ProgramAuthenticationFinish,
-                    New UInt32Jar(showHex:=True).Named("client cd key salt"),
-                    New DataJar().Fixed(exactDataCount:=4).Named("exe version"),
-                    New UInt32Jar(showHex:=True).Named("revision check response"),
-                    New UInt32Jar().Named("# cd keys"),
-                    New UInt32Jar().Named("is spawn"),
-                    New ProductCredentialsJar().Named("ROC cd key"),
-                    New ProductCredentialsJar().Named("TFT cd key"),
-                    New UTF8Jar().NullTerminated.Named("exe info"),
-                    New UTF8Jar().NullTerminated.Named("owner"))
+                    New UInt32Jar(showHex:=True).Named("client cd key salt").
+                    Then(New DataJar().Fixed(exactDataCount:=4).Named("exe version")).
+                    Then(New UInt32Jar(showHex:=True).Named("revision check response")).
+                    Then(New UInt32Jar().Named("# cd keys")).
+                    Then(New UInt32Jar().Named("is spawn")).
+                    Then(New ProductCredentialsJar().Named("ROC cd key")).
+                    Then(New ProductCredentialsJar().Named("TFT cd key")).
+                    Then(New UTF8Jar().NullTerminated.Named("exe info")).
+                    Then(New UTF8Jar().NullTerminated.Named("owner")))
             Public Shared ReadOnly UserAuthenticationBegin As Definition(Of NamedValueMap) = Define(PacketId.UserAuthenticationBegin,
-                    New DataJar().Fixed(exactDataCount:=32).Named("client public key"),
-                    New UTF8Jar().NullTerminated.Named("username"))
+                    New DataJar().Fixed(exactDataCount:=32).Named("client public key").
+                    Then(New UTF8Jar().NullTerminated.Named("username")))
             Public Shared ReadOnly UserAuthenticationFinish As Definition(Of IRist(Of Byte)) = Define(PacketId.UserAuthenticationFinish,
                     New DataJar().Fixed(exactDataCount:=20).Named("client password proof"))
 
@@ -404,34 +394,34 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly ChatCommand As Definition(Of String) = Define(PacketId.ChatCommand,
                     New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatCommandTextLength).Named("text"))
             Public Shared ReadOnly QueryGamesList As Definition(Of NamedValueMap) = Define(PacketId.QueryGamesList,
-                    New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("filter"),
-                    New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("filter mask"),
-                    New UInt32Jar().Named("unknown0"),
-                    New UInt32Jar().Named("list count"),
-                    New UTF8Jar().NullTerminated.Named("game name"),
-                    New UTF8Jar().NullTerminated.Named("game password"),
-                    New UTF8Jar().NullTerminated.Named("game stats")) '[empty game name means list games]
+                    New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("filter").
+                    Then(New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("filter mask")).
+                    Then(New UInt32Jar().Named("unknown0")).
+                    Then(New UInt32Jar().Named("list count")).
+                    Then(New UTF8Jar().NullTerminated.Named("game name")).
+                    Then(New UTF8Jar().NullTerminated.Named("game password")).
+                    Then(New UTF8Jar().NullTerminated.Named("game stats"))) '[empty game name means list games]
 
             Public Shared ReadOnly EnterChat As Definition(Of NamedValueMap) = Define(PacketId.EnterChat,
-                    New UTF8Jar().NullTerminated.Named("username"),
-                    New UTF8Jar().NullTerminated.Named("statstring")) '[both parameters are unused in wc3]
+                    New UTF8Jar().NullTerminated.Named("username").
+                    Then(New UTF8Jar().NullTerminated.Named("statstring"))) '[both parameters are unused in wc3]
             Public Const MaxSerializedGameNameLength As Integer = 32
             Public Const MaxGameNameLength As Integer = MaxSerializedGameNameLength - 1
             Public Shared ReadOnly CreateGame3 As Definition(Of NamedValueMap) = Define(PacketId.CreateGame3,
-                    New EnumUInt32Jar(Of GameStates)().Named("game state"),
-                    New UInt32Jar().Named("seconds since creation"),
-                    New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type"),
-                    New UInt32Jar().Named("unknown1=1023"),
-                    New UInt32Jar().Named("is ladder"),
-                    New UTF8Jar().NullTerminated.Limited(MaxSerializedGameNameLength).Named("name"),
-                    New UTF8Jar().NullTerminated.Named("password"),
-                    New TextHexUInt32Jar(digitCount:=1).Named("num free slots"),
-                    New TextHexUInt32Jar(digitCount:=8).Named("game id"),
-                    New WC3.Protocol.GameStatsJar().Named("statstring"))
+                    New EnumUInt32Jar(Of GameStates)().Named("game state").
+                    Then(New UInt32Jar().Named("seconds since creation")).
+                    Then(New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type")).
+                    Then(New UInt32Jar().Named("unknown1=1023")).
+                    Then(New UInt32Jar().Named("is ladder")).
+                    Then(New UTF8Jar().NullTerminated.Limited(MaxSerializedGameNameLength).Named("name")).
+                    Then(New UTF8Jar().NullTerminated.Named("password")).
+                    Then(New TextHexUInt32Jar(digitCount:=1).Named("num free slots")).
+                    Then(New TextHexUInt32Jar(digitCount:=8).Named("game id")).
+                    Then(New WC3.Protocol.GameStatsJar().Named("statstring")))
             Public Shared ReadOnly CloseGame3 As Definition(Of NoValue) = Define(PacketId.CloseGame3)
             Public Shared ReadOnly JoinChannel As Definition(Of NamedValueMap) = Define(PacketId.JoinChannel,
-                    New EnumUInt32Jar(Of JoinChannelType)().Named("join type"),
-                    New UTF8Jar().NullTerminated.Named("channel"))
+                    New EnumUInt32Jar(Of JoinChannelType)().Named("join type").
+                    Then(New UTF8Jar().NullTerminated.Named("channel")))
             Public Shared ReadOnly NetGamePort As Definition(Of UInt16) = Define(PacketId.NetGamePort,
                     New UInt16Jar().Named("port"))
 
@@ -442,9 +432,9 @@ Namespace Bnet.Protocol
                     New DataJar().Named("encrypted data"))
 
             Public Shared ReadOnly GetFileTime As Definition(Of NamedValueMap) = Define(PacketId.GetFileTime,
-                    New UInt32Jar().Named("request id"),
-                    New UInt32Jar().Named("unknown"),
-                    New UTF8Jar().NullTerminated.Named("filename"))
+                    New UInt32Jar().Named("request id").
+                    Then(New UInt32Jar().Named("unknown")).
+                    Then(New UTF8Jar().NullTerminated.Named("filename")))
             Public Shared ReadOnly GetIconData As Definition(Of NoValue) = Define(PacketId.GetIconData)
         End Class
     End Class

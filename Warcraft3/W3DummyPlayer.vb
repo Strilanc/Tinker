@@ -159,7 +159,7 @@ Namespace WC3
                 _playerHooks.Remove(player)
             End If
         End Sub
-        Private Sub OnReceiveStartLoading(pickle As ISimplePickle)
+        Private Sub OnReceiveStartLoading(pickle As IPickle(Of NoValue))
             If mode = DummyPlayerMode.DownloadMap Then
                 Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
             ElseIf mode = DummyPlayerMode.EnterGame Then

@@ -3,7 +3,7 @@
     Public Class EnumJar(Of TEnum As Structure)
         Inherits BaseJar(Of TEnum)
 
-        Private ReadOnly _subJar As ISimpleJar
+        Private ReadOnly _subJar As IJar(Of Object)
         Private ReadOnly _checkDefined As Boolean
         Private ReadOnly _isFlagEnum As Boolean = GetType(TEnum).GetCustomAttributes(GetType(FlagsAttribute), inherit:=False).Any
 
@@ -11,7 +11,7 @@
             Contract.Invariant(_subJar IsNot Nothing)
         End Sub
 
-        Public Sub New(subJar As ISimpleJar,
+        Public Sub New(subJar As IJar(Of Object),
                        checkDefined As Boolean)
             Contract.Requires(subJar IsNot Nothing)
             Me._subJar = subJar
@@ -155,7 +155,7 @@
     Public NotInheritable Class EnumByteJar(Of T As Structure)
         Inherits EnumJar(Of T)
         Public Sub New(Optional checkDefined As Boolean = True)
-            MyBase.New(New ByteJar(), checkDefined)
+            MyBase.New(New ByteJar().Weaken(), checkDefined)
         End Sub
     End Class
 
@@ -164,7 +164,7 @@
         Inherits EnumJar(Of T)
         Public Sub New(Optional checkDefined As Boolean = True,
                        Optional byteOrder As ByteOrder = ByteOrder.LittleEndian)
-            MyBase.New(New UInt16Jar(byteOrder), checkDefined)
+            MyBase.New(New UInt16Jar(byteOrder).Weaken(), checkDefined)
         End Sub
     End Class
 
@@ -173,7 +173,7 @@
         Inherits EnumJar(Of T)
         Public Sub New(Optional checkDefined As Boolean = True,
                        Optional byteOrder As ByteOrder = ByteOrder.LittleEndian)
-            MyBase.New(New UInt32Jar(byteOrder), checkDefined)
+            MyBase.New(New UInt32Jar(byteOrder).Weaken(), checkDefined)
         End Sub
     End Class
 
@@ -182,7 +182,7 @@
         Inherits EnumJar(Of T)
         Public Sub New(Optional checkDefined As Boolean = True,
                        Optional byteOrder As ByteOrder = ByteOrder.LittleEndian)
-            MyBase.New(New UInt64Jar(byteOrder), checkDefined)
+            MyBase.New(New UInt64Jar(byteOrder).Weaken(), checkDefined)
         End Sub
     End Class
 End Namespace

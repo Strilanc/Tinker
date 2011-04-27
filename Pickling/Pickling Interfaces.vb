@@ -1,107 +1,26 @@
 ﻿Namespace Pickling
-    '''<summary>Holds an object, a description of the object, and a serialization of the object.</summary>
-    <ContractClass(GetType(ISimplePickle.ContractClass))>
-    Public Interface ISimplePickle
-        ReadOnly Property Data As IRist(Of Byte)
-        ReadOnly Property Value As Object
-        ReadOnly Property Jar As ISimpleJar
-
-        <ContractClassFor(GetType(ISimplePickle))>
-        MustInherit Class ContractClass
-            Implements ISimplePickle
-            Public ReadOnly Property Value As Object Implements ISimplePickle.Value
-                Get
-                    Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
-                    Throw New NotSupportedException
-                End Get
-            End Property
-            Public ReadOnly Property Data As IRist(Of Byte) Implements ISimplePickle.Data
-                Get
-                    Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
-                    Throw New NotSupportedException
-                End Get
-            End Property
-            Public ReadOnly Property Jar As ISimpleJar Implements ISimplePickle.Jar
-                Get
-                    Contract.Ensures(Contract.Result(Of ISimpleJar)() IsNot Nothing)
-                    Throw New NotSupportedException
-                End Get
-            End Property
-        End Class
-    End Interface
-
     '''<summary>Holds a value, a description of the value, and a serialization of the value.</summary>
     <ContractClass(GetType(ContractClassIPickle(Of )))>
     Public Interface IPickle(Of Out T)
-        Inherits ISimplePickle
-        Shadows ReadOnly Property Value As T
-    End Interface
-
-    '''<summary>Parses data into simple pickles and packs objects into pickles.</summary>
-    <ContractClass(GetType(ISimpleJar.ContractClass))>
-    Public Interface ISimpleJar
-        Function Parse(data As IRist(Of Byte)) As ParsedValue(Of Object)
-        Function Pack(value As Object) As IRist(Of Byte)
-        Function MakeControl() As ISimpleValueEditor
-        Function Describe(value As Object) As String
-        Function Parse(text As String) As Object
-
-        <ContractClassFor(GetType(ISimpleJar))>
-        MustInherit Shadows Class ContractClass
-            Implements ISimpleJar
-            <Pure()>
-            Public Function Describe(value As Object) As String Implements ISimpleJar.Describe
-                Contract.Requires(value IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Throw New NotSupportedException
-            End Function
-            <Pure()>
-            Public Function MakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
-                Contract.Ensures(Contract.Result(Of ISimpleValueEditor)() IsNot Nothing)
-                Throw New NotSupportedException
-            End Function
-            Public Function Parse(data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
-                Contract.Requires(data IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of ParsedValue(Of Object))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of ParsedValue(Of Object))().UsedDataCount <= data.Count)
-                Throw New NotSupportedException()
-            End Function
-            <Pure()>
-            Public Function Pack(value As Object) As IRist(Of Byte) Implements ISimpleJar.Pack
-                Contract.Requires(value IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
-                Throw New NotSupportedException
-            End Function
-            <Pure()>
-            Public Function Parse(text As String) As Object Implements ISimpleJar.Parse
-                Contract.Requires(text IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
-                Throw New NotSupportedException
-            End Function
-        End Class
+        ReadOnly Property Data As IRist(Of Byte)
+        ReadOnly Property Jar As IJar(Of Object)
+        ReadOnly Property Value As T
     End Interface
 
     '''<summary>Parses data and packs values into pickles.</summary>
     <ContractClass(GetType(ContractClassIJar(Of )))>
     Public Interface IJar(Of T)
-        Inherits ISimpleJar
-        Shadows Function Pack(value As T) As IRist(Of Byte)
-        Shadows Function Parse(data As IRist(Of Byte)) As ParsedValue(Of T)
-        Shadows Function MakeControl() As IValueEditor(Of T)
-        Shadows Function Describe(value As T) As String
-        Shadows Function Parse(text As String) As T
-    End Interface
-
-    '''<summary>A named jar which parses data into simple pickles and packs objects into pickles.</summary>
-    Public Interface ISimpleNamedJar
-        Inherits ISimpleJar
-        ReadOnly Property Name As InvariantString
+        Function Pack(value As T) As IRist(Of Byte)
+        Function Parse(data As IRist(Of Byte)) As ParsedValue(Of T)
+        Function MakeControl() As IValueEditor(Of T)
+        Function Describe(value As T) As String
+        Function Parse(text As String) As T
     End Interface
 
     '''<summary>A named jar which parses data and packs values into pickles.</summary>
     Public Interface INamedJar(Of T)
-        Inherits ISimpleNamedJar
         Inherits IJar(Of T)
+        ReadOnly Property Name As InvariantString
     End Interface
 
     <ContractClass(GetType(ISimpleValueEditor.ContractClass))>
@@ -147,24 +66,21 @@
     <ContractClassFor(GetType(IPickle(Of )))>
     Public MustInherit Class ContractClassIPickle(Of T)
         Implements IPickle(Of T)
-        Public Shadows ReadOnly Property Value As T Implements IPickle(Of T).Value
+        Public ReadOnly Property Value As T Implements IPickle(Of T).Value
             Get
                 Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
-        Private ReadOnly Property SimpleValue As Object Implements ISimplePickle.Value
+        Private ReadOnly Property Data As IRist(Of Byte) Implements IPickle(Of T).Data
             Get
+                Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
-        Private ReadOnly Property SimpleData As IRist(Of Byte) Implements ISimplePickle.Data
+        Private ReadOnly Property Jar As IJar(Of Object) Implements IPickle(Of T).Jar
             Get
-                Throw New NotSupportedException
-            End Get
-        End Property
-        Private ReadOnly Property SimpleJar As ISimpleJar Implements ISimplePickle.Jar
-            Get
+                Contract.Ensures(Contract.Result(Of IJar(Of Object))() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
@@ -201,21 +117,6 @@
         Public Shadows Function Parse(text As String) As T Implements IJar(Of T).Parse
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
-            Throw New NotSupportedException
-        End Function
-        Private Function SimpleDescribe(value As Object) As String Implements ISimpleJar.Describe
-            Throw New NotSupportedException
-        End Function
-        Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
-            Throw New NotSupportedException
-        End Function
-        Private Function SimpleParse(data As IRist(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
-            Throw New NotSupportedException()
-        End Function
-        Private Function SimplePack(value As Object) As IRist(Of Byte) Implements ISimpleJar.Pack
-            Throw New NotSupportedException
-        End Function
-        Private Function SimpleParse(text As String) As Object Implements ISimpleJar.Parse
             Throw New NotSupportedException
         End Function
     End Class

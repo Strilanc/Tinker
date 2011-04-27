@@ -95,11 +95,11 @@ Public Module StreamExtensions
 
     <Extension()>
     <SuppressMessage("Microsoft.Contracts", "Ensures-76-188")>
-    Public Function ReadPickle(stream As IRandomReadableStream, jar As ISimpleJar) As ISimplePickle
+    Public Function ReadPickle(stream As IRandomReadableStream, jar As IJar(Of Object)) As IPickle(Of Object)
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
-        Contract.Ensures(stream.Position = Contract.OldValue(stream.Position) + Contract.Result(Of ISimplePickle).Data.Count)
+        Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+        Contract.Ensures(stream.Position = Contract.OldValue(stream.Position) + Contract.Result(Of IPickle(Of Object)).Data.Count)
         Try
             Dim oldPosition = stream.Position
             Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)

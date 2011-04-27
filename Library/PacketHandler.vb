@@ -30,7 +30,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
     ''' Adds a logger to the underlying packet handler, if one has not already been added for the given key type.
     ''' Returns null on failure.
     ''' </summary>
-    Public Function TryIncludeLogger(key As TKey, jar As ISimpleJar) As IDisposable
+    Public Function TryIncludeLogger(key As TKey, jar As IJar(Of Object)) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
 
@@ -65,7 +65,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
         Contract.Requires(jar IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-        Dim ld = TryIncludeLogger(key, jar)
+        Dim ld = TryIncludeLogger(key, jar.Weaken())
         Dim hd = _handler.IncludeHandler(key, Function(data) handler(jar.ParsePickle(data)))
         Return New DelegatedDisposable(
             Sub()

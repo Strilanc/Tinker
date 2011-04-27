@@ -391,7 +391,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub TupleJarTest()
-        Dim jar = New TupleJar(New UInt32Jar().Named("32"), New UInt16Jar().Named("16"))
+        Dim jar = New UInt32Jar().Named("32").Then(New UInt16Jar().Named("16"))
         JarTest(jar, New Dictionary(Of InvariantString, Object)() From {{"32", 0UI}, {"16", 0US}}, {0, 0, 0, 0, 0, 0})
         JarTest(jar, New Dictionary(Of InvariantString, Object)() From {{"32", UInt32.MaxValue}, {"16", 0US}}, {&HFF, &HFF, &HFF, &HFF, 0, 0})
         JarTest(jar, New Dictionary(Of InvariantString, Object)() From {{"32", 0UI}, {"16", UInt16.MaxValue}}, {0, 0, 0, 0, &HFF, &HFF})
@@ -436,9 +436,9 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub KeyPrefixedJarTest()
-        Dim jar = New KeyPrefixedJar(Of UInt32)(keyJar:=New UInt32Jar(), valueJars:=New Dictionary(Of UInt32, ISimpleJar) From {
-                                                    {3, New ByteJar()},
-                                                    {5, New UInt16Jar()}})
+        Dim jar = New KeyPrefixedJar(Of UInt32)(keyJar:=New UInt32Jar(), valueJars:=New Dictionary(Of UInt32, IJar(Of Object)) From {
+                                                    {3, New ByteJar().Weaken()},
+                                                    {5, New UInt16Jar().Weaken()}})
         JarTest(jar,
                 equater:=Function(e1, e2) e1.Key = e2.Key AndAlso ObjectEqual(e1.Value, e2.Value),
                 value:=3UI.KeyValue(Of Object)(CByte(10)),

@@ -46,17 +46,20 @@ Namespace Bnet.Protocol
         Inherits BaseJar(Of QueryGamesListResponse)
 
         Private Shared ReadOnly queryResultJar As INamedJar(Of QueryGameResponse) = New EnumUInt32Jar(Of QueryGameResponse)().Named("result")
-        Private Shared ReadOnly gameDataJar As INamedJar(Of IRist(Of NamedValueMap)) = New TupleJar(
-                New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type"),
-                New UInt32Jar().Named("language id"),
-                New IPEndPointJar().Named("host address"),
-                New EnumUInt32Jar(Of GameStates)().Named("game state"),
-                New UInt32Jar().Named("elapsed seconds"),
-                New UTF8Jar().NullTerminated.Named("game name"),
-                New UTF8Jar().NullTerminated.Named("game password"),
-                New TextHexUInt32Jar(digitCount:=1).Named("num free slots"),
-                New TextHexUInt32Jar(digitCount:=8).Named("game id"),
-                New WC3.Protocol.GameStatsJar().Named("game statstring")).Named("game").RepeatedWithCountPrefix(prefixSize:=4).Named("games")
+        Private Shared ReadOnly gameDataJar As INamedJar(Of IRist(Of NamedValueMap)) =
+            New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type").
+            Then(New UInt32Jar().Named("language id")).
+            Then(New IPEndPointJar().Named("host address")).
+            Then(New EnumUInt32Jar(Of GameStates)().Named("game state")).
+            Then(New UInt32Jar().Named("elapsed seconds")).
+            Then(New UTF8Jar().NullTerminated.Named("game name")).
+            Then(New UTF8Jar().NullTerminated.Named("game password")).
+            Then(New TextHexUInt32Jar(digitCount:=1).Named("num free slots")).
+            Then(New TextHexUInt32Jar(digitCount:=8).Named("game id")).
+            Then(New WC3.Protocol.GameStatsJar().Named("game statstring")).
+            Named("game").
+            RepeatedWithCountPrefix(prefixSize:=4).
+            Named("games")
 
         Private ReadOnly _clock As IClock
 

@@ -253,13 +253,13 @@ Namespace WC3.Protocol
         '''<completionlist cref="GameActions"/>
         Public MustInherit Class Definition
             Private ReadOnly _id As GameActionId
-            Private ReadOnly _jar As ISimpleJar
+            Private ReadOnly _jar As IJar(Of Object)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(id As GameActionId, jar As ISimpleJar)
+            Friend Sub New(id As GameActionId, jar As IJar(Of Object))
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -270,9 +270,9 @@ Namespace WC3.Protocol
                     Return _id
                 End Get
             End Property
-            Public ReadOnly Property Jar As ISimpleJar
+            Public ReadOnly Property Jar As IJar(Of Object)
                 Get
-                    Contract.Ensures(Contract.Result(Of ISimpleJar)() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IJar(Of Object))() IsNot Nothing)
                     Return _jar
                 End Get
             End Property
@@ -287,7 +287,7 @@ Namespace WC3.Protocol
             End Sub
 
             Friend Sub New(id As GameActionId, jar As IJar(Of T))
-                MyBase.New(id, jar)
+                MyBase.New(id, jar.Weaken())
                 Contract.Requires(jar IsNot Nothing)
                 Me._jar = jar
             End Sub
@@ -311,32 +311,22 @@ Namespace WC3.Protocol
             _allDefinitions.Add(id, result)
             Return result
         End Function
-        Private Shared Function Define(id As GameActionId,
-                                       jar1 As ISimpleNamedJar,
-                                       jar2 As ISimpleNamedJar,
-                                       ParamArray jars() As ISimpleNamedJar) As Definition(Of NamedValueMap)
-            Contract.Requires(jar1 IsNot Nothing)
-            Contract.Requires(jar2 IsNot Nothing)
-            Contract.Requires(jars IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Definition(Of NamedValueMap))() IsNot Nothing)
-            Return Define(id, New TupleJar(jars.Prepend(jar1, jar2).ToArray))
-        End Function
 
         '''<summary>Occurs when a player assigns a unit group to a number key.</summary>
         Public Shared ReadOnly AssignGroupHotkey As Definition(Of NamedValueMap) = Define(GameActionId.AssignGroupHotkey,
-                    New ByteJar().Named("group index"),
-                    New GameObjectIdJar().RepeatedWithCountPrefix(prefixSize:=2).Named("targets"))
+                    New ByteJar().Named("group index").
+                    Then(New GameObjectIdJar().RepeatedWithCountPrefix(prefixSize:=2).Named("targets")))
         '''<summary>Occurs when a player cancels a hero revival.</summary>
         Public Shared ReadOnly CancelHeroRevive As Definition(Of GameObjectId) = Define(GameActionId.CancelHeroRevive,
                     New GameObjectIdJar().Named("target"))
         '''<summary>Occurs when a player changes alliance options.</summary>
         Public Shared ReadOnly ChangeAllyOptions As Definition(Of NamedValueMap) = Define(GameActionId.ChangeAllyOptions,
-                    New ByteJar().Named("player slot id"),
-                    New EnumUInt32Jar(Of AllianceTypes)().Named("flags"))
+                    New ByteJar().Named("player slot id").
+                    Then(New EnumUInt32Jar(Of AllianceTypes)().Named("flags")))
         '''<summary>Occurs when the set of units a player has selected changes (including when a selected unit dies).</summary>
         Public Shared ReadOnly ChangeSelection As Definition(Of NamedValueMap) = Define(GameActionId.ChangeSelection,
-                    New EnumByteJar(Of SelectionOperation)().Named("operation"),
-                    New GameObjectIdJar().RepeatedWithCountPrefix(prefixSize:=2).Named("targets"))
+                    New EnumByteJar(Of SelectionOperation)().Named("operation").
+                    Then(New GameObjectIdJar().RepeatedWithCountPrefix(prefixSize:=2).Named("targets")))
         '''<summary>Occurs when a player uses the Synergy cheat (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatDisableTechRequirements As Definition(Of NoValue) = Define(GameActionId.CheatDisableTechRequirements)
         '''<summary>Occurs when a player uses the ItVexesMe cheat (no effect in multiplayer).</summary>
@@ -351,20 +341,20 @@ Namespace WC3.Protocol
         Public Shared ReadOnly CheatGodMode As Definition(Of NoValue) = Define(GameActionId.CheatGodMode)
         '''<summary>Occurs when a player uses the KeyserSoze cheat (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatGold As Definition(Of NamedValueMap) = Define(GameActionId.CheatGold,
-                    New ByteJar().Named("unknown"),
-                    New UInt32Jar().Named("amount"))
+                    New ByteJar().Named("unknown").
+                    Then(New UInt32Jar().Named("amount")))
         '''<summary>Occurs when a player uses the GreedIsGood cheat (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatGoldAndLumber As Definition(Of NamedValueMap) = Define(GameActionId.CheatGoldAndLumber,
-                    New ByteJar().Named("unknown"),
-                    New UInt32Jar().Named("amount"))
+                    New ByteJar().Named("unknown").
+                    Then(New UInt32Jar().Named("amount")))
         '''<summary>Occurs when a player uses the SomebodySetUpUsTheBomb cheat (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatInstantDefeat As Definition(Of NoValue) = Define(GameActionId.CheatInstantDefeat)
         '''<summary>Occurs when a player uses the AllYourBaseAreBelongToUs cheat (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatInstantVictory As Definition(Of NoValue) = Define(GameActionId.CheatInstantVictory)
         '''<summary>Occurs when a player uses the LeafItToMe cheat (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatLumber As Definition(Of NamedValueMap) = Define(GameActionId.CheatLumber,
-                    New ByteJar().Named("unknown"),
-                    New UInt32Jar().Named("amount"))
+                    New ByteJar().Named("unknown").
+                    Then(New UInt32Jar().Named("amount")))
         '''<summary>Occurs when a player uses the StrengthAndHonor cheat (no effect in multiplayer).</summary>
         Public Shared ReadOnly CheatNoDefeat As Definition(Of NoValue) = Define(GameActionId.CheatNoDefeat)
         '''<summary>Occurs when a player uses the PointBreak cheat (no effect in multiplayer).</summary>
@@ -384,148 +374,150 @@ Namespace WC3.Protocol
         Public Shared ReadOnly DecreaseGameSpeed As Definition(Of NoValue) = Define(GameActionId.DecreaseGameSpeed)
         '''<summary>Occurs when a player cancels/dequeues a building training/research order.</summary>
         Public Shared ReadOnly DequeueBuildingOrder As Definition(Of NamedValueMap) = Define(GameActionId.DequeueBuildingOrder,
-                    New ByteJar().Named("slot number"),
-                    New ObjectTypeJar().Named("type"))
+                    New ByteJar().Named("slot number").
+                    Then(New ObjectTypeJar().Named("type")))
         '''<summary>Occurs when a player clicks a dialog button, whether or not a trigger is waiting for the event.</summary>
         '''<remarks>
         ''' This action is always paired with DialogButtonClicked by wc3.
         ''' However, if just this action is sent, only the 'any button on dialog' type trigger events will fire.
         '''</remarks>
         Public Shared ReadOnly DialogAnyButtonClicked As Definition(Of NamedValueMap) = Define(GameActionId.DialogAnyButtonClicked,
-                    New GameObjectIdJar().Named("dialog"),
-                    New GameObjectIdJar().Named("button"))
+                    New GameObjectIdJar().Named("dialog").
+                    Then(New GameObjectIdJar().Named("button")))
         '''<summary>Occurs when a player clicks a dialog button, whether or not a trigger is waiting for the event.</summary>
         '''<remarks>
         ''' This action is always paired with DialogAnyButtonClicked by wc3.
         ''' However, if just this action is sent, only the 'specific button' type trigger events will fire.
         '''</remarks>
         Public Shared ReadOnly DialogButtonClicked As Definition(Of NamedValueMap) = Define(GameActionId.DialogButtonClicked,
-                    New GameObjectIdJar().Named("button"),
-                    New GameObjectIdJar().Named("dialog"))
+                    New GameObjectIdJar().Named("button").
+                    Then(New GameObjectIdJar().Named("dialog")))
         '''<summary>Occurs when a player issues an order to drop or give an item.</summary>
         Public Shared ReadOnly DropOrGiveItem As Definition(Of NamedValueMap) = Define(GameActionId.DropOrGiveItem,
-                    New EnumUInt16Jar(Of OrderTypes)().Named("flags"),
-                    New OrderIdJar().Named("order"),
-                    New GameObjectIdJar().Named("unknown"),
-                    New Float32Jar().Named("x"),
-                    New Float32Jar().Named("y"),
-                    New GameObjectIdJar().Named("receiver"),
-                    New GameObjectIdJar().Named("item"))
+                    New EnumUInt16Jar(Of OrderTypes)().Named("flags").
+                    Then(New OrderIdJar().Named("order")).
+                    Then(New GameObjectIdJar().Named("unknown")).
+                    Then(New Float32Jar().Named("x")).
+                    Then(New Float32Jar().Named("y")).
+                    Then(New GameObjectIdJar().Named("receiver")).
+                    Then(New GameObjectIdJar().Named("item")))
         '''<summary>Occurs when a player enters the construction sub-menu of a builder.</summary>
         Public Shared ReadOnly EnterChooseBuildingSubmenu As Definition(Of NoValue) = Define(GameActionId.EnterChooseBuildingSubmenu)
         '''<summary>Occurs when a player enters the skills sub-menu of a hero.</summary>
         Public Shared ReadOnly EnterChooseHeroSkillSubmenu As Definition(Of NoValue) = Define(GameActionId.EnterChooseHeroSkillSubmenu)
         '''<summary>Occurs when a player issues an order targeting a thing they see behind fog of war (eg. a tree or previously spotted building).</summary>
         Public Shared ReadOnly FogObjectOrder As Definition(Of NamedValueMap) = Define(GameActionId.FogObjectOrder,
-                    New EnumUInt16Jar(Of OrderTypes)().Named("flags"),
-                    New OrderIdJar().Named("order"),
-                    New GameObjectIdJar().Named("unknown"),
-                    New Float32Jar().Named("x"),
-                    New Float32Jar().Named("y"),
-                    New ObjectTypeJar().Named("target type"),
-                    New UInt64Jar(showhex:=True).Named("target flags"),
-                    New ByteJar().Named("target owner"),
-                    New Float32Jar().Named("target x"),
-                    New Float32Jar().Named("target y"))
+                    New EnumUInt16Jar(Of OrderTypes)().Named("flags").
+                    Then(New OrderIdJar().Named("order")).
+                    Then(New GameObjectIdJar().Named("unknown")).
+                    Then(New Float32Jar().Named("x")).
+                    Then(New Float32Jar().Named("y")).
+                    Then(New ObjectTypeJar().Named("target type")).
+                    Then(New UInt64Jar(showhex:=True).Named("target flags")).
+                    Then(New ByteJar().Named("target owner")).
+                    Then(New Float32Jar().Named("target x")).
+                    Then(New Float32Jar().Named("target y")))
         '''<summary>Occurs when the map syncs a boolean in game cache.</summary>
         Public Shared ReadOnly GameCacheSyncBoolean As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncBoolean,
-                    New UTF8Jar().NullTerminated.Named("filename"),
-                    New UTF8Jar().NullTerminated.Named("mission key"),
-                    New UTF8Jar().NullTerminated.Named("key"),
-                    New UInt32Jar().Named("value"))
+                    New UTF8Jar().NullTerminated.Named("filename").
+                    Then(New UTF8Jar().NullTerminated.Named("mission key")).
+                    Then(New UTF8Jar().NullTerminated.Named("key")).
+                    Then(New UInt32Jar().Named("value")))
         '''<summary>Occurs when the map syncs a boolean without an assigned value in game cache.</summary>
         Public Shared ReadOnly GameCacheSyncEmptyBoolean As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncEmptyBoolean,
-                    New UTF8Jar().NullTerminated.Named("filename"),
-                    New UTF8Jar().NullTerminated.Named("mission key"),
-                    New UTF8Jar().NullTerminated.Named("key"))
+                    New UTF8Jar().NullTerminated.Named("filename").
+                    Then(New UTF8Jar().NullTerminated.Named("mission key")).
+                    Then(New UTF8Jar().NullTerminated.Named("key")))
         '''<summary>Occurs when the map syncs an integer without an assigned value in game cache.</summary>
         Public Shared ReadOnly GameCacheSyncEmptyInteger As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncEmptyInteger,
-                    New UTF8Jar().NullTerminated.Named("filename"),
-                    New UTF8Jar().NullTerminated.Named("mission key"),
-                    New UTF8Jar().NullTerminated.Named("key"))
+                    New UTF8Jar().NullTerminated.Named("filename").
+                    Then(New UTF8Jar().NullTerminated.Named("mission key")).
+                    Then(New UTF8Jar().NullTerminated.Named("key")))
         '''<summary>Occurs when the map syncs a real without an assigned value in game cache.</summary>
         Public Shared ReadOnly GameCacheSyncEmptyReal As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncEmptyReal,
-                    New UTF8Jar().NullTerminated.Named("filename"),
-                    New UTF8Jar().NullTerminated.Named("mission key"),
-                    New UTF8Jar().NullTerminated.Named("key"))
+                    New UTF8Jar().NullTerminated.Named("filename").
+                    Then(New UTF8Jar().NullTerminated.Named("mission key")).
+                    Then(New UTF8Jar().NullTerminated.Named("key")))
         '''<summary>Occurs when the map syncs a unit without an assigned value in game cache.</summary>
         Public Shared ReadOnly GameCacheSyncEmptyUnit As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncEmptyUnit,
-                    New UTF8Jar().NullTerminated.Named("filename"),
-                    New UTF8Jar().NullTerminated.Named("mission key"),
-                    New UTF8Jar().NullTerminated.Named("key"))
+                    New UTF8Jar().NullTerminated.Named("filename").
+                    Then(New UTF8Jar().NullTerminated.Named("mission key")).
+                    Then(New UTF8Jar().NullTerminated.Named("key")))
         '''<summary>Occurs when the map syncs an integer in game cache.</summary>
         Public Shared ReadOnly GameCacheSyncInteger As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncInteger,
-                    New UTF8Jar().NullTerminated.Named("filename"),
-                    New UTF8Jar().NullTerminated.Named("mission key"),
-                    New UTF8Jar().NullTerminated.Named("key"),
-                    New UInt32Jar().Named("value"))
+                    New UTF8Jar().NullTerminated.Named("filename").
+                    Then(New UTF8Jar().NullTerminated.Named("mission key")).
+                    Then(New UTF8Jar().NullTerminated.Named("key")).
+                    Then(New UInt32Jar().Named("value")))
         '''<summary>Occurs when the map syncs a real in game cache.</summary>
         Public Shared ReadOnly GameCacheSyncReal As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncReal,
-                    New UTF8Jar().NullTerminated.Named("filename"),
-                    New UTF8Jar().NullTerminated.Named("mission key"),
-                    New UTF8Jar().NullTerminated.Named("key"),
-                    New Float32Jar().Named("value"))
+                    New UTF8Jar().NullTerminated.Named("filename").
+                    Then(New UTF8Jar().NullTerminated.Named("mission key")).
+                    Then(New UTF8Jar().NullTerminated.Named("key")).
+                    Then(New Float32Jar().Named("value")))
         '''<summary>Occurs when the map syncs a unit in game cache.</summary>
         Public Shared ReadOnly GameCacheSyncUnit As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncUnit,
-                    New UTF8Jar().NullTerminated.Named("filename"),
-                    New UTF8Jar().NullTerminated.Named("mission key"),
-                    New UTF8Jar().NullTerminated.Named("key"),
-                    New ObjectTypeJar().Named("unit type"),
-                    New TupleJar(True,
-                            New ObjectTypeJar().Named("item"),
-                            New UInt32Jar().Named("charges"),
-                            New UInt32Jar().Named("unknown")
-                        ).RepeatedWithCountPrefix(prefixSize:=4).Named("inventory"),
-                    New UInt32Jar().Named("experience"),
-                    New UInt32Jar().Named("level ups"),
-                    New UInt32Jar().Named("skill points"),
-                    New UInt16Jar().Named("proper name index"),
-                    New UInt16Jar().Named("unknown1"),
-                    New UInt32Jar().Named("base strength"),
-                    New Float32Jar().Named("bonus strength per level"),
-                    New UInt32Jar().Named("base agility"),
-                    New Float32Jar().Named("bonus move speed"),
-                    New Float32Jar().Named("bonus attack speed"),
-                    New Float32Jar().Named("bonus agility per level"),
-                    New UInt32Jar().Named("base intelligence"),
-                    New Float32Jar().Named("bonus intelligence per level"),
-                    New TupleJar(True,
-                            New ObjectTypeJar().Named("ability"),
-                            New UInt32Jar().Named("level")
-                        ).RepeatedWithCountPrefix(prefixSize:=4).Named("hero skills"),
-                    New Float32Jar().Named("bonus health"),
-                    New Float32Jar().Named("bonus mana"),
-                    New Float32Jar().Named("sight radius (day)"),
-                    New UInt32Jar().Named("unknown2"),
-                    New DataJar().Fixed(exactDataCount:=4).Named("unknown3"),
-                    New DataJar().Fixed(exactDataCount:=4).Named("unknown4"),
-                    New DataJar().Fixed(exactDataCount:=4).Named("unknown5"),
-                    New UInt16Jar(showhex:=True).Named("hotkey flags"))
+                    New UTF8Jar().NullTerminated.Named("filename").
+                    Then(New UTF8Jar().NullTerminated.Named("mission key")).
+                    Then(New UTF8Jar().NullTerminated.Named("key")).
+                    Then(New ObjectTypeJar().Named("unit type")).
+                    Then(New ObjectTypeJar().Named("item").
+                        Then(New UInt32Jar().Named("charges")).
+                        Then(New UInt32Jar().Named("unknown")).
+                        WithSingleLineDescription().
+                        RepeatedWithCountPrefix(prefixSize:=4).
+                        Named("inventory")).
+                    Then(New UInt32Jar().Named("experience")).
+                    Then(New UInt32Jar().Named("level ups")).
+                    Then(New UInt32Jar().Named("skill points")).
+                    Then(New UInt16Jar().Named("proper name index")).
+                    Then(New UInt16Jar().Named("unknown1")).
+                    Then(New UInt32Jar().Named("base strength")).
+                    Then(New Float32Jar().Named("bonus strength per level")).
+                    Then(New UInt32Jar().Named("base agility")).
+                    Then(New Float32Jar().Named("bonus move speed")).
+                    Then(New Float32Jar().Named("bonus attack speed")).
+                    Then(New Float32Jar().Named("bonus agility per level")).
+                    Then(New UInt32Jar().Named("base intelligence")).
+                    Then(New Float32Jar().Named("bonus intelligence per level")).
+                    Then(New ObjectTypeJar().Named("ability").
+                        Then(New UInt32Jar().Named("level")).
+                        WithSingleLineDescription().
+                        RepeatedWithCountPrefix(prefixSize:=4).
+                        Named("hero skills")).
+                    Then(New Float32Jar().Named("bonus health")).
+                    Then(New Float32Jar().Named("bonus mana")).
+                    Then(New Float32Jar().Named("sight radius (day)")).
+                    Then(New UInt32Jar().Named("unknown2")).
+                    Then(New DataJar().Fixed(exactDataCount:=4).Named("unknown3")).
+                    Then(New DataJar().Fixed(exactDataCount:=4).Named("unknown4")).
+                    Then(New DataJar().Fixed(exactDataCount:=4).Named("unknown5")).
+                    Then(New UInt16Jar(showhex:=True).Named("hotkey flags")))
         '''<summary>Occurs when a player increases the game speed (by hitting +, no effect in multiplayer).</summary>
         Public Shared ReadOnly IncreaseGameSpeed As Definition(Of NoValue) = Define(GameActionId.IncreaseGameSpeed)
         '''<summary>Occurs when a player pings the minimap.</summary>
         Public Shared ReadOnly MinimapPing As Definition(Of NamedValueMap) = Define(GameActionId.MinimapPing,
-                    New Float32Jar().Named("x"),
-                    New Float32Jar().Named("y"),
-                    New Float32Jar().Named("duration"))
+                         New Float32Jar().Named("x").
+                    Then(New Float32Jar().Named("y")).
+                    Then(New Float32Jar().Named("duration")))
         '''<summary>Occurs when a player issues an order targeting an object (eg. stormbolt/heal/harvest/etc).</summary>
         Public Shared ReadOnly ObjectOrder As Definition(Of NamedValueMap) = Define(GameActionId.ObjectOrder,
-                    New EnumUInt16Jar(Of OrderTypes)().Named("flags"),
-                    New OrderIdJar().Named("order"),
-                    New GameObjectIdJar().Named("unknown"),
-                    New Float32Jar().Named("x"),
-                    New Float32Jar().Named("y"),
-                    New GameObjectIdJar().Named("target"))
+                         New EnumUInt16Jar(Of OrderTypes)().Named("flags").
+                    Then(New OrderIdJar().Named("order")).
+                    Then(New GameObjectIdJar().Named("unknown")).
+                    Then(New Float32Jar().Named("x")).
+                    Then(New Float32Jar().Named("y")).
+                    Then(New GameObjectIdJar().Named("target")))
         '''<summary>Occurs when a player pauses the game (no effect per player after three times in multiplayer).</summary>
         '''<remarks>Entering a menu in singleplayer counts (as do other things which automatically hold the game).</remarks>
         Public Shared ReadOnly PauseGame As Definition(Of NoValue) = Define(GameActionId.PauseGame)
         '''<summary>Occurs when a player issues an order targeting a point (eg. attackground/earthquake/etc).</summary>
         Public Shared ReadOnly PointOrder As Definition(Of NamedValueMap) = Define(GameActionId.PointOrder,
-                    New EnumUInt16Jar(Of OrderTypes)().Named("flags"),
-                    New OrderIdJar().Named("order"),
-                    New GameObjectIdJar().Named("unknown"),
-                    New Float32Jar().Named("target x"),
-                    New Float32Jar().Named("target y"))
+                         New EnumUInt16Jar(Of OrderTypes)().Named("flags").
+                    Then(New OrderIdJar().Named("order")).
+                    Then(New GameObjectIdJar().Named("unknown")).
+                    Then(New Float32Jar().Named("target x")).
+                    Then(New Float32Jar().Named("target y")))
         '''<summary>Occurs when a player presses the escape key.</summary>
         Public Shared ReadOnly PressedEscape As Definition(Of NoValue) = Define(GameActionId.PressedEscape)
         '''<summary>Seems to always occur before the SelectSubGroup action. Unsure what this action is for.</summary>
@@ -540,36 +532,36 @@ Namespace WC3.Protocol
                     New UTF8Jar().NullTerminated.Named("filename"))
         '''<summary>Occurs when a player selects an item (or doodad?) on the ground.</summary>
         Public Shared ReadOnly SelectGroundItem As Definition(Of NamedValueMap) = Define(GameActionId.SelectGroundItem,
-                    New ByteJar().Named("unknown"),
-                    New GameObjectIdJar().Named("target"))
+                         New ByteJar().Named("unknown").
+                    Then(New GameObjectIdJar().Named("target")))
         '''<summary>Occurs when a player hits a number key to select one of their assigned unit groups.</summary>
         Public Shared ReadOnly SelectGroupHotkey As Definition(Of NamedValueMap) = Define(GameActionId.SelectGroupHotkey,
-                    New ByteJar().Named("group index"),
-                    New ByteJar().Named("unknown"))
+                         New ByteJar().Named("group index").
+                    Then(New ByteJar().Named("unknown")))
         '''<summary>Occurs when a player changes the selected subgroup (eg. hitting tab to work with a different unit type from the group selected).</summary>
         Public Shared ReadOnly SelectSubGroup As Definition(Of NamedValueMap) = Define(GameActionId.SelectSubGroup,
-                    New ObjectTypeJar().Named("unit type"),
-                    New GameObjectIdJar().Named("target"))
+                         New ObjectTypeJar().Named("unit type").
+                    Then(New GameObjectIdJar().Named("target")))
         '''<summary>Occurs when a player issues an order with no target (eg. berserk/autocaston/etc).</summary>
         Public Shared ReadOnly SelfOrder As Definition(Of NamedValueMap) = Define(GameActionId.SelfOrder,
-                    New EnumUInt16Jar(Of OrderTypes)().Named("flags"),
-                    New OrderIdJar().Named("order"),
-                    New GameObjectIdJar().Named("unknown"))
+                         New EnumUInt16Jar(Of OrderTypes)().Named("flags").
+                    Then(New OrderIdJar().Named("order")).
+                    Then(New GameObjectIdJar().Named("unknown")))
         '''<summary>Occurs when a player sets the game speed (no effect in multiplayer).</summary>
         Public Shared ReadOnly SetGameSpeed As Definition(Of GameSpeedSetting) = Define(GameActionId.SetGameSpeed,
                     New EnumByteJar(Of GameSpeedSetting)().Named("speed"))
         '''<summary>Occurs when a player sends resources to another player.</summary>
         Public Shared ReadOnly TransferResources As Definition(Of NamedValueMap) = Define(GameActionId.TransferResources,
-                    New ByteJar().Named("player slot id"),
-                    New UInt32Jar().Named("gold"),
-                    New UInt32Jar().Named("lumber"))
+                         New ByteJar().Named("player slot id").
+                    Then(New UInt32Jar().Named("gold")).
+                    Then(New UInt32Jar().Named("lumber")))
         '''<summary>Occurs when a player presses or releases an arrow key, but only if there is a trigger waiting for the event.</summary>
         Public Shared ReadOnly TriggerArrowKeyEvent As Definition(Of ArrowKeyEvent) = Define(GameActionId.TriggerArrowKeyEvent,
                     New EnumByteJar(Of ArrowKeyEvent)().Named("event type"))
         '''<summary>Occurs when a player says something, but only if the thing said matches a trigger chat event filter.</summary>
         Public Shared ReadOnly TriggerChatEvent As Definition(Of NamedValueMap) = Define(GameActionId.TriggerChatEvent,
-                    New GameObjectIdJar().Named("trigger event"),
-                    New UTF8Jar().NullTerminated.Named("text"))
+                         New GameObjectIdJar().Named("trigger event").
+                    Then(New UTF8Jar().NullTerminated.Named("text")))
         '''<summary>Occurs when a player clicks a trackable, but only if there is a trigger waiting for the event.</summary>
         Public Shared ReadOnly TriggerMouseClickedTrackable As Definition(Of GameObjectId) = Define(GameActionId.TriggerMouseClickedTrackable,
                     New GameObjectIdJar().Named("trackable"))
@@ -578,15 +570,15 @@ Namespace WC3.Protocol
                     New GameObjectIdJar().Named("trackable"))
         '''<summary>Occurs when a player selects a unit, but only if there is a trigger waiting for the event.</summary>
         Public Shared ReadOnly TriggerSelectionEvent As Definition(Of NamedValueMap) = Define(GameActionId.TriggerSelectionEvent,
-                    New EnumByteJar(Of SelectionOperation)().Named("operation"),
-                    New GameObjectIdJar().Named("target"))
+                         New EnumByteJar(Of SelectionOperation)().Named("operation").
+                    Then(New GameObjectIdJar().Named("target")))
         '''<summary>Occurs when a call to TriggerSyncReady happens.</summary>
         Public Shared ReadOnly TriggerSyncReady As Definition(Of GameObjectId) = Define(GameActionId.TriggerSyncReady,
                     New GameObjectIdJar().Named("trigger thread"))
         '''<summary>Occurs when a TriggerSleepAction or TriggerSyncReady finish.</summary>
         '''<remarks>Used for TriggerSleepAction to avoid desyncs because it inexplicably waits in real time instead of game time.</remarks>
         Public Shared ReadOnly TriggerSleepOrSyncFinished As Definition(Of NamedValueMap) = Define(GameActionId.TriggerSleepOrSyncFinished,
-                    New GameObjectIdJar().Named("trigger thread"),
-                    New UInt32Jar().Named("thread wait count"))
+                         New GameObjectIdJar().Named("trigger thread").
+                    Then(New UInt32Jar().Named("thread wait count")))
     End Class
 End Namespace

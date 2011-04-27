@@ -49,13 +49,13 @@ Namespace Warden
 
     Public NotInheritable Class ClientPacket
         Private ReadOnly _id As WardenPacketId
-        Private ReadOnly _payload As ISimplePickle
+        Private ReadOnly _payload As IPickle(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(id As WardenPacketId, payload As ISimplePickle)
+        Private Sub New(id As WardenPacketId, payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
             Me._payload = payload
             Me._id = id
@@ -66,9 +66,9 @@ Namespace Warden
                 Return _id
             End Get
         End Property
-        Public ReadOnly Property Payload As ISimplePickle
+        Public ReadOnly Property Payload As IPickle(Of Object)
             Get
-                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
                 Return _payload
             End Get
         End Property
@@ -81,17 +81,17 @@ Namespace Warden
             Private Sub New()
             End Sub
 
-            Public Shared ReadOnly FullServerConnect As New TupleJar(
-                    New UInt32Jar(showHex:=True).Named("cookie"),
-                    New EnumUInt32Jar(Of ClientType)().Named("client type"),
-                    New DataJar().DataSizePrefixed(prefixSize:=2).Named("seed"),
-                    New UTF8Jar().NullTerminated.Named("username"),
-                    New DataJar().DataSizePrefixed(prefixSize:=2).Named("password"),
-                    New DataJar().Named("unspecified"))
-            Public Shared ReadOnly FullServiceHandleWardenPacket As New TupleJar(
-                    New UInt32Jar(showHex:=True).Named("cookie"),
-                    New DataJar().DataSizePrefixed(prefixSize:=2).Named("raw warden packet data"),
-                    New DataJar().Named("unspecified"))
+            Public Shared ReadOnly FullServerConnect As TupleJar =
+                    New UInt32Jar(showHex:=True).Named("cookie").
+                    Then(New EnumUInt32Jar(Of ClientType)().Named("client type")).
+                    Then(New DataJar().DataSizePrefixed(prefixSize:=2).Named("seed")).
+                    Then(New UTF8Jar().NullTerminated.Named("username")).
+                    Then(New DataJar().DataSizePrefixed(prefixSize:=2).Named("password")).
+                    Then(New DataJar().Named("unspecified"))
+            Public Shared ReadOnly FullServiceHandleWardenPacket As TupleJar =
+                    New UInt32Jar(showHex:=True).Named("cookie").
+                    Then(New DataJar().DataSizePrefixed(prefixSize:=2).Named("raw warden packet data")).
+                    Then(New DataJar().Named("unspecified"))
         End Class
 
         Public Shared Function MakeFullServiceConnect(cookie As UInteger, seed As UInteger) As ClientPacket
@@ -117,12 +117,12 @@ Namespace Warden
 
     <DebuggerDisplay("{ToString()}")>
     Public Class ServerPacket
-        Private Shared ReadOnly DataJar As New TupleJar(
-                    New EnumByteJar(Of WardenPacketId)().Named("type"),
-                    New UInt32Jar().Named("cookie"),
-                    New ByteJar().Named("result"),
-                    New DataJar().DataSizePrefixed(prefixSize:=2).Named("data"),
-                    New DataJar().Named("unspecified"))
+        Private Shared ReadOnly DataJar As TupleJar =
+                    New EnumByteJar(Of WardenPacketId)().Named("type").
+                    Then(New UInt32Jar().Named("cookie")).
+                    Then(New ByteJar().Named("result")).
+                    Then(New DataJar().DataSizePrefixed(prefixSize:=2).Named("data")).
+                    Then(New DataJar().Named("unspecified"))
 
         Private ReadOnly _id As WardenPacketId
         Private ReadOnly _cookie As UInt32
@@ -152,7 +152,7 @@ Namespace Warden
         Public Shared Function FromData(packetData As IRist(Of Byte)) As ServerPacket
             Contract.Requires(packetData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ServerPacket)() IsNot Nothing)
-            Dim vals = dataJar.Parse(packetData).Value
+            Dim vals = DataJar.Parse(packetData).Value
             Return New ServerPacket(Id:=vals.ItemAs(Of WardenPacketId)("type"),
                                     Cookie:=vals.ItemAs(Of UInt32)("cookie"),
                                     Result:=vals.ItemAs(Of Byte)("result"),
