@@ -71,9 +71,6 @@ Namespace Commands
         ''' Splits text into tokens separated by spaces and fused by brackets.
         ''' </summary>
         <Pure()>
-        <SuppressMessage("Microsoft.Contracts", "Requires-45-104")>
-        <SuppressMessage("Microsoft.Contracts", "Requires-45-239")>
-        <SuppressMessage("Microsoft.Contracts", "Requires-45-389")>
         Public Shared Function Tokenize(text As String) As IEnumerable(Of String) 'verification disabled due to stupid verifier
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)

@@ -81,7 +81,6 @@ Namespace WC3.Protocol
         Public Overrides Function SubJar() As IJar(Of KeyValuePair(Of GameActionId, Object))
             Return DataJar
         End Function
-        <SuppressMessage("Microsoft.Contracts", "Ensures-33-18")>
         Public Overrides Function PackRaw(value As GameAction) As KeyValuePair(Of GameActionId, Object)
             Return value
         End Function

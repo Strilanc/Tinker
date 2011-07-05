@@ -106,8 +106,6 @@
                        firstBlockOffset As UInt32,
                        decompressedSize As UInt32)
             Contract.Requires(subStream IsNot Nothing)
-            Contract.Requires(blockCount >= 0)
-            Contract.Requires(firstBlockOffset >= 0)
             Me._stream = subStream
             Me._blockCount = blockCount
             Me._length = decompressedSize

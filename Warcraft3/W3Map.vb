@@ -333,7 +333,9 @@ Namespace WC3
                 If Me.FileSize <> stream.Length Then Throw New InvalidStateException("Modified map file.")
                 Contract.Assume(pos < stream.Length)
                 stream.Position = pos
-                Return stream.Read(CInt(size))
+                Dim r = stream.Read(CInt(size))
+                Contract.Assume(r.Count <= size)
+                Return r
             End Using
         End Function
 
@@ -546,7 +548,6 @@ Namespace WC3
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
 
-            Contract.Assume(mapArchive IsNot Nothing)
             Using stream = mapArchive.OpenFileByName("war3map.w3i")
                 Dim fileFormat = CType(stream.ReadUInt32(), MapInfoFormatVersion)
                 If Not fileFormat.EnumValueIsDefined Then
@@ -674,6 +675,7 @@ Namespace WC3
                                         team:=0))
             Next item
 
+            Contract.Assume(lobbySlots.Count <= 12)
             Contract.Assume(lobbySlots.Count <= rawSlotCount)
             CheckIOData(lobbySlots.Count > 0, "Map contains no lobby slots.")
             Return lobbySlots.AsRist()

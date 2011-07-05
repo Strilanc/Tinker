@@ -170,7 +170,6 @@ Namespace WC3.Protocol
                                         downloader As PlayerId,
                                         uploader As PlayerId,
                                         Optional mapTransferKey As UInt32 = 1) As Packet
-            Contract.Requires(filePosition >= 0)
             Contract.Requires(fileData IsNot Nothing)
             Contract.Requires(downloader <> uploader)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)

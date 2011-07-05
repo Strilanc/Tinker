@@ -32,7 +32,7 @@
     <AssemblyOriginatorKeyFile>StrilancWeak.snk</AssemblyOriginatorKeyFile>
     <TargetFrameworkProfile />
     <LangVersion />
-    <CodeContractsAssemblyMode>0</CodeContractsAssemblyMode>
+    <CodeContractsAssemblyMode>1</CodeContractsAssemblyMode>
     <PublishUrl>C:\Users\Craig\Desktop\Installer\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>

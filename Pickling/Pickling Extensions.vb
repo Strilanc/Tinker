@@ -31,7 +31,7 @@
         End Function
 
         <Extension()> <Pure()>
-        <SuppressMessage("Microsoft.Contracts", "Requires-12-59")>
+        <SuppressMessage("Microsoft.Contracts", "Requires-12-64")>
         Public Function PackPickle(Of T, TValue As T)(jar As IJar(Of T), value As TValue) As IPickle(Of TValue)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
@@ -83,7 +83,6 @@
             End If
         End Function
         <Extension()> <Pure()>
-        <SuppressMessage("Microsoft.Contracts", "Requires-45-196")>
         Public Function SplitListDescription(text As String, Optional usedSingleLineDescription As Boolean = False) As IEnumerable(Of String)
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)

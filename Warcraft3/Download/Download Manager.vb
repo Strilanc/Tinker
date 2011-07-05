@@ -306,33 +306,24 @@ Namespace WC3.Download
         ''' </summary>
         <Pure()>
         Private Function TryFindImprovableTransfer() As Transfer
-            For Each transfer In From client In AllClients
-                                 Where client.HasReported
-                                 Where Not client.ReportedHasFile
-                                 Where client.Transfer IsNot Nothing
-                                 Order By client.EstimatedBandwidthPerSecond Descending
-                                 Select t = client.Transfer
-                                 Where t.Duration > MinSwitchPeriod
-                                 Where t.ExpectedDurationRemaining > MinSwitchPeriod
-                Contract.Assume(transfer IsNot Nothing)
-                Dim downloader = transfer.Downloader
-                Dim remainingData = _map.FileSize - transfer.ReportedPosition
-                Dim curExpectedCost = transfer.ExpectedDurationRemaining.TotalSeconds
-
-                'expected cost of switching and downloading from another uploader
-                Dim bestAvailableUploader = downloader.FindBestAvailableUploader()
-                If bestAvailableUploader Is Nothing Then Continue For
-                Dim newBandwidthPerSecond = Math.Min(downloader.EstimatedBandwidthPerSecond,
-                                                     bestAvailableUploader.EstimatedBandwidthPerSecond)
-                Dim newExpectedCost = SwitchPenaltyPeriod.TotalSeconds + SwitchPenaltyFactor * remainingData / newBandwidthPerSecond
-
-                'check
-                If newExpectedCost < curExpectedCost Then
-                    Return transfer
-                End If
-            Next transfer
-
-            Return Nothing
+            Return (From client In AllClients
+                    Where client.HasReported
+                    Where Not client.ReportedHasFile
+                    Where client.Transfer IsNot Nothing
+                    Let transfer = client.Transfer
+                    Where transfer.Duration > MinSwitchPeriod
+                    Where transfer.ExpectedDurationRemaining > MinSwitchPeriod
+                    Let downloader = transfer.Downloader
+                    Let bestAvailableUploader = downloader.TryFindBestAvailableUploader()
+                    Where bestAvailableUploader IsNot Nothing
+                    Let remainingData = _map.FileSize - transfer.ReportedPosition
+                    Let newBandwidthPerSecond = Math.Min(downloader.EstimatedBandwidthPerSecond, bestAvailableUploader.EstimatedBandwidthPerSecond)
+                    Let newExpectedCost = SwitchPenaltyPeriod.TotalSeconds + SwitchPenaltyFactor * remainingData / newBandwidthPerSecond
+                    Let curExpectedCost = transfer.ExpectedDurationRemaining.TotalSeconds
+                    Where newExpectedCost < curExpectedCost
+                    Order By client.EstimatedBandwidthPerSecond Descending
+                    Select transfer
+                    ).FirstOrDefault()
         End Function
 
         '''<summary>Starts and stops transfers, trying to minimize the total transfer time.</summary>
@@ -344,7 +335,7 @@ Namespace WC3.Download
                                    Where client.Transfer Is Nothing
                                    Where client.IsSteady
                 Contract.Assume(downloader IsNot Nothing)
-                Dim bestAvailableUploader = downloader.FindBestAvailableUploader()
+                Dim bestAvailableUploader = downloader.TryFindBestAvailableUploader()
                 If bestAvailableUploader Is Nothing Then Continue For
                 Contract.Assume(bestAvailableUploader.IsSteady)
                 Contract.Assume(bestAvailableUploader.HasReported)

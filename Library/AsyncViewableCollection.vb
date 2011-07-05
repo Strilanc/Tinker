@@ -25,7 +25,6 @@ Public Class ObservableCollection(Of T)
         Me.outQueue = If(outQueue, MakeTaskedCallQueue())
     End Sub
 
-    <SuppressMessage("Microsoft.Contracts", "Ensures-28-62")>
     Public Sub Add(item As T) Implements ICollection(Of T).Add
         _items.Add(item)
         outQueue.QueueAction(Sub() RaiseEvent Added(item))
@@ -46,7 +45,8 @@ Public Class ObservableCollection(Of T)
     Public Function Contains(item As T) As Boolean Implements ICollection(Of T).Contains
         Return _items.Contains(item)
     End Function
-    Public Sub CopyTo(array() As T, arrayIndex As Integer) Implements ICollection(Of T).CopyTo
+    Public Sub CopyTo(array As T(), arrayIndex As Integer) Implements ICollection(Of T).CopyTo
+        If arrayIndex >= array.Length Then Throw New ArgumentException("arrayIndex >= array.Length")
         _items.CopyTo(array, arrayIndex)
     End Sub
     Public ReadOnly Property Count As Integer Implements ICollection(Of T).Count

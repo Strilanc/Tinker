@@ -73,7 +73,6 @@ Namespace Bnet
             Me._privateKey = privateKey
             Me._publicKey = BigInteger.ModPow(G, _privateKey, N)
             Contract.Assume(_publicKey >= 0)
-            Contract.Assume(Me.UserName = _userName)
         End Sub
         ''' <summary>Creates client credentials for the given username and password, with a public/private key pair generated using the given random number generator.</summary>
         ''' <param name="username">The client's username.</param>

@@ -47,7 +47,6 @@ Namespace Pickling
                       "{0}: {1}".Frmt(keyDesc, valueDesc),
                       "{0}, {1}".Frmt(keyDesc, valueDesc))
         End Function
-        <SuppressMessage("Microsoft.Contracts", "Requires-36-179")>
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-210")>
         Public Overrides Function Parse(text As String) As KeyValuePair(Of TKey, Object)
             Dim divider = If(_useSingleLineDescription, ":", ",")

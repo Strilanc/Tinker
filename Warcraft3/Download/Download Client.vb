@@ -165,7 +165,7 @@ Namespace WC3.Download
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().Transfer Is Nothing")>
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().ReportedHasFile")>
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().IsSteady")>
-        Public Function FindBestAvailableUploader() As TransferClient
+        Public Function TryFindBestAvailableUploader() As TransferClient
             Contract.Ensures(Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().HasReported)
             Contract.Ensures(Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().Transfer Is Nothing)
             Contract.Ensures(Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().ReportedHasFile)

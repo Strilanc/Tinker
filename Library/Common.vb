@@ -233,12 +233,13 @@ Public Module PoorlyCategorizedFunctions
         Return "({0}) {1}".Frmt(ex.GetType.Name, ex.Message)
     End Function
 
+    <SuppressMessage("Microsoft.Contracts", "Requires-56-268")>
     Public Function FindFilesMatching(fileQuery As String,
                                       likeQuery As InvariantString,
                                       directory As InvariantString,
-                                      maxResults As Integer) As IList(Of String)
+                                      maxResults As Integer) As IRist(Of String)
         Contract.Requires(fileQuery IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IRist(Of String))() IsNot Nothing)
 
         If Not directory.EndsWith(IO.Path.DirectorySeparatorChar) AndAlso Not directory.EndsWith(IO.Path.AltDirectorySeparatorChar) Then
             directory += IO.Path.DirectorySeparatorChar
@@ -261,7 +262,7 @@ Public Module PoorlyCategorizedFunctions
                 Select relativePath = filepath.Substring(directory.Length)
                 Where relativePath Like likeQuery
                 Where relativePath Like dirQuery
-                ).Take(maxResults).ToList
+                ).Take(maxResults).ToRist()
     End Function
     Public Function GetDataFolderPath(subfolder As String) As String
         Contract.Requires(subfolder IsNot Nothing)
@@ -454,6 +455,7 @@ Public Module PoorlyCategorizedFunctions
                 ).ToRist
     End Function
 
+    <Pure()>
     Public Sub CheckIOData(clause As Boolean, message As String)
         Contract.Requires(message IsNot Nothing)
         Contract.Ensures(clause)

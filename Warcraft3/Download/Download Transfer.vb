@@ -21,10 +21,10 @@ Namespace WC3.Download
         End Sub
 
         Public Sub New(downloader As TransferClient,
-                           uploader As TransferClient,
-                           startingPosition As UInt32,
-                           filesize As UInt32,
-                           clock As IClock)
+                       uploader As TransferClient,
+                       startingPosition As UInt32,
+                       filesize As UInt32,
+                       clock As IClock)
             Contract.Requires(downloader IsNot Nothing)
             Contract.Requires(uploader IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
