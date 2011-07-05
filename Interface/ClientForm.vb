@@ -16,7 +16,7 @@ Public Class ClientForm
             CacheIPAddresses()
 
             CachedWC3InfoProvider.TryCache(My.Settings.war3path.AssumeNotNull)
-            InitBot()
+            InitBot(New ProgramClock())
             InitMainControl()
             InitFinish()
             _exceptionForm.WindowState = FormWindowState.Minimized
@@ -31,15 +31,15 @@ Public Class ClientForm
             Me.Close()
         End Try
     End Sub
-    Private Sub InitBot()
+    Private Sub InitBot(clock As IClock)
         Contract.Requires(_bot Is Nothing)
         Contract.Ensures(_bot IsNot Nothing)
 
         _bot = New Bot.MainBot()
         _bot.Components.QueueAddComponent(New Bot.MainBotManager(_bot))
-        Bot.IncludeBasicBotCommands(_bot)
-        Bot.IncludeBasicBnetClientCommands(_bot)
-        Bot.IncludeBasicLanAdvertiserCommands(_bot)
+        Bot.IncludeBasicBotCommands(_bot, clock)
+        Bot.IncludeBasicBnetClientCommands(_bot, clock)
+        Bot.IncludeBasicLanAdvertiserCommands(_bot, clock)
         Bot.IncludeBasicGameServerCommands(_bot)
         Bot.IncludeBasicCKLServerCommands(_bot)
 

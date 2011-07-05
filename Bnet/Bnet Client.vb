@@ -217,13 +217,19 @@ Namespace Bnet
                         Protocol.Packets.ServerToClient.Null,
                         Protocol.Packets.ServerToClient.GetFileTime,
                         Protocol.Packets.ServerToClient.GetIconData,
-                        Protocol.Packets.ServerToClient.QueryGamesList,
+                        Protocol.Packets.ServerToClient.QueryGamesList(_clock),
                         Protocol.Packets.ServerToClient.FriendsUpdate,
                         Protocol.Packets.ServerToClient.RequiredWork}
                 _packetHandlerLogger.TryIncludeLogger(ignoredPacket.Id, ignoredPacket.Jar)
             Next
         End Sub
 
+        Public ReadOnly Property Clock As IClock
+            Get
+                Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
+                Return _clock
+            End Get
+        End Property
         Public ReadOnly Property Profile As Bot.ClientProfile
             Get
                 Contract.Ensures(Contract.Result(Of Bot.ClientProfile)() IsNot Nothing)

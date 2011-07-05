@@ -137,7 +137,7 @@ Namespace Bnet
 
                 'Setup busy message
                 Dim finishedLock = New OnetimeLock()
-                Call New SystemClock().AsyncWait(2.Seconds).ContinueWithAction(
+                Call _client.Clock.AsyncWait(2.Seconds).ContinueWithAction(
                     Sub()
                         If Not finishedLock.TryAcquire Then Return
                         _client.QueueSendWhisper(user.Name, "Command '{0}' is running...".Frmt(text))

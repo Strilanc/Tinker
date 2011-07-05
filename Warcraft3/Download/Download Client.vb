@@ -17,7 +17,7 @@ Namespace WC3.Download
 
         Private _transfer As Transfer
         Private _expectedState As Protocol.MapTransferState = Protocol.MapTransferState.Idle
-        Private _lastActivityClock As RelativeClock
+        Private _lastActivityClock As IClock
         Public Property LastSendPosition As UInt32
 
         Private _lastTransferPartner As TransferClient

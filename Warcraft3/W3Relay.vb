@@ -29,7 +29,7 @@
                                                            game.GameType,
                                                            game.GameState,
                                                            game.UsedSlotCount,
-                                                           ageClock:=New SystemClock().StartingAt(game.AgeClock.ElapsedTime))
+                                                           ageClock:=_remoteGame.AgeClock.StartingAt(game.AgeClock.ElapsedTime))
                 Me._localGame = New LocalGameDescription(_localGame.Name,
                                                          _localGame.GameStats,
                                                          _localGame.Port,
@@ -39,7 +39,7 @@
                                                          game.GameType,
                                                          game.GameState,
                                                          game.UsedSlotCount,
-                                                         ageClock:=New SystemClock().StartingAt(game.AgeClock.ElapsedTime))
+                                                         ageClock:=_localGame.AgeClock.StartingAt(game.AgeClock.ElapsedTime))
             End Sub
             Public ReadOnly Property RemoteGame As RemoteGameDescription
                 Get
@@ -89,7 +89,7 @@
                                                      gametype:=game.GameType,
                                                      state:=game.GameState,
                                                      usedSlotCount:=game.UsedSlotCount,
-                                                     ageClock:=New SystemClock().StartingAt(game.AgeClock.ElapsedTime))
+                                                     ageClock:=game.AgeClock.StartingAt(game.AgeClock.ElapsedTime))
             _games(_gameCount) = New GamePair(game, localGame)
             Return _gameCount
         End Function

@@ -15,8 +15,9 @@ Namespace WC3
         Private ReadOnly inQueue As CallQueue
         Private ReadOnly otherPlayers As New List(Of W3Peer)
         Private ReadOnly logger As Logger
+        Private ReadOnly _clock As IClock
         Private WithEvents socket As W3Socket
-        Private WithEvents accepter As New W3PeerConnectionAccepter(New SystemClock())
+        Private WithEvents accepter As W3PeerConnectionAccepter
         Public readyDelay As TimeSpan = TimeSpan.Zero
         Private index As PlayerId
         Private dl As MapDownload
@@ -31,23 +32,28 @@ Namespace WC3
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(otherPlayers IsNot Nothing)
             Contract.Invariant(_playerHooks IsNot Nothing)
+            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_packetHandlerLogger IsNot Nothing)
         End Sub
 
         Public Sub New(name As InvariantString,
                        poolPort As PortPool.PortHandle,
+                       clock As IClock,
                        Optional logger As Logger = Nothing,
                        Optional mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
-            Me.New(name, poolPort.Port, logger, mode)
+            Me.New(name, clock, poolPort.Port, logger, mode)
             Contract.Requires(poolPort IsNot Nothing)
             Me.poolPort = poolPort
         End Sub
         Public Sub New(name As InvariantString,
+                       clock As IClock,
                        Optional listenPort As UShort = 0,
                        Optional logger As Logger = Nothing,
                        Optional mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
+            Me.accepter = New W3PeerConnectionAccepter(clock)
             Me.name = name
             Me.mode = mode
+            Me._clock = clock
             Me.listenPort = listenPort
             Me.inQueue = MakeTaskedCallQueue()
             Me.logger = If(logger, New Logger)
@@ -89,7 +95,7 @@ Namespace WC3
                                                    remoteendpoint:=DirectCast(tcp.Client.RemoteEndPoint, Net.IPEndPoint),
                                                    timeout:=60.Seconds,
                                                    logger:=Me.logger,
-                                                   clock:=New SystemClock))
+                                                   clock:=_clock))
 
             AddQueuedPacketHandler(Protocol.ServerPackets.Greet, AddressOf OnReceiveGreet)
             AddQueuedPacketHandler(Protocol.ServerPackets.HostMapInfo, AddressOf OnReceiveHostMapInfo)
@@ -163,7 +169,7 @@ Namespace WC3
             If mode = DummyPlayerMode.DownloadMap Then
                 Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
             ElseIf mode = DummyPlayerMode.EnterGame Then
-                Call New SystemClock().AsyncWait(readyDelay).ContinueWithAction(Sub() socket.SendPacket(Protocol.MakeReady()))
+                Call _clock.AsyncWait(readyDelay).ContinueWithAction(Sub() socket.SendPacket(Protocol.MakeReady()))
             End If
         End Sub
         Private Sub OnReceiveTick(pickle As IPickle(Of NamedValueMap))

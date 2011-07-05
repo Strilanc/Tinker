@@ -28,7 +28,7 @@
         Private _tickPeriod As TimeSpan
         Private _lagLimit As TimeSpan
         Private _tickClock As RelativeClock
-        Private _lagClock As RelativeClock
+        Private _lagClock As IClock
         Private ReadOnly _init As New OnetimeLock
 
         Public Event ReceivedPlayerActions(sender As GameMotor, player As Player, actions As IRist(Of Protocol.GameAction))

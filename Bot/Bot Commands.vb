@@ -3,11 +3,17 @@ Imports Tinker.Commands
 Namespace Bot.Commands
     Public NotInheritable Class CommandConnect
         Inherits BaseCommand(Of MainBot)
-        Public Sub New()
+        Private ReadOnly _clock As IClock
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
+        End Sub
+        Public Sub New(clock As IClock)
             MyBase.New(Name:="Connect",
                        Format:="profile1 profile2 ...",
                        Description:="Creates and connects bnet clients, using the given profiles. All of the clients will be set to automatic hosting.",
                        Permissions:="root:4")
+            Contract.Requires(clock IsNot Nothing)
+            Me._clock = clock
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As String) As Task(Of String)
@@ -38,8 +44,7 @@ Namespace Bot.Commands
             Contract.Assume(profileName IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task(Of Bnet.ClientComponent))() IsNot Nothing)
 
-            Dim clock = New SystemClock()
-            Dim clientComponent = Bnet.ClientComponent.FromProfile(profileName, profileName, clock, parent)
+            Dim clientComponent = Bnet.ClientComponent.FromProfile(profileName, profileName, _clock, parent)
             Try
                 clientComponent.QueueSetAutomatic(True)
                 Await parent.Components.QueueAddComponent(clientComponent)
@@ -59,19 +64,25 @@ Namespace Bot.Commands
     Public NotInheritable Class CommandCreateAdminGame
         Inherits TemplatedCommand(Of MainBot)
 
-        Public Sub New()
+        Private ReadOnly _clock As IClock
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
+        End Sub
+        Public Sub New(clock As IClock)
             MyBase.New(Name:="CreateAdminGame",
                        template:="name password=x",
                        Description:="Picks or creates a game server, and adds an admin game to it.",
                        Permissions:="local:1",
                        hasPrivateArguments:=True)
+            Contract.Requires(clock IsNot Nothing)
+            Me._clock = clock
         End Sub
 
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overloads Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim name = argument.RawValue(0)
             Dim password = argument.NamedValue("password")
-            Dim server = Await target.QueueGetOrConstructGameServer()
+            Dim server = Await target.QueueGetOrConstructGameServer(_clock)
             Dim game = Await server.QueueAddAdminGame(name, password)
             Return "Added admin game to server. Use Lan Advertiser on auto to advertise it."
         End Function
@@ -79,11 +90,17 @@ Namespace Bot.Commands
 
     Public NotInheritable Class CommandCreateCKL
         Inherits TemplatedCommand(Of MainBot)
-        Public Sub New()
+        Private ReadOnly _clock As IClock
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
+        End Sub
+        Public Sub New(clock As IClock)
             MyBase.New(Name:="CreateCKL",
                        Description:="Starts a CD Key Lending server that others can connect to and use to logon to bnet. This will NOT allow others to learn your cd keys, but WILL allow them to logon with your keys ONCE.",
                        template:="name",
                        Permissions:="root:5")
+            Contract.Requires(clock IsNot Nothing)
+            Me._clock = clock
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overloads Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
@@ -92,7 +109,7 @@ Namespace Bot.Commands
             Dim name = argument.RawValue(0)
             Dim server = New CKL.Server(name:=name,
                                         listenport:=port,
-                                        clock:=New SystemClock())
+                                        clock:=_clock)
             Dim manager = New CKL.ServerManager(server)
             Try
                 Await target.Components.QueueAddComponent(manager)
@@ -106,19 +123,24 @@ Namespace Bot.Commands
 
     Public NotInheritable Class CommandCreateClient
         Inherits TemplatedCommand(Of MainBot)
-        Public Sub New()
+        Private ReadOnly _clock As IClock
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
+        End Sub
+        Public Sub New(clock As IClock)
             MyBase.New(Name:="CreateClient",
                        template:="name -profile=default -auto",
                        Description:="Creates a new bnet client. -Auto causes the client to automatically advertising any games hosted by the bot.",
                        Permissions:="root:4")
+            Contract.Requires(clock IsNot Nothing)
+            Me._clock = clock
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim profileName = If(argument.TryGetOptionalNamedValue("profile"), "default").ToInvariant
             Dim clientName = argument.RawValue(0).ToInvariant
 
-            Dim clock = New SystemClock()
-            Dim clientComponent = Bnet.ClientComponent.FromProfile(clientName, profileName, clock, target)
+            Dim clientComponent = Bnet.ClientComponent.FromProfile(clientName, profileName, _clock, target)
             Try
                 Await target.Components.QueueAddComponent(clientComponent)
                 If argument.HasOptionalSwitch("auto") Then clientComponent.QueueSetAutomatic(True)
@@ -132,11 +154,17 @@ Namespace Bot.Commands
 
     Public NotInheritable Class CommandCreateLan
         Inherits TemplatedCommand(Of MainBot)
-        Public Sub New()
+        Private ReadOnly _clock As IClock
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
+        End Sub
+        Public Sub New(clock As IClock)
             MyBase.New(Name:="CreateLan",
                        template:="name -receiver=localhost -manual",
                        Description:="Creates a lan advertiser. -Manual causes the advertiser to not automatically advertise any games hosted by the bot.",
                        Permissions:="root:4")
+            Contract.Requires(clock IsNot Nothing)
+            Me._clock = clock
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
@@ -144,7 +172,7 @@ Namespace Bot.Commands
             Dim remoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
             Dim auto = Not argument.HasOptionalSwitch("manual")
 
-            Dim advertiser = New Lan.UDPAdvertiser(New CachedWC3InfoProvider(), New SystemClock(), remoteHost)
+            Dim advertiser = New Lan.UDPAdvertiser(New CachedWC3InfoProvider(), _clock, remoteHost)
             Dim advertiserComponent = New Lan.UDPAdvertiserComponent(name, target, advertiser)
             Try
                 If auto Then advertiserComponent.QueueSetAutomatic(auto)
@@ -204,7 +232,11 @@ Namespace Bot.Commands
 
     Public NotInheritable Class CommandHost
         Inherits TemplatedCommand(Of MainBot)
-        Public Sub New()
+        Private ReadOnly _clock As IClock
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
+        End Sub
+        Public Sub New(clock As IClock)
             MyBase.New(Name:="Host",
                        template:=Concat({"name=<game name>", "map=<search query>"},
                                         WC3.GameSettings.PartialArgumentTemplates,
@@ -212,10 +244,12 @@ Namespace Bot.Commands
                        Description:="Creates a server of a game and advertises it on lan. More help topics under 'Help Host *'.",
                        Permissions:="games:1",
                        extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
+            Contract.Requires(clock IsNot Nothing)
+            Me._clock = clock
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overloads Overrides Async Function PerformInvoke(target As MainBot, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Dim server = Await target.QueueGetOrConstructGameServer()
+            Dim server = Await target.QueueGetOrConstructGameServer(_clock)
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
             Dim name = gameSet.GameSettings.GameDescription.Name
             Dim path = gameSet.GameSettings.GameDescription.GameStats.AdvertisedPath

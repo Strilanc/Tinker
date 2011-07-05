@@ -3,7 +3,7 @@
 Public Class ExceptionForm
     Private _exceptions As New List(Of Tuple(Of String, Exception))()
     Private inQueue As CallQueue = MakeControlCallQueue(Me)
-    Private ReadOnly _addThrottle As New Throttle(1.Seconds, New SystemClock())
+    Private ReadOnly _addThrottle As New Throttle(1.Seconds, New PhysicalClock())
 
     Public Sub New()
         InitializeComponent()

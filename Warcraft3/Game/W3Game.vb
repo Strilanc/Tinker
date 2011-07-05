@@ -26,8 +26,8 @@ Namespace WC3
         Private ReadOnly _name As InvariantString
         Private ReadOnly _started As New OnetimeLock
         Private ReadOnly _settings As GameSettings
-        Private ReadOnly _updateEventThrottle As New Throttle(cooldown:=100.Milliseconds, clock:=New SystemClock())
-        Private ReadOnly _slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds, clock:=New SystemClock())
+        Private ReadOnly _updateEventThrottle As Throttle
+        Private ReadOnly _slotStateUpdateThrottle As Throttle
 
         Private ReadOnly _lobby As GameLobby
         Private ReadOnly _motor As GameMotor
@@ -90,6 +90,8 @@ Namespace WC3
             Me._motor = motor
             Me._kernel = kernel
             Me._loadScreen = loadScreen
+            Me._updateEventThrottle = New Throttle(cooldown:=100.Milliseconds, Clock:=kernel.Clock)
+            Me._slotStateUpdateThrottle = New Throttle(cooldown:=250.Milliseconds, Clock:=kernel.Clock)
         End Sub
 
         Public Shared Function FromSettings(settings As GameSettings,
@@ -212,6 +214,12 @@ Namespace WC3
                 End Sub))
         End Function
 
+        Public ReadOnly Property Clock As IClock
+            Get
+                Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
+                Return _kernel.Clock
+            End Get
+        End Property
         Public ReadOnly Property Logger As Logger
             Get
                 Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)

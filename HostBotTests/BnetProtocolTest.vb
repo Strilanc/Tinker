@@ -378,7 +378,7 @@ Public Class BnetProtocolTest
         Next game
 
         'single game
-        value = Packets.ServerToClient.QueryGamesList.Jar.Parse(ByteRist(
+        value = Packets.ServerToClient.QueryGamesList(New ManualClock()).Jar.Parse(ByteRist(
                     0, 0, 0, 0,
                     0, 0, 0, 0)).Value
         Assert.IsTrue(value.Result = QueryGameResponse.Ok)

@@ -8,8 +8,8 @@ Namespace WC3.Download
         Private ReadOnly _downloader As TransferClient
         Private ReadOnly _uploader As TransferClient
         Private ReadOnly _startingPosition As UInt32
-        Private ReadOnly _durationClock As RelativeClock
-        Private _lastActivityClock As RelativeClock
+        Private ReadOnly _durationClock As IClock
+        Private _lastActivityClock As IClock
         Private _totalProgress As UInt32
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()

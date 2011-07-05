@@ -206,7 +206,11 @@ Namespace Bnet.Commands
 
     Public NotInheritable Class CommandHost
         Inherits TemplatedCommand(Of Bnet.ClientComponent)
-        Public Sub New()
+        Private ReadOnly _clock As IClock
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
+        End Sub
+        Public Sub New(clock As IClock)
             MyBase.New(Name:="Host",
                         template:=Concat({"name=<game name>", "map=<search query>"},
                                          WC3.GameSettings.PartialArgumentTemplates,
@@ -215,10 +219,12 @@ Namespace Bnet.Commands
                         Permissions:="games:1",
                         extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
                                           WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
+            Contract.Requires(clock IsNot Nothing)
+            Me._clock = clock
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As Bnet.ClientComponent, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Dim server = Await target.Bot.QueueGetOrConstructGameServer()
+            Dim server = Await target.Bot.QueueGetOrConstructGameServer(_clock)
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
             Try
                 'Link user to gameSet

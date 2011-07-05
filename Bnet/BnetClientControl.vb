@@ -27,7 +27,7 @@ Namespace Bnet
 
             Me._hooks.Add(Me._client.QueueIncludePacketHandler(Packets.ServerToClient.ChatEvent,
                     handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedChatEvent(Me._client, pickle.Value))))
-            Me._hooks.Add(Me._client.QueueIncludePacketHandler(Packets.ServerToClient.QueryGamesList,
+            Me._hooks.Add(Me._client.QueueIncludePacketHandler(Packets.ServerToClient.QueryGamesList(Me._client.Clock),
                     handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value))))
 
             Me._client.QueueGetState.QueueContinueWithAction(inQueue, Sub(state) OnClientStateChanged(Me._client, state, state))

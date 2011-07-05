@@ -80,11 +80,11 @@ Namespace Bot
             Return Await components.Single.InvokeCommand(user, argument)
         End Function
         <Extension()>
-        Public Function QueueGetOrConstructGameServer(this As MainBot) As Task(Of WC3.GameServerManager)
+        Public Function QueueGetOrConstructGameServer(this As MainBot, clockToUseIfConstructing As IClock) As Task(Of WC3.GameServerManager)
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of WC3.GameServerManager))() IsNot Nothing)
             Return this.Components.QueueFindOrElseConstructComponent(Of WC3.GameServerManager)(
-                factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer(New SystemClock()), this))
+                factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer(clockToUseIfConstructing), this))
         End Function
         <Extension()>
         Public Async Function ObserveGameSets(this As MainBot,
@@ -188,7 +188,7 @@ Namespace Bot
         End Function
 
         <Extension()>
-        Public Function IncludeBasicBotCommands(this As MainBot) As IDisposable
+        Public Function IncludeBasicBotCommands(this As MainBot, clock As IClock) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As MainBotManager) x.Bot
@@ -197,14 +197,14 @@ Namespace Bot
                     New GenericCommands.CommandFindMaps(Of MainBot),
                     New GenericCommands.CommandDownloadMap(Of MainBot),
                     New GenericCommands.CommandRecacheIP(Of MainBot),
-                    New Bot.Commands.CommandConnect(),
-                    New Bot.Commands.CommandCreateAdminGame(),
-                    New Bot.Commands.CommandCreateCKL(),
-                    New Bot.Commands.CommandCreateClient(),
-                    New Bot.Commands.CommandCreateLan(),
+                    New Bot.Commands.CommandConnect(clock),
+                    New Bot.Commands.CommandCreateAdminGame(clock),
+                    New Bot.Commands.CommandCreateCKL(clock),
+                    New Bot.Commands.CommandCreateClient(clock),
+                    New Bot.Commands.CommandCreateLan(clock),
                     New Bot.Commands.CommandDispose(),
                     New Bot.Commands.CommandGet(),
-                    New Bot.Commands.CommandHost(),
+                    New Bot.Commands.CommandHost(clock),
                     New Bot.Commands.CommandListComponents(),
                     New Bot.Commands.CommandLoadPlugin(),
                     New Bot.Commands.CommandSet(),
@@ -213,7 +213,7 @@ Namespace Bot
             )
         End Function
         <Extension()>
-        Public Function IncludeBasicBnetClientCommands(this As MainBot) As IDisposable
+        Public Function IncludeBasicBnetClientCommands(this As MainBot, clock As IClock) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As Bnet.ClientComponent) x.Client
@@ -227,7 +227,7 @@ Namespace Bot
                         New Bnet.Commands.CommandCancelHost,
                         New Bnet.Commands.CommandElevate,
                         New Bnet.Commands.CommandGame,
-                        New Bnet.Commands.CommandHost,
+                        New Bnet.Commands.CommandHost(clock),
                         New Bnet.Commands.CommandAuto
                     },
                     From command In New ICommand(Of Bnet.Client)() {
@@ -247,7 +247,7 @@ Namespace Bot
             )
         End Function
         <Extension()>
-        Public Function IncludeBasicLanAdvertiserCommands(this As MainBot) As IDisposable
+        Public Function IncludeBasicLanAdvertiserCommands(this As MainBot, clock As IClock) As IDisposable
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As Lan.UDPAdvertiserComponent) x.Advertiser
@@ -255,10 +255,10 @@ Namespace Bot
                 Concat(
                     New ICommand(Of Lan.UDPAdvertiserComponent)() {
                         New Lan.Commands.CommandAuto,
-                        New Lan.Commands.CommandHost
+                        New Lan.Commands.CommandHost(clock)
                     },
                     From command In New ICommand(Of Lan.UDPAdvertiser)() {
-                        New Lan.Commands.CommandAdd,
+                        New Lan.Commands.CommandAdd(clock),
                         New Lan.Commands.CommandRemove
                     } Select command.ProjectedFrom(conv)
                 )

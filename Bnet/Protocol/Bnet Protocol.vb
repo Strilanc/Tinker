@@ -325,8 +325,8 @@ Namespace Bnet.Protocol
                     Then(New ByteJar().Named("status")).
                     Then(New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id")).
                     Then(New UTF8Jar().NullTerminated.Named("location")))
-            Public Shared ReadOnly QueryGamesList As Definition(Of QueryGamesListResponse) = Define(PacketId.QueryGamesList,
-                    New QueryGamesListResponseJar(New SystemClock()))
+            Public Shared ReadOnly QueryGamesList As Func(Of IClock, Definition(Of QueryGamesListResponse)) = Function(c) Define(PacketId.QueryGamesList,
+                    New QueryGamesListResponseJar(c))
 
             Public Shared ReadOnly EnterChat As Definition(Of NamedValueMap) = Define(PacketId.EnterChat,
                     New UTF8Jar().NullTerminated.Named("chat username").

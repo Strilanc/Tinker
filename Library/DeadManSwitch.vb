@@ -5,7 +5,7 @@
 Public NotInheritable Class DeadManSwitch
     Private ReadOnly _period As TimeSpan
     Private _isArmed As Boolean
-    Private _timer As RelativeClock
+    Private _timer As IClock
     Private _waitRunning As Boolean
     Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
 
