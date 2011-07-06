@@ -27,7 +27,7 @@
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of INamedJar(Of Object))() IsNot Nothing)
             Return If(TryCast(jar, INamedJar(Of Object)),
-                      DirectCast(jar, IJar(Of T)).Weaken().Named(jar.Name))
+                      jar.SubJar.Weaken().Named(jar.Name))
         End Function
 
         <Extension()> <Pure()>

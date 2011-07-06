@@ -20,6 +20,7 @@
     '''<summary>A named jar which parses data and packs values into pickles.</summary>
     Public Interface INamedJar(Of T)
         Inherits IJar(Of T)
+        ReadOnly Property SubJar As IJar(Of T)
         ReadOnly Property Name As InvariantString
     End Interface
 

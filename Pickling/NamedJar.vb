@@ -16,6 +16,11 @@ Namespace Pickling
                 Return _name
             End Get
         End Property
+        Public Shadows ReadOnly Property SubJar As IJar(Of T) Implements INamedJar(Of T).SubJar
+            Get
+                Return MyBase.SubJar
+            End Get
+        End Property
 
         Public Overrides Function Describe(value As T) As String
             Return "{0}: {1}".Frmt(Name, SubJar.Describe(value))
