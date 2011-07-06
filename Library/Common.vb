@@ -17,6 +17,13 @@ Public Module PoorlyCategorizedFunctions
         End Using
     End Function
 
+    <Extension()>
+    Public Function GetQueueContext(queue As CallQueue) As Task
+        Dim t = New TaskCompletionSource(Of NoValue)()
+        queue.QueueAction(Sub() t.SetResult(Nothing))
+        Return t.Task
+    End Function
+
     'verification disabled due to inadequate verifier
     <ContractVerification(False)>
     <Pure()>
