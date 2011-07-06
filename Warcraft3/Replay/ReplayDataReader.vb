@@ -174,14 +174,15 @@
             Contract.Ensures(Contract.Result(Of IRist(Of Byte))() IsNot Nothing)
 
             Dim blockInfo = ReadBlockInfo(blockIndex)
-            If blockInfo.BlockLength < Format.BlockHeaderSize Then Throw New IO.IOException("Invalid block.")
+            Dim bodyLength = CInt(blockInfo.BlockLength - Format.BlockHeaderSize)
+            If bodyLength < 0 Then Throw New IO.IOException("Invalid block.")
             If blockInfo.BlockPosition + blockInfo.BlockLength >= _stream.Length Then Throw New IO.IOException("Invalid block.")
             'Checksum
             Dim headerCRC32 = _stream.ReadExactAt(position:=blockInfo.BlockPosition,
                                                   exactCount:=4
                                                   ).Concat({0, 0, 0, 0}).CRC32
             Dim bodyCRC32 = _stream.ReadExactAt(position:=blockInfo.BlockPosition + Format.BlockHeaderSize,
-                                                exactCount:=CInt(blockInfo.BlockLength - Format.BlockHeaderSize)
+                                                exactCount:=bodyLength
                                                 ).CRC32
             Dim checksum = ((bodyCRC32 Xor (bodyCRC32 << 16)) And &HFFFF0000UI) Or
                            ((headerCRC32 Xor (headerCRC32 >> 16)) And &HFFFFUI)

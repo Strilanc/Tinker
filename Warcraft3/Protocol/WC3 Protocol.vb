@@ -81,7 +81,8 @@ Namespace WC3.Protocol
     <Flags()>
     Public Enum GameTypes As UInteger
         None = 0
-        Unknown0 = 1 << 0 '[always seems to be set in replays and custom games?]
+        UnknownButSeen0 = 1 << 0 '[always seems to be set in replays and custom games?]
+        UnknownButSeen1 = 1 << 1
 
         '''<summary>Setting this bit causes wc3 to check the map and disc if it is not signed by Blizzard</summary>
         AuthenticatedMakerBlizzard = 1 << 3

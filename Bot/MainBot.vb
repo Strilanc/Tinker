@@ -190,6 +190,7 @@ Namespace Bot
         <Extension()>
         Public Function IncludeBasicBotCommands(this As MainBot, clock As IClock) As IDisposable
             Contract.Requires(this IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As MainBotManager) x.Bot
             Return this.IncludeCommandsInAllComponentsOfType(Of Bot.MainBotManager)(
@@ -215,6 +216,7 @@ Namespace Bot
         <Extension()>
         Public Function IncludeBasicBnetClientCommands(this As MainBot, clock As IClock) As IDisposable
             Contract.Requires(this IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As Bnet.ClientComponent) x.Client
             Return this.IncludeCommandsInAllComponentsOfType(Of Bnet.ClientComponent)(
@@ -249,6 +251,7 @@ Namespace Bot
         <Extension()>
         Public Function IncludeBasicLanAdvertiserCommands(this As MainBot, clock As IClock) As IDisposable
             Contract.Requires(this IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As Lan.UDPAdvertiserComponent) x.Advertiser
             Return this.IncludeCommandsInAllComponentsOfType(Of Lan.UDPAdvertiserComponent)(

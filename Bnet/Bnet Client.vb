@@ -102,7 +102,7 @@ Namespace Bnet
                     Dim gameState = Protocol.GameStates.Unknown0x10.EnumUInt32WithSet(Protocol.GameStates.Full, useFull
                                                                   ).EnumUInt32WithSet(Protocol.GameStates.Private, IsPrivate)
 
-                    Dim gameType = BaseGameDescription.GameType Or WC3.Protocol.GameTypes.Unknown0
+                    Dim gameType = BaseGameDescription.GameType Or WC3.Protocol.GameTypes.UnknownButSeen0
                     gameType = gameType.EnumUInt32WithSet(WC3.Protocol.GameTypes.PrivateGame, IsPrivate)
                     Select Case BaseGameDescription.GameStats.Observers
                         Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees

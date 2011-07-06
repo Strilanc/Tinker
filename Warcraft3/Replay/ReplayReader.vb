@@ -46,6 +46,7 @@ Namespace WC3.Replay
             Contract.Ensures(Contract.Result(Of ReplayReader)() IsNot Nothing)
             Return ReplayReader.FromStreamFactory(Function() New IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream)
         End Function
+        <SuppressMessage("Microsoft.Contracts", "Requires-76-312")>
         Public Shared Function FromStreamFactory(streamFactory As Func(Of IRandomReadableStream)) As ReplayReader
             Contract.Requires(streamFactory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayReader)() IsNot Nothing)

@@ -2,7 +2,7 @@
     <Extension()>
     Public Async Function ReadExactAsync(stream As IO.Stream, size As Integer) As Task(Of Byte())
         Contract.Assume(stream IsNot Nothing)
-        Contract.Assume(size > 0)
+        Contract.Assume(size >= 0)
         'Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
 
         Dim result = Await ReadBestEffortAsync(stream, size)
@@ -14,7 +14,7 @@
     <Extension()>
     Public Async Function ReadBestEffortAsync(stream As IO.Stream, maxSize As Integer) As Task(Of Byte())
         Contract.Assume(stream IsNot Nothing)
-        Contract.Assume(maxSize > 0)
+        Contract.Assume(maxSize >= 0)
         'Contract.Ensures(Contract.Result(Of Task(Of Byte()))() IsNot Nothing)
 
         Dim totalRead = 0

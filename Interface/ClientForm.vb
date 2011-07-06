@@ -32,6 +32,7 @@ Public Class ClientForm
         End Try
     End Sub
     Private Sub InitBot(clock As IClock)
+        Contract.Requires(clock IsNot Nothing)
         Contract.Requires(_bot Is Nothing)
         Contract.Ensures(_bot IsNot Nothing)
 
