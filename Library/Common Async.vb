@@ -91,15 +91,7 @@
             Contract.Assume(value IsNot Nothing)
             results.Add(value.DisposeAsync())
         Next value
-        Return results.AsAggregateTask()
-    End Function
-
-    <Pure()>
-    Public Function InstantTask() As Task
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Dim result = New TaskCompletionSource(Of NoValue)()
-        result.SetResult(Nothing)
-        Return result.Task.AssumeNotNull()
+        Return TaskEx.WhenAll(results)
     End Function
 
     <Extension()>
@@ -110,10 +102,12 @@
         Return task.Task.IgnoreExceptions()
     End Function
     <Extension()>
-    Public Function IgnoreExceptions(task As Task) As task
+    Public Async Function IgnoreExceptions(task As Task) As task
         Contract.Requires(task IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Return task.Catch(Sub()
-                          End Sub)
+        Try
+            Await task
+        Catch ex As Exception
+        End Try
     End Function
 End Module

@@ -148,7 +148,14 @@ Namespace WC3
             socket.Logger = logger
             Dim listenEndPoint = socket.RemoteEndPoint.Address.WithPort(knockData.ListenPort)
             Dim taskTestCanHost = AsyncTcpConnect(listenEndPoint.Address.AssumeNotNull(), CUShort(listenEndPoint.Port))
-            taskTestCanHost.ContinueWithAction(Sub(value) value.Close()).IgnoreExceptions()
+            Call Async Sub()
+                     Try
+                         Dim testSocket = Await taskTestCanHost
+                         testSocket.Close()
+                     Catch ex As Exception
+                         'ignore
+                     End Try
+                 End Sub
             Dim pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
 
             Dim player = New Player(id:=id,

@@ -30,7 +30,10 @@ Namespace Bnet
             Me._hooks.Add(Me._client.QueueIncludePacketHandler(Packets.ServerToClient.QueryGamesList(Me._client.Clock),
                     handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value))))
 
-            Me._client.QueueGetState.QueueContinueWithAction(inQueue, Sub(state) OnClientStateChanged(Me._client, state, state))
+            inQueue.QueueAction(Async Sub()
+                                    Dim state = Await Me._client.QueueGetState
+                                    OnClientStateChanged(Me._client, state, state)
+                                End Sub)
             Dim stateChangedHandler As Client.StateChangedEventHandler = Sub(sender, oldState, newState) inQueue.QueueAction(
                     Sub() OnClientStateChanged(sender, oldState, newState))
             Dim advertisedHandler As Client.AdvertisedGameEventHandler = Sub(sender, gameDescription, [private], refreshed) inQueue.QueueAction(
@@ -115,7 +118,7 @@ Namespace Bnet
             End Select
         End Sub
 
-        Private Sub txtTalk_KeyDown(sender As Object, e As System.Windows.Forms.KeyEventArgs) Handles txtTalk.KeyDown
+        Private Async Sub txtTalk_KeyDown(sender As Object, e As System.Windows.Forms.KeyEventArgs) Handles txtTalk.KeyDown
             If e.KeyCode <> Keys.Enter Then Return
             If e.Shift Then Return
             If txtTalk.Text = "" Then Return
@@ -124,14 +127,13 @@ Namespace Bnet
             e.SuppressKeyPress = True
             Dim msg = txtTalk.Text
             txtTalk.Text = ""
-            _client.QueueSendText(txtTalk.Text).ContinueWithAction(
-                Sub() logClient.LogMessage("{0}: {1}".Frmt(_client.UserName, msg), Color.DarkBlue)
-            ).Catch(
-                Sub(ex)
-                    logClient.LogMessage("Error sending text: {0}".Frmt(ex.Summarize), Color.Red)
-                    ex.RaiseAsUnexpected("Sending bnet client text.")
-                End Sub
-            )
+            Try
+                Await _client.QueueSendText(txtTalk.Text)
+                logClient.LogMessage("{0}: {1}".Frmt(_client.UserName, msg), Color.DarkBlue)
+            Catch ex As Exception
+                logClient.LogMessage("Error sending text: {0}".Frmt(ex.Summarize), Color.Red)
+                ex.RaiseAsUnexpected("Sending bnet client text.")
+            End Try
         End Sub
 
         Private Sub OnClientStateChanged(sender As Bnet.Client,

@@ -32,13 +32,19 @@ Public NotInheritable Class DeadManSwitch
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Return inQueue.QueueAction(AddressOf Arm)
     End Function
-    Private Sub Arm()
+    Private Async Sub Arm()
         If _isArmed Then Return
         _isArmed = True
         _timer = _timer.Restarted
-        If Not _waitRunning Then
-            _waitRunning = True
-            _timer.AsyncWaitUntil(_period).QueueContinueWithAction(inQueue, Sub() OnTimeout())
+        If _waitRunning Then Return
+        _waitRunning = True
+        While _isArmed AndAlso _timer.ElapsedTime < _period
+            Await _timer.AsyncWaitUntil(_period)
+        End While
+        _waitRunning = False
+        If _isArmed Then
+            _isArmed = False
+            RaiseEvent Triggered(Me)
         End If
     End Sub
     ''' <summary>
@@ -64,18 +70,6 @@ Public NotInheritable Class DeadManSwitch
     End Function
     Private Sub Disarm()
         _isArmed = False
-    End Sub
-
-    Private Sub OnTimeout()
-        If Not _isArmed Then 'the switch has been disarmed
-            _waitRunning = False
-        ElseIf _timer.ElapsedTime < _period Then 'the timer has been reset (or the switch has been disarmed/armed)
-            _timer.AsyncWaitUntil(_period).QueueContinueWithAction(inQueue, AddressOf OnTimeout)
-        Else 'the timer has run out
-            _isArmed = False
-            RaiseEvent Triggered(Me)
-            _waitRunning = False
-        End If
     End Sub
 
     Public Overrides Function ToString() As String

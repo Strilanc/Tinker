@@ -85,7 +85,7 @@
                 player.QueueStartPlaying()
             Next player
             _tickClock = _kernel.Clock.Restarted()
-            OnTick()
+            BeginTicking()
         End Sub
         Public Function QueueStart() As Task
             Return _kernel.InQueue.QueueAction(AddressOf Start)
@@ -122,35 +122,35 @@
         Private Function BroadcastPacket(packet As Protocol.Packet) As Task
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return (From player In _kernel.Players Select player.QueueSendPacket(packet)).AsAggregateTask
+            Return TaskEx.WhenAll(From player In _kernel.Players Select player.QueueSendPacket(packet))
         End Function
 
         '''<summary>Advances game time</summary>
-        Private Sub OnTick()
-            If _tickClock Is Nothing Then Return 'stopped
+        Private Async Sub BeginTicking()
+            While _tickClock IsNot Nothing 'not stopped
+                _tickClock = _tickClock.Restarted()
 
-            _tickClock = _tickClock.Restarted()
+                'Wait for laggers
+                UpdateLagScreen()
+                While _laggingPlayers.Count > 0
+                    Await _kernel.Clock.AsyncWait(_tickPeriod)
+                End While
 
-            'Stop for laggers
-            UpdateLagScreen()
-            If _laggingPlayers.Count > 0 Then
-                _kernel.Clock.AsyncWait(_tickPeriod).QueueContinueWithAction(_kernel.InQueue, AddressOf OnTick)
-                Return
-            End If
+                'Schedule next tick
+                Contract.Assume(_tickClock IsNot Nothing)
+                Dim measuredTickDuration = _tickClock.StartingTimeOnParentClock
+                Dim expectedTickDuration = _tickPeriod
+                _leftoverTickDurations += measuredTickDuration - expectedTickDuration
+                _leftoverTickDurations = _leftoverTickDurations.Between(-5.Seconds, 5.Seconds)
+                Dim nextTickDuration = (_tickPeriod - _leftoverTickDurations).Between(expectedTickDuration.Times(0.5), expectedTickDuration.Times(2))
 
-            'Schedule next tick
-            Contract.Assume(_tickClock IsNot Nothing)
-            Dim measuredTickDuration = _tickClock.StartingTimeOnParentClock
-            Dim expectedTickDuration = _tickPeriod
-            _leftoverTickDurations += measuredTickDuration - expectedTickDuration
-            _leftoverTickDurations = _leftoverTickDurations.Between(-5.Seconds, 5.Seconds)
-            Dim nextTickDuration = (_tickPeriod - _leftoverTickDurations).Between(expectedTickDuration.Times(0.5), expectedTickDuration.Times(2))
-            _kernel.Clock.AsyncWait(nextTickDuration).QueueContinueWithAction(_kernel.InQueue, AddressOf OnTick)
+                'Send tick
+                Dim gameTickDuration = CUShort(nextTickDuration.TotalMilliseconds * _speedFactor)
+                SendQueuedGameData(New TickRecord(gameTickDuration, _gameTime))
+                _gameTime += gameTickDuration
 
-            'Send tick
-            Dim gameTickDuration = CUShort(nextTickDuration.TotalMilliseconds * _speedFactor)
-            SendQueuedGameData(New TickRecord(gameTickDuration, _gameTime))
-            _gameTime += gameTickDuration
+                Await _kernel.Clock.AsyncWait(nextTickDuration)
+            End While
         End Sub
         Private Sub UpdateLagScreen()
             If _laggingPlayers.Count > 0 Then

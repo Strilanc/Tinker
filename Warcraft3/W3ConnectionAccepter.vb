@@ -67,13 +67,12 @@ Namespace WC3
                 _sockets.Add(socket)
             End SyncLock
 
-            _clock.AsyncWait(FirstPacketTimeout).ContinueWithAction(
-                Sub()
-                    If Not TryRemoveSocket(socket) Then Return
-                    _logger.Log("Connection from {0} timed out.".Frmt(socket.Name), LogMessageType.Negative)
-                    socket.Disconnect(expected:=False, reason:="Idle")
-                End Sub
-            )
+            Call Async Sub()
+                     Await _clock.AsyncWait(FirstPacketTimeout)
+                     If Not TryRemoveSocket(socket) Then Return
+                     _logger.Log("Connection from {0} timed out.".Frmt(socket.Name), LogMessageType.Negative)
+                     socket.Disconnect(expected:=False, reason:="Idle")
+                 End Sub
 
             Try
                 Dim packetData = Await socket.AsyncReadPacket()

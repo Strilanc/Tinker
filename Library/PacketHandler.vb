@@ -49,7 +49,7 @@ Public NotInheritable Class PacketHandlerLogger(Of TKey)
                 If parsed.UsedDataCount < data.Count Then Throw New PicklingException("Data left over after parsing.")
                 _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(key, _sourceName, jar.Describe(parsed.Value)), LogMessageType.DataParsed)
 
-                Return InstantTask()
+                Return CompletedTask()
             End Function)
         Return New DelegatedDisposable(
             Sub()
@@ -128,6 +128,6 @@ Public NotInheritable Class PacketHandlerRaw(Of TKey)
         If handlerResults.Count = 0 Then
             Throw New IO.IOException("No handler for {0}.".Frmt(key))
         End If
-        Await handlerResults.AsAggregateTask
+        Await TaskEx.WhenAll(handlerResults)
     End Function
 End Class

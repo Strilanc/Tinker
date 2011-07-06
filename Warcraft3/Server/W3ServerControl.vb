@@ -65,8 +65,9 @@ Namespace WC3
             BeginUpdateStateDisplay()
         End Sub
 
-        Private Sub BeginUpdateStateDisplay()
-            Me._manager.QueueGetListenPort().QueueContinueWithAction(inQueue, AddressOf UpdateStateDisplay)
+        Private Async Sub BeginUpdateStateDisplay()
+            Dim port = Await Me._manager.QueueGetListenPort()
+            UpdateStateDisplay(port)
         End Sub
         Private Sub UpdateStateDisplay(port As UShort)
             If IsDisposed Then Return

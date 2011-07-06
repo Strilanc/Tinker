@@ -99,7 +99,7 @@ Namespace Bot
             Dim hooks = New List(Of Task(Of IDisposable))
             Dim viewHook = Await this.Components.ObserveComponentsOfType(Of WC3.GameServerManager)(
                 adder:=Sub(manager) inQueue.QueueAction(
-                    Sub()
+                    Async Sub()
                         If hooks Is Nothing Then Return
                         Dim gameSetLink = manager.Server.ObserveActiveGameSets(
                                  adder:=Sub(gameSet) adder(manager.Server, gameSet),
@@ -107,7 +107,12 @@ Namespace Bot
                         'async remove when view is disposed
                         hooks.Add(gameSetLink)
                         'async auto-remove when server is disposed
-                        Call {gameSetLink, manager.Server.DisposalTask}.AsAggregateTask.QueueContinueWithAction(inQueue, Sub() gameSetLink.Result.Dispose()).IgnoreExceptions()
+                        Try
+                            Await TaskEx.WhenAny({gameSetLink, manager.Server.DisposalTask})
+                            gameSetLink.Result.Dispose()
+                        Catch ex As Exception
+                            'ignore
+                        End Try
                     End Sub),
                 remover:=Sub(server)
                              'no action needed

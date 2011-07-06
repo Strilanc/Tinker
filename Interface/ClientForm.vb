@@ -97,7 +97,7 @@ Public Class ClientForm
             OnClickSettings()
         End If
     End Sub
-    Private Sub LoadInitialPlugins()
+    Private Async Sub LoadInitialPlugins()
         For Each pluginName In From name In My.Settings.initial_plugins.Split(","c)
                                Where name <> ""
             Dim pluginName_ = pluginName
@@ -110,12 +110,13 @@ Public Class ClientForm
             Try
                 Dim socket = New Plugins.Socket(profile.name, _bot, profile.location)
                 Dim manager = New Plugins.PluginManager(socket)
-                Dim added = _bot.Components.QueueAddComponent(manager)
-                added.Catch(Sub(ex)
-                                manager.Dispose()
-                                _bot.Logger.Log("Failed to add plugin '{0}' to bot: {1}".Frmt(pluginName_, ex), LogMessageType.Problem)
-                            End Sub)
-                _bot.Logger.Log("Loaded plugin '{0}'.".Frmt(pluginName), LogMessageType.Positive)
+                Try
+                    Await _bot.Components.QueueAddComponent(manager)
+                    _bot.Logger.Log("Loaded plugin '{0}'.".Frmt(pluginName), LogMessageType.Positive)
+                Catch ex As Exception
+                    manager.Dispose()
+                    _bot.Logger.Log("Failed to add plugin '{0}' to bot: {1}".Frmt(pluginName_, ex), LogMessageType.Problem)
+                End Try
             Catch ex As Plugins.PluginException
                 _bot.Logger.Log("Failed to load plugin profile '{0}': {1}".Frmt(pluginName, ex.Summarize), LogMessageType.Problem)
                 ex.RaiseAsUnexpected("Loading plugin profile '{0}'".Frmt(pluginName))

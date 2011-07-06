@@ -108,15 +108,15 @@
                     remover:=Sub(player) inQueue.QueueAction(Sub() _viewPlayers.Remove(Tuple.Create(game, player))))
 
             'Automatic removal
-            game.DisposalTask.QueueContinueWithAction(inQueue,
-                Sub()
-                    _games.Remove(game)
-                    playerLink.DisposeAsync()
-                    If _gameSettings.UsePermanent Then AddInstance()
-                    If _games.Count = 0 AndAlso Not _gameSettings.UseInstanceOnDemand Then
-                        Me.Dispose()
-                    End If
-                End Sub)
+            Call Async Sub()
+                     Await game.DisposalTask
+                     _games.Remove(game)
+                     playerLink.DisposeAsync()
+                     If _gameSettings.UsePermanent Then AddInstance()
+                     If _games.Count = 0 AndAlso Not _gameSettings.UseInstanceOnDemand Then
+                         Me.Dispose()
+                     End If
+                 End Sub
 
             ActiveGameCount += 1
             game.Start()
@@ -133,10 +133,10 @@
                 End Sub)
         End Function
 
-        Private Function AsyncTryFindPlayer(userName As InvariantString) As Task(Of Player)
+        Private Async Function AsyncTryFindPlayer(userName As InvariantString) As Task(Of Player)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
-            Return From futureFindResults In (From game In _games Select game.QueueTryFindPlayer(userName)).ToList.AsAggregateTask
-                   Select (From player In futureFindResults Where player IsNot Nothing).FirstOrDefault
+            Dim findResults = Await TaskEx.WhenAll(From game In _games Select game.QueueTryFindPlayer(userName))
+            Return (From player In findResults Where player IsNot Nothing).FirstOrDefault
         End Function
         Public Function QueueTryFindPlayer(userName As InvariantString) As Task(Of Player)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)

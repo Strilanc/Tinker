@@ -111,10 +111,12 @@ Public Class DownloadManagerTest
                 Return _handler.IncludeHandler(
                     packetDefinition.Id,
                     packetDefinition.Jar,
-                    Function(pickle)
-                        Dim result = handler(pickle.Value)
-                        result.Catch(Sub(ex) _failFuture.TrySetException(ex.InnerExceptions))
-                        Return result
+                    Async Function(pickle)
+                        Try
+                            Await handler(pickle.Value)
+                        Catch ex As Exception
+                            _failFuture.TrySetException(ex)
+                        End Try
                     End Function).AsTask
             End SyncLock
         End Function
@@ -122,18 +124,23 @@ Public Class DownloadManagerTest
             SyncLock Me
                 _pq.Enqueue(packet)
                 _lock.Set()
-                Return InstantTask()
+                Return CompletedTask()
             End SyncLock
         End Function
 
-        Public Function InjectReceivedPacket(packet As Packet) As Task
-            SyncLock Me
-                Return _handler.HandlePacket(
-                        New Byte() {Packets.PacketPrefix, packet.Id}.Concat(
-                                    CUShort(packet.Payload.Data.Count + 4).Bytes).Concat(
-                                    packet.Payload.Data).ToRist
-                ).Catch(Sub(ex) _failFuture.SetException(ex.InnerExceptions))
-            End SyncLock
+        Public Async Function InjectReceivedPacket(packet As Packet) As Task
+            Try
+                Dim t As Task
+                SyncLock Me
+                    t = _handler.HandlePacket(Concat(
+                            {Packets.PacketPrefix, packet.Id},
+                            CUShort(packet.Payload.Data.Count + 4).Bytes,
+                            packet.Payload.Data).ToRist())
+                End SyncLock
+                Await t
+            Catch ex As Exception
+                _failFuture.SetException(ex)
+            End Try
         End Function
         Public Function TryInterceptSentPacket(Optional timeoutMilliseconds As Integer = 10000) As Packet
             SyncLock Me

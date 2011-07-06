@@ -90,8 +90,8 @@ Namespace WC3
             Me._motor = motor
             Me._kernel = kernel
             Me._loadScreen = loadScreen
-            Me._updateEventThrottle = New Throttle(cooldown:=100.Milliseconds, Clock:=kernel.Clock)
-            Me._slotStateUpdateThrottle = New Throttle(cooldown:=250.Milliseconds, Clock:=kernel.Clock)
+            Me._updateEventThrottle = New Throttle(cooldown:=100.Milliseconds, Clock:=kernel.Clock, context:=_kernel.OutQueue)
+            Me._slotStateUpdateThrottle = New Throttle(cooldown:=250.Milliseconds, Clock:=kernel.Clock, context:=_kernel.InQueue)
         End Sub
 
         Public Shared Function FromSettings(settings As GameSettings,
@@ -177,8 +177,7 @@ Namespace WC3
             AddHandler _lobby.ChangedPublicState, Sub(sender)
                                                       ThrowUpdated()
                                                       _slotStateUpdateThrottle.SetActionToRun(
-                                                          Sub() _kernel.InQueue.QueueAction(
-                                                              Sub() SendLobbyState(New ModInt32(Environment.TickCount).UnsignedValue)))
+                                                          Sub() SendLobbyState(New ModInt32(Environment.TickCount).UnsignedValue))
                                                   End Sub
 
             AddHandler _lobby.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription)
@@ -246,7 +245,7 @@ Namespace WC3
 
         Private Sub ThrowUpdated()
             Dim slots = _lobby.Slots
-            _updateEventThrottle.SetActionToRun(Sub() _kernel.OutQueue.QueueAction(Sub() RaiseEvent Updated(Me, slots)))
+            _updateEventThrottle.SetActionToRun(Sub() RaiseEvent Updated(Me, slots))
         End Sub
         Public Function QueueThrowUpdated() As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
@@ -537,16 +536,15 @@ Namespace WC3
             _kernel.State = GameState.PreCounting
 
             'Give people a few seconds to realize the game is full before continuing
-            Call _kernel.Clock.AsyncWait(3.Seconds).QueueContinueWithAction(_kernel.InQueue,
-                Sub()
-                    If _kernel.State <> GameState.PreCounting Then Return
-                    If Not Settings.IsAutoStarted OrElse _lobby.CountFreeSlots() > 0 Then
-                        _kernel.State = GameState.AcceptingPlayers
-                    Else
-                        TryStartCountdown()
-                    End If
-                End Sub
-            )
+            Call Async Sub()
+                     Await _kernel.Clock.AsyncWait(3.Seconds)
+                     If _kernel.State <> GameState.PreCounting Then Return
+                     If Not Settings.IsAutoStarted OrElse _lobby.CountFreeSlots() > 0 Then
+                         _kernel.State = GameState.AcceptingPlayers
+                     Else
+                         TryStartCountdown()
+                     End If
+                 End Sub
             Return True
         End Function
 
@@ -561,23 +559,23 @@ Namespace WC3
             _flagHasPlayerLeft = False
 
             'Perform countdown
-            Dim continueCountdown As Action(Of Integer)
-            continueCountdown = Sub(ticksLeft)
-                                    If _kernel.State <> GameState.CountingDown Then Return
+            Call Async Sub()
+                     For ticksLeft = 5 To 0 Step -1
+                         Await _kernel.Clock.AsyncWait(1.Seconds)
 
-                                    If _flagHasPlayerLeft Then 'abort countdown
-                                        _lobby.BroadcastMessage("Countdown Aborted", messageType:=LogMessageType.Negative)
-                                        _lobby.TryRestoreFakeHost()
-                                        _kernel.State = GameState.AcceptingPlayers
-                                        _lobby.ThrowChangedPublicState()
-                                    ElseIf ticksLeft > 0 Then 'continue ticking
-                                        _lobby.BroadcastMessage("Starting in {0}...".Frmt(ticksLeft), messageType:=LogMessageType.Positive)
-                                        _kernel.Clock.AsyncWait(1.Seconds).QueueContinueWithAction(_kernel.InQueue, Sub() continueCountdown(ticksLeft - 1))
-                                    Else 'start
-                                        StartLoading()
-                                    End If
-                                End Sub
-            Call _kernel.Clock.AsyncWait(1.Seconds).QueueContinueWithAction(_kernel.InQueue, Sub() continueCountdown(5))
+                         If _kernel.State <> GameState.CountingDown Then Return
+                         If _flagHasPlayerLeft Then 'abort countdown
+                             _lobby.BroadcastMessage("Countdown Aborted", messageType:=LogMessageType.Negative)
+                             _lobby.TryRestoreFakeHost()
+                             _kernel.State = GameState.AcceptingPlayers
+                             _lobby.ThrowChangedPublicState()
+                             Return
+                         End If
+
+                         _lobby.BroadcastMessage("Starting in {0}...".Frmt(ticksLeft), messageType:=LogMessageType.Positive)
+                     Next
+                     StartLoading()
+                 End Sub
 
             Return True
         End Function

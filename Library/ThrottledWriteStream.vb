@@ -12,7 +12,7 @@ Public NotInheritable Class ThrottledWriteStream
     Private _timer As RelativeClock
     Private _availableSlack As Double
     Private _usedCost As Double
-    Private _throttled As Boolean
+    Private _writing As Boolean
 
     <ContractInvariantMethod()> Private Shadows Sub ObjectInvariant()
         Contract.Invariant(_substream IsNot Nothing)
@@ -51,40 +51,42 @@ Public NotInheritable Class ThrottledWriteStream
         Dim data = buffer.Skip(offset).Take(count).ToArray
         inQueue.QueueAction(Sub()
                                 _queuedWrites.Enqueue(data)
-                                PerformWrites(isWaitCallback:=False)
+                                PerformWrites()
                             End Sub)
     End Sub
-    Private Sub PerformWrites(isWaitCallback As Boolean)
-        If _throttled AndAlso Not isWaitCallback Then Return
-        _throttled = False
+    Private Async Sub PerformWrites()
+        If _writing Then Return
+        _writing = True
 
-        While _queuedWrites.Count > 0
-            'Recover over time
-            _timer = _timer.Restarted
-            Dim dt = _timer.StartingTimeOnParentClock
-            _usedCost -= dt.TotalMilliseconds * _recoveryRatePerMillisecond
-            If _usedCost < 0 Then _usedCost = 0
-            'Recover using slack
-            If _availableSlack > 0 Then
-                Dim slack = Math.Min(_usedCost, _availableSlack)
-                _availableSlack -= slack
-                _usedCost -= slack
-            End If
+        Try
+            While _queuedWrites.Count > 0
+                'Recover over time
+                _timer = _timer.Restarted
+                Dim dt = _timer.StartingTimeOnParentClock
+                _usedCost -= dt.TotalMilliseconds * _recoveryRatePerMillisecond
+                If _usedCost < 0 Then _usedCost = 0
+                'Recover using slack
+                If _availableSlack > 0 Then
+                    Dim slack = Math.Min(_usedCost, _availableSlack)
+                    _availableSlack -= slack
+                    _usedCost -= slack
+                End If
 
-            'Wait if necessary
-            If _usedCost > _costLimit Then
-                Dim delay = New TimeSpan(ticks:=CLng((_usedCost - _costLimit) / _recoveryRatePerMillisecond * TimeSpan.TicksPerMillisecond))
-                _timer.AsyncWait(delay).QueueContinueWithAction(inQueue, Sub() PerformWrites(isWaitCallback:=True))
-                _throttled = True
-                Exit While
-            End If
+                'throttle
+                If _usedCost > _costLimit Then
+                    Dim delay = New TimeSpan(ticks:=CLng((_usedCost - _costLimit) / _recoveryRatePerMillisecond * TimeSpan.TicksPerMillisecond))
+                    Await _timer.AsyncWait(delay)
+                End If
 
-            'Perform write
-            Dim data = _queuedWrites.Dequeue()
-            Contract.Assume(data IsNot Nothing)
-            _usedCost += _costEstimator(data)
-            _substream.Write(data, 0, data.Length)
-        End While
+                'Perform write
+                Dim data = _queuedWrites.Dequeue()
+                Contract.Assume(data IsNot Nothing)
+                _usedCost += _costEstimator(data)
+                _substream.Write(data, 0, data.Length)
+            End While
+        Finally
+            _writing = False
+        End Try
         Contract.Assume(_availableSlack >= 0)
         Contract.Assume(_usedCost >= 0)
     End Sub

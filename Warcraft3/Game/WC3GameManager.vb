@@ -50,12 +50,12 @@ Namespace WC3
             'Start command
             Dim commandText = text.Substring(commandPrefix.Length)
             Dim commandResult = _game.QueueCommandProcessText(Me, player, commandText)
-            Call _game.Clock.AsyncWait(2.Seconds).ContinueWithAction(
-                Sub()
-                    If commandResult.Status <> TaskStatus.RanToCompletion AndAlso commandResult.Status <> TaskStatus.Faulted Then
-                        _game.QueueSendMessageTo("Command '{0}' is running... You will be informed when it finishes.".Frmt(text), player)
-                    End If
-                End Sub)
+            Call Async Sub()
+                     Await _game.Clock.AsyncWait(2.Seconds)
+                     If commandResult.Status <> TaskStatus.RanToCompletion AndAlso commandResult.Status <> TaskStatus.Faulted Then
+                         _game.QueueSendMessageTo("Command '{0}' is running... You will be informed when it finishes.".Frmt(text), player)
+                     End If
+                 End Sub
 
             'Finish command
             Try

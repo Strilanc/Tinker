@@ -176,13 +176,13 @@ Namespace WC3.Download
             _playerClients(player) = client
             If _defaultClient IsNot Nothing Then client.Links.Add(_defaultClient)
 
-            player.DisposalTask.QueueContinueWithAction(inQueue,
-                Sub()
-                    client.Dispose()
-                    _playerClients.Remove(player)
-                End Sub)
+            Call Async Sub()
+                     Await player.DisposalTask
+                     client.Dispose()
+                     _playerClients.Remove(player)
+                 End Sub
 
-            Return playerHooks.AsAggregateTask
+            Return TaskEx.WhenAll(playerHooks)
         End Function
 #End Region
 
@@ -398,7 +398,7 @@ Namespace WC3.Download
                         e.Dispose()
                         results.Add(e.DisposalTask)
                     Next e
-                    Return results.AsAggregateTask
+                    Return TaskEx.WhenAll(results)
                 End Function).Unwrap
         End Function
     End Class

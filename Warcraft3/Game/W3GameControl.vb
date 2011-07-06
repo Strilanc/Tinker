@@ -47,18 +47,16 @@ Namespace WC3
             e.Handled = True
         End Sub
 
-        Private Sub OnGameUpdated(sender As WC3.Game, slots As SlotSet)
+        Private Async Sub OnGameUpdated(sender As WC3.Game, slots As SlotSet)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
-            Dim descriptions = (From slot In slots Select slot.AsyncGenerateDescription).ToArray
-            descriptions.AsAggregateTask.QueueContinueWithAction(inQueue,
-                Sub()
-                    If IsDisposed Then Return
-                    For Each i In descriptions.Length.Range
-                        lstSlots.Items(i) = descriptions(i).Result
-                    Next i
-                End Sub
-             )
+            Dim descriptions = Await TaskEx.WhenAll(From slot In slots Select slot.AsyncGenerateDescription)
+            inQueue.QueueAction(Sub()
+                                    If IsDisposed Then Return
+                                    For Each i In descriptions.Length.Range
+                                        lstSlots.Items(i) = descriptions(i)
+                                    Next i
+                                End Sub)
         End Sub
     End Class
 End Namespace

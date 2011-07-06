@@ -35,7 +35,10 @@
             failedSocket.IgnoreExceptions()
             Contract.Assume(activated.Task IsNot Nothing)
             Contract.Assume(failedSocket.Task IsNot Nothing)
-            activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem))
+            Call Async Sub()
+                     Await activated.Task
+                     logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem)
+                 End Sub
             Return New Warden.Client(failedSocket.Task, activated, logger)
         End Function
         Public Shared Function MakeConnect(remoteHost As InvariantString,
@@ -51,8 +54,10 @@
             logger.Log("Connecting to bnls server at {0}:{1}...".Frmt(remoteHost, remotePort), LogMessageType.Positive)
 
             'Initiate connection
-            Dim socket = From tcpClient In AsyncTcpConnect(remoteHost, remotePort)
-                         Select packetSocket = New PacketSocket(stream:=tcpClient.GetStream,
+            Dim s = Async Function()
+                        Try
+                            Dim tcpClient = Await AsyncTcpConnect(remoteHost, remotePort)
+                            Dim packetSocket = New PacketSocket(stream:=tcpClient.GetStream,
                                                                 localendpoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                                                                 remoteendpoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                                                 timeout:=5.Minutes,
@@ -61,18 +66,18 @@
                                                                 logger:=logger,
                                                                 Name:="BNLS",
                                                                 clock:=clock)
-                         Select New Warden.Socket(socket:=packetSocket,
-                                                  seed:=seed,
-                                                  cookie:=cookie,
-                                                  logger:=logger)
-            socket.Catch(
-                Sub(ex)
-                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, ex.Summarize), LogMessageType.Problem)
-                    ex.RaiseAsUnexpected("Connecting to bnls server.")
-                End Sub
-            )
+                            Return New Warden.Socket(Socket:=packetSocket,
+                                                     seed:=seed,
+                                                     cookie:=cookie,
+                                                     logger:=logger)
+                        Catch ex As Exception
+                            logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, ex.Summarize), LogMessageType.Problem)
+                            ex.RaiseAsUnexpected("Connecting to bnls server.")
+                            Throw
+                        End Try
+                    End Function()
 
-            Dim result = New Warden.Client(socket, New TaskCompletionSource(Of NoValue), logger)
+            Dim result = New Warden.Client(s, New TaskCompletionSource(Of NoValue), logger)
             result.Start()
             Return result
         End Function

@@ -285,7 +285,10 @@
 
             'Effects
             _kernel.OutQueue.QueueAction(Sub() RaiseEvent ChangedPublicState(Me))
-            _startPlayerHoldPoint.Hold(newPlayer).ContinueWithAction(Sub() newPlayer.QueueStart()).IgnoreExceptions()
+            Call Async Sub()
+                     Await _startPlayerHoldPoint.Hold(newPlayer)
+                     newPlayer.QueueStart()
+                 End Sub
 
             Return newPlayer
         End Function

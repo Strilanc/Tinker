@@ -291,13 +291,13 @@ Namespace WC3
                            template:="",
                            Description:="Returns estimated network round trip times for each player.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
-                Return From players In target.QueueGetPlayers()
-                       From latencies In (From player In players Select player.QueueGetLatencyDescription).Cache.AsAggregateTask
-                       Select "Estimated RTT: {0}".Frmt((From pair In players.Zip(latencies)
-                                                         Where Not pair.Item1.IsFake
-                                                         Select "{0}={1}".Frmt(pair.Item1.Name, pair.Item2)
-                                                         ).StringJoin(" "))
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
+                Dim players = Await target.QueueGetPlayers()
+                Dim latencies = Await TaskEx.WhenAll((From player In players Select player.QueueGetLatencyDescription).Cache)
+                Return "Estimated RTT: {0}".Frmt((From pair In players.Zip(latencies)
+                                                  Where Not pair.Item1.IsFake
+                                                  Select "{0}={1}".Frmt(pair.Item1.Name, pair.Item2)
+                                                  ).StringJoin(" "))
             End Function
         End Class
 

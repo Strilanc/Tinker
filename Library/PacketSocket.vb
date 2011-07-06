@@ -151,23 +151,18 @@ Public NotInheritable Class PacketSocket
         Disconnect(expected:=False, reason:="Connection went idle.")
     End Sub
 
-    Public Function AsyncReadPacket() As Task(Of IRist(Of Byte))
+    Public Async Function AsyncReadPacket() As Task(Of IRist(Of Byte))
         Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Byte)))() IsNot Nothing)
-        'Read
-        Dim result = packetStreamer.AsyncReadPacket().AssumeNotNull()
-        'Handle
-        result.QueueContinueWithAction(inQueue,
-            Sub(data)
-                If deadManSwitch IsNot Nothing Then deadManSwitch.QueueReset()
-                Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
-            End Sub
-        ).QueueCatch(inQueue,
-            Sub(ex)
-                If _isConnected Then ex.RaiseAsUnexpected("Receiving packet")
-                Disconnect(expected:=False, reason:=ex.Summarize)
-            End Sub
-        )
-        Return result
+        Try
+            Dim data = Await packetStreamer.AsyncReadPacket()
+            If deadManSwitch IsNot Nothing Then deadManSwitch.QueueReset()
+            Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
+            Return data
+        Catch ex As Exception
+            If _isConnected Then ex.RaiseAsUnexpected("Receiving packet")
+            QueueDisconnect(expected:=False, reason:=ex.Summarize)
+            Throw
+        End Try
     End Function
 
     Public Sub WritePacket(preheader As IEnumerable(Of Byte), payload As IEnumerable(Of Byte))

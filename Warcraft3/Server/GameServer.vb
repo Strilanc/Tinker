@@ -62,11 +62,11 @@ Namespace WC3
             Dim socketHandled = New OnetimeLock()
 
             'Setup initial timeout
-            _clock.AsyncWait(InitialConnectionTimeout).ContinueWithAction(
-                Sub()
-                    If Not socketHandled.TryAcquire Then Return
-                    socket.Disconnect(expected:=True, reason:="Timeout")
-                End Sub)
+            Call Async Sub()
+                     Await _clock.AsyncWait(InitialConnectionTimeout)
+                     If Not socketHandled.TryAcquire Then Return
+                     socket.Disconnect(expected:=True, reason:="Timeout")
+                 End Sub
 
             'Try to read Knock packet
             Try
@@ -160,15 +160,15 @@ Namespace WC3
                     remover:=Sub(game, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(Tuple.Create(gameSet, game, player))))
 
             'Automatic removal
-            gameSet.DisposalTask.QueueContinueWithAction(inQueue,
-                Sub()
-                    _gameSets.Remove(id)
-                    _viewGameSets.Remove(gameSet)
-                    _viewActiveGameSets.Remove(gameSet)
-                    gameLink.DisposeAsync()
-                    playerLink.DisposeAsync()
-                    RemoveHandler gameSet.StateChanged, activeAdder
-                End Sub)
+            Call Async Sub()
+                     Await gameSet.DisposalTask
+                     _gameSets.Remove(id)
+                     _viewGameSets.Remove(gameSet)
+                     _viewActiveGameSets.Remove(gameSet)
+                     gameLink.DisposeAsync()
+                     playerLink.DisposeAsync()
+                     RemoveHandler gameSet.StateChanged, activeAdder
+                 End Sub
 
             Return gameSet
         End Function
@@ -188,22 +188,22 @@ Namespace WC3
                 End Sub)
         End Function
 
-        Private Function AsyncFindPlayer(username As String) As Task(Of Player)
+        Private Async Function AsyncFindPlayer(username As String) As Task(Of Player)
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
-            Return From futureFindResults In (From entry In _gameSets.Values Select entry.QueueTryFindPlayer(username)).Cache.AsAggregateTask
-                   Select (From player In futureFindResults Where player IsNot Nothing).FirstOrDefault
+            Dim findResults = Await TaskEx.WhenAll(From entry In _gameSets.Values Select entry.QueueTryFindPlayer(username))
+            Return (From player In findResults Where player IsNot Nothing).FirstOrDefault
         End Function
         Public Function QueueFindPlayer(userName As String) As Task(Of Player)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncFindPlayer(userName)).Unwrap.AssumeNotNull
         End Function
 
-        Private Function AsyncFindPlayerGame(username As String) As Task(Of Game)
+        Private Async Function AsyncFindPlayerGame(username As String) As Task(Of Game)
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
-            Return From futureFindResults In (From entry In _gameSets.Values Select entry.QueueTryFindPlayerGame(username)).Cache.AsAggregateTask
-                   Select (From game In futureFindResults Where game IsNot Nothing).FirstOrDefault
+            Dim findResults = Await TaskEx.WhenAll(From entry In _gameSets.Values Select entry.QueueTryFindPlayerGame(username))
+            Return (From game In findResults Where game IsNot Nothing).FirstOrDefault
         End Function
         Public Function QueueFindPlayerGame(userName As String) As Task(Of Game)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)

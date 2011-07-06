@@ -159,8 +159,14 @@
             Contract.Requires(stream2 IsNot Nothing)
             Contract.Ensures(Contract.Result(Of DisposableWithTask)() IsNot Nothing)
             Dim result = New DisposableWithTask
-            Shunt(stream1, stream2).AssumeNotNull().ContinueWithAction(Sub() result.Dispose())
-            Shunt(stream2, stream1).AssumeNotNull().ContinueWithAction(Sub() result.Dispose())
+            Call Async Sub()
+                     Await Shunt(stream1, stream2)
+                     result.Dispose()
+                 End Sub
+            Call Async Sub()
+                     Await Shunt(stream2, stream1)
+                     result.Dispose()
+                 End Sub
             result.ChainEventualDisposalTo(stream1)
             result.ChainEventualDisposalTo(stream2)
             Return result

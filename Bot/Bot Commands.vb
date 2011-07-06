@@ -29,7 +29,7 @@ Namespace Bot.Commands
 
             'Wait for all to complete
             Try
-                Await allClients.AsAggregateTask()
+                Await TaskEx.WhenAll(allClients)
             Catch ex As Exception
                 For Each client In allClients
                     If client.Status = TaskStatus.RanToCompletion Then client.Dispose()
