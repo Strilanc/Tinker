@@ -411,16 +411,6 @@ Namespace Bnet
             End Using
         End Function
 
-        Public Shared Function GenerateCDKeySalt(Optional rng As System.Security.Cryptography.RandomNumberGenerator = Nothing) As UInt32
-            Dim r = If(rng, New System.Security.Cryptography.RNGCryptoServiceProvider())
-            Try
-                Dim bytes(0 To 3) As Byte
-                r.GetBytes(bytes)
-                Return bytes.ToUInt32
-            Finally
-                If rng Is Nothing Then r.Dispose()
-            End Try
-        End Function
         Public Async Function QueueConnectWith(socket As PacketSocket, clientCDKeySalt As UInt32, Optional reconnector As IConnecter = Nothing) As Task
             Contract.Assume(socket IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
@@ -610,7 +600,7 @@ Namespace Bnet
                 Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
                 Try
                     Dim socket = Await _reconnecter.ConnectAsync(Logger)
-                    Await QueueConnectWith(socket, GenerateCDKeySalt(), _reconnecter)
+                    Await QueueConnectWith(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), _reconnecter)
                     Await QueueLogOn(_userCredentials.WithNewGeneratedKeys())
                 Catch ex As Exception
                     ex.RaiseAsUnexpected("Reconnect failed")

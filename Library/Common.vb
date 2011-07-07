@@ -17,6 +17,25 @@ Public Module PoorlyCategorizedFunctions
         End Using
     End Function
 
+    Public Function GenerateSecureBytesNewRNG(length As Integer) As Byte()
+        Contract.Requires(length >= 0)
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Byte())().Length = length)
+        Using rng = New System.Security.Cryptography.RNGCryptoServiceProvider()
+            Return rng.GenerateBytes(length)
+        End Using
+    End Function
+    <Extension()>
+    Public Function GenerateBytes(rng As System.Security.Cryptography.RandomNumberGenerator, length As Integer) As Byte()
+        Contract.Requires(rng IsNot Nothing)
+        Contract.Requires(length >= 0)
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Byte())().Length = length)
+        Dim bytes(0 To length - 1) As Byte
+        rng.GetBytes(bytes)
+        Return bytes
+    End Function
+
     'verification disabled due to inadequate verifier
     <ContractVerification(False)>
     <Pure()>

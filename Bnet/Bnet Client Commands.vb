@@ -413,7 +413,7 @@ Namespace Bnet.Commands
 
             Dim connector = New Bnet.Client.HostPortConnecter(remoteHost, port, target.Clock, New Random())
             Dim socket = Await connector.ConnectAsync(target.Logger)
-            Await target.QueueConnectWith(socket, Bnet.Client.GenerateCDKeySalt(), connector)
+            Await target.QueueConnectWith(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), connector)
             Return "Established connection to {0}".Frmt(remoteHost)
         End Function
     End Class
