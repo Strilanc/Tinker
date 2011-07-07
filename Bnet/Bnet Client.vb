@@ -206,7 +206,6 @@ Namespace Bnet
                                            Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
                                            Logger.Log(msg, LogMessageType.Problem)
                                        End Sub)
-            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
 
             'Ignored or handled-only-at-specific-times packets
@@ -216,6 +215,7 @@ Namespace Bnet
                         Protocol.Packets.ServerToClient.UserAuthenticationBegin,
                         Protocol.Packets.ServerToClient.UserAuthenticationFinish,
                         Protocol.Packets.ServerToClient.Null,
+                        Protocol.Packets.ServerToClient.CreateGame3,
                         Protocol.Packets.ServerToClient.GetFileTime,
                         Protocol.Packets.ServerToClient.GetIconData,
                         Protocol.Packets.ServerToClient.QueryGamesList(_clock),
@@ -627,28 +627,64 @@ Namespace Bnet
         Private Sub EnterChannel(channel As String)
             SendPacket(Protocol.MakeJoinChannel(Protocol.JoinChannelType.ForcedJoin, channel))
             ChangeState(ClientState.Channel)
-            SyncAdvertisements()
+            TryStartAdvertising()
         End Sub
 #End Region
 
 #Region "Advertising"
-        Private Sub SyncAdvertisements()
-            Select Case _state
-                Case ClientState.Channel
-                    If _advertisementList.None Then Return
-                    ChangeState(ClientState.CreatingGame)
-                    _curAdvertisement = _advertisementList.First
-                    SetReportedListenPort(_curAdvertisement.BaseGameDescription.Port)
-                    _gameCanceller.Cancel()
-                    _gameCanceller = New CancellationTokenSource()
-                    SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
-                Case ClientState.AdvertisingGame, ClientState.CreatingGame
-                    If _advertisementList.Contains(_curAdvertisement) Then Return
-                    SendPacket(Protocol.MakeCloseGame3())
+        Private Sub CheckStopAdvertising()
+            If _curAdvertisement Is Nothing Then Return
+            If _advertisementList.Contains(_curAdvertisement) Then Return
+
+            SendPacket(Protocol.MakeCloseGame3())
+            _curAdvertisement = Nothing
+            _gameCanceller.Cancel()
+            EnterChannel(_lastChannel)
+        End Sub
+        Private Async Sub TryStartAdvertising()
+            If _curAdvertisement IsNot Nothing Then Return
+            If _advertisementList.None() Then Return
+
+            ChangeState(ClientState.CreatingGame)
+            _curAdvertisement = _advertisementList.First
+            SetReportedListenPort(_curAdvertisement.BaseGameDescription.Port)
+            _gameCanceller.Cancel()
+            _gameCanceller = New CancellationTokenSource()
+            Dim ct = _gameCanceller.Token
+
+            'Create game
+            Do
+                SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
+                Dim createSucceeded = 0 = Await AwaitReceive(Protocol.Packets.ServerToClient.CreateGame3, ct)
+                If ct.IsCancellationRequested Then Return
+                If createSucceeded Then Exit Do
+
+                'Failed to create, try again with a different name
+                _curAdvertisement.SetNameFailed()
+            Loop
+            ChangeState(ClientState.AdvertisingGame)
+            _curAdvertisement.SetNameSucceeded()
+            outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, refreshed:=False))
+
+            'Refresh game periodically
+            If _curAdvertisement.IsPrivate Then Return
+            Do
+                Await _clock.AsyncWait(RefreshPeriod)
+                If ct.IsCancellationRequested Then Exit Do
+
+                SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
+                Dim refreshSucceeded = 0 = Await AwaitReceive(Protocol.Packets.ServerToClient.CreateGame3)
+                If ct.IsCancellationRequested Then Exit Do
+
+                If Not refreshSucceeded Then
+                    'No idea why a refresh would fail, better return to channel
                     _gameCanceller.Cancel()
                     _curAdvertisement = Nothing
                     EnterChannel(_lastChannel)
-            End Select
+                    Exit Do
+                End If
+                outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, False))
+            Loop
         End Sub
 
         Private Function AddAdvertisableGame(gameDescription As WC3.LocalGameDescription, isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
@@ -659,7 +695,7 @@ Namespace Bnet
             If entry Is Nothing Then
                 entry = New AdvertisementEntry(gameDescription, isPrivate)
                 _advertisementList.Add(entry)
-                SyncAdvertisements()
+                TryStartAdvertising()
             End If
             Return entry.DescriptionAsync
         End Function
@@ -677,7 +713,7 @@ Namespace Bnet
             If entry Is Nothing Then Return False
             entry.SetRemoved()
             _advertisementList.Remove(entry)
-            SyncAdvertisements()
+            CheckStopAdvertising()
             Return True
         End Function
         Public Function QueueRemoveAdvertisableGame(gameDescription As WC3.LocalGameDescription) As Task(Of Boolean)
@@ -688,7 +724,7 @@ Namespace Bnet
 
         Private Sub RemoveAllAdvertisableGames()
             _advertisementList.Clear()
-            SyncAdvertisements()
+            CheckStopAdvertising()
         End Sub
         Public Function QueueRemoveAllAdvertisableGames() As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
@@ -743,47 +779,6 @@ Namespace Bnet
                 Logger.Log("Lost connection to BNLS server: {0}".Frmt(exception.Summarize), LogMessageType.Problem)
             End If
             exception.RaiseAsUnexpected("Warden/BNLS Error")
-        End Sub
-
-        Private Sub ReceiveCreateGame3(pickle As IPickle(Of UInt32))
-            Contract.Requires(pickle IsNot Nothing)
-            Dim result = pickle.Value
-
-            Select Case _state
-                Case ClientState.AdvertisingGame
-                    If result = 0 Then
-                        'Refresh succeeded
-                        outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, True))
-                    Else
-                        'Refresh failed (No idea why it happened, better return to channel and try again)
-                        _gameCanceller.Cancel()
-                        _curAdvertisement = Nothing
-                        EnterChannel(_lastChannel)
-                    End If
-                Case ClientState.CreatingGame
-                    If result = 0 Then
-                        'Initial advertisement succeeded, start refreshing
-                        ChangeState(ClientState.AdvertisingGame)
-                        If Not _curAdvertisement.IsPrivate Then
-                            Dim ct = _gameCanceller.Token
-                            Call Async Sub()
-                                     Do
-                                         Await _clock.AsyncWait(RefreshPeriod)
-                                         If ct.IsCancellationRequested Then Exit Do
-                                         If _state <> ClientState.AdvertisingGame Then Exit Do
-                                         SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
-                                     Loop
-                                 End Sub
-                        End If
-
-                        _curAdvertisement.SetNameSucceeded()
-                        outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, False))
-                    Else
-                        'Initial advertisement failed, probably because of game name in use, try again with a new name
-                        _curAdvertisement.SetNameFailed()
-                        SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
-                    End If
-            End Select
         End Sub
     End Class
 End Namespace
