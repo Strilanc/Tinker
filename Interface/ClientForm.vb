@@ -39,8 +39,8 @@ Public Class ClientForm
         _bot = New Bot.MainBot()
         _bot.Components.QueueAddComponent(New Bot.MainBotManager(_bot))
         Bot.IncludeBasicBotCommands(_bot, clock)
-        Bot.IncludeBasicBnetClientCommands(_bot, clock)
-        Bot.IncludeBasicLanAdvertiserCommands(_bot, clock)
+        Bot.IncludeBasicBnetClientCommands(_bot)
+        Bot.IncludeBasicLanAdvertiserCommands(_bot)
         Bot.IncludeBasicGameServerCommands(_bot)
         Bot.IncludeBasicCKLServerCommands(_bot)
 

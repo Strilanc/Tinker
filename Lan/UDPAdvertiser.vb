@@ -18,6 +18,7 @@ Namespace Lan
         Private ReadOnly _defaultTargetHost As String
         Private ReadOnly _refreshStopper As IDisposable
         Private ReadOnly _infoProvider As IProductInfoProvider
+        Private ReadOnly _clock As IClock
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
@@ -73,6 +74,7 @@ Namespace Lan
             Me._infoProvider = infoProvider
             Me._logger = If(logger, New Logger)
             Me._defaultTargetHost = defaultTargetHost
+            Me._clock = clock
 
             Me._refreshStopper = clock.AsyncRepeat(RefreshPeriod, Sub() inQueue.QueueAction(Sub() RefreshAll()))
         End Sub
@@ -81,6 +83,11 @@ Namespace Lan
             Get
                 Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
                 Return _logger
+            End Get
+        End Property
+        Public ReadOnly Property Clock As IClock
+            Get
+                Return _clock
             End Get
         End Property
 

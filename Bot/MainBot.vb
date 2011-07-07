@@ -219,9 +219,8 @@ Namespace Bot
             )
         End Function
         <Extension()>
-        Public Function IncludeBasicBnetClientCommands(this As MainBot, clock As IClock) As IDisposable
+        Public Function IncludeBasicBnetClientCommands(this As MainBot) As IDisposable
             Contract.Requires(this IsNot Nothing)
-            Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As Bnet.ClientComponent) x.Client
             Return this.IncludeCommandsInAllComponentsOfType(Of Bnet.ClientComponent)(
@@ -234,7 +233,7 @@ Namespace Bot
                         New Bnet.Commands.CommandCancelHost,
                         New Bnet.Commands.CommandElevate,
                         New Bnet.Commands.CommandGame,
-                        New Bnet.Commands.CommandHost(clock),
+                        New Bnet.Commands.CommandHost,
                         New Bnet.Commands.CommandAuto
                     },
                     From command In New ICommand(Of Bnet.Client)() {
@@ -254,19 +253,18 @@ Namespace Bot
             )
         End Function
         <Extension()>
-        Public Function IncludeBasicLanAdvertiserCommands(this As MainBot, clock As IClock) As IDisposable
+        Public Function IncludeBasicLanAdvertiserCommands(this As MainBot) As IDisposable
             Contract.Requires(this IsNot Nothing)
-            Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Dim conv = Function(x As Lan.UDPAdvertiserComponent) x.Advertiser
             Return this.IncludeCommandsInAllComponentsOfType(Of Lan.UDPAdvertiserComponent)(
                 Concat(
                     New ICommand(Of Lan.UDPAdvertiserComponent)() {
                         New Lan.Commands.CommandAuto,
-                        New Lan.Commands.CommandHost(clock)
+                        New Lan.Commands.CommandHost
                     },
                     From command In New ICommand(Of Lan.UDPAdvertiser)() {
-                        New Lan.Commands.CommandAdd(clock),
+                        New Lan.Commands.CommandAdd,
                         New Lan.Commands.CommandRemove
                     } Select command.ProjectedFrom(conv)
                 )

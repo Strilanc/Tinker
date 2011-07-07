@@ -26,16 +26,10 @@ Namespace Lan.Commands
 
     Public Class CommandAdd
         Inherits TemplatedCommand(Of UDPAdvertiser)
-        Private ReadOnly _clock As IClock
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_clock IsNot Nothing)
-        End Sub
-        Public Sub New(clock As IClock)
+        Public Sub New()
             MyBase.New(Name:="Add",
                        template:="id=# name=<game name> map=<search query>",
                        Description:="Adds a game to be advertised, but doesn't create a new server to go with it.")
-            Contract.Requires(clock IsNot Nothing)
-            Me._clock = clock
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overloads Overrides Async Function PerformInvoke(target As UDPAdvertiser, user As BotUser, argument As CommandArgument) As Task(Of String)
@@ -44,7 +38,7 @@ Namespace Lan.Commands
             Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
             If id = 0 Then Throw New ArgumentException("Non-positive id.")
             Dim gameStats = WC3.GameStats.FromMapAndArgument(map, If(user Is Nothing, Application.ProductName.AssumeNotNull, user.Name.Value), argument)
-            Dim gameDescription = WC3.LocalGameDescription.FromArguments(name, map, id, gameStats, ageClock:=_clock)
+            Dim gameDescription = WC3.LocalGameDescription.FromArguments(name, map, id, gameStats, ageClock:=target.Clock)
 
             Await target.QueueAddGame(gameDescription)
             Return "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.AdvertisedPath)
@@ -72,11 +66,7 @@ Namespace Lan.Commands
 
     Public Class CommandHost
         Inherits TemplatedCommand(Of UDPAdvertiserComponent)
-        Private ReadOnly _clock As IClock
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_clock IsNot Nothing)
-        End Sub
-        Public Sub New(clock As IClock)
+        Public Sub New()
             MyBase.New(Name:="Host",
                        template:=Concat({"name=<game name>", "map=<search query>"},
                                         WC3.GameSettings.PartialArgumentTemplates,
@@ -84,12 +74,10 @@ Namespace Lan.Commands
                        Description:="Creates a server of a game and advertises it on lan. More help topics under 'Help Host *'.",
                        Permissions:="games:1",
                        extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
-            Contract.Requires(clock IsNot Nothing)
-            Me._clock = clock
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overloads Overrides Async Function PerformInvoke(target As UDPAdvertiserComponent, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Dim server = Await target.Bot.QueueGetOrConstructGameServer(_clock)
+            Dim server = Await target.Bot.QueueGetOrConstructGameServer(target.Advertiser.Clock)
             Dim gameSet = Await server.QueueAddGameFromArguments(argument, user)
             Try
                 Await target.Advertiser.QueueAddGame(gameSet.GameSettings.GameDescription)
