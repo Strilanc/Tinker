@@ -188,13 +188,26 @@ Namespace Bnet
 
             Return New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
         End Function
+
         Public Sub Init()
             'Handled packets
-            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.ChatEvent, AddressOf ReceiveChatEvent)
-            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.MessageBox, AddressOf ReceiveMessageBox)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.Ping,
+                                       Sub(value) SendPacket(Protocol.MakePing(salt:=value.Value)))
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.ChatEvent,
+                                       Sub(value)
+                                           Dim vals = value.Value
+                                           Dim eventId = vals.ItemAs(Of Protocol.ChatEventId)("event id")
+                                           Dim text = vals.ItemAs(Of String)("text")
+                                           If eventId = Protocol.ChatEventId.Channel Then _lastChannel = text
+                                       End Sub)
+            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.MessageBox,
+                                       Sub(value)
+                                           Dim vals = value.Value
+                                           Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
+                                           Logger.Log(msg, LogMessageType.Problem)
+                                       End Sub)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
-            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.Ping, AddressOf ReceivePing)
 
             'Ignored or handled-only-at-specific-times packets
             For Each ignoredPacket In New Protocol.Packets.Definition() {
@@ -774,28 +787,6 @@ Namespace Bnet
                         SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
                     End If
             End Select
-        End Sub
-#End Region
-
-#Region "Networking (Misc)"
-        Private Sub ReceiveChatEvent(value As IPickle(Of NamedValueMap))
-            Contract.Requires(value IsNot Nothing)
-            Dim vals = value.Value
-            Dim eventId = vals.ItemAs(Of Protocol.ChatEventId)("event id")
-            Dim text = vals.ItemAs(Of String)("text")
-            If eventId = Protocol.ChatEventId.Channel Then _lastChannel = text
-        End Sub
-
-        Private Sub ReceivePing(value As IPickle(Of UInt32))
-            Contract.Requires(value IsNot Nothing)
-            SendPacket(Protocol.MakePing(salt:=value.Value))
-        End Sub
-
-        Private Sub ReceiveMessageBox(value As IPickle(Of NamedValueMap))
-            Contract.Requires(value IsNot Nothing)
-            Dim vals = value.Value
-            Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
-            Logger.Log(msg, LogMessageType.Problem)
         End Sub
 #End Region
     End Class
