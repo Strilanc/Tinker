@@ -243,7 +243,7 @@ Namespace Bnet.Commands
                 AddHandler gameSet.StateChanged, onStarted
 
                 'Start advertising game
-                Dim gameDescription = Await target.Client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                Dim gameDescription = Await target.Client.QueueIncludeAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
                                                                                    isPrivate:=gameSet.GameSettings.IsPrivate)
                 Return "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(gameDescription.Name,
                                                                                gameDescription.GameStats.AdvertisedPath,

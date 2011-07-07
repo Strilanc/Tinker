@@ -163,7 +163,7 @@ Namespace Bnet
                 _autoHook = _bot.ObserveGameSets(
                     adder:=Sub(server, gameSet)
                                If gameSet.GameSettings.IsAdminGame Then Return
-                               _client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                               _client.QueueIncludeAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
                                                                 isPrivate:=gameSet.GameSettings.IsPrivate)
                            End Sub,
                     remover:=Sub(server, gameSet)

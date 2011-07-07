@@ -343,7 +343,6 @@ Namespace Bnet
             inQueue.QueueAction(Sub() Disconnect(expected, reason))
         End Sub
 
-#Region "State"
         Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return QueueDisconnect(expected:=True, reason:="Disposed")
@@ -399,7 +398,7 @@ Namespace Bnet
                                               localEndPoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                                               remoteEndPoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                               Clock:=_clock,
-                                              timeout:=60.Seconds,
+                                              Timeout:=60.Seconds,
                                               Logger:=Logger,
                                               bufferSize:=PacketSocket.DefaultBufferSize * 10)
 
@@ -421,7 +420,7 @@ Namespace Bnet
                 r.GetBytes(bytes)
                 Return bytes.ToUInt32
             Finally
-                If rng Is Nothing Then r.dispose()
+                If rng Is Nothing Then r.Dispose()
             End Try
         End Function
         Public Async Function QueueConnectWith(socket As PacketSocket, clientCDKeySalt As UInt32) As Task
@@ -629,9 +628,7 @@ Namespace Bnet
             ChangeState(ClientState.Channel)
             TryStartAdvertising()
         End Sub
-#End Region
 
-#Region "Advertising"
         Private Sub CheckStopAdvertising()
             If _curAdvertisement Is Nothing Then Return
             If _advertisementList.Contains(_curAdvertisement) Then Return
@@ -687,8 +684,11 @@ Namespace Bnet
             Loop
         End Sub
 
-        Private Function AddAdvertisableGame(gameDescription As WC3.LocalGameDescription, isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
+        Public Async Function QueueIncludeAdvertisableGame(gameDescription As WC3.LocalGameDescription,
+                                                           isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
             Contract.Requires(gameDescription IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of WC3.LocalGameDescription))() IsNot Nothing)
+            Await inQueue.AwaitableEntrance()
             Dim entry = (From e In _advertisementList
                          Where e.BaseGameDescription.Equals(gameDescription)
                          ).SingleOrDefault
@@ -697,16 +697,13 @@ Namespace Bnet
                 _advertisementList.Add(entry)
                 TryStartAdvertising()
             End If
-            Return entry.DescriptionAsync
-        End Function
-        Public Function QueueAddAdvertisableGame(gameDescription As WC3.LocalGameDescription,
-                                                 isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
-            Contract.Requires(gameDescription IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of WC3.LocalGameDescription))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AddAdvertisableGame(gameDescription, isPrivate)).Unwrap
+            Return Await entry.DescriptionAsync
         End Function
 
-        Private Function RemoveAdvertisableGame(gameDescription As WC3.LocalGameDescription) As Boolean
+        Public Async Function QueueRemoveAdvertisableGame(gameDescription As WC3.LocalGameDescription) As Task(Of Boolean)
+            Contract.Requires(gameDescription IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Await inQueue.AwaitableEntrance()
             Dim entry = (From e In _advertisementList.ToList
                          Where e.BaseGameDescription.Equals(gameDescription)
                          ).SingleOrDefault
@@ -716,21 +713,13 @@ Namespace Bnet
             CheckStopAdvertising()
             Return True
         End Function
-        Public Function QueueRemoveAdvertisableGame(gameDescription As WC3.LocalGameDescription) As Task(Of Boolean)
-            Contract.Requires(gameDescription IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() RemoveAdvertisableGame(gameDescription))
-        End Function
 
-        Private Sub RemoveAllAdvertisableGames()
+        Public Async Function QueueRemoveAllAdvertisableGames() As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Await inQueue.AwaitableEntrance()
             _advertisementList.Clear()
             CheckStopAdvertising()
-        End Sub
-        Public Function QueueRemoveAllAdvertisableGames() As Task
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() RemoveAllAdvertisableGames())
         End Function
-#End Region
 
         Private Sub SendPacket(packet As Protocol.Packet)
             Contract.Requires(Me._state >= ClientState.TCPConnectionEstablished)
