@@ -51,7 +51,7 @@ Namespace Bot.Commands
                 Dim client = clientComponent.Client
                 Dim profile = client.Profile
                 Dim host = profile.server.Split(" "c).First()
-                Dim connector = New Bnet.Client.HostPortConnecter(host, Bnet.Client.BnetServerPort, _clock, New Random())
+                Dim connector = New HostPortConnecter(host, Bnet.Client.BnetServerPort, _clock, New Random())
                 Dim socket = Await connector.ConnectAsync(client.Logger)
                 Await client.QueueConnectWith(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), connector)
                 Await client.QueueLogOn(Bnet.ClientAuthenticator.GeneratedFrom(profile.userName, profile.password))
