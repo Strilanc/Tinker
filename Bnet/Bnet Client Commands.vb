@@ -411,7 +411,7 @@ Namespace Bnet.Commands
                 remoteHost = parts.First.AssumeNotNull
             End If
 
-            Await target.QueueConnectTo(remoteHost, port)
+            Await target.QueueConnectTo(New Bnet.Client.HostPortConnecter(remoteHost, port, target.Clock, New Random()))
             Return "Established connection to {0}".Frmt(remoteHost)
         End Function
     End Class

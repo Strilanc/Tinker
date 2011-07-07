@@ -124,10 +124,45 @@ Namespace Bnet
         Private _reportedListenPort As UShort
 
         'connection
-        Private _bnetRemoteHostName As String
-        Private _bnetRemoteHostPort As UInt16
+        Private _reconnecter As IConnecter
         Private _userCredentials As ClientAuthenticator
         Private _allowRetryConnect As Boolean
+        Public Interface IConnecter
+            Function ConnectAsync(logger As Logger) As Task(Of PacketSocket)
+        End Interface
+        Public NotInheritable Class HostPortConnecter
+            Implements IConnecter
+            Private ReadOnly host As String
+            Private ReadOnly port As UInt16
+            Private ReadOnly clock As IClock
+            Private ReadOnly rng As Random
+            Public Sub New(host As String, port As UInt16, clock As IClock, rng As Random)
+                Contract.Requires(host IsNot Nothing)
+                Contract.Requires(clock IsNot Nothing)
+                Contract.Requires(rng IsNot Nothing)
+                Me.host = host
+                Me.port = port
+                Me.clock = clock
+                Me.rng = rng
+            End Sub
+            Public Async Function ConnectAsync(logger As Logger) As Task(Of PacketSocket) Implements IConnecter.ConnectAsync
+                logger.Log("Connecting to {0}:{1}...".Frmt(host, port), LogMessageType.Typical)
+                Dim tcpClient = Await TCPConnectAsync(host, New Random(), port)
+                Dim stream = New ThrottledWriteStream(subStream:=tcpClient.GetStream,
+                                                      initialSlack:=1000,
+                                                      costEstimator:=Function(data) 100 + data.Length,
+                                                      costLimit:=400,
+                                                      costRecoveredPerMillisecond:=0.048,
+                                                      clock:=clock)
+                Return New PacketSocket(stream:=stream,
+                                        localEndPoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                        remoteEndPoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                        clock:=clock,
+                                        Timeout:=60.Seconds,
+                                        logger:=logger,
+                                        bufferSize:=PacketSocket.DefaultBufferSize * 10)
+            End Function
+        End Class
 
         Public Event StateChanged(sender As Client, oldState As ClientState, newState As ClientState)
         Public Event AdvertisedGame(sender As Client, gameDescription As WC3.LocalGameDescription, [private] As Boolean, refreshed As Boolean)
@@ -376,8 +411,8 @@ Namespace Bnet
             End Using
         End Function
 
-        Public Async Function QueueConnectTo(remoteHost As String, remotePort As UInt16) As Task
-            Contract.Assume(remoteHost IsNot Nothing)
+        Public Async Function QueueConnectTo(connecter As IConnecter) As Task
+            Contract.Assume(connecter IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Await inQueue.AwaitableEntrance()
 
@@ -385,26 +420,8 @@ Namespace Bnet
             ChangeState(ClientState.InitiatingTCPConnection)
 
             Try
-                'Connect
-                Logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
-                Dim tcpClient = Await TCPConnectAsync(remoteHost, New Random(), remotePort)
-                Dim stream = New ThrottledWriteStream(subStream:=tcpClient.GetStream,
-                                                      initialSlack:=1000,
-                                                      costEstimator:=Function(data) 100 + data.Length,
-                                                      costLimit:=400,
-                                                      costRecoveredPerMillisecond:=0.048,
-                                                      Clock:=_clock)
-                Dim socket = New PacketSocket(stream:=stream,
-                                              localEndPoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                              remoteEndPoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-                                              Clock:=_clock,
-                                              Timeout:=60.Seconds,
-                                              Logger:=Logger,
-                                              bufferSize:=PacketSocket.DefaultBufferSize * 10)
-
-                'Continue
-                _bnetRemoteHostName = remoteHost
-                _bnetRemoteHostPort = remotePort
+                _reconnecter = connecter
+                Dim socket = Await _reconnecter.ConnectAsync(Logger)
                 ChangeState(ClientState.TCPConnectionEstablished)
                 Await QueueConnectWith(socket, GenerateCDKeySalt())
             Catch ex As Exception
@@ -605,12 +622,12 @@ Namespace Bnet
                 _wardenClient = Nothing
             End If
 
-            If Not expected AndAlso _allowRetryConnect AndAlso _bnetRemoteHostName IsNot Nothing Then
+            If Not expected AndAlso _allowRetryConnect AndAlso _reconnecter IsNot Nothing Then
                 _allowRetryConnect = False
                 Await _clock.AsyncWait(5.Seconds)
                 Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
                 Try
-                    Await QueueConnectTo(_bnetRemoteHostName, _bnetRemoteHostPort)
+                    Await QueueConnectTo(_reconnecter)
                     Await QueueLogOn(_userCredentials.WithNewGeneratedKeys())
                 Catch ex As Exception
                     ex.RaiseAsUnexpected("Reconnect failed")
