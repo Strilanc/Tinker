@@ -61,20 +61,20 @@
     End Sub
 
     <Extension()>
-    Public Function DisposeControlAsync(control As Control) As Task
+    Public Async Function DisposeControlAsync(control As Control) As Task
         Contract.Requires(control IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Dim result = New TaskCompletionSource(Of NoValue)
         Try
-            control.BeginInvoke(Sub()
-                                    control.Dispose()
-                                    result.SetResult(Nothing)
-                                End Sub)
+            If control.IsHandleCreated AndAlso control.InvokeRequired Then
+                Dim r = New TaskCompletionSource(Of NoValue)
+                control.BeginInvoke(Sub() r.SetByCalling(Sub() control.Dispose()))
+                Await r.Task
+            Else
+                control.Dispose()
+            End If
         Catch ex As Exception
             ex.RaiseAsUnexpected("Disposing control: {0}.".Frmt(control.Name))
-            result.SetResult(Nothing)
         End Try
-        Return result.Task.AssumeNotNull()
     End Function
     <Extension()>
     Public Function DisposeAsync(Of T As IDisposable)(value As Task(Of T)) As Task
