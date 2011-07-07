@@ -90,8 +90,8 @@ Namespace Lan
             If slaved = (_autoHook IsNot Nothing) Then Return
             If slaved Then
                 _autoHook = _bot.ObserveGameSets(
-                        adder:=Sub(server, gameSet) _advertiser.QueueAddGame(gameSet.GameSettings.GameDescription).IgnoreExceptions(),
-                        remover:=Sub(server, gameSet) _advertiser.QueueRemoveGame(gameSet.GameSettings.GameDescription.GameId).IgnoreExceptions())
+                        adder:=Sub(server, gameSet) _advertiser.QueueAddGame(gameSet.GameSettings.GameDescription).ConsiderExceptionsHandled(),
+                        remover:=Sub(server, gameSet) _advertiser.QueueRemoveGame(gameSet.GameSettings.GameDescription.GameId).ConsiderExceptionsHandled())
             Else
                 Contract.Assume(_autoHook IsNot Nothing)
                 _autoHook.DisposeAsync()

@@ -63,7 +63,7 @@ Namespace Bnet
             Public Sub New(gameDescription As WC3.LocalGameDescription, isPrivate As Boolean)
                 Me.BaseGameDescription = gameDescription
                 Me.IsPrivate = isPrivate
-                _initialGameDescription.IgnoreExceptions()
+                _initialGameDescription.Task.ConsiderExceptionsHandled()
             End Sub
 
             Public Sub SetNameFailed()
@@ -800,7 +800,7 @@ Namespace Bnet
             Contract.Requires(pickle IsNot Nothing)
             If _state < ClientState.WaitingForEnterChat Then Throw New IO.InvalidDataException("Warden packet in unexpected place.")
             Dim encryptedData = pickle.Value
-            _wardenClient.QueueSendWardenData(encryptedData).IgnoreExceptions()
+            _wardenClient.QueueSendWardenData(encryptedData).ConsiderExceptionsHandled()
         End Sub
         Private Sub OnWardenReceivedResponseData(sender As Warden.Client, data As IRist(Of Byte)) Handles _wardenClient.ReceivedWardenData
             Contract.Requires(data IsNot Nothing)

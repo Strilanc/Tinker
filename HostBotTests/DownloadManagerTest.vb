@@ -84,8 +84,8 @@ Public Class DownloadManagerTest
             Me._pid = pid
             Me._logger = logger
             Me._name = If(name Is Nothing, "TestPlayer{0}".Frmt(pid.Index), name.Value.ToString)
-            _failFuture.IgnoreExceptions()
-            _discFuture.IgnoreExceptions()
+            _failFuture.Task.ConsiderExceptionsHandled()
+            _discFuture.Task.ConsiderExceptionsHandled()
         End Sub
         Public Function MakePacketOtherPlayerJoined() As Packet Implements Download.IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Return MakeOtherPlayerJoined(Name,

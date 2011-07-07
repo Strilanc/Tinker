@@ -115,7 +115,7 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             Dim hostFail = New TaskCompletionSource(Of NoValue)
-            hostFail.IgnoreExceptions()
+            hostFail.Task.ConsiderExceptionsHandled()
             hostFail.SetException(New ArgumentException("Fake players can't host."))
             Contract.Assume(hostFail.Task IsNot Nothing)
 
@@ -435,7 +435,7 @@ Namespace WC3
         End Sub
         Public Function QueueSendPacket(packet As Protocol.Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket
             Dim result = _inQueue.QueueAction(Sub() SendPacket(packet))
-            result.IgnoreExceptions()
+            result.ConsiderExceptionsHandled()
             Return result
         End Function
 

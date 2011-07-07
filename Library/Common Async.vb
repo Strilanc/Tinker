@@ -94,20 +94,13 @@
         Return TaskEx.WhenAll(results).AssumeNotNull()
     End Function
 
+    '''<summary>Exceptions thrown by this task will not be considered unhandled (i.e. so they won't kill the program).</summary>
     <Extension()>
-    Public Function IgnoreExceptions(Of T)(task As TaskCompletionSource(Of T)) As task
-        Contract.Requires(task IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-        Contract.Assume(task.Task IsNot Nothing)
-        Return task.Task.IgnoreExceptions().AssumeNotNull()
-    End Function
-    <Extension()>
-    Public Async Function IgnoreExceptions(task As Task) As task
+    Public Async Sub ConsiderExceptionsHandled(task As Task)
         Contract.Assume(task IsNot Nothing)
-        'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Try
             Await task
         Catch ex As Exception
         End Try
-    End Function
+    End Sub
 End Module
