@@ -127,7 +127,6 @@ Namespace Bnet
         Private _bnetRemoteHostName As String
         Private _bnetRemoteHostPort As UInt16
         Private _userCredentials As ClientAuthenticator
-        Private _expectedServerPasswordProof As IRist(Of Byte)
         Private _allowRetryConnect As Boolean
 
         Public Event StateChanged(sender As Client, oldState As ClientState, newState As ClientState)
@@ -192,7 +191,6 @@ Namespace Bnet
         Public Sub Init()
             'Handled packets
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.ChatEvent, AddressOf ReceiveChatEvent)
-            IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.EnterChat, AddressOf ReceiveEnterChat)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.MessageBox, AddressOf ReceiveMessageBox)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
             IncludeQueuedPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
@@ -208,6 +206,7 @@ Namespace Bnet
                         Protocol.Packets.ServerToClient.GetFileTime,
                         Protocol.Packets.ServerToClient.GetIconData,
                         Protocol.Packets.ServerToClient.QueryGamesList(_clock),
+                        Protocol.Packets.ServerToClient.EnterChat,
                         Protocol.Packets.ServerToClient.FriendsUpdate,
                         Protocol.Packets.ServerToClient.RequiredWork}
                 _packetHandlerLogger.TryIncludeLogger(ignoredPacket.Id, ignoredPacket.Jar)
@@ -522,8 +521,54 @@ Namespace Bnet
             SendPacket(Protocol.MakeAccountLogOnBegin(credentials))
             Logger.Log("Initiating logon with username {0}.".Frmt(credentials.UserName), LogMessageType.Typical)
 
-            Await AwaitReceiveUserAuthenticationBegin(ct)
-            Await AwaitReceiveUserAuthenticationFinish(ct)
+            'Begin authentication
+            Dim authBeginVals = Await AwaitReceive(Protocol.Packets.ServerToClient.UserAuthenticationBegin, ct)
+            If ct.IsCancellationRequested Then Throw New TaskCanceledException()
+            Dim authBeginResult = authBeginVals.ItemAs(Of Protocol.UserAuthenticationBeginResult)("result")
+            Dim accountPasswordSalt = authBeginVals.ItemAs(Of IRist(Of Byte))("account password salt")
+            Dim serverPublicKey = authBeginVals.ItemAs(Of IRist(Of Byte))("server public key")
+
+            If authBeginResult <> Protocol.UserAuthenticationBeginResult.Passed Then Throw New IO.InvalidDataException("User authentication failed with error: {0}".Frmt(authBeginResult))
+            If Me._userCredentials Is Nothing Then Throw New InvalidStateException("Received AccountLogOnBegin before credentials specified.")
+            Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
+            Dim expectedServerProof = Me._userCredentials.ServerPasswordProof(accountPasswordSalt, serverPublicKey)
+
+            SendPacket(Protocol.MakeAccountLogOnFinish(clientProof))
+
+            'Finish authentication
+            Dim authFinishVals = Await AwaitReceive(Protocol.Packets.ServerToClient.UserAuthenticationFinish, ct)
+            If ct.IsCancellationRequested Then Throw New TaskCanceledException()
+            Dim result = authFinishVals.ItemAs(Of Protocol.UserAuthenticationFinishResult)("result")
+            Dim serverProof = authFinishVals.ItemAs(Of IRist(Of Byte))("server password proof")
+
+            'validate
+            If result <> Protocol.UserAuthenticationFinishResult.Passed Then
+                Dim errorInfo = ""
+                Select Case result
+                    Case Protocol.UserAuthenticationFinishResult.IncorrectPassword
+                        errorInfo = "(Note: This can happen due to a bnet bug. You might want to try again.)"
+                    Case Protocol.UserAuthenticationFinishResult.CustomError
+                        errorInfo = "({0})".Frmt(authFinishVals.ItemAs(Of Maybe(Of String))("custom error info").Value)
+                End Select
+                Throw New IO.InvalidDataException("User authentication failed with error: {0} {1}".Frmt(result, errorInfo))
+            ElseIf Not expectedServerProof.SequenceEqual(serverProof) Then
+                Throw New IO.InvalidDataException("The server's password proof was incorrect.")
+            End If
+
+            ChangeState(ClientState.WaitingForEnterChat)
+            _allowRetryConnect = True
+            Logger.Log("Logged on with username {0}.".Frmt(Me._userCredentials.UserName), LogMessageType.Typical)
+
+            'Game port
+            SetReportedListenPort(6112)
+
+            'Enter chat
+            SendPacket(Protocol.MakeEnterChat())
+            Await AwaitReceive(Protocol.Packets.ServerToClient.EnterChat, ct)
+            If ct.IsCancellationRequested Then Throw New TaskCanceledException()
+            Logger.Log("Entered chat", LogMessageType.Typical)
+
+            EnterChannel(Profile.initialChannel)
         End Function
 
         Private Async Sub Disconnect(expected As Boolean, reason As String)
@@ -664,63 +709,6 @@ Namespace Bnet
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SendPacket(packet))
         End Function
-
-        Private Async Function AwaitReceiveUserAuthenticationBegin(ct As CancellationToken) As Task
-            Dim vals = Await AwaitReceive(Protocol.Packets.ServerToClient.UserAuthenticationBegin, ct)
-            If ct.IsCancellationRequested Then Throw New TaskCanceledException()
-            Dim result = vals.ItemAs(Of Protocol.UserAuthenticationBeginResult)("result")
-            If result <> Protocol.UserAuthenticationBeginResult.Passed Then
-                Throw New IO.InvalidDataException("User authentication failed with error: {0}".Frmt(result))
-            End If
-
-            Dim accountPasswordSalt = vals.ItemAs(Of IRist(Of Byte))("account password salt")
-            Dim serverPublicKey = vals.ItemAs(Of IRist(Of Byte))("server public key")
-
-            If Me._userCredentials Is Nothing Then Throw New InvalidStateException("Received AccountLogOnBegin before credentials specified.")
-            Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
-            Dim serverProof = Me._userCredentials.ServerPasswordProof(accountPasswordSalt, serverPublicKey)
-
-            Me._expectedServerPasswordProof = serverProof
-            SendPacket(Protocol.MakeAccountLogOnFinish(clientProof))
-        End Function
-
-        Private Async Function AwaitReceiveUserAuthenticationFinish(ct As CancellationToken) As Task
-            Dim vals = Await AwaitReceive(Protocol.Packets.ServerToClient.UserAuthenticationFinish, ct)
-            If ct.IsCancellationRequested Then Throw New TaskCanceledException()
-            Dim result = vals.ItemAs(Of Protocol.UserAuthenticationFinishResult)("result")
-            Dim serverProof = vals.ItemAs(Of IRist(Of Byte))("server password proof")
-
-            'validate
-            If result <> Protocol.UserAuthenticationFinishResult.Passed Then
-                Dim errorInfo = ""
-                Select Case result
-                    Case Protocol.UserAuthenticationFinishResult.IncorrectPassword
-                        errorInfo = "(Note: This can happen due to a bnet bug. You might want to try again.):"
-                    Case Protocol.UserAuthenticationFinishResult.CustomError
-                        errorInfo = "({0})".Frmt(vals.ItemAs(Of Maybe(Of String))("custom error info").Value)
-                End Select
-                Throw New IO.InvalidDataException("User authentication failed with error: {0} {1}".Frmt(result, errorInfo))
-            ElseIf _expectedServerPasswordProof Is Nothing Then
-                Throw New InvalidStateException("Received {0} before the server password proof was knowable.".Frmt(Protocol.PacketId.UserAuthenticationFinish))
-            ElseIf Not _expectedServerPasswordProof.SequenceEqual(serverProof) Then
-                Throw New IO.InvalidDataException("The server's password proof was incorrect.")
-            End If
-
-            ChangeState(ClientState.WaitingForEnterChat)
-            _allowRetryConnect = True
-            Logger.Log("Logged on with username {0}.".Frmt(Me._userCredentials.UserName), LogMessageType.Typical)
-
-            'respond
-            SetReportedListenPort(6112)
-            SendPacket(Protocol.MakeEnterChat())
-        End Function
-
-        Private Sub ReceiveEnterChat(value As IPickle(Of NamedValueMap))
-            Contract.Requires(value IsNot Nothing)
-            Dim vals = value.Value
-            Logger.Log("Entered chat", LogMessageType.Typical)
-            EnterChannel(Profile.initialChannel)
-        End Sub
 
 #Region "Networking (Warden)"
         Private Sub ReceiveWarden(pickle As IPickle(Of IRist(Of Byte)))
