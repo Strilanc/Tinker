@@ -120,7 +120,7 @@ Namespace Bnet
         End Class
         Private ReadOnly _advertisementList As New List(Of AdvertisementEntry)
         Private _curAdvertisement As AdvertisementEntry
-        Private _advertiseRefreshTicker As IDisposable
+        Private _gameCanceller As New CancellationTokenSource()
         Private _reportedListenPort As UShort
 
         'connection
@@ -639,14 +639,13 @@ Namespace Bnet
                     ChangeState(ClientState.CreatingGame)
                     _curAdvertisement = _advertisementList.First
                     SetReportedListenPort(_curAdvertisement.BaseGameDescription.Port)
+                    _gameCanceller.Cancel()
+                    _gameCanceller = New CancellationTokenSource()
                     SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
                 Case ClientState.AdvertisingGame, ClientState.CreatingGame
                     If _advertisementList.Contains(_curAdvertisement) Then Return
                     SendPacket(Protocol.MakeCloseGame3())
-                    If _advertiseRefreshTicker IsNot Nothing Then
-                        _advertiseRefreshTicker.Dispose()
-                        _advertiseRefreshTicker = Nothing
-                    End If
+                    _gameCanceller.Cancel()
                     _curAdvertisement = Nothing
                     EnterChannel(_lastChannel)
             End Select
@@ -723,7 +722,6 @@ Namespace Bnet
             Return inQueue.QueueAction(Sub() SendPacket(packet))
         End Function
 
-#Region "Networking (Warden)"
         Private Sub ReceiveWarden(pickle As IPickle(Of IRist(Of Byte)))
             Contract.Requires(pickle IsNot Nothing)
             If _state < ClientState.WaitingForEnterChat Then Throw New IO.InvalidDataException("Warden packet in unexpected place.")
@@ -746,9 +744,7 @@ Namespace Bnet
             End If
             exception.RaiseAsUnexpected("Warden/BNLS Error")
         End Sub
-#End Region
 
-#Region "Networking (Games)"
         Private Sub ReceiveCreateGame3(pickle As IPickle(Of UInt32))
             Contract.Requires(pickle IsNot Nothing)
             Dim result = pickle.Value
@@ -760,10 +756,7 @@ Namespace Bnet
                         outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, True))
                     Else
                         'Refresh failed (No idea why it happened, better return to channel and try again)
-                        If _advertiseRefreshTicker IsNot Nothing Then
-                            _advertiseRefreshTicker.Dispose()
-                            _advertiseRefreshTicker = Nothing
-                        End If
+                        _gameCanceller.Cancel()
                         _curAdvertisement = Nothing
                         EnterChannel(_lastChannel)
                     End If
@@ -772,11 +765,15 @@ Namespace Bnet
                         'Initial advertisement succeeded, start refreshing
                         ChangeState(ClientState.AdvertisingGame)
                         If Not _curAdvertisement.IsPrivate Then
-                            _advertiseRefreshTicker = _clock.AsyncRepeat(RefreshPeriod, Sub() inQueue.QueueAction(
-                                Sub()
-                                    If _state <> ClientState.AdvertisingGame Then Return
-                                    SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
-                                End Sub))
+                            Dim ct = _gameCanceller.Token
+                            Call Async Sub()
+                                     Do
+                                         Await _clock.AsyncWait(RefreshPeriod)
+                                         If ct.IsCancellationRequested Then Exit Do
+                                         If _state <> ClientState.AdvertisingGame Then Exit Do
+                                         SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
+                                     Loop
+                                 End Sub
                         End If
 
                         _curAdvertisement.SetNameSucceeded()
@@ -788,6 +785,5 @@ Namespace Bnet
                     End If
             End Select
         End Sub
-#End Region
     End Class
 End Namespace
