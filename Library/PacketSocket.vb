@@ -152,7 +152,7 @@ Public NotInheritable Class PacketSocket
     End Sub
 
     Public Async Function AsyncReadPacket() As Task(Of IRist(Of Byte))
-        Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Byte)))() IsNot Nothing)
+        'Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Byte)))() IsNot Nothing)
         Try
             Dim data = Await packetStreamer.AsyncReadPacket()
             If deadManSwitch IsNot Nothing Then deadManSwitch.QueueReset()

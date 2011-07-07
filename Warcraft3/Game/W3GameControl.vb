@@ -48,8 +48,8 @@ Namespace WC3
         End Sub
 
         Private Async Sub OnGameUpdated(sender As WC3.Game, slots As SlotSet)
-            Contract.Requires(sender IsNot Nothing)
-            Contract.Requires(slots IsNot Nothing)
+            Contract.Assume(sender IsNot Nothing)
+            Contract.Assume(slots IsNot Nothing)
             Dim descriptions = Await TaskEx.WhenAll(From slot In slots Select slot.AsyncGenerateDescription)
             inQueue.QueueAction(Sub()
                                     If IsDisposed Then Return

@@ -18,11 +18,42 @@
     End Interface
 
     '''<summary>A named jar which parses data and packs values into pickles.</summary>
+    <ContractClass(GetType(ContractClassForINamedJar(Of )))>
     Public Interface INamedJar(Of T)
         Inherits IJar(Of T)
         ReadOnly Property SubJar As IJar(Of T)
         ReadOnly Property Name As InvariantString
     End Interface
+    <ContractClassFor(GetType(INamedJar(Of )))>
+    Public MustInherit Class ContractClassForINamedJar(Of T)
+        Implements INamedJar(Of T)
+        Public Function Describe(value As T) As String Implements IJar(Of T).Describe
+            Throw New NotImplementedException()
+        End Function
+        Public Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
+            Throw New NotImplementedException()
+        End Function
+        Public Function Pack(value As T) As LinqToLists.IRist(Of Byte) Implements IJar(Of T).Pack
+            Throw New NotImplementedException()
+        End Function
+        Public Function Parse(data As LinqToLists.IRist(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
+            Throw New NotImplementedException()
+        End Function
+        Public Function Parse(text As String) As T Implements IJar(Of T).Parse
+            Throw New NotImplementedException()
+        End Function
+        Public ReadOnly Property Name As Strilbrary.Values.InvariantString Implements INamedJar(Of T).Name
+            Get
+                Throw New NotImplementedException()
+            End Get
+        End Property
+        Public ReadOnly Property SubJar As IJar(Of T) Implements INamedJar(Of T).SubJar
+            Get
+                Contract.Ensures(Contract.Result(Of IJar(Of T))() IsNot Nothing)
+                Throw New NotImplementedException()
+            End Get
+        End Property
+    End Class
 
     <ContractClass(GetType(ISimpleValueEditor.ContractClass))>
     Public Interface ISimpleValueEditor

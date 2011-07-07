@@ -37,7 +37,7 @@ Namespace Components
         ''' Throws an InvalidOperationException if a component with the same name and type identifiers is already included.
         ''' </summary>
         Private Async Sub AddComponent(component As IBotComponent)
-            Contract.Requires(component IsNot Nothing)
+            Contract.Assume(component IsNot Nothing)
             If _components.Contains(component) Then
                 Throw New InvalidOperationException("Component already added.")
             ElseIf TryFindComponent(component.Type, component.Name).HasValue Then

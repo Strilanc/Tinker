@@ -91,7 +91,9 @@ Namespace WC3
 
         Public Function AsyncReadPacket() As Task(Of IRist(Of Byte))
             Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Byte)))() IsNot Nothing)
-            Return _socket.AsyncReadPacket()
+            Dim r = _socket.AsyncReadPacket()
+            Contract.Assume(r IsNot Nothing)
+            Return r
         End Function
 
         Public ReadOnly Property Socket As PacketSocket

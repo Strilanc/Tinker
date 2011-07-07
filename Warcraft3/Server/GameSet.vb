@@ -134,7 +134,7 @@
         End Function
 
         Private Async Function AsyncTryFindPlayer(userName As InvariantString) As Task(Of Player)
-            Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Dim findResults = Await TaskEx.WhenAll(From game In _games Select game.QueueTryFindPlayer(userName))
             Return (From player In findResults Where player IsNot Nothing).FirstOrDefault
         End Function

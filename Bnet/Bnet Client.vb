@@ -394,8 +394,8 @@ Namespace Bnet
 
         Private Async Function AwaitReceive(Of T)(packet As Protocol.Packets.Definition(Of T),
                                                   Optional ct As Threading.CancellationToken = Nothing) As Task(Of T)
-            Contract.Requires(packet IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
+            Contract.Assume(packet IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
             Dim r = New TaskCompletionSource(Of T)()
             Using d1 = IncludeQueuedPacketHandler(packet, Sub(pickle) r.TrySetResult(pickle.Value)),
                   d2 = ct.Register(Sub() r.TrySetCanceled())
@@ -404,8 +404,8 @@ Namespace Bnet
         End Function
 
         Private Async Function ConnectWithAsync(socket As PacketSocket, Optional clientCdKeySalt As UInt32? = Nothing) As Task
-            Contract.Requires(socket IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Contract.Assume(socket IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If Me._state <> ClientState.Disconnected AndAlso Me._state <> ClientState.FinishedInitiatingConnection Then
                 Throw New InvalidOperationException("Must disconnect before connecting again.")
             End If
@@ -461,8 +461,8 @@ Namespace Bnet
         End Sub
 
         Private Async Function LogOnAsync(credentials As ClientAuthenticator) As Task
-            Contract.Requires(credentials IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Contract.Assume(credentials IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             If _state <> ClientState.EnterUserCredentials Then
                 Throw New InvalidOperationException("Incorrect state for login.")
             End If

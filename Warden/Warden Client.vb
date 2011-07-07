@@ -77,6 +77,7 @@
                         End Try
                     End Function()
 
+            Contract.Assume(s IsNot Nothing)
             Dim result = New Warden.Client(s, New TaskCompletionSource(Of NoValue), logger)
             result.Start()
             Return result

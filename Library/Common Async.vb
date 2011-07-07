@@ -91,7 +91,7 @@
             Contract.Assume(value IsNot Nothing)
             results.Add(value.DisposeAsync())
         Next value
-        Return TaskEx.WhenAll(results)
+        Return TaskEx.WhenAll(results).AssumeNotNull()
     End Function
 
     <Extension()>
@@ -99,12 +99,12 @@
         Contract.Requires(task IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Contract.Assume(task.Task IsNot Nothing)
-        Return task.Task.IgnoreExceptions()
+        Return task.Task.IgnoreExceptions().AssumeNotNull()
     End Function
     <Extension()>
     Public Async Function IgnoreExceptions(task As Task) As task
-        Contract.Requires(task IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+        Contract.Assume(task IsNot Nothing)
+        'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Try
             Await task
         Catch ex As Exception
