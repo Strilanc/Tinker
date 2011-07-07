@@ -595,6 +595,7 @@ Namespace Bnet
 
             'Finalize class futures
             _connectCanceller.Cancel()
+            _gameCanceller.Cancel()
             _curAdvertisement = Nothing
 
             ChangeState(ClientState.Disconnected)
@@ -642,14 +643,14 @@ Namespace Bnet
             If _curAdvertisement IsNot Nothing Then Return
             If _advertisementList.None() Then Return
 
-            ChangeState(ClientState.CreatingGame)
-            _curAdvertisement = _advertisementList.First
-            SetReportedListenPort(_curAdvertisement.BaseGameDescription.Port)
             _gameCanceller.Cancel()
             _gameCanceller = New CancellationTokenSource()
             Dim ct = _gameCanceller.Token
+            _curAdvertisement = _advertisementList.First()
 
             'Create game
+            ChangeState(ClientState.CreatingGame)
+            SetReportedListenPort(_curAdvertisement.BaseGameDescription.Port)
             Do
                 SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
                 Dim createSucceeded = 0 = Await AwaitReceive(Protocol.Packets.ServerToClient.CreateGame3, ct)
@@ -659,11 +660,11 @@ Namespace Bnet
                 'Failed to create, try again with a different name
                 _curAdvertisement.SetNameFailed()
             Loop
-            ChangeState(ClientState.AdvertisingGame)
             _curAdvertisement.SetNameSucceeded()
             outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, refreshed:=False))
 
             'Refresh game periodically
+            ChangeState(ClientState.AdvertisingGame)
             If _curAdvertisement.IsPrivate Then Return
             Do
                 Await _clock.AsyncWait(RefreshPeriod)
