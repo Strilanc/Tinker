@@ -18,14 +18,11 @@ Imports Tinker.Pickling
 Namespace Bnet
     Public Enum ClientState As Integer
         Disconnected
-        InitiatingConnection
-        FinishedInitiatingConnection
-        WaitingForProgramAuthenticationBegin
-        EnterCDKeys
-        WaitingForProgramAuthenticationFinish
+        InitiatingTCPConnection
+        TCPConnectionEstablished
+        AuthenticatingProgram
         EnterUserCredentials
-        WaitingForUserAuthenticationBegin
-        WaitingForUserAuthenticationFinish
+        AuthenticatingUser
         WaitingForEnterChat
         Channel
         CreatingGame
@@ -51,8 +48,8 @@ Namespace Bnet
         Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
         Private _socket As PacketSocket
         Private WithEvents _wardenClient As Warden.Client
-        Private _connectCanceller As Threading.CancellationTokenSource
-        Private _logonCanceller As Threading.CancellationTokenSource
+        Private _connectCanceller As CancellationTokenSource
+        Private _logonCanceller As CancellationTokenSource
 
         'game
         Private Class AdvertisementEntry
@@ -131,7 +128,6 @@ Namespace Bnet
         Private _bnetRemoteHostName As String
         Private _bnetRemoteHostPort As UInt16
         Private _userCredentials As ClientAuthenticator
-        Private _clientCdKeySalt As UInt32
         Private _expectedServerPasswordProof As IRist(Of Byte)
         Private _allowRetryConnect As Boolean
 
@@ -151,8 +147,8 @@ Namespace Bnet
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_productAuthenticator IsNot Nothing)
             Contract.Invariant(_productInfoProvider IsNot Nothing)
-            Contract.Invariant((_socket IsNot Nothing) = (_state > ClientState.InitiatingConnection))
-            Contract.Invariant((_wardenClient IsNot Nothing) = (_state > ClientState.WaitingForProgramAuthenticationBegin))
+            Contract.Invariant((_socket IsNot Nothing) = (_state >= ClientState.TCPConnectionEstablished))
+            Contract.Invariant((_wardenClient Is Nothing) OrElse (_state <= ClientState.AuthenticatingProgram))
             Contract.Invariant((_state <= ClientState.EnterUserCredentials) OrElse (_userCredentials IsNot Nothing))
             Contract.Invariant((_curAdvertisement IsNot Nothing) = (_state >= ClientState.CreatingGame))
         End Sub
@@ -259,15 +255,13 @@ Namespace Bnet
                 Function(value) inQueue.QueueAction(Sub() handler(value)))
         End Function
 
-        Public Function QueueIncludePacketHandler(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
-                                                        handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable)
+        Public Async Function QueueIncludePacketHandler(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
+                                                              handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable)
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _packetHandlerLogger.IncludeHandler(
-                packetDefinition.Id,
-                packetDefinition.Jar,
-                handler))
+            Await inQueue.AwaitableEntrance()
+            Return _packetHandlerLogger.IncludeHandler(packetDefinition.Id, packetDefinition.Jar, handler)
         End Function
 
         Private Sub SendText(text As String)
@@ -350,12 +344,35 @@ Namespace Bnet
             outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, oldState, newState))
         End Sub
 
-        Private Async Function ConnectToAsync(remoteHost As String,
-                                              remotePort As UInt16) As Task
+        Private Async Sub BeginHandlingPackets()
+            Contract.Assume(Me._state >= ClientState.TCPConnectionEstablished)
+            Try
+                Do
+                    Dim data = Await _socket.AsyncReadPacket
+                    Await _packetHandlerLogger.HandlePacket(data)
+                Loop
+            Catch ex As Exception
+                QueueDisconnect(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
+            End Try
+        End Sub
+        Private Async Function AwaitReceive(Of T)(packet As Protocol.Packets.Definition(Of T),
+                                                  Optional ct As CancellationToken = Nothing) As Task(Of T)
+            Contract.Assume(packet IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
+            Dim r = New TaskCompletionSource(Of T)()
+            Using d1 = IncludeQueuedPacketHandler(packet, Sub(pickle) r.TrySetResult(pickle.Value)),
+                  d2 = ct.Register(Sub() r.TrySetCanceled())
+                Return Await r.Task
+            End Using
+        End Function
+
+        Public Async Function QueueConnectTo(remoteHost As String, remotePort As UInt16) As Task
             Contract.Assume(remoteHost IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Await inQueue.AwaitableEntrance()
+
             If Me._state <> ClientState.Disconnected Then Throw New InvalidOperationException("Must disconnect before connecting again.")
-            ChangeState(ClientState.InitiatingConnection)
+            ChangeState(ClientState.InitiatingTCPConnection)
 
             Try
                 'Connect
@@ -366,11 +383,11 @@ Namespace Bnet
                                                       costEstimator:=Function(data) 100 + data.Length,
                                                       costLimit:=400,
                                                       costRecoveredPerMillisecond:=0.048,
-                                                      clock:=_clock)
+                                                      Clock:=_clock)
                 Dim socket = New PacketSocket(stream:=stream,
                                               localEndPoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                                               remoteEndPoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-                                              clock:=_clock,
+                                              Clock:=_clock,
                                               timeout:=60.Seconds,
                                               Logger:=Logger,
                                               bufferSize:=PacketSocket.DefaultBufferSize * 10)
@@ -378,54 +395,42 @@ Namespace Bnet
                 'Continue
                 _bnetRemoteHostName = remoteHost
                 _bnetRemoteHostPort = remotePort
-                ChangeState(ClientState.FinishedInitiatingConnection)
-                Await ConnectWithAsync(socket)
+                ChangeState(ClientState.TCPConnectionEstablished)
+                Await QueueConnectWith(socket, GenerateCDKeySalt())
             Catch ex As Exception
                 QueueDisconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
                 Throw
             End Try
         End Function
-        Public Function QueueConnectTo(remoteHost As String,
-                                     remotePort As UInt16) As Task
-            Contract.Requires(remoteHost IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() ConnectToAsync(remoteHost, remotePort)).Unwrap
-        End Function
 
-        Private Async Function AwaitReceive(Of T)(packet As Protocol.Packets.Definition(Of T),
-                                                  Optional ct As Threading.CancellationToken = Nothing) As Task(Of T)
-            Contract.Assume(packet IsNot Nothing)
-            'Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
-            Dim r = New TaskCompletionSource(Of T)()
-            Using d1 = IncludeQueuedPacketHandler(packet, Sub(pickle) r.TrySetResult(pickle.Value)),
-                  d2 = ct.Register(Sub() r.TrySetCanceled())
-                Return Await r.Task
-            End Using
+        Public Shared Function GenerateCDKeySalt(Optional rng As System.Security.Cryptography.RandomNumberGenerator = Nothing) As UInt32
+            Dim r = If(rng, New System.Security.Cryptography.RNGCryptoServiceProvider())
+            Try
+                Dim bytes(0 To 3) As Byte
+                r.GetBytes(bytes)
+                Return bytes.ToUInt32
+            Finally
+                If rng Is Nothing Then r.dispose()
+            End Try
         End Function
-
-        Private Async Function ConnectWithAsync(socket As PacketSocket, Optional clientCdKeySalt As UInt32? = Nothing) As Task
+        Public Async Function QueueConnectWith(socket As PacketSocket, clientCDKeySalt As UInt32) As Task
             Contract.Assume(socket IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            If Me._state <> ClientState.Disconnected AndAlso Me._state <> ClientState.FinishedInitiatingConnection Then
+
+            Await inQueue.AwaitableEntrance(forceReentry:=False)
+
+            If Me._state <> ClientState.Disconnected AndAlso Me._state <> ClientState.TCPConnectionEstablished Then
                 Throw New InvalidOperationException("Must disconnect before connecting again.")
             End If
 
             Try
-                If clientCdKeySalt Is Nothing Then
-                    Using rng = New System.Security.Cryptography.RNGCryptoServiceProvider()
-                        Dim clientKeySaltBytes(0 To 3) As Byte
-                        rng.GetBytes(clientKeySaltBytes)
-                        clientCdKeySalt = clientKeySaltBytes.ToUInt32
-                    End Using
-                End If
-                Me._clientCdKeySalt = clientCdKeySalt.Value
                 Me._socket = socket
                 Me._socket.Name = "BNET"
-                ChangeState(ClientState.WaitingForProgramAuthenticationBegin)
+                ChangeState(ClientState.AuthenticatingProgram)
 
                 'Reset the class future for the connection outcome
                 If _connectCanceller IsNot Nothing Then _connectCanceller.Cancel()
-                _connectCanceller = New Threading.CancellationTokenSource()
+                _connectCanceller = New CancellationTokenSource()
                 Dim ct = _connectCanceller.Token
 
                 'Introductions
@@ -434,30 +439,71 @@ Namespace Bnet
 
                 BeginHandlingPackets()
 
-                Await AwaitReceiveProgramAuthenticationBegin(ct)
-                Await AwaitReceiveProgramAuthenticationFinish(ct)
+                Dim authBeginVals = Await AwaitReceive(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, ct)
+                If ct.IsCancellationRequested Then Throw New TaskCanceledException()
+                If authBeginVals.ItemAs(Of Protocol.ProgramAuthenticationBeginLogOnType)("logon type") <> Protocol.ProgramAuthenticationBeginLogOnType.Warcraft3 Then
+                    Throw New IO.InvalidDataException("Unrecognized logon type from server.")
+                End If
+                Dim serverCdKeySalt = authBeginVals.ItemAs(Of UInt32)("server cd key salt")
+                Dim revisionCheckSeed = authBeginVals.ItemAs(Of String)("revision check seed")
+                Dim revisionCheckInstructions = authBeginVals.ItemAs(Of String)("revision check challenge")
+
+                Dim keys = Await _productAuthenticator.AsyncAuthenticate(clientCDKeySalt.Bytes, serverCdKeySalt.Bytes)
+                If ct.IsCancellationRequested Then Throw New TaskCanceledException()
+
+                'revision check
+                If revisionCheckInstructions = "" Then
+                    Throw New IO.InvalidDataException("Received an invalid revision check challenge from bnet. Try connecting again.")
+                End If
+                Dim revisionCheckResponse = _productInfoProvider.GenerateRevisionCheck(My.Settings.war3path, revisionCheckSeed, revisionCheckInstructions)
+                SendPacket(Protocol.MakeAuthenticationFinish(
+                    version:=_productInfoProvider.ExeVersion,
+                    revisionCheckResponse:=revisionCheckResponse,
+                    clientCDKeySalt:=clientCDKeySalt,
+                    cdKeyOwner:=My.Settings.cdKeyOwner,
+                    exeInformation:="war3.exe {0} {1}".Frmt(_productInfoProvider.LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
+                                                            _productInfoProvider.FileSize),
+                    productAuthentication:=keys))
+
+                BeginConnectToBNLSServer(keys)
+
+                Dim authFinishVals = Await AwaitReceive(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish, ct)
+                If ct.IsCancellationRequested Then Throw New TaskCanceledException()
+                Dim result = authFinishVals.ItemAs(Of Protocol.ProgramAuthenticationFinishResult)("result")
+                If result <> Protocol.ProgramAuthenticationFinishResult.Passed Then
+                    Throw New IO.InvalidDataException("Program authentication failed with error: {0} {1}.".Frmt(result, authFinishVals.ItemAs(Of String)("info")))
+                End If
+                ChangeState(ClientState.EnterUserCredentials)
             Catch ex As Exception
                 QueueDisconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
                 Throw
             End Try
         End Function
-        Public Function QueueConnectWith(socket As PacketSocket,
-                                         Optional clientCDKeySalt As UInt32? = Nothing) As Task
-            Contract.Requires(socket IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() ConnectWithAsync(socket, clientCDKeySalt)).Unwrap
-        End Function
+        Private Sub BeginConnectToBNLSServer(keys As ProductCredentialPair)
+            'Parse address setting
+            Dim remoteHost = ""
+            Dim remotePort = 0US
+            Dim remoteEndPointArg = If(My.Settings.bnls, "").ToInvariant
+            If remoteEndPointArg <> "" Then
+                Dim hostPortPair = remoteEndPointArg.ToString.Split(":"c)
+                remoteHost = hostPortPair(0)
+                If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), remotePort) Then
+                    Logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
+                End If
+            End If
 
-        Private Async Sub BeginHandlingPackets()
-            Contract.Assume(Me._state > ClientState.InitiatingConnection)
-            Try
-                Do
-                    Dim data = Await _socket.AsyncReadPacket
-                    Await _packetHandlerLogger.HandlePacket(data)
-                Loop
-            Catch ex As Exception
-                QueueDisconnect(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
-            End Try
+            'Attempt BNLS connection
+            Dim seed = keys.AuthenticationROC.AuthenticationProof.TakeExact(4).ToUInt32
+            If remoteHost = "" Then
+                _wardenClient = Warden.Client.MakeMock(_logger)
+            Else
+                _wardenClient = Warden.Client.MakeConnect(remoteHost:=remoteHost,
+                                                          remotePort:=remotePort,
+                                                          seed:=seed,
+                                                          cookie:=seed,
+                                                          logger:=Logger,
+                                                          clock:=_clock)
+            End If
         End Sub
 
         Private Async Function LogOnAsync(credentials As ClientAuthenticator) As Task
@@ -468,11 +514,11 @@ Namespace Bnet
             End If
 
             If _logonCanceller IsNot Nothing Then _logonCanceller.Cancel()
-            _logonCanceller = New Threading.CancellationTokenSource()
+            _logonCanceller = New CancellationTokenSource()
             Dim ct = _logonCanceller.Token
 
             Me._userCredentials = credentials
-            ChangeState(ClientState.WaitingForUserAuthenticationBegin)
+            ChangeState(ClientState.AuthenticatingUser)
             SendPacket(Protocol.MakeAccountLogOnBegin(credentials))
             Logger.Log("Initiating logon with username {0}.".Frmt(credentials.UserName), LogMessageType.Typical)
 
@@ -600,7 +646,7 @@ Namespace Bnet
 #End Region
 
         Private Sub SendPacket(packet As Protocol.Packet)
-            Contract.Requires(Me._state > ClientState.InitiatingConnection)
+            Contract.Requires(Me._state >= ClientState.TCPConnectionEstablished)
             Contract.Requires(packet IsNot Nothing)
 
             Try
@@ -625,118 +671,11 @@ Namespace Bnet
             Return inQueue.QueueAction(Sub() SendPacket(packet))
         End Function
 
-#Region "Networking (Connect)"
-        Private Async Function AwaitReceiveProgramAuthenticationBegin(ct As Threading.CancellationToken) As Task
-            If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin))
-            End If
-            Dim vals = Await AwaitReceive(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, ct)
-            If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin))
-            End If
-
-            'Check
-            If vals.ItemAs(Of Protocol.ProgramAuthenticationBeginLogOnType)("logon type") <> Protocol.ProgramAuthenticationBeginLogOnType.Warcraft3 Then
-                Throw New IO.InvalidDataException("Unrecognized logon type from server.")
-            End If
-
-            'Salts
-            Dim serverCdKeySalt = vals.ItemAs(Of UInt32)("server cd key salt")
-            Dim clientCdKeySalt = _clientCdKeySalt
-
-            'Async Enter Keys
-            ChangeState(ClientState.EnterCDKeys)
-            Try
-                Dim keys = Await _productAuthenticator.AsyncAuthenticate(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
-                EnterKeys(keys:=keys,
-                          revisionCheckSeed:=vals.ItemAs(Of String)("revision check seed"),
-                          revisionCheckInstructions:=vals.ItemAs(Of String)("revision check challenge"),
-                          clientCdKeySalt:=clientCdKeySalt)
-            Catch ex As Exception
-                ex.RaiseAsUnexpected("Error Handling {0}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin))
-                QueueDisconnect(expected:=False, reason:="Error handling {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin, ex.Summarize))
-            End Try
-        End Function
-        Private Sub EnterKeys(keys As ProductCredentialPair,
-                              revisionCheckSeed As String,
-                              revisionCheckInstructions As String,
-                              clientCdKeySalt As UInt32)
-            Contract.Requires(keys IsNot Nothing)
-            Contract.Requires(revisionCheckSeed IsNot Nothing)
-            Contract.Requires(revisionCheckInstructions IsNot Nothing)
-            If _state <> ClientState.EnterCDKeys Then Throw New InvalidStateException("Incorrect state for entering cd keys.")
-            Dim revisionCheckResponse As UInt32
-            Try
-                revisionCheckResponse = _productInfoProvider.GenerateRevisionCheck(
-                    folder:=My.Settings.war3path,
-                    challengeSeed:=revisionCheckSeed,
-                    challengeInstructions:=revisionCheckInstructions)
-            Catch ex As ArgumentException
-                If revisionCheckInstructions = "" Then
-                    Throw New IO.InvalidDataException("Received an invalid revision check challenge from bnet. Try connecting again.")
-                End If
-                Throw New OperationCanceledException("Failed to compute revision check.", ex)
-            End Try
-            SendPacket(Protocol.MakeAuthenticationFinish(
-                       version:=_productInfoProvider.ExeVersion,
-                       revisionCheckResponse:=revisionCheckResponse,
-                       clientCDKeySalt:=clientCdKeySalt,
-                       cdKeyOwner:=My.Settings.cdKeyOwner,
-                       exeInformation:="war3.exe {0} {1}".Frmt(_productInfoProvider.LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
-                                                               _productInfoProvider.FileSize),
-                       productAuthentication:=keys))
-
-            ChangeState(ClientState.WaitingForProgramAuthenticationFinish)
-
-            'Parse address setting
-            Dim remoteHost = ""
-            Dim remotePort = 0US
-            Dim remoteEndPointArg = If(My.Settings.bnls, "").ToInvariant
-            If remoteEndPointArg <> "" Then
-                Dim hostPortPair = remoteEndPointArg.ToString.Split(":"c)
-                remoteHost = hostPortPair(0)
-                If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), remotePort) Then
-                    Logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
-                End If
-            End If
-
-            'Attempt BNLS connection
-            Dim seed = keys.AuthenticationROC.AuthenticationProof.TakeExact(4).ToUInt32
-            If remoteHost = "" Then
-                _wardenClient = Warden.Client.MakeMock(_logger)
-            Else
-                _wardenClient = Warden.Client.MakeConnect(remoteHost:=remoteHost,
-                                                          remotePort:=remotePort,
-                                                          seed:=seed,
-                                                          cookie:=seed,
-                                                          logger:=Logger,
-                                                          clock:=_clock)
-            End If
-        End Sub
-
-        Private Async Function AwaitReceiveProgramAuthenticationFinish(ct As Threading.CancellationToken) As Task
-            If _state <> ClientState.WaitingForProgramAuthenticationFinish Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationFinish, _state))
-            End If
-            Dim vals = Await AwaitReceive(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish, ct)
-            Dim result = vals.ItemAs(Of Protocol.ProgramAuthenticationFinishResult)("result")
-            If _state <> ClientState.WaitingForProgramAuthenticationFinish Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationFinish, _state))
-            ElseIf result <> Protocol.ProgramAuthenticationFinishResult.Passed Then
-                Throw New IO.InvalidDataException("Program authentication failed with error: {0} {1}.".Frmt(result, vals.ItemAs(Of String)("info")))
-            End If
-            ChangeState(ClientState.EnterUserCredentials)
-        End Function
-
-        Private Async Function AwaitReceiveUserAuthenticationBegin(ct As Threading.CancellationToken) As Task
-            If _state <> ClientState.WaitingForUserAuthenticationBegin Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.UserAuthenticationBegin))
-            End If
+        Private Async Function AwaitReceiveUserAuthenticationBegin(ct As CancellationToken) As Task
             Dim vals = Await AwaitReceive(Protocol.Packets.ServerToClient.UserAuthenticationBegin, ct)
+            If ct.IsCancellationRequested Then Throw New TaskCanceledException()
             Dim result = vals.ItemAs(Of Protocol.UserAuthenticationBeginResult)("result")
-            If _state <> ClientState.WaitingForUserAuthenticationBegin Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.UserAuthenticationBegin))
-            ElseIf result <> Protocol.UserAuthenticationBeginResult.Passed Then
+            If result <> Protocol.UserAuthenticationBeginResult.Passed Then
                 Throw New IO.InvalidDataException("User authentication failed with error: {0}".Frmt(result))
             End If
 
@@ -748,22 +687,17 @@ Namespace Bnet
             Dim serverProof = Me._userCredentials.ServerPasswordProof(accountPasswordSalt, serverPublicKey)
 
             Me._expectedServerPasswordProof = serverProof
-            ChangeState(ClientState.WaitingForUserAuthenticationFinish)
             SendPacket(Protocol.MakeAccountLogOnFinish(clientProof))
         End Function
 
-        Private Async Function AwaitReceiveUserAuthenticationFinish(ct As Threading.CancellationToken) As Task
-            If _state <> ClientState.WaitingForUserAuthenticationFinish Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.UserAuthenticationFinish, _state))
-            End If
+        Private Async Function AwaitReceiveUserAuthenticationFinish(ct As CancellationToken) As Task
             Dim vals = Await AwaitReceive(Protocol.Packets.ServerToClient.UserAuthenticationFinish, ct)
+            If ct.IsCancellationRequested Then Throw New TaskCanceledException()
             Dim result = vals.ItemAs(Of Protocol.UserAuthenticationFinishResult)("result")
             Dim serverProof = vals.ItemAs(Of IRist(Of Byte))("server password proof")
 
             'validate
-            If _state <> ClientState.WaitingForUserAuthenticationFinish Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.UserAuthenticationFinish, _state))
-            ElseIf result <> Protocol.UserAuthenticationFinishResult.Passed Then
+            If result <> Protocol.UserAuthenticationFinishResult.Passed Then
                 Dim errorInfo = ""
                 Select Case result
                     Case Protocol.UserAuthenticationFinishResult.IncorrectPassword
@@ -793,7 +727,6 @@ Namespace Bnet
             Logger.Log("Entered chat", LogMessageType.Typical)
             EnterChannel(Profile.initialChannel)
         End Sub
-#End Region
 
 #Region "Networking (Warden)"
         Private Sub ReceiveWarden(pickle As IPickle(Of IRist(Of Byte)))
