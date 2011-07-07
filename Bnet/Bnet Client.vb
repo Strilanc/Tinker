@@ -411,25 +411,6 @@ Namespace Bnet
             End Using
         End Function
 
-        Public Async Function QueueConnectTo(connecter As IConnecter) As Task
-            Contract.Assume(connecter IsNot Nothing)
-            'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Await inQueue.AwaitableEntrance()
-
-            If Me._state <> ClientState.Disconnected Then Throw New InvalidOperationException("Must disconnect before connecting again.")
-            ChangeState(ClientState.InitiatingTCPConnection)
-
-            Try
-                _reconnecter = connecter
-                Dim socket = Await _reconnecter.ConnectAsync(Logger)
-                ChangeState(ClientState.TCPConnectionEstablished)
-                Await QueueConnectWith(socket, GenerateCDKeySalt())
-            Catch ex As Exception
-                QueueDisconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
-                Throw
-            End Try
-        End Function
-
         Public Shared Function GenerateCDKeySalt(Optional rng As System.Security.Cryptography.RandomNumberGenerator = Nothing) As UInt32
             Dim r = If(rng, New System.Security.Cryptography.RNGCryptoServiceProvider())
             Try
@@ -440,15 +421,16 @@ Namespace Bnet
                 If rng Is Nothing Then r.Dispose()
             End Try
         End Function
-        Public Async Function QueueConnectWith(socket As PacketSocket, clientCDKeySalt As UInt32) As Task
+        Public Async Function QueueConnectWith(socket As PacketSocket, clientCDKeySalt As UInt32, Optional reconnector As IConnecter = Nothing) As Task
             Contract.Assume(socket IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
-            Await inQueue.AwaitableEntrance(forceReentry:=False)
+            Await inQueue.AwaitableEntrance()
 
             If Me._state <> ClientState.Disconnected AndAlso Me._state <> ClientState.TCPConnectionEstablished Then
                 Throw New InvalidOperationException("Must disconnect before connecting again.")
             End If
+            _reconnecter = reconnector
 
             Try
                 Me._socket = socket
@@ -627,7 +609,8 @@ Namespace Bnet
                 Await _clock.AsyncWait(5.Seconds)
                 Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
                 Try
-                    Await QueueConnectTo(_reconnecter)
+                    Dim socket = Await _reconnecter.ConnectAsync(Logger)
+                    Await QueueConnectWith(socket, GenerateCDKeySalt(), _reconnecter)
                     Await QueueLogOn(_userCredentials.WithNewGeneratedKeys())
                 Catch ex As Exception
                     ex.RaiseAsUnexpected("Reconnect failed")

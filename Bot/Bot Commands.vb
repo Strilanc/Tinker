@@ -52,7 +52,8 @@ Namespace Bot.Commands
                 Dim profile = client.Profile
                 Dim host = profile.server.Split(" "c).First()
                 Dim connector = New Bnet.Client.HostPortConnecter(host, Bnet.Client.BnetServerPort, _clock, New Random())
-                Await client.QueueConnectTo(connector)
+                Dim socket = Await connector.ConnectAsync(client.Logger)
+                Await client.QueueConnectWith(socket, Bnet.Client.GenerateCDKeySalt(), connector)
                 Await client.QueueLogOn(Bnet.ClientAuthenticator.GeneratedFrom(profile.userName, profile.password))
                 Return clientComponent
             Catch ex As Exception
