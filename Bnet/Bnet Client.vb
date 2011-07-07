@@ -48,8 +48,7 @@ Namespace Bnet
         Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
         Private _socket As PacketSocket
         Private WithEvents _wardenClient As Warden.Client
-        Private _connectCanceller As CancellationTokenSource
-        Private _logonCanceller As CancellationTokenSource
+        Private _connectCanceller As New CancellationTokenSource()
 
         'game
         Private Class AdvertisementEntry
@@ -429,7 +428,7 @@ Namespace Bnet
                 ChangeState(ClientState.AuthenticatingProgram)
 
                 'Reset the class future for the connection outcome
-                If _connectCanceller IsNot Nothing Then _connectCanceller.Cancel()
+                _connectCanceller.Cancel()
                 _connectCanceller = New CancellationTokenSource()
                 Dim ct = _connectCanceller.Token
 
@@ -506,16 +505,17 @@ Namespace Bnet
             End If
         End Sub
 
-        Private Async Function LogOnAsync(credentials As ClientAuthenticator) As Task
+        Public Async Function QueueLogOn(credentials As ClientAuthenticator) As Task
             Contract.Assume(credentials IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Await inQueue.AwaitableEntrance()
             If _state <> ClientState.EnterUserCredentials Then
                 Throw New InvalidOperationException("Incorrect state for login.")
             End If
 
-            If _logonCanceller IsNot Nothing Then _logonCanceller.Cancel()
-            _logonCanceller = New CancellationTokenSource()
-            Dim ct = _logonCanceller.Token
+            _connectCanceller.Cancel()
+            _connectCanceller = New CancellationTokenSource()
+            Dim ct = _connectCanceller.Token
 
             Me._userCredentials = credentials
             ChangeState(ClientState.AuthenticatingUser)
@@ -524,11 +524,6 @@ Namespace Bnet
 
             Await AwaitReceiveUserAuthenticationBegin(ct)
             Await AwaitReceiveUserAuthenticationFinish(ct)
-        End Function
-        Public Function QueueLogOn(credentials As ClientAuthenticator) As Task
-            Contract.Requires(credentials IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() LogOnAsync(credentials)).Unwrap
         End Function
 
         Private Async Sub Disconnect(expected As Boolean, reason As String)
@@ -542,8 +537,7 @@ Namespace Bnet
             End If
 
             'Finalize class futures
-            If _connectCanceller IsNot Nothing Then _connectCanceller.Cancel()
-            If _logonCanceller IsNot Nothing Then _logonCanceller.Cancel()
+            _connectCanceller.Cancel()
             _curAdvertisement = Nothing
 
             ChangeState(ClientState.Disconnected)
