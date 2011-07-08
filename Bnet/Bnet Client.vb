@@ -54,69 +54,66 @@ Namespace Bnet
         Private Class AdvertisementEntry
             Public ReadOnly BaseGameDescription As WC3.LocalGameDescription
             Public ReadOnly IsPrivate As Boolean
-            Private ReadOnly _initialGameDescription As New TaskCompletionSource(Of WC3.LocalGameDescription)
+            Private ReadOnly _futureInitialAdvertisedDescription As New TaskCompletionSource(Of WC3.LocalGameDescription)
             Private _failCount As UInt32
             Public Sub New(gameDescription As WC3.LocalGameDescription, isPrivate As Boolean)
                 Me.BaseGameDescription = gameDescription
                 Me.IsPrivate = isPrivate
-                _initialGameDescription.Task.ConsiderExceptionsHandled()
+                _futureInitialAdvertisedDescription.Task.ConsiderExceptionsHandled()
             End Sub
 
-            Public Sub SetNameFailed()
+            Public Sub IncreaseNameFailCount()
                 _failCount += 1UI
             End Sub
-            Public Sub SetNameSucceeded()
-                _initialGameDescription.TrySetResult(UpdatedFixedGameDescription())
+            Public Sub TryMarkAsSucceeded()
+                _futureInitialAdvertisedDescription.TrySetResult(GetCurrentCandidateGameDescriptionWithFixedAge())
             End Sub
-            Public Sub SetRemoved()
-                _initialGameDescription.TrySetException(New InvalidOperationException("Removed before advertising succeeded."))
+            Public Sub TryMarkAsFailed()
+                _futureInitialAdvertisedDescription.TrySetException(New InvalidOperationException("Removed before advertising succeeded."))
             End Sub
 
-            Public ReadOnly Property DescriptionAsync As Task(Of WC3.LocalGameDescription)
+            Public ReadOnly Property EventualAdvertisedDescription As Task(Of WC3.LocalGameDescription)
                 Get
                     Contract.Ensures(Contract.Result(Of Task(Of WC3.LocalGameDescription))() IsNot Nothing)
-                    Return _initialGameDescription.Task
+                    Return _futureInitialAdvertisedDescription.Task
                 End Get
             End Property
-            Private ReadOnly Property GameName As String
-                Get
-                    Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                    Const SuffixCharacters As String = "~!@#$%^&*(+-=,./\'"":;"
-                    Dim result = BaseGameDescription.Name
-                    Dim suffix = (From i In _failCount.Bytes.ConvertFromBaseToBase(256, CUInt(SuffixCharacters.Length))
-                                  Select SuffixCharacters(i)
-                                  ).AsString
-                    If result.Length + suffix.Length > Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength Then
-                        result = result.Substring(0, Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength - suffix.Length)
-                    End If
-                    result += suffix
-                    Return result
-                End Get
-            End Property
-            Public ReadOnly Property UpdatedFixedGameDescription() As WC3.LocalGameDescription
-                Get
-                    Dim useFull = False
 
-                    Dim gameState = Protocol.GameStates.Unknown0x10.EnumUInt32WithSet(Protocol.GameStates.Full, useFull
-                                                                  ).EnumUInt32WithSet(Protocol.GameStates.Private, IsPrivate)
+            Private Function GetCurrentGameName() As String
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Const SuffixCharacters As String = "~!@#$%^&*(+-=,./\'"":;"
+                Dim result = BaseGameDescription.Name
+                Dim suffix = (From i In _failCount.Bytes.ConvertFromBaseToBase(256, CUInt(SuffixCharacters.Length))
+                              Select SuffixCharacters(i)
+                              ).AsString
+                If result.Length + suffix.Length > Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength Then
+                    result = result.Substring(0, Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength - suffix.Length)
+                End If
+                result += suffix
+                Return result
+            End Function
+            Public Function GetCurrentCandidateGameDescriptionWithFixedAge() As WC3.LocalGameDescription
+                Dim useFull = False
 
-                    Dim gameType = BaseGameDescription.GameType Or WC3.Protocol.GameTypes.UnknownButSeen0
-                    gameType = gameType.EnumUInt32WithSet(WC3.Protocol.GameTypes.PrivateGame, IsPrivate)
-                    Select Case BaseGameDescription.GameStats.Observers
-                        Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees
-                            gameType = gameType Or WC3.Protocol.GameTypes.ObsFull
-                        Case WC3.GameObserverOption.ObsOnDefeat
-                            gameType = gameType Or WC3.Protocol.GameTypes.ObsOnDeath
-                        Case WC3.GameObserverOption.NoObservers
-                            gameType = gameType Or WC3.Protocol.GameTypes.ObsNone
-                    End Select
+                Dim gameState = Protocol.GameStates.Unknown0x10.EnumUInt32WithSet(Protocol.GameStates.Full, useFull
+                                                              ).EnumUInt32WithSet(Protocol.GameStates.Private, IsPrivate)
 
-                    Return BaseGameDescription.With(name:=Me.GameName,
-                                                    gameType:=gameType,
-                                                    state:=gameState,
-                                                    ageClock:=BaseGameDescription.AgeClock.Stopped())
-                End Get
-            End Property
+                Dim gameType = BaseGameDescription.GameType Or WC3.Protocol.GameTypes.UnknownButSeen0
+                gameType = gameType.EnumUInt32WithSet(WC3.Protocol.GameTypes.PrivateGame, IsPrivate)
+                Select Case BaseGameDescription.GameStats.Observers
+                    Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees
+                        gameType = gameType Or WC3.Protocol.GameTypes.ObsFull
+                    Case WC3.GameObserverOption.ObsOnDefeat
+                        gameType = gameType Or WC3.Protocol.GameTypes.ObsOnDeath
+                    Case WC3.GameObserverOption.NoObservers
+                        gameType = gameType Or WC3.Protocol.GameTypes.ObsNone
+                End Select
+
+                Return BaseGameDescription.With(name:=GetCurrentGameName(),
+                                                gameType:=gameType,
+                                                state:=gameState,
+                                                ageClock:=BaseGameDescription.AgeClock.Stopped())
+            End Function
         End Class
         Private ReadOnly _advertisementList As New List(Of AdvertisementEntry)
         Private _curAdvertisement As AdvertisementEntry
@@ -606,16 +603,16 @@ Namespace Bnet
             ChangeState(ClientState.CreatingGame)
             SetReportedListenPort(_curAdvertisement.BaseGameDescription.Port)
             Do
-                SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
+                SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge()))
                 Dim createSucceeded = 0 = Await AwaitReceive(Protocol.Packets.ServerToClient.CreateGame3, ct)
                 If ct.IsCancellationRequested Then Return
                 If createSucceeded Then Exit Do
 
                 'Failed to create, try again with a different name
-                _curAdvertisement.SetNameFailed()
+                _curAdvertisement.IncreaseNameFailCount()
             Loop
-            _curAdvertisement.SetNameSucceeded()
-            outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, refreshed:=False))
+            _curAdvertisement.TryMarkAsSucceeded()
+            outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge(), _curAdvertisement.IsPrivate, refreshed:=False))
 
             'Refresh game periodically
             ChangeState(ClientState.AdvertisingGame)
@@ -624,7 +621,7 @@ Namespace Bnet
                 Await _clock.AsyncWait(RefreshPeriod)
                 If ct.IsCancellationRequested Then Exit Do
 
-                SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedFixedGameDescription()))
+                SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge()))
                 Dim refreshSucceeded = 0 = Await AwaitReceive(Protocol.Packets.ServerToClient.CreateGame3)
                 If ct.IsCancellationRequested Then Exit Do
 
@@ -635,7 +632,7 @@ Namespace Bnet
                     EnterChannel(_lastChannel)
                     Exit Do
                 End If
-                outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedFixedGameDescription(), _curAdvertisement.IsPrivate, False))
+                outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge(), _curAdvertisement.IsPrivate, refreshed:=True))
             Loop
         End Sub
 
@@ -652,7 +649,7 @@ Namespace Bnet
                 _advertisementList.Add(entry)
                 TryStartAdvertising()
             End If
-            Return Await entry.DescriptionAsync
+            Return Await entry.EventualAdvertisedDescription
         End Function
 
         Public Async Function QueueRemoveAdvertisableGame(gameDescription As WC3.LocalGameDescription) As Task(Of Boolean)
@@ -663,7 +660,7 @@ Namespace Bnet
                          Where e.BaseGameDescription.Equals(gameDescription)
                          ).SingleOrDefault
             If entry Is Nothing Then Return False
-            entry.SetRemoved()
+            entry.TryMarkAsFailed()
             _advertisementList.Remove(entry)
             CheckStopAdvertising()
             Return True
