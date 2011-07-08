@@ -29,13 +29,17 @@
     End Function
 
     <Extension()>
-    Public Function MaybeCancelledAsFalse(task As Task) As Task(Of Boolean)
+    Public Function CancelledAsFalse(task As Task) As Task(Of Boolean)
         Dim r = New TaskCompletionSource(Of Boolean)()
         task.ContinueWith(Sub()
                               If task.IsCanceled Then
                                   r.TrySetResult(False)
                               ElseIf task.IsFaulted Then
-                                  r.TrySetException(task.Exception.InnerExceptions)
+                                  If task.Exception.InnerExceptions.All(Function(e) TypeOf e Is TaskCanceledException) Then
+                                      r.TrySetResult(False)
+                                  Else
+                                      r.TrySetException(task.Exception.InnerExceptions)
+                                  End If
                               ElseIf task.IsCompleted Then
                                   r.TrySetResult(True)
                               Else
@@ -51,7 +55,11 @@
                               If task.IsCanceled Then
                                   r.TrySetResult(Nothing)
                               ElseIf task.IsFaulted Then
-                                  r.TrySetException(task.Exception.InnerExceptions)
+                                  If task.Exception.InnerExceptions.All(Function(e) TypeOf e Is TaskCanceledException) Then
+                                      r.TrySetCanceled()
+                                  Else
+                                      r.TrySetException(task.Exception.InnerExceptions)
+                                  End If
                               ElseIf task.IsCompleted Then
                                   r.TrySetResult(task.Result)
                               Else
