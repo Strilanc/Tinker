@@ -28,6 +28,58 @@
         Return result
     End Function
 
+    <Extension()>
+    Public Function MaybeCancelledAsFalse(task As Task) As Task(Of Boolean)
+        Dim r = New TaskCompletionSource(Of Boolean)()
+        task.ContinueWith(Sub()
+                              If task.IsCanceled Then
+                                  r.TrySetResult(False)
+                              ElseIf task.IsFaulted Then
+                                  r.TrySetException(task.Exception.InnerExceptions)
+                              ElseIf task.IsCompleted Then
+                                  r.TrySetResult(True)
+                              Else
+                                  Throw New UnreachableException()
+                              End If
+                          End Sub)
+        Return r.Task
+    End Function
+    <Extension()>
+    Public Function MaybeCancelled(Of T)(task As Task(Of T)) As Task(Of Maybe(Of T))
+        Dim r = New TaskCompletionSource(Of Maybe(Of T))()
+        task.ContinueWith(Sub()
+                              If task.IsCanceled Then
+                                  r.TrySetResult(Nothing)
+                              ElseIf task.IsFaulted Then
+                                  r.TrySetException(task.Exception.InnerExceptions)
+                              ElseIf task.IsCompleted Then
+                                  r.TrySetResult(task.Result)
+                              Else
+                                  Throw New UnreachableException()
+                              End If
+                          End Sub)
+        Return r.Task
+    End Function
+
+    <Extension()>
+    Public Async Function WithCancellation(Of T)(task As Task(Of T), ct As CancellationToken) As Task(Of T)
+        Dim r = New TaskCompletionSource(Of T)()
+        Using d1 = ct.Register(Sub() r.TrySetCanceled()),
+              d2 = task.ContinueWith(Sub()
+                                         If task.IsCanceled Then
+                                             r.TrySetCanceled()
+                                         ElseIf task.IsFaulted Then
+                                             r.TrySetException(task.Exception.InnerExceptions)
+                                         ElseIf task.IsCompleted Then
+                                             r.TrySetResult(task.Result)
+                                         Else
+                                             Throw New UnreachableException()
+                                         End If
+                                     End Sub)
+            Return Await r.Task
+        End Using
+    End Function
+
     ''' <summary>
     ''' Selects the first future value passing a filter.
     ''' Doesn't evaluate the filter on futures past the matching future.
