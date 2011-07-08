@@ -45,8 +45,8 @@ Namespace Bnet
         Private ReadOnly _logger As Logger
         Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
         Private _socket As PacketSocket
-        Private WithEvents _wardenActivity As TaskCompletionSource(Of NoValue)
-        Private WithEvents _wardenSocket As Warden.Socket
+        Private _wardenActivity As TaskCompletionSource(Of NoValue)
+        Private _wardenSocket As Warden.Socket
         Private _connectCanceller As New CancellationTokenSource()
 
         'game
@@ -467,6 +467,12 @@ Namespace Bnet
                                                                logger:=Logger,
                                                                clock:=_clock)
 
+            Dim x As Warden.Socket.ReceivedWardenDataEventHandler = Sub(sender, data) inQueue.QueueAction(Sub() SendPacket(Protocol.MakeWarden(data)))
+            AddHandler _wardenSocket.ReceivedWardenData, x
+            Call Async Sub()
+                     Await _wardenSocket.DisposalTask
+                     RemoveHandler _wardenSocket.ReceivedWardenData, x
+                 End Sub
             Try
                 Await _wardenSocket.FutureFail
             Catch ex As Exception
@@ -719,10 +725,6 @@ Namespace Bnet
             Dim encryptedData = pickle.Value
             _wardenActivity.SetResult(Nothing)
             _wardenSocket.QueueSendWardenData(encryptedData).ConsiderExceptionsHandled()
-        End Sub
-        Private Sub OnWardenReceivedResponseData(sender As Warden.Socket, data As IRist(Of Byte)) Handles _wardenSocket.ReceivedWardenData
-            Contract.Requires(data IsNot Nothing)
-            inQueue.QueueAction(Sub() SendPacket(Protocol.MakeWarden(data)))
         End Sub
     End Class
 End Namespace
