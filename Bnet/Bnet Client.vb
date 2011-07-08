@@ -45,7 +45,8 @@ Namespace Bnet
         Private ReadOnly _logger As Logger
         Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
         Private _socket As PacketSocket
-        Private WithEvents _wardenClient As Warden.Client
+        Private WithEvents _wardenActivity As TaskCompletionSource(Of NoValue)
+        Private WithEvents _wardenSocket As Warden.Socket
         Private _connectCanceller As New CancellationTokenSource()
 
         'game
@@ -140,7 +141,6 @@ Namespace Bnet
             Contract.Invariant(_productAuthenticator IsNot Nothing)
             Contract.Invariant(_productInfoProvider IsNot Nothing)
             Contract.Invariant((_socket IsNot Nothing) = (_state > ClientState.Disconnected))
-            Contract.Invariant((_wardenClient Is Nothing) OrElse (_state <= ClientState.AuthenticatingProgram))
             Contract.Invariant((_state <= ClientState.EnterUserCredentials) OrElse (_userCredentials IsNot Nothing))
             Contract.Invariant((_curAdvertisement IsNot Nothing) = (_state >= ClientState.CreatingGame))
         End Sub
@@ -452,27 +452,25 @@ Namespace Bnet
 
             'Attempt BNLS connection
             Dim seed = keys.AuthenticationROC.AuthenticationProof.TakeExact(4).ToUInt32
+            _wardenActivity = New TaskCompletionSource(Of NoValue)
             If remoteHost = "" Then
-                _wardenClient = Warden.Client.MakeMock(_logger)
-            Else
-                _wardenClient = Warden.Client.MakeConnect(remoteHost:=remoteHost,
-                                                          remotePort:=remotePort,
-                                                          seed:=seed,
-                                                          cookie:=seed,
-                                                          logger:=Logger,
-                                                          clock:=_clock)
+                If Await _wardenActivity.Task.MaybeCancelledAsFalse() Then
+                    Logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem)
+                End If
+                Return
             End If
 
+            _wardenSocket = Await Warden.Socket.ConnectToAsync(remoteHost:=remoteHost,
+                                                               remotePort:=remotePort,
+                                                               seed:=seed,
+                                                               cookie:=seed,
+                                                               logger:=Logger,
+                                                               clock:=_clock)
+
             Try
-                Await _wardenClient.FutureFailed
+                Await _wardenSocket.FutureFail
             Catch ex As Exception
-                Call Async Sub()
-                         Await _wardenClient.Activated
-                         QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(ex.Summarize))
-                     End Sub
-                If _wardenClient.Activated.Status <> TaskStatus.RanToCompletion AndAlso _wardenClient.Activated.Status <> TaskStatus.Faulted Then
-                    Logger.Log("Lost connection to BNLS server: {0}".Frmt(ex.Summarize), LogMessageType.Problem)
-                End If
+                QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(ex.Summarize))
                 ex.RaiseAsUnexpected("Warden/BNLS Error")
             End Try
         End Sub
@@ -562,9 +560,13 @@ Namespace Bnet
 
             ChangeState(ClientState.Disconnected)
             Logger.Log("Disconnected ({0})".Frmt(reason), LogMessageType.Negative)
-            If _wardenClient IsNot Nothing Then
-                _wardenClient.Dispose()
-                _wardenClient = Nothing
+            If _wardenSocket IsNot Nothing Then
+                _wardenSocket.Dispose()
+                _wardenSocket = Nothing
+            End If
+            If _wardenActivity IsNot Nothing Then
+                _wardenActivity.TrySetCanceled()
+                _wardenActivity = Nothing
             End If
 
             If Not expected AndAlso _allowRetryConnect AndAlso _reconnecter IsNot Nothing Then
@@ -715,9 +717,10 @@ Namespace Bnet
             Contract.Requires(pickle IsNot Nothing)
             If _state < ClientState.WaitingForEnterChat Then Throw New IO.InvalidDataException("Warden packet in unexpected place.")
             Dim encryptedData = pickle.Value
-            _wardenClient.QueueSendWardenData(encryptedData).ConsiderExceptionsHandled()
+            _wardenActivity.SetResult(Nothing)
+            _wardenSocket.QueueSendWardenData(encryptedData).ConsiderExceptionsHandled()
         End Sub
-        Private Sub OnWardenReceivedResponseData(sender As Warden.Client, data As IRist(Of Byte)) Handles _wardenClient.ReceivedWardenData
+        Private Sub OnWardenReceivedResponseData(sender As Warden.Socket, data As IRist(Of Byte)) Handles _wardenSocket.ReceivedWardenData
             Contract.Requires(data IsNot Nothing)
             inQueue.QueueAction(Sub() SendPacket(Protocol.MakeWarden(data)))
         End Sub

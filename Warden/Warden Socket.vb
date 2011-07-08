@@ -128,5 +128,41 @@ Namespace Warden
             _socket.QueueDisconnect(expected:=True, reason:="Disposed")
             _futureFail.TrySetResult(Nothing)
         End Function
+
+        Public Shared Async Function ConnectToAsync(remoteHost As InvariantString,
+                                                    remotePort As UInt16,
+                                                    seed As UInt32,
+                                                    cookie As UInt32,
+                                                    clock As IClock,
+                                                    logger As Logger) As Task(Of Warden.Socket)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Warden.Socket)() IsNot Nothing)
+
+            logger.Log("Connecting to bnls server at {0}:{1}...".Frmt(remoteHost, remotePort), LogMessageType.Positive)
+
+            'Initiate connection
+            Try
+                Dim tcpClient = Await AsyncTcpConnect(remoteHost, remotePort)
+                Dim packetSocket = New PacketSocket(stream:=tcpClient.GetStream,
+                                                    localendpoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                    remoteendpoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                    Timeout:=5.Minutes,
+                                                    preheaderLength:=0,
+                                                    sizeHeaderLength:=2,
+                                                    logger:=logger,
+                                                    Name:="BNLS",
+                                                    clock:=clock)
+                logger.Log("Connected to bnls server.", LogMessageType.Positive)
+                Return New Warden.Socket(Socket:=packetSocket,
+                                         seed:=seed,
+                                         cookie:=cookie,
+                                         logger:=logger)
+            Catch ex As Exception
+                logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, ex.Summarize), LogMessageType.Problem)
+                ex.RaiseAsUnexpected("Connecting to bnls server.")
+                Throw
+            End Try
+        End Function
     End Class
 End Namespace
