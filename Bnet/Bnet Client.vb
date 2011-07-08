@@ -18,8 +18,6 @@ Imports Tinker.Pickling
 Namespace Bnet
     Public Enum ClientState As Integer
         Disconnected
-        InitiatingTCPConnection
-        TCPConnectionEstablished
         AuthenticatingProgram
         EnterUserCredentials
         AuthenticatingUser
@@ -118,7 +116,7 @@ Namespace Bnet
         Private ReadOnly _advertisementList As New List(Of AdvertisementEntry)
         Private _curAdvertisement As AdvertisementEntry
         Private _gameCanceller As New CancellationTokenSource()
-        Private _reportedListenPort As UShort
+        Private _reportedListenPort As UShort?
 
         'connection
         Private _reconnecter As IConnecter
@@ -141,7 +139,7 @@ Namespace Bnet
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_productAuthenticator IsNot Nothing)
             Contract.Invariant(_productInfoProvider IsNot Nothing)
-            Contract.Invariant((_socket IsNot Nothing) = (_state >= ClientState.TCPConnectionEstablished))
+            Contract.Invariant((_socket IsNot Nothing) = (_state > ClientState.Disconnected))
             Contract.Invariant((_wardenClient Is Nothing) OrElse (_state <= ClientState.AuthenticatingProgram))
             Contract.Invariant((_state <= ClientState.EnterUserCredentials) OrElse (_userCredentials IsNot Nothing))
             Contract.Invariant((_curAdvertisement IsNot Nothing) = (_state >= ClientState.CreatingGame))
@@ -332,7 +330,7 @@ Namespace Bnet
         Private Sub SetReportedListenPort(port As UShort)
             If port = Me._reportedListenPort Then Return
             Me._reportedListenPort = port
-            SendPacket(Protocol.MakeNetGamePort(Me._reportedListenPort))
+            SendPacket(Protocol.MakeNetGamePort(Me._reportedListenPort.Value))
         End Sub
 
         Private Sub OnSocketDisconnected(sender As PacketSocket, expected As Boolean, reason As String)
@@ -351,7 +349,7 @@ Namespace Bnet
         End Sub
 
         Private Async Sub BeginHandlingPackets()
-            Contract.Assume(Me._state >= ClientState.TCPConnectionEstablished)
+            Contract.Assume(Me._state > ClientState.Disconnected)
             Try
                 Do
                     Dim data = Await _socket.AsyncReadPacket
@@ -378,7 +376,7 @@ Namespace Bnet
 
             Await inQueue.AwaitableEntrance()
 
-            If Me._state <> ClientState.Disconnected AndAlso Me._state <> ClientState.TCPConnectionEstablished Then
+            If Me._state <> ClientState.Disconnected Then
                 Throw New InvalidOperationException("Must disconnect before connecting again.")
             End If
             _reconnecter = reconnector
@@ -547,6 +545,7 @@ Namespace Bnet
             _connectCanceller.Cancel()
             _gameCanceller.Cancel()
             _curAdvertisement = Nothing
+            _reportedListenPort = Nothing
 
             ChangeState(ClientState.Disconnected)
             Logger.Log("Disconnected ({0})".Frmt(reason), LogMessageType.Negative)
@@ -576,6 +575,7 @@ Namespace Bnet
         End Function
 
         Private Sub EnterChannel(channel As String)
+            Contract.Requires(channel IsNot Nothing)
             SendPacket(Protocol.MakeJoinChannel(Protocol.JoinChannelType.ForcedJoin, channel))
             ChangeState(ClientState.Channel)
             TryStartAdvertising()
@@ -674,16 +674,15 @@ Namespace Bnet
         End Function
 
         Private Sub SendPacket(packet As Protocol.Packet)
-            Contract.Requires(Me._state >= ClientState.TCPConnectionEstablished)
             Contract.Requires(packet IsNot Nothing)
 
+            If _socket Is Nothing Then
+                Logger.Log("Disconnected but tried to send {0}.".Frmt(packet.Id), LogMessageType.Problem)
+                Return
+            End If
             Try
                 Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
                 Logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, packet.Payload.Description), LogMessageType.DataParsed)
-                If _socket Is Nothing Then
-                    Logger.Log("Disconnected but tried to send {0}.".Frmt(packet.Id), LogMessageType.Problem)
-                    Return
-                End If
                 _socket.WritePacket({Protocol.Packets.PacketPrefixValue, packet.Id}, packet.Payload.Data)
             Catch ex As Exception When TypeOf ex Is IO.IOException OrElse
                                        TypeOf ex Is InvalidOperationException OrElse
