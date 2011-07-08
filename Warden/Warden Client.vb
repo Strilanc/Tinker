@@ -3,8 +3,15 @@
         Inherits DisposableWithTask
 
         Public Event ReceivedWardenData(sender As Warden.Client, wardenData As IRist(Of Byte))
-        Public Event Disconnected(sender As Warden.Client, expected As Boolean, reason As String)
 
+        Public ReadOnly Property FutureDisconnected As Task
+            Get
+                Return Async Function()
+                           Dim s = Await _socket
+                           Await s.FutureDisconnected
+                       End Function()
+            End Get
+        End Property
         Public ReadOnly Property FutureFailed As Task
             Get
                 Return Async Function()
@@ -103,14 +110,9 @@
 
             Dim receiveForward As Warden.Socket.ReceivedWardenDataEventHandler =
                     Sub(sender, wardenData) RaiseEvent ReceivedWardenData(Me, wardenData)
-            Dim disconnectForward As Warden.Socket.DisconnectedEventHandler =
-                    Sub(sender, expected, reason) RaiseEvent Disconnected(Me, expected, reason)
             AddHandler wardenClient.ReceivedWardenData, receiveForward
-            AddHandler wardenClient.Disconnected, disconnectForward
-
             Await wardenClient.DisposalTask
             RemoveHandler wardenClient.ReceivedWardenData, receiveForward
-            RemoveHandler wardenClient.Disconnected, disconnectForward
         End Sub
 
         Public ReadOnly Property Activated As Task

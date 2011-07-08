@@ -5,9 +5,13 @@ Namespace Warden
         Inherits DisposableWithTask
 
         Public Event ReceivedWardenData(sender As Warden.Socket, wardenData As IRist(Of Byte))
-        Public Event Disconnected(sender As Warden.Socket, expected As Boolean, reason As String)
-
+        Private ReadOnly _futureDisc As New TaskCompletionSource(Of Tuple(Of Boolean, String))()
         Private ReadOnly _futureFail As New TaskCompletionSource(Of NoValue)()
+        Public ReadOnly Property FutureDisconnected As Task
+            Get
+                Return _futureDisc.Task
+            End Get
+        End Property
         Public ReadOnly Property FutureFail As Task
             Get
                 Return _futureFail.Task
@@ -39,7 +43,7 @@ Namespace Warden
             Me._cookie = cookie
             Me._seed = seed
 
-            AddHandler _socket.Disconnected, Sub(sender, expected, reason) outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, expected, reason))
+            AddHandler _socket.Disconnected, Sub(sender, expected, reason) outQueue.QueueAction(Sub() _futureDisc.TrySetResult(Tuple.Create(expected, reason)))
 
             Start()
         End Sub
