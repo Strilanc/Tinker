@@ -437,7 +437,7 @@ Namespace Bnet
                 Throw
             End Try
         End Function
-        Private Sub BeginConnectToBNLSServer(keys As ProductCredentialPair)
+        Private Async Sub BeginConnectToBNLSServer(keys As ProductCredentialPair)
             'Parse address setting
             Dim remoteHost = ""
             Dim remotePort = 0US
@@ -462,6 +462,19 @@ Namespace Bnet
                                                           logger:=Logger,
                                                           clock:=_clock)
             End If
+
+            Try
+                Await _wardenClient.FutureFailed
+            Catch ex As Exception
+                Call Async Sub()
+                         Await _wardenClient.Activated
+                         QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(ex.Summarize))
+                     End Sub
+                If _wardenClient.Activated.Status <> TaskStatus.RanToCompletion AndAlso _wardenClient.Activated.Status <> TaskStatus.Faulted Then
+                    Logger.Log("Lost connection to BNLS server: {0}".Frmt(ex.Summarize), LogMessageType.Problem)
+                End If
+                ex.RaiseAsUnexpected("Warden/BNLS Error")
+            End Try
         End Sub
 
         Public Async Function QueueLogOn(credentials As ClientAuthenticator) As Task
@@ -707,18 +720,6 @@ Namespace Bnet
         Private Sub OnWardenReceivedResponseData(sender As Warden.Client, data As IRist(Of Byte)) Handles _wardenClient.ReceivedWardenData
             Contract.Requires(data IsNot Nothing)
             inQueue.QueueAction(Sub() SendPacket(Protocol.MakeWarden(data)))
-        End Sub
-        Private Sub OnWardenFail(sender As Warden.Client, exception As Exception) Handles _wardenClient.Failed
-            Contract.Requires(sender IsNot Nothing)
-            Contract.Requires(exception IsNot Nothing)
-            Call Async Sub()
-                     Await sender.Activated
-                     QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(exception.Summarize))
-                 End Sub
-            If sender.Activated.Status <> TaskStatus.RanToCompletion AndAlso sender.Activated.Status <> TaskStatus.Faulted Then
-                Logger.Log("Lost connection to BNLS server: {0}".Frmt(exception.Summarize), LogMessageType.Problem)
-            End If
-            exception.RaiseAsUnexpected("Warden/BNLS Error")
         End Sub
     End Class
 End Namespace

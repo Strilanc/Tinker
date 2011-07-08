@@ -3,9 +3,16 @@
         Inherits DisposableWithTask
 
         Public Event ReceivedWardenData(sender As Warden.Client, wardenData As IRist(Of Byte))
-        Public Event Failed(sender As Warden.Client, exception As Exception)
         Public Event Disconnected(sender As Warden.Client, expected As Boolean, reason As String)
 
+        Public ReadOnly Property FutureFailed As Task
+            Get
+                Return Async Function()
+                           Dim s = Await _socket
+                           Await s.FutureFail
+                       End Function()
+            End Get
+        End Property
         Private ReadOnly _socket As Task(Of Warden.Socket)
         Private ReadOnly _activated As New TaskCompletionSource(Of NoValue)()
         Private ReadOnly _logger As Logger
@@ -83,13 +90,6 @@
             Return result
         End Function
         Private Async Sub Start()
-            Dim receiveForward As Warden.Socket.ReceivedWardenDataEventHandler =
-                    Sub(sender, wardenData) RaiseEvent ReceivedWardenData(Me, wardenData)
-            Dim failForward As Warden.Socket.FailedEventHandler =
-                    Sub(sender, e) RaiseEvent Failed(Me, e)
-            Dim disconnectForward As Warden.Socket.DisconnectedEventHandler =
-                    Sub(sender, expected, reason) RaiseEvent Disconnected(Me, expected, reason)
-
             'Wire events
             Dim wardenClient As Socket
             Try
@@ -101,13 +101,15 @@
 
             _logger.Log("Connected to bnls server.", LogMessageType.Positive)
 
+            Dim receiveForward As Warden.Socket.ReceivedWardenDataEventHandler =
+                    Sub(sender, wardenData) RaiseEvent ReceivedWardenData(Me, wardenData)
+            Dim disconnectForward As Warden.Socket.DisconnectedEventHandler =
+                    Sub(sender, expected, reason) RaiseEvent Disconnected(Me, expected, reason)
             AddHandler wardenClient.ReceivedWardenData, receiveForward
-            AddHandler wardenClient.Failed, failForward
             AddHandler wardenClient.Disconnected, disconnectForward
 
             Await wardenClient.DisposalTask
             RemoveHandler wardenClient.ReceivedWardenData, receiveForward
-            RemoveHandler wardenClient.Failed, failForward
             RemoveHandler wardenClient.Disconnected, disconnectForward
         End Sub
 

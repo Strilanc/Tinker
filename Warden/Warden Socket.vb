@@ -5,8 +5,14 @@ Namespace Warden
         Inherits DisposableWithTask
 
         Public Event ReceivedWardenData(sender As Warden.Socket, wardenData As IRist(Of Byte))
-        Public Event Failed(sender As Warden.Socket, exception As Exception)
         Public Event Disconnected(sender As Warden.Socket, expected As Boolean, reason As String)
+
+        Private ReadOnly _futureFail As New TaskCompletionSource(Of NoValue)()
+        Public ReadOnly Property FutureFail As Task
+            Get
+                Return _futureFail.Task
+            End Get
+        End Property
 
         Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue
         Private ReadOnly outQueue As CallQueue = MakeTaskedCallQueue
@@ -51,7 +57,7 @@ Namespace Warden
                     Await inQueue.QueueAction(Sub() OnReceivePacket(data))
                 Loop
             Catch ex As Exception
-                outQueue.QueueAction(Sub() RaiseEvent Failed(Me, ex))
+                _futureFail.SetException(ex)
             End Try
         End Sub
         Private Async Function AsyncReadPacket() As Task(Of ServerPacket)
@@ -112,9 +118,11 @@ Namespace Warden
             Return inQueue.QueueAction(Sub() WritePacket(ClientPacket.MakeFullServiceHandleWardenPacket(_cookie, wardenData)))
         End Function
 
-        Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
-            If finalizing Then Return Nothing
-            Return inQueue.QueueAction(Sub() _socket.QueueDisconnect(expected:=True, reason:="Disposed"))
+        Protected Overrides Async Function PerformDispose(finalizing As Boolean) As Task
+            If finalizing Then Return
+            Await inQueue.AwaitableEntrance()
+            _socket.QueueDisconnect(expected:=True, reason:="Disposed")
+            _futureFail.TrySetResult(Nothing)
         End Function
     End Class
 End Namespace
