@@ -402,16 +402,18 @@ Namespace Bnet.Commands
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim remoteHost = argument.RawValue(0)
-            Dim port = Bnet.Client.BnetServerPort
+            Dim port As UInt16?
             If remoteHost.Contains(":"c) Then
                 Dim parts = remoteHost.Split(":"c)
-                If parts.Length <> 2 OrElse Not UShort.TryParse(parts.Last, NumberStyles.Integer, CultureInfo.InvariantCulture, port) Then
+                Dim p As UInt16
+                If parts.Length <> 2 OrElse Not UShort.TryParse(parts.Last, NumberStyles.Integer, CultureInfo.InvariantCulture, p) Then
                     Throw New ArgumentException("Invalid hostname.")
                 End If
+                port = p
                 remoteHost = parts.First.AssumeNotNull
             End If
 
-            Dim connector = New HostPortConnecter(remoteHost, port, target.Clock, New Random())
+            Dim connector = New BnetHostPortConnecter(remoteHost, target.Clock, port)
             Dim socket = Await connector.ConnectAsync(target.Logger)
             Await target.QueueConnectWith(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), connector)
             Return "Established connection to {0}".Frmt(remoteHost)

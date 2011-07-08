@@ -32,7 +32,6 @@ Namespace Bnet
     Public NotInheritable Class Client
         Inherits DisposableWithTask
 
-        Public Shared ReadOnly BnetServerPort As UShort = 6112
         Private Shared ReadOnly RefreshPeriod As TimeSpan = 20.Seconds
 
         Private ReadOnly outQueue As CallQueue

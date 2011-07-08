@@ -220,6 +220,7 @@
     <Compile Include="Interface\ExceptionForm.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Library\Connector.vb" />
     <Compile Include="Library\HoldPoint.vb" />
     <Compile Include="Library\NamedValueMap.vb" />
     <Compile Include="Pickling\Pickling Interfaces.vb" />
@@ -277,7 +278,6 @@
     <Compile Include="Warcraft3\Server\W3ServerControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Warden\Warden Client.vb" />
     <Compile Include="Bot\Generic Commands.vb" />
     <Compile Include="CKL\CKL Server Manager.vb" />
     <Compile Include="Bot\MainBot Manager.vb" />

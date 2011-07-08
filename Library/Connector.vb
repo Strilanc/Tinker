@@ -1,20 +1,22 @@
 ﻿Public Interface IConnecter
     Function ConnectAsync(logger As Logger) As Task(Of PacketSocket)
 End Interface
-Public NotInheritable Class HostPortConnecter
+Public NotInheritable Class BnetHostPortConnecter
     Implements IConnecter
+    Public Const BnetServerPort As UShort = 6112
+
     Private ReadOnly host As String
     Private ReadOnly port As UInt16
     Private ReadOnly clock As IClock
     Private ReadOnly rng As Random
-    Public Sub New(host As String, port As UInt16, clock As IClock, rng As Random)
+    Public Sub New(host As String, clock As IClock, Optional port As UInt16? = Nothing, Optional rng As Random = Nothing)
         Contract.Requires(host IsNot Nothing)
         Contract.Requires(clock IsNot Nothing)
         Contract.Requires(rng IsNot Nothing)
         Me.host = host
-        Me.port = port
+        Me.port = If(port, BnetServerPort)
         Me.clock = clock
-        Me.rng = rng
+        Me.rng = If(rng, New Random())
     End Sub
     Public Async Function ConnectAsync(logger As Logger) As Task(Of PacketSocket) Implements IConnecter.ConnectAsync
         logger.Log("Connecting to {0}:{1}...".Frmt(host, port), LogMessageType.Typical)
