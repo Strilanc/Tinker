@@ -73,10 +73,7 @@ Public NotInheritable Class ThrottledWriteStream
                 End If
 
                 'throttle
-                If _usedCost > _costLimit Then
-                    Dim delay = New TimeSpan(ticks:=CLng((_usedCost - _costLimit) / _recoveryRatePerMillisecond * TimeSpan.TicksPerMillisecond))
-                    Await _timer.AsyncWait(delay)
-                End If
+                Await _timer.AsyncWait(((_usedCost - _costLimit) / _recoveryRatePerMillisecond).Milliseconds)
 
                 'Perform write
                 Dim data = _queuedWrites.Dequeue()
@@ -91,10 +88,10 @@ Public NotInheritable Class ThrottledWriteStream
         Contract.Assume(_usedCost >= 0)
     End Sub
 
-    Public Overrides Function BeginRead(buffer() As Byte, offset As Integer, count As Integer, callback As System.AsyncCallback, state As Object) As System.IAsyncResult
+    Public Overrides Function BeginRead(buffer() As Byte, offset As Integer, count As Integer, callback As System.AsyncCallback, state As Object) As IAsyncResult
         Return _substream.BeginRead(buffer, offset, count, callback, state)
     End Function
-    Public Overrides Function EndRead(asyncResult As System.IAsyncResult) As Integer
+    Public Overrides Function EndRead(asyncResult As IAsyncResult) As Integer
         Return _substream.EndRead(asyncResult)
     End Function
 
