@@ -577,8 +577,10 @@ Namespace Bnet
             Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
             Try
                 Dim socket = Await _reconnecter.ConnectAsync(Logger)
-                Await ConnectAsync(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), _reconnecter)
-                Await LogOnSynq(_userCredentials.WithNewGeneratedKeys())
+                Using rng = New System.Security.Cryptography.RNGCryptoServiceProvider()
+                    Await ConnectAsync(socket, rng.GenerateBytes(4).ToUInt32(), _reconnecter)
+                    Await LogOnSynq(_userCredentials.WithNewGeneratedKeys(rng))
+                End Using
                 Return True
             Catch ex As Exception
                 ex.RaiseAsUnexpected("Reconnect failed")

@@ -199,7 +199,9 @@ Namespace Bnet.Commands
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim userName = argument.RawValue(0)
             Dim password = argument.RawValue(1)
-            Await target.LogOnSynq(Bnet.ClientCredentials.GeneratedFrom(userName, password))
+            Using rng = New Security.Cryptography.RNGCryptoServiceProvider()
+                Await target.LogOnSynq(Bnet.ClientCredentials.GeneratedFrom(userName, password, rng))
+            End Using
             Return "Logged in as {0}".Frmt(userName)
         End Function
     End Class
@@ -415,7 +417,9 @@ Namespace Bnet.Commands
 
             Dim connector = New BnetHostPortConnecter(remoteHost, target.Clock, port)
             Dim socket = Await connector.ConnectAsync(target.Logger)
-            Await target.ConnectAsync(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), connector)
+            Using rng = New System.Security.Cryptography.RNGCryptoServiceProvider()
+                Await target.ConnectAsync(socket, rng.GenerateBytes(4).ToUInt32(), connector)
+            End Using
             Return "Established connection to {0}".Frmt(remoteHost)
         End Function
     End Class
