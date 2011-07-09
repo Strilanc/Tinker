@@ -53,8 +53,8 @@ Namespace Bot.Commands
                 Dim host = profile.server.Split(" "c).First()
                 Dim connector = New BnetHostPortConnecter(host, _clock)
                 Dim socket = Await connector.ConnectAsync(client.Logger)
-                Await client.QueueConnectWith(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), connector)
-                Await client.QueueLogOn(Bnet.ClientAuthenticator.GeneratedFrom(profile.userName, profile.password))
+                Await client.ConnectAsync(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), connector)
+                Await client.LogOnSynq(Bnet.ClientAuthenticator.GeneratedFrom(profile.userName, profile.password))
                 Return clientComponent
             Catch ex As Exception
                 clientComponent.Dispose()

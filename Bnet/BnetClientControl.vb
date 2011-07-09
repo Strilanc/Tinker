@@ -25,13 +25,13 @@ Namespace Bnet
             Me._component = component
             logClient.SetLogger(Me._client.Logger, "Client")
 
-            Me._hooks.Add(Me._client.QueueIncludePacketHandler(Packets.ServerToClient.ChatEvent,
+            Me._hooks.Add(Me._client.IncludePacketHandlerSynq(Packets.ServerToClient.ChatEvent,
                     handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedChatEvent(Me._client, pickle.Value))))
-            Me._hooks.Add(Me._client.QueueIncludePacketHandler(Packets.ServerToClient.QueryGamesList(Me._client.Clock),
+            Me._hooks.Add(Me._client.IncludePacketHandlerSynq(Packets.ServerToClient.QueryGamesList(Me._client.Clock),
                     handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value))))
 
             inQueue.QueueAction(Async Sub()
-                                    Dim state = Await Me._client.QueueGetState
+                                    Dim state = Await Me._client.GetStateSynq
                                     OnClientStateChanged(Me._client, state, state)
                                 End Sub)
             Dim stateChangedHandler As Client.StateChangedEventHandler = Sub(sender, oldState, newState) inQueue.QueueAction(
@@ -128,7 +128,7 @@ Namespace Bnet
             Dim msg = txtTalk.Text
             txtTalk.Text = ""
             Try
-                Await _client.QueueSendText(txtTalk.Text)
+                Await _client.SendTextSynq(txtTalk.Text)
                 logClient.LogMessage("{0}: {1}".Frmt(_client.UserName, msg), Color.DarkBlue)
             Catch ex As Exception
                 logClient.LogMessage("Error sending text: {0}".Frmt(ex.Summarize), Color.Red)

@@ -25,7 +25,7 @@ Namespace Bnet.Commands
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Await target.QueueDisconnect(expected:=True, reason:="Disconnect Command")
+            Await target.DisconnectSynq(expected:=True, reason:="Disconnect Command")
             Return "Disconnected"
         End Function
     End Class
@@ -199,7 +199,7 @@ Namespace Bnet.Commands
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim userName = argument.RawValue(0)
             Dim password = argument.RawValue(1)
-            Await target.QueueLogOn(Bnet.ClientAuthenticator.GeneratedFrom(userName, password))
+            Await target.LogOnSynq(Bnet.ClientAuthenticator.GeneratedFrom(userName, password))
             Return "Logged in as {0}".Frmt(userName)
         End Function
     End Class
@@ -232,12 +232,12 @@ Namespace Bnet.Commands
                 onStarted = Sub(sender, active)
                                 If active Then Return
                                 RemoveHandler gameSet.StateChanged, onStarted
-                                target.Client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription)
+                                target.Client.ExcludeAdvertisableGameSynq(gameSet.GameSettings.GameDescription)
                             End Sub
                 AddHandler gameSet.StateChanged, onStarted
 
                 'Start advertising game
-                Dim gameDescription = Await target.Client.QueueIncludeAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                Dim gameDescription = Await target.Client.IncludeAdvertisableGameSynq(gameDescription:=gameSet.GameSettings.GameDescription,
                                                                                    isPrivate:=gameSet.GameSettings.IsPrivate)
                 Return "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(gameDescription.Name,
                                                                                gameDescription.GameStats.AdvertisedPath,
@@ -286,7 +286,7 @@ Namespace Bnet.Commands
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Await target.QueueSendPacket(Protocol.MakeQueryGamesList())
+            Await target.TrySendPacketSynq(Protocol.MakeQueryGamesList())
             Return "Sent request."
         End Function
     End Class
@@ -342,7 +342,7 @@ Namespace Bnet.Commands
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim text = argument.RawValue(0)
             If text.Length = 0 Then Throw New ArgumentException("Must say something.")
-            Await target.QueueSendText(text)
+            Await target.SendTextSynq(text)
             Return "Said {0}".Frmt(text)
         End Function
     End Class
@@ -357,7 +357,7 @@ Namespace Bnet.Commands
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Await target.QueueRemoveAllAdvertisableGames()
+            Await target.ClearAdvertisableGamesSync()
             Return "Cancelled advertising of all games."
         End Function
     End Class
@@ -415,7 +415,7 @@ Namespace Bnet.Commands
 
             Dim connector = New BnetHostPortConnecter(remoteHost, target.Clock, port)
             Dim socket = Await connector.ConnectAsync(target.Logger)
-            Await target.QueueConnectWith(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), connector)
+            Await target.ConnectAsync(socket, GenerateSecureBytesNewRNG(4).ToUInt32(), connector)
             Return "Established connection to {0}".Frmt(remoteHost)
         End Function
     End Class

@@ -40,7 +40,7 @@ Namespace Bnet
             Me._client = client
             Me._control = New BnetClientControl(Me)
 
-            Me._hooks.Add(client.QueueIncludePacketHandler(Protocol.Packets.ServerToClient.ChatEvent,
+            Me._hooks.Add(client.IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.ChatEvent,
                                                            Function(pickle) OnReceivedChatEvent(pickle.Value)))
 
             client.ChainEventualDisposalTo(Me)
@@ -124,7 +124,7 @@ Namespace Bnet
                 Return 'not a message
             ElseIf text = Tinker.Bot.MainBot.TriggerCommandText Then '?trigger command
                 If user.Name.Length <= 0 Then Throw New InvalidStateException("Empty user name.")
-                _client.QueueSendWhisper(user.Name, "Command prefix: {0}".Frmt(My.Settings.commandPrefix))
+                _client.SendWhisperSync(user.Name, "Command prefix: {0}".Frmt(My.Settings.commandPrefix))
                 Return
             ElseIf Not text.StartsWith(commandPrefix, StringComparison.OrdinalIgnoreCase) Then 'not a command
                 Return 'not a command
@@ -140,15 +140,15 @@ Namespace Bnet
                 Call Async Sub()
                          Await _client.Clock.AsyncWait(2.Seconds)
                          If Not finishedLock.TryAcquire Then Return
-                         _client.QueueSendWhisper(user.Name, "Command '{0}' is running...".Frmt(text))
+                         _client.SendWhisperSync(user.Name, "Command '{0}' is running...".Frmt(text))
                      End Sub
 
                 'Await result
                 Dim message = Await commandResult
                 finishedLock.TryAcquire()
-                _client.QueueSendWhisper(user.Name, If(message, "Command Succeeded"))
+                _client.SendWhisperSync(user.Name, If(message, "Command Succeeded"))
             Catch ex As Exception
-                _client.QueueSendWhisper(user.Name, "Failed: {0}".Frmt(ex.Summarize))
+                _client.SendWhisperSync(user.Name, "Failed: {0}".Frmt(ex.Summarize))
             End Try
         End Function
 
@@ -163,11 +163,11 @@ Namespace Bnet
                 _autoHook = _bot.ObserveGameSets(
                     adder:=Sub(server, gameSet)
                                If gameSet.GameSettings.IsAdminGame Then Return
-                               _client.QueueIncludeAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                               _client.IncludeAdvertisableGameSynq(gameDescription:=gameSet.GameSettings.GameDescription,
                                                                 isPrivate:=gameSet.GameSettings.IsPrivate)
                            End Sub,
                     remover:=Sub(server, gameSet)
-                                 _client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription)
+                                 _client.ExcludeAdvertisableGameSynq(gameSet.GameSettings.GameDescription)
                              End Sub)
             Else
                 Dim oldHook = _autoHook

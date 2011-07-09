@@ -11,6 +11,12 @@
         Return result
     End Function
 
+    <Extension()> <Pure()>
+    Public Function ImmediateResult(Of T)(task As Task(Of T)) As T
+        If Not task.Status = TaskStatus.RanToCompletion Then Throw New InvalidStateException("Task did not complete.")
+        Return task.Result
+    End Function
+
     <Extension()>
     Public Async Function ReadBestEffortAsync(stream As IO.Stream, maxSize As Integer) As Task(Of Byte())
         Contract.Assume(stream IsNot Nothing)

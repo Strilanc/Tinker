@@ -53,7 +53,7 @@ Public Class BnetClientTest
                                       Net.IPAddress.Loopback.WithPort(6112),
                                       clock)
         Dim clientCdKeySalt = 13UI
-        Dim fConnect = client.QueueConnectWith(socket, clientCdKeySalt)
+        Dim fConnect = client.ConnectAsync(socket, clientCdKeySalt)
         Assert.IsTrue(stream.RetrieveWriteData(1).SequenceEqual({1}))
 
         'program auth begin (C->S)
@@ -109,7 +109,7 @@ Public Class BnetClientTest
                 })))
         WaitUntilTaskSucceeds(fConnect)
         Dim credentials = New Bnet.ClientAuthenticator(profile.userName, profile.password, privateKey:=2)
-        client.QueueLogOn(credentials)
+        client.LogOnSynq(credentials)
 
         'user auth begin (C->S)
         packet = stream.RetrieveWritePacket()
