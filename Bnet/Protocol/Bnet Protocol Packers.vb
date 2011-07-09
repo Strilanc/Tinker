@@ -73,7 +73,7 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeAccountLogOnBegin(credentials As ClientAuthenticator) As Packet
+        Public Function MakeAccountLogOnBegin(credentials As ClientCredentials) As Packet
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.UserAuthenticationBegin, New Dictionary(Of InvariantString, Object) From {

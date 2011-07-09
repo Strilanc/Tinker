@@ -11,7 +11,7 @@ Imports Tinker.Bnet.Protocol
 Public Class BnetProtocolPackersTest
     <TestMethod()>
     Public Sub MakeAccountLogOnBeginTest()
-        MakeAccountLogOnBegin(ClientAuthenticator.GeneratedFrom("test", "password"))
+        MakeAccountLogOnBegin(ClientCredentials.GeneratedFrom("test", "password"))
     End Sub
     <TestMethod()>
     Public Sub MakeAccountLogOnFinishTest()

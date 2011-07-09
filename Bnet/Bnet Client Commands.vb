@@ -199,7 +199,7 @@ Namespace Bnet.Commands
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim userName = argument.RawValue(0)
             Dim password = argument.RawValue(1)
-            Await target.LogOnSynq(Bnet.ClientAuthenticator.GeneratedFrom(userName, password))
+            Await target.LogOnSynq(Bnet.ClientCredentials.GeneratedFrom(userName, password))
             Return "Logged in as {0}".Frmt(userName)
         End Function
     End Class

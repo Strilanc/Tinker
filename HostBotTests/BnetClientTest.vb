@@ -108,7 +108,7 @@ Public Class BnetClientTest
                     {"info", ""}
                 })))
         WaitUntilTaskSucceeds(fConnect)
-        Dim credentials = New Bnet.ClientAuthenticator(profile.userName, profile.password, privateKey:=2)
+        Dim credentials = New Bnet.ClientCredentials(profile.userName, profile.password, privateKey:=2)
         client.LogOnSynq(credentials)
 
         'user auth begin (C->S)

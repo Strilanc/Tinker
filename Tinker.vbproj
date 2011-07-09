@@ -210,7 +210,7 @@
     <Compile Include="Bnet\Protocol\FileTimeJar.vb" />
     <Compile Include="Bnet\Protocol\TextHexValueJar.vb" />
     <Compile Include="Bnet\Product Credentials.vb" />
-    <Compile Include="Bnet\ClientAuthenticator.vb" />
+    <Compile Include="Bnet\ClientCredentials.vb" />
     <Compile Include="Bot\Settings.vb" />
     <Compile Include="Commands\ICommand.vb" />
     <Compile Include="GlobalSuppressions.vb" />

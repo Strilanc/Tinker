@@ -25,7 +25,7 @@ Namespace Bnet
     ''' I do consider this implementation secure enough, given that the thing at risk is the bnet user account of a bot.
     ''' </remarks>
     <DebuggerDisplay("{UserName}")>
-    Public Class ClientAuthenticator
+    Public Class ClientCredentials
         Private Shared ReadOnly G As BigInteger = 47
         Private Shared ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719",
                                                                    CultureInfo.InvariantCulture)
@@ -80,23 +80,23 @@ Namespace Bnet
         ''' <param name="randomNumberGenerator">The random number generator used to create the private key.</param>
         Public Shared Function GeneratedFrom(userName As String,
                                              password As String,
-                                             randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientAuthenticator
+                                             randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientCredentials
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Requires(randomNumberGenerator IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = userName)
-            Return New ClientAuthenticator(userName, password, GeneratePrivateKey(randomNumberGenerator))
+            Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = userName)
+            Return New ClientCredentials(userName, password, GeneratePrivateKey(randomNumberGenerator))
         End Function
         ''' <summary>Creates client credentials for the given username and password, with a public/private key pair generated using a new Cryptograph.RNGCryptoServiceProvider.</summary>
         ''' <param name="username">The client's username.</param>
         ''' <param name="password">The client's password.</param>
         Public Shared Function GeneratedFrom(userName As String,
-                                             password As String) As ClientAuthenticator
+                                             password As String) As ClientCredentials
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = userName)
+            Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = userName)
             Using randomNumberGenerator = New Cryptography.RNGCryptoServiceProvider()
                 Return GeneratedFrom(userName, password, randomNumberGenerator)
             End Using
@@ -140,16 +140,16 @@ Namespace Bnet
         End Function
 
         '''<summary>Creates credentials for the same client, but with a new key pair generated using the given random number generator.</summary>
-        Public Function WithNewGeneratedKeys(randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientAuthenticator
+        Public Function WithNewGeneratedKeys(randomNumberGenerator As Cryptography.RandomNumberGenerator) As ClientCredentials
             Contract.Requires(randomNumberGenerator IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = Me.UserName)
+            Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = Me.UserName)
             Return GeneratedFrom(Me.UserName, Me._password, randomNumberGenerator)
         End Function
         '''<summary>Creates credentials for the same client, but with a new key pair generated using a new Cryptography.RNGCryptoServiceProvider.</summary>
-        Public Function WithNewGeneratedKeys() As ClientAuthenticator
-            Contract.Ensures(Contract.Result(Of ClientAuthenticator)() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ClientAuthenticator)().UserName = Me.UserName)
+        Public Function WithNewGeneratedKeys() As ClientCredentials
+            Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = Me.UserName)
             Return GeneratedFrom(Me.UserName, Me._password)
         End Function
 

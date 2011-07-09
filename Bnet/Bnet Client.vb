@@ -118,7 +118,7 @@ Namespace Bnet
 
         'connection
         Private _reconnecter As IConnecter
-        Private _userCredentials As ClientAuthenticator
+        Private _userCredentials As ClientCredentials
         Private _allowRetryConnect As Boolean
 
         Public Event StateChanged(sender As Client, oldState As ClientState, newState As ClientState)
@@ -478,7 +478,7 @@ Namespace Bnet
             End Try
         End Sub
 
-        Public Async Function LogOnSynq(credentials As ClientAuthenticator) As Task
+        Public Async Function LogOnSynq(credentials As ClientCredentials) As Task
             Contract.Assume(credentials IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Await inQueue.AwaitableEntrance()
