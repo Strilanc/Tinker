@@ -25,10 +25,14 @@ Namespace Bnet
             Me._component = component
             logClient.SetLogger(Me._client.Logger, "Client")
 
-            Me._hooks.Add(Me._client.IncludePacketHandlerSynq(Packets.ServerToClient.ChatEvent,
-                    handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedChatEvent(Me._client, pickle.Value))))
-            Me._hooks.Add(Me._client.IncludePacketHandlerSynq(Packets.ServerToClient.QueryGamesList(Me._client.Clock),
-                    handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value))))
+            Dim ct = New CancellationTokenSource()
+            Me._hooks.Add(DirectCast(New DelegatedDisposable(Sub() ct.Cancel()), IDisposable).AsTask())
+            Me._client.IncludePacketHandlerSynq(Packets.ServerToClient.ChatEvent,
+                                                Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedChatEvent(Me._client, pickle.Value)),
+                                                ct.Token)
+            Me._client.IncludePacketHandlerSynq(Packets.ServerToClient.QueryGamesList(Me._client.Clock),
+                                                Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value)),
+                                                ct.Token)
 
             inQueue.QueueAction(Async Sub()
                                     Dim state = Await Me._client.GetStateSynq

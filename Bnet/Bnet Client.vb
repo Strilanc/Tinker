@@ -42,7 +42,7 @@ Namespace Bnet
         Private ReadOnly _profile As Bot.ClientProfile
         Private ReadOnly _productAuthenticator As IProductAuthenticator
         Private ReadOnly _logger As Logger
-        Private ReadOnly _packetHandlerLogger As PacketHandlerLogger(Of Protocol.PacketId)
+        Private ReadOnly _packetHandler As PacketHandler(Of Protocol.PacketId, IRist(Of Byte))
         Private _socket As PacketSocket
         Private _connectCanceller As New CancellationTokenSource()
 
@@ -129,7 +129,7 @@ Namespace Bnet
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_advertisementList IsNot Nothing)
-            Contract.Invariant(_packetHandlerLogger IsNot Nothing)
+            Contract.Invariant(_packetHandler IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
@@ -158,7 +158,7 @@ Namespace Bnet
             Me._logger = If(logger, New Logger)
             Me.inQueue = MakeTaskedCallQueue()
             Me.outQueue = MakeTaskedCallQueue()
-            Me._packetHandlerLogger = Protocol.MakeBnetPacketHandlerLogger(Me._logger)
+            Me._packetHandler = New PacketHandler(Of Protocol.PacketId, IRist(Of Byte))("bnet")
         End Sub
         <Pure()>
         Public Shared Function MakeProductAuthenticator(profile As Bot.ClientProfile,
@@ -181,9 +181,11 @@ Namespace Bnet
         End Function
 
         Public Sub Init()
+            Dim ct As CancellationToken = Nothing
             'Handled packets
             IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.Ping,
-                                     Function(value) TrySendPacketSynq(Protocol.MakePing(salt:=value.Value)))
+                                     Function(value) TrySendPacketSynq(Protocol.MakePing(salt:=value.Value)),
+                                     ct)
             IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.ChatEvent,
                                      Async Function(value)
                                          Dim vals = value.Value
@@ -193,30 +195,27 @@ Namespace Bnet
                                              Await inQueue.AwaitableEntrance()
                                              _lastChannel = text
                                          End If
-                                     End Function)
+                                     End Function,
+                                     ct)
             IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.MessageBox,
                                      Function(value)
                                          Dim vals = value.Value
                                          Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
                                          Logger.Log(msg, LogMessageType.Problem)
                                          Return CompletedTask()
-                                     End Function)
+                                     End Function,
+                                     ct)
 
-            'Ignored or handled-only-at-specific-times packets
+            'Packets which may be safely ignored should be logged instead of killing the client
             For Each ignoredPacket In New Protocol.Packets.Definition() {
-                        Protocol.Packets.ServerToClient.ProgramAuthenticationBegin,
-                        Protocol.Packets.ServerToClient.ProgramAuthenticationFinish,
-                        Protocol.Packets.ServerToClient.UserAuthenticationBegin,
-                        Protocol.Packets.ServerToClient.UserAuthenticationFinish,
                         Protocol.Packets.ServerToClient.Null,
-                        Protocol.Packets.ServerToClient.CreateGame3,
                         Protocol.Packets.ServerToClient.GetFileTime,
                         Protocol.Packets.ServerToClient.GetIconData,
                         Protocol.Packets.ServerToClient.QueryGamesList(_clock),
                         Protocol.Packets.ServerToClient.EnterChat,
                         Protocol.Packets.ServerToClient.FriendsUpdate,
                         Protocol.Packets.ServerToClient.RequiredWork}
-                _packetHandlerLogger.TryIncludeLogger(ignoredPacket.Id, ignoredPacket.Jar)
+                _packetHandler.IncludeLogger(ignoredPacket.Id, ignoredPacket.Jar, Logger, ct)
             Next
         End Sub
 
@@ -250,12 +249,14 @@ Namespace Bnet
         End Function
 
         Public Async Function IncludePacketHandlerSynq(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
-                                                             handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable)
+                                                             handler As Func(Of IPickle(Of T), Task),
+                                                             ct As CancellationToken) As Task
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Await inQueue.AwaitableEntrance(forceReentry:=False)
-            Return _packetHandlerLogger.IncludeHandler(packetDefinition.Id, packetDefinition.Jar, handler)
+            If ct.IsCancellationRequested Then Return
+            _packetHandler.IncludeHandlerWithLogger(packetDefinition.Id, packetDefinition.Jar, handler, Logger, ct)
         End Function
 
         Public Async Function SendTextSynq(text As NonNull(Of String)) As task
@@ -328,7 +329,11 @@ Namespace Bnet
             Try
                 Do
                     Dim data = Await _socket.AsyncReadPacket
-                    Await _packetHandlerLogger.HandlePacket(data)
+                    Dim id = DirectCast(data(1), Bnet.Protocol.PacketId)
+                    Dim body = data.SkipExact(4)
+                    Dim t = _packetHandler.TryHandle(id, body)
+                    If t Is Nothing Then Throw New IO.IOException("Unhandled packet: {0}".Frmt(id))
+                    Await t
                 Loop
             Catch ex As Exception
                 DisconnectSynq(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
@@ -337,15 +342,12 @@ Namespace Bnet
         Private Async Function AwaitReceivePresync(Of T)(packet As Protocol.Packets.Definition(Of T), ct As CancellationToken) As Task(Of T)
             Contract.Assume(SynchronizationContext.Current Is inQueue)
             Dim r = New TaskCompletionSource(Of T)()
-            Using d1 = _packetHandlerLogger.IncludeHandler(packet.Id,
-                                                           packet.Jar,
-                                                           Function(pickle)
-                                                               r.TrySetResult(pickle.Value)
-                                                               Return CompletedTask()
-                                                           End Function),
-                  d2 = ct.Register(Sub() r.TrySetCanceled())
-                Return Await r.Task
-            End Using
+            ct.Register(Sub() r.TrySetCanceled())
+            _packetHandler.QueueOneTimeHandlerWithLogger(packet.Id, packet.Jar, Function(pickle)
+                                                                                    r.TrySetResult(pickle.Value)
+                                                                                    Return CompletedTask()
+                                                                                End Function, Logger, ct)
+            Return Await r.Task
         End Function
 
         Public Async Function ConnectAsync(socket As NonNull(Of PacketSocket), clientCDKeySalt As UInt32, Optional reconnector As IConnecter = Nothing) As Task

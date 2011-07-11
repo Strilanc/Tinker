@@ -40,8 +40,11 @@ Namespace Bnet
             Me._client = client
             Me._control = New BnetClientControl(Me)
 
-            Me._hooks.Add(client.IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.ChatEvent,
-                                                           Function(pickle) OnReceivedChatEvent(pickle.Value)))
+            Dim ct = New CancellationTokenSource()
+            Me._hooks.Add(DirectCast(New DelegatedDisposable(Sub() ct.Cancel()), IDisposable).AsTask())
+            client.IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.ChatEvent,
+                                            Function(pickle) OnReceivedChatEvent(pickle.Value),
+                                            ct.Token)
 
             client.ChainEventualDisposalTo(Me)
         End Sub
