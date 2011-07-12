@@ -66,6 +66,6 @@ Public Class HoldPoint(Of TArg)
         SyncLock _lock
             handlers = _handlers.ToList
         End SyncLock
-        Return TaskEx.WhenAll(From handler In handlers Select handler(argument))
+        Return TaskEx.WhenAll(From handler In handlers Select handler(argument)).AssumeNotNull()
     End Function
 End Class

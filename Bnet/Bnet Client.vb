@@ -251,9 +251,8 @@ Namespace Bnet
         Public Async Function IncludePacketHandlerSynq(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
                                                              handler As Func(Of IPickle(Of T), Task),
                                                              ct As CancellationToken) As Task
-            Contract.Requires(packetDefinition IsNot Nothing)
-            Contract.Requires(handler IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
+            Contract.Assume(packetDefinition IsNot Nothing)
+            Contract.Assume(handler IsNot Nothing)
             Await inQueue.AwaitableEntrance(forceReentry:=False)
             If ct.IsCancellationRequested Then Return
             _packetHandler.IncludeHandlerWithLogger(packetDefinition.Id, packetDefinition.Jar, handler, Logger, ct)

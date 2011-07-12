@@ -213,17 +213,16 @@ Namespace WC3
                            template:="setting",
                            Description:="Returns the current value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
-                Dim val As Task(Of Double)
+            Protected Overloads Overrides Async Function PerformInvoke(target As Game, user As BotUser, argument As CommandArgument) As Task(Of String)
+                Dim val As Double
                 Dim argSetting = argument.RawValue(0).ToInvariant
                 Select Case argSetting
-                    Case "TickPeriod" : val = From e In target.Motor.QueueGetTickPeriod Select e.TotalMilliseconds
-                    Case "LagLimit" : val = From e In target.Motor.QueueGetLagLimit Select e.TotalMilliseconds
-                    Case "GameRate" : val = From e In target.Motor.QueueGetSpeedFactor
+                    Case "TickPeriod" : val = (Await target.Motor.QueueGetTickPeriod).TotalMilliseconds
+                    Case "LagLimit" : val = (Await target.Motor.QueueGetLagLimit).TotalMilliseconds
+                    Case "GameRate" : val = Await target.Motor.QueueGetSpeedFactor
                     Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argSetting))
                 End Select
-                Return From v In val
-                       Select "{0} = '{1}'".Frmt(argSetting, v)
+                Return "{0} = '{1}'".Frmt(argSetting, val)
             End Function
         End Class
 

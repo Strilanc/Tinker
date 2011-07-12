@@ -106,9 +106,8 @@ Namespace Warden
                                                     cookie As UInt32,
                                                     clock As IClock,
                                                     logger As Logger) As Task(Of Warden.Socket)
-            Contract.Requires(clock IsNot Nothing)
-            Contract.Requires(logger IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Warden.Socket)() IsNot Nothing)
+            Contract.Assume(clock IsNot Nothing)
+            Contract.Assume(logger IsNot Nothing)
 
             'Initiate connection
             Dim tcpClient = Await AsyncTcpConnect(remoteHost, remotePort)

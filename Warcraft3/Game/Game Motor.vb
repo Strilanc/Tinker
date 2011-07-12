@@ -122,7 +122,7 @@
         Private Function BroadcastPacket(packet As Protocol.Packet) As Task
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return TaskEx.WhenAll(From player In _kernel.Players Select player.QueueSendPacket(packet))
+            Return TaskEx.WhenAll(From player In _kernel.Players Select player.QueueSendPacket(packet)).AssumeNotNull()
         End Function
 
         '''<summary>Advances game time</summary>

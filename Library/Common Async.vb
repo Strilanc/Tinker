@@ -13,6 +13,7 @@
 
     <Extension()> <Pure()>
     Public Function ImmediateResult(Of T)(task As Task(Of T)) As T
+        Contract.Requires(task IsNot Nothing)
         If Not task.Status = TaskStatus.RanToCompletion Then Throw New InvalidStateException("Task did not complete.")
         Return task.Result
     End Function
@@ -36,6 +37,8 @@
 
     <Extension()>
     Public Function CancelledAsFalse(task As Task) As Task(Of Boolean)
+        Contract.Requires(task IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task(Of Boolean))() IsNot Nothing)
         Dim r = New TaskCompletionSource(Of Boolean)()
         task.ContinueWith(Sub()
                               If task.IsCanceled Then
@@ -52,10 +55,13 @@
                                   Throw New UnreachableException()
                               End If
                           End Sub)
+        Contract.Assume(r.Task IsNot Nothing)
         Return r.Task
     End Function
     <Extension()>
     Public Function MaybeCancelled(Of T)(task As Task(Of T)) As Task(Of Maybe(Of T))
+        Contract.Requires(task IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task(Of Maybe(Of T)))() IsNot Nothing)
         Dim r = New TaskCompletionSource(Of Maybe(Of T))()
         task.ContinueWith(Sub()
                               If task.IsCanceled Then
@@ -72,6 +78,7 @@
                                   Throw New UnreachableException()
                               End If
                           End Sub)
+        Contract.Assume(r.Task IsNot Nothing)
         Return r.Task
     End Function
 
@@ -128,8 +135,7 @@
 
     <Extension()>
     Public Async Function DisposeControlAsync(control As Control) As Task
-        Contract.Requires(control IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+        Contract.Assume(control IsNot Nothing)
         Try
             If control.IsHandleCreated AndAlso control.InvokeRequired Then
                 Dim r = New TaskCompletionSource(Of NoValue)

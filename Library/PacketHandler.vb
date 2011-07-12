@@ -21,14 +21,19 @@ Public NotInheritable Class PacketHandler(Of TKey, TArg)
     Public ReadOnly Name As String
     Private ReadOnly _handlers As New Dictionary(Of TKey, LinkedList(Of PotentialHandler))
     Public Sub New(name As String)
+        Contract.Requires(name IsNot Nothing)
         Me.Name = name
+    End Sub
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(Name IsNot Nothing)
+        Contract.Invariant(_handlers IsNot Nothing)
     End Sub
 
     Private Function GetPotentialHandlers(key As TKey) As LinkedList(Of PotentialHandler)
         Contract.Requires(key IsNot Nothing)
         Contract.Ensures(Contract.Result(Of LinkedList(Of PotentialHandler))() IsNot Nothing)
         If Not _handlers.ContainsKey(key) Then _handlers(key) = New LinkedList(Of PotentialHandler)
-        Return _handlers(key)
+        Return _handlers(key).AssumeNotNull()
     End Function
 
     Public Sub IncludeHandler(key As TKey, handler As Func(Of TArg, Task), ct As CancellationToken)
@@ -55,22 +60,23 @@ Public NotInheritable Class PacketHandler(Of TKey, TArg)
         Dim usedAny = False
         Dim keptHandlers = New LinkedList(Of PotentialHandler)
         For Each handler In GetPotentialHandlers(key).Where(Function(e) Not e.ct.IsCancellationRequested)
+            Contract.Assume(handler IsNot Nothing)
             Dim keep = True
             Dim use = False
             Select Case handler.type
                 Case PotentialHandler.UseType.All
                     use = True
                 Case PotentialHandler.UseType.Any
-                    use = usedAny
+                    use = Not usedAny
                     usedAny = True
                 Case PotentialHandler.UseType.Queue
-                    use = usedQueue
+                    use = Not usedQueue
                     usedQueue = True
                     keep = Not use
                 Case Else
                     Throw handler.type.MakeImpossibleValueException()
             End Select
-            results.Add(handler.handler(arg))
+            If use Then results.Add(handler.handler.AssumeNotNull()(arg))
             If keep Then keptHandlers.AddLast(handler)
         Next
         _handlers(key) = keptHandlers
@@ -106,11 +112,11 @@ Public Module PacketHandlerExtensions
         Contract.Requires(logger IsNot Nothing)
         Dim ct2 = New CancellationTokenSource()
         ct.Register(Sub() ct2.Cancel())
+        this.IncludeLogger(key, jar, logger, ct2.Token)
         this.QueueOneTimeHandler(key, Function(data)
                                           ct2.Cancel()
                                           Return handler(jar.ParsePickle(data))
                                       End Function, ct)
-        this.IncludeLogger(key, jar, logger, ct2.Token)
     End Sub
     <Extension()>
     Public Sub IncludeHandlerWithLogger(Of K, T)(this As PacketHandler(Of K, IRist(Of Byte)), key As K, jar As IJar(Of T), handler As Func(Of IPickle(Of T), Task), logger As Logger, ct As CancellationToken)
@@ -119,8 +125,8 @@ Public Module PacketHandlerExtensions
         Contract.Requires(handler IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Requires(logger IsNot Nothing)
-        this.IncludeHandler(key, Function(data) handler(jar.ParsePickle(data)), ct)
         this.IncludeLogger(key, jar, logger, ct)
+        this.IncludeHandler(key, Function(data) handler(jar.ParsePickle(data)), ct)
     End Sub
 End Module
 

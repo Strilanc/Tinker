@@ -252,23 +252,16 @@ Namespace WC3
 
         Public Function QueueGetLatency() As Task(Of Double)
             Contract.Ensures(Contract.Result(Of Task(Of Double))() IsNot Nothing)
-            If _pinger Is Nothing Then
-                Return 0.0.AsTask
-            Else
-                Return _pinger.QueueGetLatency
-            End If
+            If _pinger Is Nothing Then Return 0.0.AsTask
+            Return _pinger.QueueGetLatency
         End Function
-        Public Function QueueGetLatencyDescription() As Task(Of String)
-            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
-            Return (From latency In QueueGetLatency()
-                    Select latencyDesc = If(latency = 0, "?", "{0:0}ms".Frmt(latency))
-                    Select If(_downloadManager Is Nothing,
-                              latencyDesc.AsTask,
-                              _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc))
-                   ).Unwrap.AssumeNotNull
+        Public Async Function QueueGetLatencyDescription() As Task(Of String)
+            Dim latency = Await QueueGetLatency()
+            Dim latencyDesc = If(latency = 0, "?", "{0:0}ms".Frmt(latency))
+            If _downloadManager Is Nothing Then Return latencyDesc
+            Return Await _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc)
         End Function
         Public Async Function AsyncDescription() As Task(Of String)
-            'Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             'Information differing based on the current player state
             Dim contextInfo As String
             Select Case _state
