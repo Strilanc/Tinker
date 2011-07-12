@@ -55,7 +55,7 @@ Namespace Bot.Commands
                 Dim socket = Await connector.ConnectAsync(client.Logger)
                 Using rng = New System.Security.Cryptography.RNGCryptoServiceProvider()
                     Await client.ConnectAsync(socket, rng.GenerateBytes(4).ToUInt32(), connector)
-                    Await client.LogOnSynq(Bnet.ClientCredentials.GeneratedFrom(profile.userName, profile.password, rng))
+                    Await client.LogOnAsync(Bnet.ClientCredentials.GeneratedFrom(profile.userName, profile.password, rng))
                 End Using
                 Return clientComponent
             Catch ex As Exception

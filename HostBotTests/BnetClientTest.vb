@@ -109,7 +109,7 @@ Public Class BnetClientTest
                 })))
         WaitUntilTaskSucceeds(fConnect)
         Dim credentials = New Bnet.ClientCredentials(profile.userName, profile.password, privateKey:=2)
-        client.LogOnSynq(credentials)
+        client.LogOnAsync(credentials)
 
         'user auth begin (C->S)
         packet = stream.RetrieveWritePacket()

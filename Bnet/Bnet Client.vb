@@ -338,16 +338,63 @@ Namespace Bnet
                 DisconnectSynq(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
             End Try
         End Sub
-        Private Async Function AwaitReceivePresync(Of T)(packet As Protocol.Packets.Definition(Of T), ct As CancellationToken) As Task(Of T)
+        Private Function AwaitReceivePresync(Of T)(packet As Protocol.Packets.Definition(Of T), ct As CancellationToken) As ActionAfterCallbacksAwaiter(Of T)
             Contract.Assume(SynchronizationContext.Current Is inQueue)
-            Dim r = New TaskCompletionSource(Of T)()
-            ct.Register(Sub() r.TrySetCanceled())
+            Dim receivedResult = New TaskCompletionSource(Of T)()
+            Dim handledResult = New TaskCompletionSource(Of NoValue)()
+            ct.Register(Sub()
+                            receivedResult.TrySetCanceled()
+                            handledResult.TrySetCanceled()
+                        End Sub)
             _packetHandler.QueueOneTimeHandlerWithLogger(packet.Id, packet.Jar, Function(pickle)
-                                                                                    r.TrySetResult(pickle.Value)
-                                                                                    Return CompletedTask()
+                                                                                    receivedResult.TrySetResult(pickle.Value)
+                                                                                    Return handledResult.Task
                                                                                 End Function, Logger, ct)
-            Return Await r.Task
+            Return New ActionAfterCallbacksAwaiter(Of T)(receivedResult.Task, Sub() handledResult.TrySetResult(Nothing))
         End Function
+        Public Class ActionAfterCallbacksAwaiter(Of T)
+            Private ReadOnly _task As Task(Of T)
+            Private ReadOnly _completionAction As action
+            Private ReadOnly _performedLock As New OnetimeLock()
+            Private _actionCount As Int32
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(_completionAction IsNot Nothing)
+                Contract.Invariant(_task IsNot Nothing)
+            End Sub
+            Public Sub New(task As Task(Of T), comp As Action)
+                Contract.Requires(comp IsNot Nothing)
+                Contract.Requires(task IsNot Nothing)
+                Me._completionAction = comp
+                Me._task = task
+            End Sub
+            Public Function GetAwaiter() As ActionAfterCallbacksAwaiter(Of T)
+                Return Me
+            End Function
+            Public ReadOnly Property IsCompleted As Boolean
+                Get
+                    Return _performedLock.State = OnetimeLockState.Acquired
+                End Get
+            End Property
+            Public Sub OnCompleted(action As Action)
+                Interlocked.Increment(_actionCount)
+                _task.GetAwaiter().OnCompleted(Sub()
+                                                   Try
+                                                       action()
+                                                   Finally
+                                                       If Interlocked.Decrement(_actionCount) = 0 AndAlso _performedLock.TryAcquire() Then
+                                                           _completionAction()
+                                                       End If
+                                                   End Try
+                                               End Sub)
+            End Sub
+            Public Function GetResult() As T
+                Try
+                    Return _task.Result
+                Catch ex As AggregateException
+                    Throw ex.InnerExceptions.First()
+                End Try
+            End Function
+        End Class
 
         Public Async Function ConnectAsync(socket As NonNull(Of PacketSocket), clientCDKeySalt As UInt32, Optional reconnector As IConnecter = Nothing) As Task
             Await inQueue.AwaitableEntrance()
@@ -434,9 +481,12 @@ Namespace Bnet
 
             'Connect
             If remoteHost = "" Then
-                While (Await AwaitReceivePresync(Protocol.Packets.ServerToClient.Warden, ct).MaybeCancelled()).HasValue
+                Try
+                    Await AwaitReceivePresync(Protocol.Packets.ServerToClient.Warden, ct)
                     Logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem)
-                End While
+                Catch ex As TaskCanceledException
+                    'ignore cancellation
+                End Try
                 Return
             End If
             Dim bnlsSocket As Warden.Socket
@@ -455,10 +505,13 @@ Namespace Bnet
             'Asynchronously forward bnet warden to bnls
             Call Async Sub()
                      Do
-                         Dim wardenData = Await AwaitReceivePresync(Protocol.Packets.ServerToClient.Warden, ct).MaybeCancelled()
-                         If ct.IsCancellationRequested Then Return
-                         If Not wardenData.HasValue Then Return
-                         bnlsSocket.QueueSendWardenData(wardenData.Value).ConsiderExceptionsHandled()
+                         Try
+                             Dim wardenData = Await AwaitReceivePresync(Protocol.Packets.ServerToClient.Warden, ct)
+                             If ct.IsCancellationRequested Then Return
+                             bnlsSocket.QueueSendWardenData(wardenData).ConsiderExceptionsHandled()
+                         Catch ex As TaskCanceledException
+                             Return
+                         End Try
                      Loop
                  End Sub
 
@@ -471,7 +524,7 @@ Namespace Bnet
             End Try
         End Sub
 
-        Public Async Function LogOnSynq(credentials As NonNull(Of ClientCredentials)) As Task
+        Public Async Function LogOnAsync(credentials As NonNull(Of ClientCredentials)) As Task
             Await inQueue.AwaitableEntrance()
             If _state <> ClientState.EnterUserCredentials Then
                 Throw New InvalidOperationException("Incorrect state for login.")
@@ -567,7 +620,7 @@ Namespace Bnet
                 Dim socket = Await _reconnecter.ConnectAsync(Logger)
                 Using rng = New System.Security.Cryptography.RNGCryptoServiceProvider()
                     Await ConnectAsync(socket, rng.GenerateBytes(4).ToUInt32(), _reconnecter)
-                    Await LogOnSynq(_userCredentials.WithNewGeneratedKeys(rng))
+                    Await LogOnAsync(_userCredentials.WithNewGeneratedKeys(rng))
                 End Using
                 Return True
             Catch ex As Exception

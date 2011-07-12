@@ -200,7 +200,7 @@ Namespace Bnet.Commands
             Dim userName = argument.RawValue(0)
             Dim password = argument.RawValue(1)
             Using rng = New Security.Cryptography.RNGCryptoServiceProvider()
-                Await target.LogOnSynq(Bnet.ClientCredentials.GeneratedFrom(userName, password, rng))
+                Await target.LogOnAsync(Bnet.ClientCredentials.GeneratedFrom(userName, password, rng))
             End Using
             Return "Logged in as {0}".Frmt(userName)
         End Function
