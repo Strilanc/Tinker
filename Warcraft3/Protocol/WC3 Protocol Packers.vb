@@ -53,7 +53,7 @@ Namespace WC3.Protocol
             Contract.Requires(remoteExternalEndPoint.Address IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(ServerPackets.Greet, New Dictionary(Of InvariantString, Object) From {
-                    {"lobby state", [Default](Of Maybe(Of NamedValueMap))()},
+                    {"lobby state", [Default](Of NullableValue(Of NamedValueMap))()},
                     {"assigned id", assignedId},
                     {"external address", remoteExternalEndPoint}})
         End Function
@@ -157,7 +157,7 @@ Namespace WC3.Protocol
         End Function
         <Pure()>
         Public Function MakeTick(timeSpan As UShort,
-                                 Optional actions As Maybe(Of IRist(Of PlayerActionSet)) = Nothing) As Packet
+                                 Optional actions As NullableValue(Of IRist(Of PlayerActionSet)) = Nothing) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(ServerPackets.Tick, New Dictionary(Of InvariantString, Object) From {
                     {"time span", timeSpan},

@@ -40,7 +40,7 @@ Namespace Components
             Contract.Assume(component IsNot Nothing)
             If _components.Contains(component) Then
                 Throw New InvalidOperationException("Component already added.")
-            ElseIf TryFindComponent(component.Type, component.Name).HasValue Then
+            ElseIf TryFindComponent(component.Type, component.Name) IsNot Nothing Then
                 Throw New InvalidOperationException("There is already a {0} named {1}.".Frmt(component.Type, component.Name))
             End If
             _components.Add(component)
@@ -73,10 +73,10 @@ Namespace Components
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Not Contract.Result(Of Maybe(Of IBotComponent))().HasValue OrElse Contract.Result(Of Maybe(Of IBotComponent)).Value.Name = name")>
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Not Contract.Result(Of Maybe(Of IBotComponent))().HasValue OrElse Contract.Result(Of Maybe(Of IBotComponent)).Value.Type = type")>
         Private Function TryFindComponent(type As InvariantString,
-                                          name As InvariantString) As Maybe(Of IBotComponent)
-            Contract.Ensures(Not Contract.Result(Of Maybe(Of IBotComponent))().HasValue OrElse Contract.Result(Of Maybe(Of IBotComponent)).Value.Name = name)
-            Contract.Ensures(Not Contract.Result(Of Maybe(Of IBotComponent))().HasValue OrElse Contract.Result(Of Maybe(Of IBotComponent)).Value.Type = type)
-            Return (From c In _components Where c.Type = type AndAlso c.Name = name).MaybeFirst()
+                                          name As InvariantString) As IBotComponent
+            Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Name = name)
+            Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Type = type)
+            Return (From c In _components Where c.Type = type AndAlso c.Name = name).FirstOrDefault()
         End Function
         ''' <summary>
         ''' Determines a component, from the set, with the given type and name identifiers.
@@ -89,10 +89,10 @@ Namespace Components
             Contract.Ensures(Contract.Result(Of IBotComponent)().Name = name)
             Contract.Ensures(Contract.Result(Of IBotComponent)().Type = type)
             Dim result = TryFindComponent(type, name)
-            If Not result.HasValue Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(type, name))
-            Contract.Assume(result.Value.Name = name)
-            Contract.Assume(result.Value.Type = type)
-            Return result.Value
+            If result Is Nothing Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(type, name))
+            Contract.Assume(result.Name = name)
+            Contract.Assume(result.Type = type)
+            Return result
         End Function
         ''' <summary>
         ''' Asynchronously determines a component, from the set, with the given type and name identifiers.
@@ -110,9 +110,9 @@ Namespace Components
         ''' </summary>
         <Pure()>
         <SuppressMessage("Microsoft.Contracts", "EnsuresInMethod-Not Contract.Result(Of Maybe(Of T))().HasValue OrElse Contract.Result(Of Maybe(Of T))().Value.Name = name")>
-        Private Function TryFindComponent(Of T As IBotComponent)(name As InvariantString) As Maybe(Of T)
-            Contract.Ensures(Not Contract.Result(Of Maybe(Of T))().HasValue OrElse Contract.Result(Of Maybe(Of T))().Value.Name = name)
-            Return (From c In _components.OfType(Of T)() Where c.Name = name).MaybeFirst()
+        Private Function TryFindComponent(Of T As IBotComponent)(name As InvariantString) As RefNullable(Of T)
+            Contract.Ensures(Contract.Result(Of RefNullable(Of T))() Is Nothing OrElse Contract.Result(Of RefNullable(Of T))().Value.Name = name)
+            Return (From c In _components.OfType(Of T)() Where c.Name = name).FirstOrDefault()
         End Function
         ''' <summary>
         ''' Determines a component, from the set, with the given type and name.
@@ -123,7 +123,7 @@ Namespace Components
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T).Name = name)
             Dim result = TryFindComponent(Of T)(name)
-            If Not result.HasValue Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(GetType(T), name))
+            If result Is Nothing Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(GetType(T), name))
             Contract.Assume(result.Value.Name = name)
             Return result.Value
         End Function
@@ -144,8 +144,9 @@ Namespace Components
             Contract.Requires(factory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Dim result = _components.OfType(Of T)().MaybeFirst()
-            If Not result.HasValue Then
-                result = factory().AssumeNotNull()
+            If Not result Is Nothing Then
+                result = factory()
+                Contract.Assume(result IsNot Nothing)
                 AddComponent(result.Value)
             End If
             Return result.Value

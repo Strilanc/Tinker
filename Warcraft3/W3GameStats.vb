@@ -34,7 +34,7 @@
         Private ReadOnly _playableWidth As UInt16
         Private ReadOnly _playableHeight As UInt16
         Private ReadOnly _mapChecksumXORO As UInt32
-        Private ReadOnly _mapChecksumSHA1 As Maybe(Of IRist(Of Byte))
+        Private ReadOnly _mapChecksumSHA1 As NullableValue(Of IRist(Of Byte))
         Private ReadOnly _advertisedPath As InvariantString
         Private ReadOnly _hostName As InvariantString
 
@@ -48,9 +48,9 @@
                 Return _hostName
             End Get
         End Property
-        Public ReadOnly Property MapChecksumSHA1 As Maybe(Of IRist(Of Byte))
+        Public ReadOnly Property MapChecksumSHA1 As NullableValue(Of IRist(Of Byte))
             Get
-                Contract.Ensures(Not Contract.Result(Of Maybe(Of IRist(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IRist(Of Byte)))().Value.Count = 20)
+                Contract.Ensures(Not Contract.Result(Of NullableValue(Of IRist(Of Byte)))().HasValue OrElse Contract.Result(Of NullableValue(Of IRist(Of Byte)))().Value.Count = 20)
                 Return _mapChecksumSHA1
             End Get
         End Property
@@ -127,7 +127,7 @@
                        playableWidth As UInt16,
                        playableHeight As UInt16,
                        mapChecksumXORO As UInt32,
-                       mapChecksumSHA1 As Maybe(Of IRist(Of Byte)),
+                       mapChecksumSHA1 As NullableValue(Of IRist(Of Byte)),
                        advertisedPath As InvariantString,
                        hostName As InvariantString)
             Contract.Requires(Not mapChecksumSHA1.HasValue OrElse mapChecksumSHA1.Value.Count = 20)
@@ -175,7 +175,7 @@
                                  PlayableWidth:=map.PlayableWidth,
                                  PlayableHeight:=map.PlayableHeight,
                                  MapChecksumXORO:=map.MapChecksumXORO,
-                                 MapChecksumSHA1:=map.MapChecksumSHA1.Maybe(),
+                                 MapChecksumSHA1:=map.MapChecksumSHA1.NullableValue(),
                                  AdvertisedPath:=map.AdvertisedPath,
                                  hostName:=hostName)
         End Function

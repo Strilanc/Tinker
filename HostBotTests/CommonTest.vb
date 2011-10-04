@@ -50,11 +50,6 @@ Public Class CommonTest
     End Sub
 
     <TestMethod()>
-    Public Sub MaybeTest()
-        Assert.IsTrue(5.Maybe = New Maybe(Of Int32)(5))
-    End Sub
-
-    <TestMethod()>
     Public Sub HasBitSetTest()
         Assert.IsTrue(CByte(1).HasBitSet(0))
         Assert.IsTrue(1US.HasBitSet(0))

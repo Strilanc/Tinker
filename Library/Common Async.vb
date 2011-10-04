@@ -59,10 +59,10 @@
         Return r.Task
     End Function
     <Extension()>
-    Public Function MaybeCancelled(Of T)(task As Task(Of T)) As Task(Of Maybe(Of T))
+    Public Function MaybeCancelled(Of T)(task As Task(Of T)) As Task(Of Renullable(Of T))
         Contract.Requires(task IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task(Of Maybe(Of T)))() IsNot Nothing)
-        Dim r = New TaskCompletionSource(Of Maybe(Of T))()
+        Contract.Ensures(Contract.Result(Of Task(Of Renullable(Of T)))() IsNot Nothing)
+        Dim r = New TaskCompletionSource(Of Renullable(Of T))()
         task.ContinueWith(Sub()
                               If task.IsCanceled Then
                                   r.TrySetResult(Nothing)

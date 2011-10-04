@@ -183,7 +183,7 @@
 
     '''<summary>Pickles values which may or may not be included in the data.</summary>
     Public NotInheritable Class OptionalFramingJar(Of T)
-        Inherits BaseJar(Of Maybe(Of T))
+        Inherits BaseJar(Of NullableValue(Of T))
 
         Private ReadOnly _subJar As IJar(Of T)
 
@@ -196,7 +196,7 @@
             Me._subJar = subJar
         End Sub
 
-        Public Overrides Function Pack(value As Maybe(Of T)) As IRist(Of Byte)
+        Public Overrides Function Pack(value As NullableValue(Of T)) As IRist(Of Byte)
             If value.HasValue Then
                 Return _subJar.Pack(value.Value)
             Else
@@ -204,27 +204,27 @@
             End If
         End Function
 
-        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of Maybe(Of T))
+        Public Overrides Function Parse(data As IRist(Of Byte)) As ParsedValue(Of NullableValue(Of T))
             If data.Count > 0 Then
                 Dim parsed = _subJar.Parse(data)
-                Return parsed.WithValue(Of Maybe(Of T))(parsed.Value)
+                Return parsed.WithValue(Of NullableValue(Of T))(parsed.Value)
             Else
-                Return New Maybe(Of T)().ParsedWithDataCount(0)
+                Return New NullableValue(Of T)().ParsedWithDataCount(0)
             End If
         End Function
 
-        Public Overrides Function Describe(value As Maybe(Of T)) As String
+        Public Overrides Function Describe(value As NullableValue(Of T)) As String
             If Not value.HasValue Then Return "[Not Included]"
             Return _subJar.Describe(value.Value)
         End Function
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-16")>
         <SuppressMessage("Microsoft.Contracts", "Ensures-28-34")>
-        Public Overrides Function Parse(text As String) As Maybe(Of T)
+        Public Overrides Function Parse(text As String) As NullableValue(Of T)
             If text = "[Not Included]" Then Return Nothing
             Return _subJar.Parse(text)
         End Function
 
-        Public Overrides Function MakeControl() As IValueEditor(Of Maybe(Of T))
+        Public Overrides Function MakeControl() As IValueEditor(Of NullableValue(Of T))
             Dim checkControl = New CheckBox()
             checkControl.Text = "Included"
             checkControl.Checked = False
@@ -233,13 +233,13 @@
             AddHandler checkControl.CheckedChanged, Sub() valueControl.Control.Enabled = checkControl.Checked
             AddHandler valueControl.ValueChanged, Sub() LayoutPanel(panel)
 
-            Return New DelegatedValueEditor(Of Maybe(Of T))(
+            Return New DelegatedValueEditor(Of NullableValue(Of T))(
                 Control:=panel,
                 eventAdder:=Sub(action)
                                 AddHandler checkControl.CheckedChanged, Sub() action()
                                 AddHandler valueControl.ValueChanged, Sub() action()
                             End Sub,
-                getter:=Function() If(checkControl.Checked, valueControl.Value.Maybe, New Maybe(Of T)()),
+                getter:=Function() If(checkControl.Checked, valueControl.Value, New NullableValue(Of T)()),
                 setter:=Sub(value)
                             checkControl.Checked = value.HasValue
                             If value.HasValue Then valueControl.SetValueIfDifferent(value.Value)

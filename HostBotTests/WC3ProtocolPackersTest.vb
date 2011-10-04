@@ -81,7 +81,7 @@ Public Class WC3ProtocolPackersTest
                                                                {"amount", 100UI},
                                                                {"unknown", CByte(0)}})
                                             ))
-                       ).Maybe())
+                       ).NullableValue())
     End Sub
     <TestMethod()>
     Public Sub MakeMapFileDataTest()

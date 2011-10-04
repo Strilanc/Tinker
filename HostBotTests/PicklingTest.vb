@@ -416,11 +416,11 @@ Public Class PicklingTest
     Public Sub OptionalJarTest()
         Dim jar = New OptionalFramingJar(Of Byte)(New ByteJar())
         JarTest(jar, data:={5}, value:=CByte(5))
-        JarTest(jar, data:={}, value:=New Maybe(Of Byte)(), appendSafe:=False)
+        JarTest(jar, data:={}, value:=New NullableValue(Of Byte)(), appendSafe:=False)
 
         Dim jar2 = New OptionalFramingJar(Of String)(New UTF8Jar().NullTerminated)
         JarTest(jar2, data:={0}, value:="")
-        JarTest(jar2, data:={}, value:=New Maybe(Of String)(), appendSafe:=False)
+        JarTest(jar2, data:={}, value:=New NullableValue(Of String)(), appendSafe:=False)
         JarTest(jar2, data:={Asc("A"), 0}, value:="A")
         ExpectException(Of PicklingException)(Sub() jar2.Parse(ByteRist(92)))
     End Sub

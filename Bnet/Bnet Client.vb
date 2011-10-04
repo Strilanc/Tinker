@@ -330,7 +330,7 @@ Namespace Bnet
                     Dim data = Await _socket.AsyncReadPacket
                     Dim id = DirectCast(data(1), Bnet.Protocol.PacketId)
                     Dim body = data.SkipExact(4)
-                    Dim t = _packetHandler.TryHandle(id, body)
+                    Dim t = _packetHandler.TryHandle(New KeyValue(Of Protocol.PacketId, IRist(Of Byte))(id, body))
                     If t Is Nothing Then Throw New IO.IOException("Unhandled packet: {0}".Frmt(id))
                     Await t
                 Loop
@@ -566,7 +566,7 @@ Namespace Bnet
                     Case Protocol.UserAuthenticationFinishResult.IncorrectPassword
                         errorInfo = "(Note: This can happen due to a bnet bug. You might want to try again.)"
                     Case Protocol.UserAuthenticationFinishResult.CustomError
-                        errorInfo = "({0})".Frmt(authFinishVals.ItemAs(Of Maybe(Of String))("custom error info").Value)
+                        errorInfo = "({0})".Frmt(authFinishVals.ItemAs(Of NullableValue(Of String))("custom error info").Value)
                 End Select
                 Throw New IO.InvalidDataException("User authentication failed with error: {0} {1}".Frmt(result, errorInfo))
             ElseIf Not expectedServerProof.SequenceEqual(serverProof) Then

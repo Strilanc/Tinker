@@ -142,7 +142,7 @@ Public Class BnetClientTest
             body:=Protocol.Packets.ServerToClient.UserAuthenticationFinish.Jar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"result", Protocol.UserAuthenticationFinishResult.Passed},
                     {"server password proof", credentials.ServerPasswordProof(accountSalt, serverPublicKey)},
-                    {"custom error info", New Maybe(Of String)()}
+                    {"custom error info", New NullableValue(Of String)()}
                 })))
 
         'clan info (S->C)

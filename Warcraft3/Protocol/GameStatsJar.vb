@@ -156,7 +156,7 @@ Namespace WC3.Protocol
             Dim playableWidth = vals.ItemAs(Of UInt16)("playable width")
             Dim playableHeight = vals.ItemAs(Of UInt16)("playable height")
             Dim xoroChecksum = vals.ItemAs(Of UInt32)("xoro checksum")
-            Dim sha1Checksum = vals.ItemAs(Of Maybe(Of IRist(Of Byte)))("sha1 checksum")
+            Dim sha1Checksum = vals.ItemAs(Of NullableValue(Of IRist(Of Byte)))("sha1 checksum")
             Dim relativePath = vals.ItemAs(Of String)("relative path").ToInvariant
             Dim hostName = vals.ItemAs(Of String)("host name").ToInvariant
             If sha1Checksum.HasValue AndAlso sha1Checksum.Value.Count <> 20 Then

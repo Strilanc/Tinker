@@ -44,15 +44,15 @@ Namespace WC3.Replay
             End Get
         End Property
 
-        Public Shared Widening Operator CType(value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
-            Contract.Requires(value IsNot Nothing)
-            Return value.Definition.Id.KeyValue(value.Payload)
-        End Operator
-        Public Shared Widening Operator CType(value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry
+        Public Function ToKeyValue() As IKeyValue(Of ReplayEntryId, Object)
+            Contract.Ensures(Contract.Result(Of IKeyValue(Of ReplayEntryId, Object))() IsNot Nothing)
+            Return Definition.Id.KeyValue(Payload)
+        End Function
+        Public Shared Function FromKeyValue(value As IKeyValue(Of ReplayEntryId, Object)) As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
             Contract.Assume(value.Value IsNot Nothing)
             Return New ReplayEntry(Format.DefinitionFor(value.Key), value.Value)
-        End Operator
+        End Function
 
         Public Overloads Function Equals(other As ReplayEntry) As Boolean Implements System.IEquatable(Of ReplayEntry).Equals
             If other Is Nothing Then Return False
@@ -70,7 +70,7 @@ Namespace WC3.Replay
     End Class
 
     Public NotInheritable Class ReplayEntryJar
-        Inherits BaseConversionJar(Of ReplayEntry, KeyValuePair(Of ReplayEntryId, Object))
+        Inherits BaseConversionJar(Of ReplayEntry, IKeyValue(Of ReplayEntryId, Object))
 
         Private Shared ReadOnly DataJar As New KeyPrefixedJar(Of ReplayEntryId)(
             keyJar:=New EnumByteJar(Of ReplayEntryId)(),
@@ -78,14 +78,14 @@ Namespace WC3.Replay
                 keySelector:=Function(e) e.Id,
                 elementSelector:=Function(e) e.Jar))
 
-        Public Overrides Function SubJar() As IJar(Of KeyValuePair(Of ReplayEntryId, Object))
+        Public Overrides Function SubJar() As IJar(Of IKeyValue(Of ReplayEntryId, Object))
             Return DataJar
         End Function
-        Public Overrides Function PackRaw(value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
-            Return value
+        Public Overrides Function PackRaw(value As ReplayEntry) As IKeyValue(Of ReplayEntryId, Object)
+            Return value.ToKeyValue()
         End Function
-        Public Overrides Function ParseRaw(value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry
-            Return value
+        Public Overrides Function ParseRaw(value As IKeyValue(Of ReplayEntryId, Object)) As ReplayEntry
+            Return ReplayEntry.FromKeyValue(value)
         End Function
     End Class
 End Namespace

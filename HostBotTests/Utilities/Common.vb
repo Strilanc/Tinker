@@ -160,7 +160,7 @@ Friend Module TestingCommon
                 If Not ObjectEqual(mKey.GetValue(v1, Nothing), mKey.GetValue(v2, Nothing)) Then Return False
                 If Not ObjectEqual(mValue.GetValue(v1, Nothing), mValue.GetValue(v2, Nothing)) Then Return False
                 Return True
-            ElseIf v1.GetType.GetGenericTypeDefinition Is GetType(Maybe(Of )) Then
+            ElseIf v1.GetType.GetGenericTypeDefinition Is GetType(NullableValue(Of )) Then
                 Dim mHasValue = v1.GetType.GetProperty("HasValue")
                 Dim mValue = v1.GetType.GetProperty("Value")
                 If Not ObjectEqual(mHasValue.GetValue(v1, Nothing), mHasValue.GetValue(v2, Nothing)) Then Return False

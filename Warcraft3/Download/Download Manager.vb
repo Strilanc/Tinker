@@ -337,10 +337,6 @@ Namespace WC3.Download
                 Contract.Assume(downloader IsNot Nothing)
                 Dim bestAvailableUploader = downloader.TryFindBestAvailableUploader()
                 If bestAvailableUploader Is Nothing Then Continue For
-                Contract.Assume(bestAvailableUploader.IsSteady)
-                Contract.Assume(bestAvailableUploader.HasReported)
-                Contract.Assume(bestAvailableUploader.Transfer Is Nothing)
-                Contract.Assume(bestAvailableUploader.ReportedHasFile)
                 Contract.Assume(downloader.IsSteady)
                 Contract.Assume(downloader.HasReported)
                 Contract.Assume(downloader.Transfer Is Nothing)

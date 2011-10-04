@@ -42,7 +42,7 @@ Public Class WC3ProtocolTest
                        2,
                        2, 0, &H17, &HE1, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"lobby state", [Default](Of Maybe(Of NamedValueMap))()},
+                        {"lobby state", [Default](Of NullableValue(Of NamedValueMap))()},
                         {"assigned id", New PlayerId(2)},
                         {"external address", Net.IPAddress.Loopback.WithPort(6113)}
                     })
@@ -505,14 +505,14 @@ Public Class WC3ProtocolTest
                                                    New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                                                {"amount", 100UI},
                                                                {"unknown", CByte(2)}}))))
-                                     ).Maybe()}
+                                     ).NullableValue()}
                     })
         JarTest(ServerPackets.Tick.Jar,
                 appendSafe:=False,
                 data:={100, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 100US},
-                        {"player action sets", New Maybe(Of IRist(Of PlayerActionSet))()}})
+                        {"player action sets", New NullableValue(Of IRist(Of PlayerActionSet))()}})
     End Sub
     <TestMethod()>
     Public Sub TockTest()

@@ -33,10 +33,10 @@
         Public Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
             Throw New NotImplementedException()
         End Function
-        Public Function Pack(value As T) As LinqToLists.IRist(Of Byte) Implements IJar(Of T).Pack
+        Public Function Pack(value As T) As IRist(Of Byte) Implements IJar(Of T).Pack
             Throw New NotImplementedException()
         End Function
-        Public Function Parse(data As LinqToLists.IRist(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
+        Public Function Parse(data As IRist(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
             Throw New NotImplementedException()
         End Function
         Public Function Parse(text As String) As T Implements IJar(Of T).Parse

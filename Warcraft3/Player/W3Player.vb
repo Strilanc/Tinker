@@ -461,7 +461,7 @@ Namespace WC3
                 SendPacket(Protocol.MakeTickPreOverflow(preOverflowActionStreak))
             Next preOverflowActionStreak
             If actionStreaks.Any Then
-                SendPacket(Protocol.MakeTick(record.length, actionStreaks.Last.AssumeNotNull.Maybe))
+                SendPacket(Protocol.MakeTick(record.length, actionStreaks.Last().NullableValue()))
             Else
                 SendPacket(Protocol.MakeTick(record.length))
             End If

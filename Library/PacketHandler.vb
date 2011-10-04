@@ -1,87 +1,228 @@
 ﻿Imports Tinker.Pickling
 
-Public NotInheritable Class PacketHandler(Of TKey, TArg)
-    Private NotInheritable Class PotentialHandler
-        Public ReadOnly ct As CancellationToken
-        Public ReadOnly handler As Func(Of TArg, Task)
-        Public ReadOnly type As UseType
-        Public Enum UseType
-            Queue
-            All
-            Any
-        End Enum
-        Public Sub New(ct As CancellationToken, type As UseType, handler As Func(Of TArg, Task))
-            Contract.Requires(handler IsNot Nothing)
-            Me.ct = ct
-            Me.type = type
-            Me.handler = handler
-        End Sub
-    End Class
+Public Interface IPacketHandler(Of T)
+    Function TryHandle(arg As T) As Task
+    Function IsDisposed() As Boolean
+End Interface
 
+Public NotInheritable Class DelegatedHandler(Of T)
+    Implements IPacketHandler(Of T)
+    Public ReadOnly handler As Func(Of T, Task)
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(handler IsNot Nothing)
+    End Sub
+
+    Public Sub New(handler As Func(Of T, Task))
+        Contract.Requires(handler IsNot Nothing)
+        Me.handler = handler
+    End Sub
+    Public Function TryHandle(arg As T) As Task Implements IPacketHandler(Of T).TryHandle
+        If IsDisposed() Then Return Nothing
+        Return handler(arg)
+    End Function
+    Public Function IsDisposed() As Boolean Implements IPacketHandler(Of T).IsDisposed
+        Return False
+    End Function
+End Class
+Public NotInheritable Class PotentialHandler(Of T)
+    Implements IPacketHandler(Of T)
+    Public ReadOnly ct As CancellationToken
+    Public ReadOnly handler As IPacketHandler(Of T)
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(handler IsNot Nothing)
+    End Sub
+    Public Sub New(ct As CancellationToken, handler As IPacketHandler(Of T))
+        Contract.Requires(handler IsNot Nothing)
+        Me.ct = ct
+        Me.handler = handler
+    End Sub
+    Public Function TryHandle(arg As T) As Task Implements IPacketHandler(Of T).TryHandle
+        If IsDisposed() Then Return Nothing
+        Return handler.TryHandle(arg)
+    End Function
+    Public Function IsDisposed() As Boolean Implements IPacketHandler(Of T).IsDisposed
+        Return ct.IsCancellationRequested
+    End Function
+End Class
+
+Public NotInheritable Class KeyedPacketHandler(Of TKey, TArg, THandler As IPacketHandler(Of TArg))
+    Implements IPacketHandler(Of IKeyValue(Of TKey, TArg))
+    Private ReadOnly _handlers As Dictionary(Of TKey, THandler)
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(_handlers IsNot Nothing)
+    End Sub
+    Public Sub New(Optional handlers As Dictionary(Of TKey, THandler) = Nothing)
+        Me._handlers = If(handlers, New Dictionary(Of TKey, THandler)())
+    End Sub
+    Public Function IsDisposed() As Boolean Implements IPacketHandler(Of IKeyValue(Of TKey, TArg)).IsDisposed
+        Return False
+    End Function
+
+    Public Property Handler(key As TKey) As THandler
+        Get
+            Dim r As THandler = Nothing
+            If Not _handlers.TryGetValue(key, r) Then Return Nothing
+            Return r
+        End Get
+        Set(value As THandler)
+            If value IsNot Nothing Then
+                _handlers(key) = value
+            Else
+                _handlers.Remove(key)
+            End If
+        End Set
+    End Property
+
+    Public Function TryHandle(arg As IKeyValue(Of TKey, TArg)) As Task Implements IPacketHandler(Of IKeyValue(Of TKey, TArg)).TryHandle
+        If arg Is Nothing Then Throw New ArgumentNullException("arg")
+        If Not _handlers.ContainsKey(arg.Key) Then Return Nothing
+        Return _handlers(arg.Key).TryHandle(arg.Value)
+    End Function
+End Class
+Public MustInherit Class PacketHandlerGroup(Of T)
+    Implements IPacketHandler(Of T)
+    Private ReadOnly _handlers As New LinkedList(Of IPacketHandler(Of T))
+    Public Sub IncludeHandler(handler As IPacketHandler(Of T))
+        _handlers.AddLast(handler)
+    End Sub
+    Public Function IsDisposed() As Boolean Implements IPacketHandler(Of T).IsDisposed
+        Return False
+    End Function
+    Public Function TryHandle(arg As T) As Task Implements IPacketHandler(Of T).TryHandle
+        Dim e = _handlers.First
+        While e IsNot Nothing
+            Dim n = e.Next
+            If e.Value.AssumeNotNull().IsDisposed Then _handlers.Remove(e)
+            e = n
+        End While
+        If _handlers.None Then Return Nothing
+        Return PerformTryHandle(arg, _handlers)
+    End Function
+    Protected MustOverride Function PerformTryHandle(arg As T, list As LinkedList(Of IPacketHandler(Of T))) As Task
+End Class
+Public NotInheritable Class PickAllHandler(Of T)
+    Inherits PacketHandlerGroup(Of T)
+    Protected Overrides Function PerformTryHandle(arg As T, list As LinkedList(Of IPacketHandler(Of T))) As Task
+        Dim r = New List(Of Task)
+        For Each e In list
+            r.Add(e.AssumeNotNull().TryHandle(arg))
+        Next
+        r.RemoveAll(Function(e) e Is Nothing)
+        If r.Count = 0 Then Return Nothing
+        If r.Count = 1 Then Return r.Single
+        Return TaskEx.WhenAll(r)
+    End Function
+End Class
+Public NotInheritable Class PickOneHandler(Of T)
+    Inherits PacketHandlerGroup(Of T)
+    Protected Overrides Function PerformTryHandle(arg As T, list As LinkedList(Of IPacketHandler(Of T))) As Task
+        For Each e In list
+            Dim r = e.AssumeNotNull().TryHandle(arg)
+            If r IsNot Nothing Then Return r
+        Next
+        Return Nothing
+    End Function
+End Class
+Public NotInheritable Class QueueOneHandler(Of T)
+    Inherits PacketHandlerGroup(Of T)
+    Protected Overrides Function PerformTryHandle(arg As T, list As LinkedList(Of IPacketHandler(Of T))) As Task
+        Dim r = list.First.AssumeNotNull().Value.AssumeNotNull().TryHandle(arg)
+        list.RemoveFirst()
+        Return r
+    End Function
+End Class
+
+Public NotInheritable Class ComboHandler(Of T)
+    Implements IPacketHandler(Of T)
+
+    Private ReadOnly pa As New PickAllHandler(Of T)
+    Private ReadOnly po As New PickOneHandler(Of T)
+    Private ReadOnly qo As New QueueOneHandler(Of T)
+    Public Sub New()
+        pa.IncludeHandler(qo)
+        pa.IncludeHandler(po)
+    End Sub
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(pa IsNot Nothing)
+        Contract.Invariant(po IsNot Nothing)
+        Contract.Invariant(qo IsNot Nothing)
+    End Sub
+
+    Public Sub IncludeHandler(handler As IPacketHandler(Of T))
+        Contract.Requires(handler IsNot Nothing)
+        pa.IncludeHandler(handler)
+    End Sub
+    Public Sub IncludePickOneHandler(handler As IPacketHandler(Of T))
+        Contract.Requires(handler IsNot Nothing)
+        po.IncludeHandler(handler)
+    End Sub
+    Public Sub QueueOneTimeHandler(handler As IPacketHandler(Of T))
+        Contract.Requires(handler IsNot Nothing)
+        qo.IncludeHandler(handler)
+    End Sub
+
+    Public Function IsDisposed() As Boolean Implements IPacketHandler(Of T).IsDisposed
+        Return False
+    End Function
+    Public Function TryHandle(arg As T) As Task Implements IPacketHandler(Of T).TryHandle
+        Return pa.TryHandle(arg)
+    End Function
+End Class
+Public NotInheritable Class PacketHandler(Of TKey, TArg)
+    Implements IPacketHandler(Of IKeyValue(Of TKey, TArg))
+
+    Private ReadOnly x As New KeyedPacketHandler(Of TKey, TArg, ComboHandler(Of TArg))()
     Public ReadOnly Name As String
-    Private ReadOnly _handlers As New Dictionary(Of TKey, LinkedList(Of PotentialHandler))
     Public Sub New(name As String)
         Contract.Requires(name IsNot Nothing)
         Me.Name = name
     End Sub
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(Name IsNot Nothing)
-        Contract.Invariant(_handlers IsNot Nothing)
+        Contract.Invariant(x IsNot Nothing)
     End Sub
 
-    Private Function GetPotentialHandlers(key As TKey) As LinkedList(Of PotentialHandler)
-        Contract.Requires(key IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of LinkedList(Of PotentialHandler))() IsNot Nothing)
-        If Not _handlers.ContainsKey(key) Then _handlers(key) = New LinkedList(Of PotentialHandler)
-        Return _handlers(key).AssumeNotNull()
+    Private Function GetFor(key As TKey) As ComboHandler(Of TArg)
+        If x.Handler(key) Is Nothing Then x.Handler(key) = New ComboHandler(Of TArg)()
+        Return x.Handler(key)
     End Function
-
+    Public Sub IncludeHandler(key As TKey, handler As IPacketHandler(Of TArg))
+        Contract.Requires(key IsNot Nothing)
+        Contract.Requires(handler IsNot Nothing)
+        GetFor(key).IncludeHandler(handler)
+    End Sub
     Public Sub IncludeHandler(key As TKey, handler As Func(Of TArg, Task), ct As CancellationToken)
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
-        GetPotentialHandlers(key).AddLast(New PotentialHandler(ct, PotentialHandler.UseType.All, handler))
+        IncludeHandler(key, New PotentialHandler(Of TArg)(ct, New DelegatedHandler(Of TArg)(handler)))
+    End Sub
+    Public Sub IncludePickOneHandler(key As TKey, handler As IPacketHandler(Of TArg))
+        Contract.Requires(key IsNot Nothing)
+        Contract.Requires(handler IsNot Nothing)
+        GetFor(key).IncludePickOneHandler(handler)
     End Sub
     Public Sub IncludePickOneHandler(key As TKey, handler As Func(Of TArg, Task), ct As CancellationToken)
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
-        GetPotentialHandlers(key).AddLast(New PotentialHandler(ct, PotentialHandler.UseType.Any, handler))
+        IncludePickOneHandler(key, New PotentialHandler(Of TArg)(ct, New DelegatedHandler(Of TArg)(handler)))
+    End Sub
+    Public Sub QueueOneTimeHandler(key As TKey, handler As IPacketHandler(Of TArg))
+        Contract.Requires(key IsNot Nothing)
+        Contract.Requires(handler IsNot Nothing)
+        GetFor(key).QueueOneTimeHandler(handler)
     End Sub
     Public Sub QueueOneTimeHandler(key As TKey, handler As Func(Of TArg, Task), ct As CancellationToken)
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
-        GetPotentialHandlers(key).AddLast(New PotentialHandler(ct, PotentialHandler.UseType.Queue, handler))
+        QueueOneTimeHandler(key, New PotentialHandler(Of TArg)(ct, New DelegatedHandler(Of TArg)(handler)))
     End Sub
 
-    Public Function TryHandle(key As TKey, arg As TArg) As Task
-        Contract.Requires(key IsNot Nothing)
+    Public Function IsDisposed() As Boolean Implements IPacketHandler(Of IKeyValue(Of TKey, TArg)).IsDisposed
+        Return False
+    End Function
 
-        Dim results = New List(Of Task)()
-        Dim usedQueue = False
-        Dim usedAny = False
-        Dim keptHandlers = New LinkedList(Of PotentialHandler)
-        For Each handler In GetPotentialHandlers(key).Where(Function(e) Not e.ct.IsCancellationRequested)
-            Contract.Assume(handler IsNot Nothing)
-            Dim keep = True
-            Dim use = False
-            Select Case handler.type
-                Case PotentialHandler.UseType.All
-                    use = True
-                Case PotentialHandler.UseType.Any
-                    use = Not usedAny
-                    usedAny = True
-                Case PotentialHandler.UseType.Queue
-                    use = Not usedQueue
-                    usedQueue = True
-                    keep = Not use
-                Case Else
-                    Throw handler.type.MakeImpossibleValueException()
-            End Select
-            If use Then results.Add(handler.handler.AssumeNotNull()(arg))
-            If keep Then keptHandlers.AddLast(handler)
-        Next
-        _handlers(key) = keptHandlers
-        If results.None() Then Return Nothing
-        Return TaskEx.WhenAll(results)
+    Public Function TryHandle(arg As IKeyValue(Of TKey, TArg)) As Task Implements IPacketHandler(Of IKeyValue(Of TKey, TArg)).TryHandle
+        Return GetFor(arg.Key).TryHandle(arg.Value)
     End Function
 End Class
 Public Module PacketHandlerExtensions

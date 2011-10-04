@@ -8,13 +8,18 @@ Public Module PoorlyCategorizedFunctions
         RaiseEvent UnexpectedException(ex, reason)
     End Sub
     <Extension()> <Pure()>
-    Public Function MaybeFirst(Of T)(sequence As IEnumerable(Of T)) As Maybe(Of T)
+    Public Function MaybeFirst(Of T)(sequence As IEnumerable(Of T)) As Renullable(Of T)
         Contract.Requires(sequence IsNot Nothing)
         Using e = sequence.GetEnumerator()
-            If Not e.MoveNext() Then Return Maybe(Of T).Empty
+            If Not e.MoveNext() Then Return Nothing
             If e.Current Is Nothing Then Throw New NullReferenceException("sequence.First()")
             Return e.Current
         End Using
+    End Function
+
+    <Extension()> <Pure()>
+    Public Function NullableValue(Of T)(value As T) As NullableValue(Of T)
+        Return value
     End Function
 
     <Extension()>

@@ -412,7 +412,7 @@ Public Class BnetProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"result", UserAuthenticationFinishResult.Passed},
                         {"server password proof", proof},
-                        {"custom error info", "test".Maybe}
+                        {"custom error info", "test".NullableValue()}
                     })
     End Sub
     <TestMethod()>

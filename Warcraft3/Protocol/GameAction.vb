@@ -43,15 +43,15 @@ Namespace WC3.Protocol
             End Get
         End Property
 
-        Public Shared Widening Operator CType(value As GameAction) As KeyValuePair(Of GameActionId, Object)
-            Contract.Requires(value IsNot Nothing)
-            Return value.Definition.Id.KeyValue(value.Payload)
-        End Operator
-        Public Shared Widening Operator CType(value As KeyValuePair(Of GameActionId, Object)) As GameAction
+        Public Function ToKeyValue() As IKeyValue(Of GameActionId, Object)
+            Contract.Ensures(Contract.Result(Of IKeyValue(Of GameActionId, Object))() IsNot Nothing)
+            Return Definition.Id.KeyValue(Payload)
+        End Function
+        Public Shared Function FromKeyValue(value As IKeyValue(Of GameActionId, Object)) As GameAction
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
             Contract.Assume(value.Value IsNot Nothing)
             Return New GameAction(GameActions.DefinitionFor(value.Key), value.Value)
-        End Operator
+        End Function
 
         Public Overloads Function Equals(other As GameAction) As Boolean Implements System.IEquatable(Of GameAction).Equals
             If other Is Nothing Then Return False
@@ -70,7 +70,7 @@ Namespace WC3.Protocol
     End Class
 
     Public NotInheritable Class GameActionJar
-        Inherits BaseConversionJar(Of GameAction, KeyValuePair(Of GameActionId, Object))
+        Inherits BaseConversionJar(Of GameAction, IKeyValue(Of GameActionId, Object))
 
         Private Shared ReadOnly DataJar As New KeyPrefixedJar(Of GameActionId)(
             keyJar:=New EnumByteJar(Of GameActionId)(),
@@ -78,14 +78,14 @@ Namespace WC3.Protocol
                 keySelector:=Function(e) e.Id,
                 elementSelector:=Function(e) e.Jar))
 
-        Public Overrides Function SubJar() As IJar(Of KeyValuePair(Of GameActionId, Object))
+        Public Overrides Function SubJar() As IJar(Of IKeyValue(Of GameActionId, Object))
             Return DataJar
         End Function
-        Public Overrides Function PackRaw(value As GameAction) As KeyValuePair(Of GameActionId, Object)
-            Return value
+        Public Overrides Function PackRaw(value As GameAction) As IKeyValue(Of GameActionId, Object)
+            Return value.ToKeyValue()
         End Function
-        Public Overrides Function ParseRaw(value As KeyValuePair(Of GameActionId, Object)) As GameAction
-            Return value
+        Public Overrides Function ParseRaw(value As IKeyValue(Of GameActionId, Object)) As GameAction
+            Return GameAction.FromKeyValue(value)
         End Function
     End Class
 End Namespace
