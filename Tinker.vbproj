@@ -181,6 +181,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Library\Connector.vb" />
+    <Compile Include="Library\Reactive.vb" />
     <Compile Include="Library\StreamHandler.vb" />
     <Compile Include="Library\HoldPoint.vb" />
     <Compile Include="Library\NamedValueMap.vb" />
