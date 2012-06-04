@@ -537,7 +537,7 @@ Namespace WC3
 
             'Give people a few seconds to realize the game is full before continuing
             Call Async Sub()
-                     Await _kernel.Clock.AsyncWait(3.Seconds)
+                     Await _kernel.Clock.Delay(3.Seconds)
                      If _kernel.State <> GameState.PreCounting Then Return
                      If Not Settings.IsAutoStarted OrElse _lobby.CountFreeSlots() > 0 Then
                          _kernel.State = GameState.AcceptingPlayers
@@ -561,7 +561,7 @@ Namespace WC3
             'Perform countdown
             Call Async Sub()
                      For ticksLeft = 5 To 0 Step -1
-                         Await _kernel.Clock.AsyncWait(1.Seconds)
+                         Await _kernel.Clock.Delay(1.Seconds)
 
                          If _kernel.State <> GameState.CountingDown Then Return
                          If _flagHasPlayerLeft Then 'abort countdown

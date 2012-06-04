@@ -110,7 +110,7 @@ Public NotInheritable Class PickAllHandler(Of T)
         r.RemoveAll(Function(e) e Is Nothing)
         If r.Count = 0 Then Return Nothing
         If r.Count = 1 Then Return r.Single
-        Return TaskEx.WhenAll(r)
+        Return Task.WhenAll(r)
     End Function
 End Class
 Public NotInheritable Class PickOneHandler(Of T)
@@ -398,6 +398,6 @@ Public NotInheritable Class PacketHandlerRaw(Of TKey)
         If handlerResults.Count = 0 Then
             Throw New IO.IOException("No handler for {0}.".Frmt(key))
         End If
-        Await TaskEx.WhenAll(handlerResults)
+        Await Task.WhenAll(handlerResults)
     End Function
 End Class

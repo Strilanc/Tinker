@@ -182,7 +182,7 @@ Namespace WC3.Download
                      _playerClients.Remove(player)
                  End Sub
 
-            Return TaskEx.WhenAll(playerHooks)
+            Return Task.WhenAll(playerHooks)
         End Function
 #End Region
 
@@ -394,7 +394,7 @@ Namespace WC3.Download
                         e.Dispose()
                         results.Add(e.DisposalTask)
                     Next e
-                    Return TaskEx.WhenAll(results)
+                    Return Task.WhenAll(results)
                 End Function).Unwrap
         End Function
     End Class

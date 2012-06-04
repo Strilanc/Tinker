@@ -3,6 +3,7 @@ Imports Strilbrary.Values
 Imports Strilbrary.Threading
 Imports Strilbrary.Collections
 Imports System.Threading.Tasks
+Imports System.Threading
 
 Friend Class StreamTester
     Implements IDisposable
@@ -16,7 +17,7 @@ Friend Class StreamTester
 
     Public Function AsyncRun() As Task
         Dim result = New TaskCompletionSource(Of Boolean)()
-        ThreadPooledAction(Sub() RunContinue(result))
+        ThreadPool.QueueUserWorkItem(Sub() RunContinue(result))
         Return result.Task
     End Function
     Private Sub RunContinue(result As TaskCompletionSource(Of Boolean))
@@ -35,7 +36,7 @@ Friend Class StreamTester
                             ElseIf task.Result < data.Length Then
                                 result.SetException(New IO.InvalidDataException("Data ended before expected."))
                             Else
-                                ThreadPooledAction(Sub() RunContinue(result))
+                                ThreadPool.QueueUserWorkItem(Sub() RunContinue(result))
                             End If
                         End Sub)
                 Case "READ"
@@ -49,7 +50,7 @@ Friend Class StreamTester
                                 result.SetException(New IO.InvalidDataException("Data ended before expected."))
                             Else
                                 If expectedData.SequenceEqual(data) Then
-                                    ThreadPooledAction(Sub() RunContinue(result))
+                                    ThreadPool.QueueUserWorkItem(Sub() RunContinue(result))
                                 Else
                                     result.SetException(New IO.IOException("Incorrect data."))
                                 End If
@@ -58,10 +59,10 @@ Friend Class StreamTester
                 Case "WRITE"
                     Dim data = dataReader.ReadLine.FromHexStringToBytes
                     testStream.Write(data, 0, data.Length)
-                    ThreadPooledAction(Sub() RunContinue(result))
+                    ThreadPool.QueueUserWorkItem(Sub() RunContinue(result))
                 Case "CLOSE"
                     testStream.Close()
-                    ThreadPooledAction(Sub() RunContinue(result))
+                    ThreadPool.QueueUserWorkItem(Sub() RunContinue(result))
                 Case Else
                     result.SetException(New IO.InvalidDataException("Unrecognized command in test data."))
             End Select

@@ -20,7 +20,7 @@ Public Class PacketHandlerTest
         Dim flag = 0UI
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
-                     handler:=Function(data) TaskedAction(Sub() flag = data.TakeExact(4).ToUInt32))
+                     handler:=Function(data) Task.Factory.StartNew(Sub() flag = data.TakeExact(4).ToUInt32))
         Dim result = p.HandlePacket(ByteRist(1, &H12, &H34, &H56, &H78))
         WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag = &H78563412)
@@ -32,9 +32,9 @@ Public Class PacketHandlerTest
         Dim flag2 = False
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
-                     handler:=Function(data) TaskedAction(Sub() flag1 = False))
+                     handler:=Function(data) Task.Factory.StartNew(Sub() flag1 = False))
         p.IncludeHandler(key:=2,
-                     handler:=Function(data) TaskedAction(Sub() flag2 = True))
+                     handler:=Function(data) Task.Factory.StartNew(Sub() flag2 = True))
         Dim result = p.HandlePacket(ByteRist(2, &H12, &H34, &H56, &H78))
         WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag1)
@@ -47,9 +47,9 @@ Public Class PacketHandlerTest
         Dim flag2 = False
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
-                     handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
+                     handler:=Function(pickle) Task.Factory.StartNew(Sub() flag1 = True))
         p.IncludeHandler(key:=1,
-                     handler:=Function(pickle) TaskedAction(Sub() flag2 = True))
+                     handler:=Function(pickle) Task.Factory.StartNew(Sub() flag2 = True))
         Dim result = p.HandlePacket(ByteRist(1, &H12, &H34, &H56, &H78))
         WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag1)
@@ -71,7 +71,7 @@ Public Class PacketHandlerTest
     Public Sub HandleFutureFailTest()
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
-                     handler:=Function(pickle) TaskedAction(Sub() Throw New InvalidOperationException("Mock Exception")))
+                     handler:=Function(pickle) Task.Factory.StartNew(Sub() Throw New InvalidOperationException("Mock Exception")))
         Dim result = p.HandlePacket(ByteRist(1, &H12, &H34, &H56, &H78))
         WaitUntilTaskFails(result)
     End Sub
@@ -81,7 +81,7 @@ Public Class PacketHandlerTest
         Dim flag = True
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
-                     handler:=Function(pickle) TaskedAction(Sub() flag = False))
+                         handler:=Function(pickle) Task.Factory.StartNew(Sub() flag = False))
         Dim result = p.HandlePacket(ByteRist(255, &H12, &H34, &H56, &H78))
         WaitUntilTaskFails(result)
         Assert.IsTrue(flag)
@@ -98,8 +98,8 @@ Public Class PacketHandlerTest
     Public Sub DisposedHandlerTest()
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
-                     handler:=Function(pickle) TaskedAction(Sub()
-                                                            End Sub)
+                     handler:=Function(pickle) Task.Factory.StartNew(Sub()
+                                                                     End Sub)
                      ).Dispose()
         Dim result = p.HandlePacket(ByteRist(1, 2, 3, 4))
         WaitUntilTaskFails(result)
@@ -111,9 +111,9 @@ Public Class PacketHandlerTest
         Dim flag2 = True
         Dim p = MakeTestPacketHandler()
         p.IncludeHandler(key:=1,
-                     handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
+                     handler:=Function(pickle) Task.Factory.StartNew(Sub() flag1 = True))
         p.IncludeHandler(key:=1,
-                     handler:=Function(pickle) TaskedAction(Sub() flag2 = False)
+                     handler:=Function(pickle) Task.Factory.StartNew(Sub() flag2 = False)
                      ).Dispose()
         Dim result = p.HandlePacket(ByteRist(1, &H12, &H34, &H56, &H78))
         WaitUntilTaskSucceeds(result)

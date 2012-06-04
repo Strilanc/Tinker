@@ -163,7 +163,7 @@
             Contract.Assume(value IsNot Nothing)
             results.Add(value.DisposeAsync())
         Next value
-        Return TaskEx.WhenAll(results).AssumeNotNull()
+        Return Task.WhenAll(results).AssumeNotNull()
     End Function
 
     '''<summary>Exceptions thrown by this task will not be considered unhandled (i.e. so they won't kill the program).</summary>

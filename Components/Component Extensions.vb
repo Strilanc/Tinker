@@ -24,7 +24,7 @@
             Contract.Assume(argument IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Try
-                Dim result = Await Await TaskedFunc(Function() component.InvokeCommand(Nothing, argument))
+                Dim result = Await Await Task.Factory.StartNew(Function() component.InvokeCommand(Nothing, argument))
                 If String.IsNullOrEmpty(result) Then Return "Succeeded with no message"
                 Return result
             Catch ex As Exception
@@ -43,7 +43,7 @@
                 For Each command In commands
                     disposables.Add(component.IncludeCommand(command))
                 Next command
-                Await TaskEx.WhenAll(disposables)
+                Await Task.WhenAll(disposables)
                 Return New DelegatedDisposable(Sub() disposables.DisposeAllAsync())
             Catch ex As Exception
                 disposables.DisposeAllAsync()

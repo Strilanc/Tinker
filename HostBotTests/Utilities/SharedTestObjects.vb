@@ -45,7 +45,7 @@ Friend Module SharedTestObjects
             gameType:=GameTypes.AuthenticatedMakerBlizzard,
             state:=GameStates.Private,
             usedSlotCount:=0,
-            ageClock:=FixedClock(5.Seconds))
+            ageClock:=FixedClock(5.Seconds).StartTimer())
     Friend ReadOnly TestSettings As GameSettings = GameSettings.FromArgument(
             map:=TestMap,
             gameDescription:=TestDesc,

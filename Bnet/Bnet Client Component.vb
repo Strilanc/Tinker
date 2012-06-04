@@ -141,7 +141,7 @@ Namespace Bnet
                 'Setup busy message
                 Dim finishedLock = New OnetimeLock()
                 Call Async Sub()
-                         Await _client.Clock.AsyncWait(2.Seconds)
+                         Await _client.Clock.Delay(2.Seconds)
                          If Not finishedLock.TryAcquire Then Return
                          _client.SendWhisperSync(user.Name, "Command '{0}' is running...".Frmt(text))
                      End Sub

@@ -353,6 +353,7 @@ Namespace Bnet
             Return New ActionAfterCallbacksAwaiter(Of T)(receivedResult.Task, Sub() handledResult.TrySetResult(Nothing))
         End Function
         Public Class ActionAfterCallbacksAwaiter(Of T)
+            Implements INotifyCompletion
             Private ReadOnly _task As Task(Of T)
             Private ReadOnly _completionAction As action
             Private ReadOnly _performedLock As New OnetimeLock()
@@ -375,7 +376,7 @@ Namespace Bnet
                     Return _performedLock.State = OnetimeLockState.Acquired
                 End Get
             End Property
-            Public Sub OnCompleted(action As Action)
+            Public Sub OnCompleted(action As Action) Implements INotifyCompletion.OnCompleted
                 Interlocked.Increment(_actionCount)
                 _task.GetAwaiter().OnCompleted(Sub()
                                                    Try
@@ -614,7 +615,7 @@ Namespace Bnet
             If Not _allowRetryConnect Then Return False
             _allowRetryConnect = False
             If _reconnecter Is Nothing Then Return False
-            Await _clock.AsyncWait(5.Seconds)
+            Await _Clock.Delay(5.Seconds)
             Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
             Try
                 Dim socket = Await _reconnecter.ConnectAsync(Logger)
@@ -673,7 +674,7 @@ Namespace Bnet
             ChangeStatePresync(ClientState.AdvertisingGame)
             If _curAdvertisement.IsPrivate Then Return
             Do
-                Await _clock.AsyncWait(RefreshPeriod)
+                Await _Clock.Delay(RefreshPeriod)
                 If ct.IsCancellationRequested Then Exit Do
 
                 TrySendPacketSynq(Protocol.MakeCreateGame3(_curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge()))

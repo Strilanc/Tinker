@@ -5,7 +5,7 @@
 Public NotInheritable Class DeadManSwitch
     Private ReadOnly _period As TimeSpan
     Private _isArmed As Boolean
-    Private _timer As IClock
+    Private _timer As ClockTimer
     Private _waitRunning As Boolean
     Private ReadOnly inQueue As CallQueue = MakeTaskedCallQueue()
 
@@ -21,7 +21,7 @@ Public NotInheritable Class DeadManSwitch
         Contract.Assume(period.Ticks > 0)
         Contract.Assume(clock IsNot Nothing)
         Me._period = period
-        Me._timer = clock.Restarted
+        Me._timer = clock.StartTimer()
     End Sub
 
     ''' <summary>
@@ -39,7 +39,7 @@ Public NotInheritable Class DeadManSwitch
         If _waitRunning Then Return
         _waitRunning = True
         While _isArmed AndAlso _timer.ElapsedTime < _period
-            Await _timer.AsyncWaitUntil(_period)
+            Await _timer.At(_period)
         End While
         _waitRunning = False
         If _isArmed Then

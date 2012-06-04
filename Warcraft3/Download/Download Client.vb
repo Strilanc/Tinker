@@ -17,7 +17,7 @@ Namespace WC3.Download
 
         Private _transfer As Transfer
         Private _expectedState As Protocol.MapTransferState = Protocol.MapTransferState.Idle
-        Private _lastActivityClock As IClock
+        Private _lastActivityClock As ClockTimer
         Public Property LastSendPosition As UInt32
 
         Private _lastTransferPartner As TransferClient
@@ -47,7 +47,7 @@ Namespace WC3.Download
             Me._player = player
             Me._clock = clock
             Me._hooks = hooks.ToRist
-            Me._lastActivityClock = _clock.Restarted
+            Me._lastActivityClock = _clock.StartTimer()
         End Sub
 
         Public ReadOnly Property Transfer As Transfer

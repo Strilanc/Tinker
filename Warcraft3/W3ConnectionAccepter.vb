@@ -68,7 +68,7 @@ Namespace WC3
             End SyncLock
 
             Call Async Sub()
-                     Await _clock.AsyncWait(FirstPacketTimeout)
+                     Await _clock.Delay(FirstPacketTimeout)
                      If Not TryRemoveSocket(socket) Then Return
                      _logger.Log("Connection from {0} timed out.".Frmt(socket.Name), LogMessageType.Negative)
                      socket.Disconnect(expected:=False, reason:="Idle")

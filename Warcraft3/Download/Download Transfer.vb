@@ -8,8 +8,8 @@ Namespace WC3.Download
         Private ReadOnly _downloader As TransferClient
         Private ReadOnly _uploader As TransferClient
         Private ReadOnly _startingPosition As UInt32
-        Private ReadOnly _durationClock As IClock
-        Private _lastActivityClock As IClock
+        Private ReadOnly _durationClock As ClockTimer
+        Private _lastActivityClock As ClockTimer
         Private _totalProgress As UInt32
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -35,8 +35,8 @@ Namespace WC3.Download
             Me._downloader = downloader
             Me._uploader = uploader
             Me._fileSize = filesize
-            Me._durationClock = clock.Restarted()
-            Me._lastActivityClock = clock.Restarted()
+            Me._durationClock = clock.StartTimer()
+            Me._lastActivityClock = clock.StartTimer()
             Me._startingPosition = startingPosition
         End Sub
 

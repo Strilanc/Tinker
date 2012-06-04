@@ -218,7 +218,7 @@ Namespace WC3
                                             GameType:=map.FilterGameType,
                                             state:=0,
                                             UsedSlotCount:=0,
-                                            ageClock:=_gameServer.Clock)
+                                            ageClock:=_gameServer.Clock.StartTimer())
 
             Dim gameSettings = WC3.GameSettings.FromArgument(map, gameDescription, argument)
 
@@ -284,7 +284,7 @@ Namespace WC3
                                           state:=0,
                                           usedSlotCount:=0,
                                           hostPort:=_portHandle.Port,
-                                          ageClock:=_gameServer.Clock)
+                                          ageClock:=_gameServer.Clock.StartTimer())
             Dim gameSettings = WC3.GameSettings.FromArgument(map,
                                                              gameDescription,
                                                              New Commands.CommandArgument("-permanent -noul -i=0"),

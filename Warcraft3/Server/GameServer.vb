@@ -63,7 +63,7 @@ Namespace WC3
 
             'Setup initial timeout
             Call Async Sub()
-                     Await _clock.AsyncWait(InitialConnectionTimeout)
+                     Await _clock.Delay(InitialConnectionTimeout)
                      If Not socketHandled.TryAcquire Then Return
                      socket.Disconnect(expected:=True, reason:="Timeout")
                  End Sub
@@ -191,7 +191,7 @@ Namespace WC3
         Private Async Function AsyncFindPlayer(username As String) As Task(Of Player)
             Contract.Assume(username IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
-            Dim findResults = Await TaskEx.WhenAll(From entry In _gameSets.Values Select entry.QueueTryFindPlayer(username))
+            Dim findResults = Await Task.WhenAll(From entry In _gameSets.Values Select entry.QueueTryFindPlayer(username))
             Return (From player In findResults Where player IsNot Nothing).FirstOrDefault
         End Function
         Public Function QueueFindPlayer(userName As String) As Task(Of Player)
@@ -202,7 +202,7 @@ Namespace WC3
         Private Async Function AsyncFindPlayerGame(username As String) As Task(Of Game)
             Contract.Assume(username IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
-            Dim findResults = Await TaskEx.WhenAll(From entry In _gameSets.Values Select entry.QueueTryFindPlayerGame(username))
+            Dim findResults = Await Task.WhenAll(From entry In _gameSets.Values Select entry.QueueTryFindPlayerGame(username))
             Return (From game In findResults Where game IsNot Nothing).FirstOrDefault
         End Function
         Public Function QueueFindPlayerGame(userName As String) As Task(Of Game)

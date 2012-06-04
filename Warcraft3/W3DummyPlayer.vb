@@ -169,7 +169,7 @@ Namespace WC3
             If mode = DummyPlayerMode.DownloadMap Then
                 Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
             ElseIf mode = DummyPlayerMode.EnterGame Then
-                Await _clock.AsyncWait(readyDelay)
+                Await _clock.Delay(readyDelay)
                 socket.SendPacket(Protocol.MakeReady())
             End If
         End Sub

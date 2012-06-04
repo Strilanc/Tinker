@@ -6,7 +6,7 @@
         Private ReadOnly _gameStats As GameStats
         Private ReadOnly _gameId As UInt32
         Private ReadOnly _entryKey As UInteger
-        Private ReadOnly _ageClock As IClock
+        Private ReadOnly _ageClock As ClockTimer
         Private ReadOnly _gameType As Protocol.GameTypes
         Private ReadOnly _state As Bnet.Protocol.GameStates
         Private ReadOnly _totalSlotCount As Integer
@@ -30,7 +30,7 @@
                        gameType As Protocol.GameTypes,
                        state As Bnet.Protocol.GameStates,
                        usedSlotCount As Integer,
-                       ageClock As IClock)
+                       ageClock As ClockTimer)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
@@ -58,7 +58,7 @@
                                Optional gameType As Protocol.GameTypes? = Nothing,
                                Optional state As Bnet.Protocol.GameStates? = Nothing,
                                Optional usedSlotCount As Integer? = Nothing,
-                               Optional ageClock As IClock = Nothing) As GameDescription
+                               Optional ageClock As ClockTimer = Nothing) As GameDescription
             Contract.Requires(gameId Is Nothing OrElse gameId.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value <= 12)
@@ -79,7 +79,7 @@
         Public Shared Function FromArguments(name As InvariantString,
                                              map As Map,
                                              stats As GameStats,
-                                             ageClock As IClock) As GameDescription
+                                             ageClock As ClockTimer) As GameDescription
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
             Contract.Requires(ageClock IsNot Nothing)
@@ -123,9 +123,9 @@
                 Return _totalSlotCount
             End Get
         End Property
-        Public ReadOnly Property AgeClock As IClock
+        Public ReadOnly Property AgeClock As ClockTimer
             Get
-                Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ClockTimer)() IsNot Nothing)
                 Return _ageClock
             End Get
         End Property
@@ -189,8 +189,8 @@
                        gameType As Protocol.GameTypes,
                        state As Bnet.Protocol.GameStates,
                        usedSlotCount As Integer,
-                       ageClock As IClock)
-            MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, ageClock)
+                       ageClock As ClockTimer)
+            MyBase.New(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, ageClock)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
@@ -210,7 +210,7 @@
                                        Optional gameType As Protocol.GameTypes? = Nothing,
                                        Optional state As Bnet.Protocol.GameStates? = Nothing,
                                        Optional usedSlotCount As Integer? = Nothing,
-                                       Optional ageClock As IClock = Nothing,
+                                       Optional ageClock As ClockTimer = Nothing,
                                        Optional hostPort As UShort? = Nothing) As LocalGameDescription
             Contract.Requires(gameId Is Nothing OrElse gameId.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value > 0)
@@ -234,7 +234,7 @@
                                                      map As Map,
                                                      id As UInt32,
                                                      stats As GameStats,
-                                                     ageClock As IClock) As LocalGameDescription
+                                                     ageClock As ClockTimer) As LocalGameDescription
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
             Contract.Requires(ageClock IsNot Nothing)
@@ -294,8 +294,8 @@
                        gameType As Protocol.GameTypes,
                        state As Bnet.Protocol.GameStates,
                        usedSlotCount As Integer,
-                       ageClock As IClock)
-            MyBase.new(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, ageClock)
+                       ageClock As ClockTimer)
+            MyBase.New(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, ageClock)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
@@ -317,7 +317,7 @@
                                        Optional gameType As Protocol.GameTypes? = Nothing,
                                        Optional state As Bnet.Protocol.GameStates? = Nothing,
                                        Optional usedSlotCount As Integer? = Nothing,
-                                       Optional ageClock As IClock = Nothing,
+                                       Optional ageClock As ClockTimer = Nothing,
                                        Optional location As Net.IPEndPoint = Nothing) As RemoteGameDescription
             Contract.Requires(gameId Is Nothing OrElse gameId.Value > 0)
             Contract.Requires(totalSlotCount Is Nothing OrElse totalSlotCount.Value > 0)

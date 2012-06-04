@@ -16,7 +16,4 @@
     <ErrorReportUrlHistory />
     <ProjectView>ProjectFiles</ProjectView>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
-  </PropertyGroup>
 </Project>

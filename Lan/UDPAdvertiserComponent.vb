@@ -115,7 +115,7 @@ Namespace Lan
         Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             _advertiser.Dispose()
-            Return TaskEx.WhenAll({
+            Return Task.WhenAll({
                 _control.DisposeControlAsync(),
                 QueueSetAutomatic(False)
             })

@@ -108,7 +108,7 @@ Namespace Bot
                         hooks.Add(gameSetLink)
                         'async auto-remove when server is disposed
                         Try
-                            Await TaskEx.WhenAny({gameSetLink, manager.Server.DisposalTask})
+                            Await Task.WhenAny({gameSetLink, manager.Server.DisposalTask})
                             gameSetLink.Result.Dispose()
                         Catch ex As Exception
                             'ignore

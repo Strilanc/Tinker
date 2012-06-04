@@ -23,12 +23,12 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <OldToolsVersion>3.5</OldToolsVersion>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <OptionInfer>On</OptionInfer>
     <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
     <TargetFrameworkSubset>
     </TargetFrameworkSubset>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>StrilancWeak.snk</AssemblyOriginatorKeyFile>
     <TargetFrameworkProfile />
     <LangVersion />
@@ -52,12 +52,12 @@
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Dev|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <DefineDebug>true</DefineDebug>
     <DefineTrace>true</DefineTrace>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\Dev\</OutputPath>
     <DocumentationFile>Tinker.xml</DocumentationFile>
     <NoWarn>
     </NoWarn>
@@ -83,7 +83,7 @@
     <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
     <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
     <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>Code Analysis Rules.ruleset</CodeAnalysisRuleSet>
     <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
     <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
@@ -98,66 +98,24 @@
     <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>
     <CodeContractsEnumObligations>False</CodeContractsEnumObligations>
     <CodeContractsAnalysisWarningLevel>2</CodeContractsAnalysisWarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <DefineDebug>false</DefineDebug>
-    <DefineTrace>true</DefineTrace>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DocumentationFile>Tinker.xml</DocumentationFile>
-    <NoWarn>
-    </NoWarn>
-    <CodeContractsEnableRuntimeChecking>False</CodeContractsEnableRuntimeChecking>
-    <CodeContractsCustomRewriterAssembly>
-    </CodeContractsCustomRewriterAssembly>
-    <CodeContractsCustomRewriterClass>
-    </CodeContractsCustomRewriterClass>
-    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>
-    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
-    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
-    <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
-    <CodeContractsNonNullObligations>False</CodeContractsNonNullObligations>
-    <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
-    <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
-    <CodeContractsLibPaths>
-    </CodeContractsLibPaths>
-    <CodeContractsPlatformPath>
-    </CodeContractsPlatformPath>
-    <CodeContractsExtraAnalysisOptions>
-    </CodeContractsExtraAnalysisOptions>
-    <CodeContractsBaseLineFile>
-    </CodeContractsBaseLineFile>
-    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
-    <CodeContractsRunInBackground>False</CodeContractsRunInBackground>
-    <CodeContractsShowSquigglies>False</CodeContractsShowSquigglies>
-    <PlatformTarget>x86</PlatformTarget>
-    <CodeAnalysisRuleSet>SecurityRules.ruleset</CodeAnalysisRuleSet>
-    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
-    <CodeContractsEmitXMLDocs>True</CodeContractsEmitXMLDocs>
-    <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
-    <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036,42105,42106,42107</WarningsAsErrors>
-    <CodeContractsRedundantAssumptions>True</CodeContractsRedundantAssumptions>
-    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AsyncCtpLibrary">
-      <HintPath>..\..\..\..\..\Documents\Microsoft Visual Studio Async CTP\Samples\AsyncCtpLibrary.dll</HintPath>
-    </Reference>
-    <Reference Include="LinqToCollections">
-      <HintPath>..\..\..\..\..\Documents\Visual Studio 2010\Projects\LinqToCollections\LinqToCollections\bin\Release\LinqToCollections.dll</HintPath>
-    </Reference>
     <Reference Include="MpqLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=08060530187cdd8c, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\MpqLibrary\MpqLibrary\bin\Release\MpqLibrary.dll</HintPath>
+      <HintPath>..\..\MpqLibrary\MpqLibrary\bin\Dev\MpqLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="LinqToCollections, Version=1.0.0.0, Culture=neutral, PublicKeyToken=c72e4f29d452efcf, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\LinqToCollections\LinqToCollections\bin\Dev\LinqToCollections.dll</HintPath>
     </Reference>
     <Reference Include="Strilbrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=08060530187cdd8c, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Strilbrary\Strilbrary\bin\Release\Strilbrary.dll</HintPath>
+      <HintPath>..\..\Strilbrary\Strilbrary\bin\Dev\Strilbrary.dll</HintPath>
     </Reference>
     <Reference Include="StrilbraryUnchecked, Version=1.0.0.0, Culture=neutral, PublicKeyToken=08060530187cdd8c, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Strilbrary\StrilbraryUnchecked\bin\Release\StrilbraryUnchecked.dll</HintPath>
+      <HintPath>..\..\Strilbrary\StrilbraryUnchecked\bin\Dev\StrilbraryUnchecked.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -223,6 +181,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Library\Connector.vb" />
+    <Compile Include="Library\StreamHandler.vb" />
     <Compile Include="Library\HoldPoint.vb" />
     <Compile Include="Library\NamedValueMap.vb" />
     <Compile Include="Pickling\Pickling Interfaces.vb" />

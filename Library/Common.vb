@@ -100,19 +100,25 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    Public Function StartingAt(clock As IClock, time As TimeSpan) As IClock
+    Public Function StartingAt(clock As ClockTimer, time As TimeSpan) As ClockTimer
         Contract.Requires(clock IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
-        Dim offset = time - clock.ElapsedTime
-        Return New RelativeClock(clock, offset)
+        Return clock.Clock.StartingAt(time)
     End Function
     <Pure()> <Extension()>
-    Public Function Stopped(clock As IClock) As IClock
+    Public Function StartingAt(clock As IClock, time As TimeSpan) As ClockTimer
+        Contract.Requires(clock IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
+        Return New ClockTimer(clock, clock.Time() - time)
+    End Function
+    <Pure()> <Extension()>
+    Public Function Stopped(clock As ClockTimer) As ClockTimer
         Contract.Requires(clock IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
         Dim r = New ManualClock()
+        Dim t = r.StartTimer()
         r.Advance(clock.ElapsedTime)
-        Return r
+        Return t
     End Function
 
     <Pure()> <Extension()>

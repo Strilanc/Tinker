@@ -9,7 +9,7 @@ Public NotInheritable Class ThrottledWriteStream
     Private ReadOnly _costLimit As Double
     Private ReadOnly _recoveryRatePerMillisecond As Double
 
-    Private _timer As RelativeClock
+    Private _timer As ClockTimer
     Private _availableSlack As Double
     Private _usedCost As Double
     Private _writing As Boolean
@@ -40,7 +40,7 @@ Public NotInheritable Class ThrottledWriteStream
         Contract.Requires(costRecoveredPerMillisecond > 0)
 
         Me._substream = subStream
-        Me._timer = clock.Restarted
+        Me._timer = clock.StartTimer()
         Me._availableSlack = initialSlack
         Me._costEstimator = costEstimator
         Me._costLimit = costLimit
@@ -61,8 +61,9 @@ Public NotInheritable Class ThrottledWriteStream
         Try
             While _queuedWrites.Count > 0
                 'Recover over time
-                _timer = _timer.Restarted
-                Dim dt = _timer.StartingTimeOnParentClock
+                Dim t = _timer.Clock.Time()
+                Dim dt = t - _timer.StartTime
+                _timer = New ClockTimer(_timer.Clock, t)
                 _usedCost -= dt.TotalMilliseconds * _recoveryRatePerMillisecond
                 If _usedCost < 0 Then _usedCost = 0
                 'Recover using slack
@@ -73,7 +74,7 @@ Public NotInheritable Class ThrottledWriteStream
                 End If
 
                 'throttle
-                Await _timer.AsyncWait(((_usedCost - _costLimit) / _recoveryRatePerMillisecond).Milliseconds)
+                Await _timer.Delay(((_usedCost - _costLimit) / _recoveryRatePerMillisecond).Milliseconds)
 
                 'Perform write
                 Dim data = _queuedWrites.Dequeue()
