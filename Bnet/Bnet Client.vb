@@ -42,7 +42,7 @@ Namespace Bnet
         Private ReadOnly _profile As Bot.ClientProfile
         Private ReadOnly _productAuthenticator As IProductAuthenticator
         Private ReadOnly _logger As Logger
-        Private ReadOnly _packetHandler As PacketHandler(Of Protocol.PacketId, IRist(Of Byte))
+        Private ReadOnly _manualPacketHandler As New ManualReactable(Of IKeyValue(Of Protocol.PacketId, IRist(Of Byte)), IPickle(Of Object))()
         Private _socket As PacketSocket
         Private _connectCanceller As New CancellationTokenSource()
 
@@ -129,7 +129,7 @@ Namespace Bnet
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_advertisementList IsNot Nothing)
-            Contract.Invariant(_packetHandler IsNot Nothing)
+            Contract.Invariant(_manualPacketHandler IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
@@ -158,7 +158,6 @@ Namespace Bnet
             Me._logger = If(logger, New Logger)
             Me.inQueue = MakeTaskedCallQueue()
             Me.outQueue = MakeTaskedCallQueue()
-            Me._packetHandler = New PacketHandler(Of Protocol.PacketId, IRist(Of Byte))("bnet")
         End Sub
         <Pure()>
         Public Shared Function MakeProductAuthenticator(profile As Bot.ClientProfile,
@@ -215,8 +214,15 @@ Namespace Bnet
                         Protocol.Packets.ServerToClient.EnterChat,
                         Protocol.Packets.ServerToClient.FriendsUpdate,
                         Protocol.Packets.ServerToClient.RequiredWork}
-                _packetHandler.IncludeLogger(ignoredPacket.Id, ignoredPacket.Jar, Logger, ct)
+                IncludeLogger(ignoredPacket.Id, ignoredPacket.Jar, ct)
             Next
+        End Sub
+        Private Sub IncludeLogger(Of T)(id As Bnet.Protocol.PacketId, jar As IJar(Of T), ct As CancellationToken)
+            Dim d = _manualPacketHandler.Where(Function(e) e.Key = id).ReactTo(
+                Function(v) Task.FromResult(jar.ParsePickle(v.Value).Weaken()),
+                Function() Nothing,
+                Function() Nothing)
+            ct.Register(Sub() d.Dispose())
         End Sub
 
         Public ReadOnly Property Clock As IClock
@@ -255,7 +261,15 @@ Namespace Bnet
             Contract.Assume(handler IsNot Nothing)
             Await inQueue.AwaitableEntrance(forceReentry:=False)
             If ct.IsCancellationRequested Then Return
-            _packetHandler.IncludeHandlerWithLogger(packetDefinition.Id, packetDefinition.Jar, handler, Logger, ct)
+            Dim d = _manualPacketHandler.Where(Function(e) e.Key = packetDefinition.Id).ReactTo(
+                Async Function(v)
+                    Dim r = packetDefinition.Jar.ParsePickle(v.Value)
+                    Await handler(r)
+                    Return r.Weaken()
+                End Function,
+                Function() Nothing,
+                Function() Nothing)
+            ct.Register(Sub() d.Dispose())
         End Function
 
         Public Async Function SendTextSynq(text As NonNull(Of String)) As task
@@ -322,35 +336,95 @@ Namespace Bnet
             outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, oldState, newState))
         End Sub
 
-        Private Async Sub BeginHandlingPacketsPresync()
+        Private Sub BeginHandlingPacketsPresync()
             Contract.Assume(Me._state > ClientState.Disconnected)
             Contract.Assume(SynchronizationContext.Current Is inQueue)
-            Try
-                Do
-                    Dim data = Await _socket.AsyncReadPacket
+            _socket.ObservePackets().InCurrentSyncContext().Observe(
+                Async Sub(data)
                     Dim id = DirectCast(data(1), Bnet.Protocol.PacketId)
+                    Logger.Log(Function() "Received {0} from {1}".Frmt(id, "bnet"), LogMessageType.DataEvent)
+
                     Dim body = data.SkipExact(4)
-                    Dim t = _packetHandler.TryHandle(New KeyValue(Of Protocol.PacketId, IRist(Of Byte))(id, body))
-                    If t Is Nothing Then Throw New IO.IOException("Unhandled packet: {0}".Frmt(id))
-                    Await t
-                Loop
-            Catch ex As Exception
-                DisconnectSynq(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
-            End Try
+                    Dim handled = Await _manualPacketHandler.PushNext(New KeyValue(Of Protocol.PacketId, IRist(Of Byte))(id, body))
+                    Dim example = handled.Where(Function(e) e IsNot Nothing).FirstOrDefault()
+                    If example Is Nothing Then Throw New IO.IOException("Unhandled packet: {0}".Frmt(id))
+
+                    If example.Data.Count < data.Count Then Logger.Log("Data left over after parsing.", LogMessageType.Problem)
+                    Logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, "bnet", example.Description()), LogMessageType.DataParsed)
+                End Sub,
+                AddressOf _manualPacketHandler.PushCompleted,
+                Async Sub(ex)
+                    Await DisconnectSynq(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
+                    Await _manualPacketHandler.PushError(ex)
+                End Sub)
         End Sub
-        Private Function AwaitReceivePresync(Of T)(packet As Protocol.Packets.Definition(Of T), ct As CancellationToken) As ActionAfterCallbacksAwaiter(Of T)
-            Contract.Assume(SynchronizationContext.Current Is inQueue)
-            Dim receivedResult = New TaskCompletionSource(Of T)()
-            Dim handledResult = New TaskCompletionSource(Of NoValue)()
-            ct.Register(Sub()
-                            receivedResult.TrySetCanceled()
-                            handledResult.TrySetCanceled()
-                        End Sub)
-            _packetHandler.QueueOneTimeHandlerWithLogger(packet.Id, packet.Jar, Function(pickle)
-                                                                                    receivedResult.TrySetResult(pickle.Value)
-                                                                                    Return handledResult.Task
-                                                                                End Function, Logger, ct)
-            Return New ActionAfterCallbacksAwaiter(Of T)(receivedResult.Task, Sub() handledResult.TrySetResult(Nothing))
+        Private Class PacketWalker
+            Implements IReacter(Of IKeyValue(Of Bnet.Protocol.PacketId, IRist(Of Byte)), IPickle(Of Object))
+
+            Private ReadOnly _readyPackets As New Queue(Of Tuple(Of TaskCompletionSource(Of IPickle(Of Object)), IKeyValue(Of Bnet.Protocol.PacketId, IRist(Of Byte))))
+            Private ReadOnly _lock As New Object()
+            Private _nextPacketId As Protocol.PacketId
+            Private _next As Func(Of IRist(Of Byte), IPickle(Of Object))
+
+            Private Sub Dedo()
+                While _readyPackets.Count > 0 AndAlso _next IsNot Nothing
+                    Dim p = _readyPackets.Dequeue()
+                    If p.Item2 Is Nothing Then _readyPackets.Enqueue(p)
+                    If _nextPacketId <> p.Item2.Key Then Continue While
+                    p.Item1.SetResult(_next(p.Item2.Value))
+                    _next = Nothing
+                End While
+            End Sub
+            Public Async Function NextAsync(Of R)(packet As Protocol.Packets.Definition(Of R)) As Task(Of R)
+                Dim result = Await TryNextAsync(packet)
+                If result Is Nothing Then Throw New InvalidOperationException("Socket out of data")
+                Return result.Value
+            End Function
+            Public Function TryNextAsync(Of R)(packet As Protocol.Packets.Definition(Of R)) As Task(Of IPickle(Of R))
+                SyncLock _lock
+                    If _next IsNot Nothing Then Throw New InvalidOperationException("Overlapping TryNext calls.")
+                    Dim t = New TaskCompletionSource(Of IPickle(Of R))
+                    _next = Function(d)
+                                Dim p = packet.Jar.ParsePickle(d)
+                                t.SetResult(p)
+                                Return p.Weaken()
+                            End Function
+                    _nextPacketId = packet.Id
+                    Dedo()
+                    Return t.Task
+                End SyncLock
+            End Function
+
+            Private Function OnCompleted() As Task(Of IPickle(Of Object)) Implements IReacter(Of IKeyValue(Of Bnet.Protocol.PacketId, IRist(Of Byte)), IPickle(Of Object)).OnCompleted
+                Dim t = New TaskCompletionSource(Of IPickle(Of Object))()
+                SyncLock _lock
+                    _readyPackets.Enqueue(Tuple.Create(t, DirectCast(Nothing, IKeyValue(Of Bnet.Protocol.PacketId, IRist(Of Byte)))))
+                    Dedo()
+                End SyncLock
+                Return t.Task
+            End Function
+            Private Function OnError([error] As Exception) As Task(Of IPickle(Of Object)) Implements IReacter(Of IKeyValue(Of Bnet.Protocol.PacketId, IRist(Of Byte)), IPickle(Of Object)).OnError
+                Dim t = New TaskCompletionSource(Of IPickle(Of Object))()
+                SyncLock _lock
+                    _readyPackets.Enqueue(Tuple.Create(t, DirectCast(Nothing, IKeyValue(Of Bnet.Protocol.PacketId, IRist(Of Byte)))))
+                    Dedo()
+                End SyncLock
+                Return t.Task
+            End Function
+            Private Function OnNext(value As IKeyValue(Of Bnet.Protocol.PacketId, IRist(Of Byte))) As Task(Of IPickle(Of Object)) Implements IReacter(Of IKeyValue(Of Bnet.Protocol.PacketId, IRist(Of Byte)), IPickle(Of Object)).OnNext
+                Dim t = New TaskCompletionSource(Of IPickle(Of Object))()
+                SyncLock _lock
+                    _readyPackets.Enqueue(Tuple.Create(t, value))
+                    Dedo()
+                End SyncLock
+                Return t.Task
+            End Function
+        End Class
+        Private Function StartWalk(ct As CancellationToken) As PacketWalker
+            Dim walker = New PacketWalker()
+            Dim d = _manualPacketHandler.Subscribe(walker)
+            ct.Register(Sub() d.Dispose())
+            Return walker
         End Function
         Public Class ActionAfterCallbacksAwaiter(Of T)
             Implements INotifyCompletion
@@ -405,6 +479,7 @@ Namespace Bnet
             End If
             _reconnecter = reconnector
 
+            Dim ctw = New CancellationTokenSource()
             Try
                 Me._socket = socket
                 AddHandler _socket.Disconnected, AddressOf OnSocketDisconnected
@@ -415,6 +490,8 @@ Namespace Bnet
                 _connectCanceller.Cancel()
                 _connectCanceller = New CancellationTokenSource()
                 Dim ct = _connectCanceller.Token
+                Dim walker = StartWalk(ctw.Token)
+                ct.Register(Sub() ctw.Cancel())
 
                 'Introductions
                 socket.Value.SubStream.Write({1}, 0, 1) 'protocol version
@@ -422,7 +499,7 @@ Namespace Bnet
 
                 BeginHandlingPacketsPresync()
 
-                Dim authBeginVals = Await AwaitReceivePresync(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, ct)
+                Dim authBeginVals = Await walker.NextAsync(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin)
                 If ct.IsCancellationRequested Then Throw New TaskCanceledException()
                 If authBeginVals.ItemAs(Of Protocol.ProgramAuthenticationBeginLogOnType)("logon type") <> Protocol.ProgramAuthenticationBeginLogOnType.Warcraft3 Then
                     Throw New IO.InvalidDataException("Unrecognized logon type from server.")
@@ -450,7 +527,7 @@ Namespace Bnet
 
                 BeginConnectToBNLSServerPresync(keys, ct)
 
-                Dim authFinishVals = Await AwaitReceivePresync(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish, ct)
+                Dim authFinishVals = Await walker.NextAsync(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish)
                 If ct.IsCancellationRequested Then Throw New TaskCanceledException()
                 Dim result = authFinishVals.ItemAs(Of Protocol.ProgramAuthenticationFinishResult)("result")
                 If result <> Protocol.ProgramAuthenticationFinishResult.Passed Then
@@ -460,6 +537,8 @@ Namespace Bnet
             Catch ex As Exception
                 DisconnectSynq(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
                 Throw
+            Finally
+                ctw.Cancel()
             End Try
         End Function
         Private Sub OnSocketDisconnected(sender As PacketSocket, expected As Boolean, reason As String)
@@ -481,9 +560,10 @@ Namespace Bnet
             End If
 
             'Connect
+            Dim walker = StartWalk(ct)
             If remoteHost = "" Then
                 Try
-                    Await AwaitReceivePresync(Protocol.Packets.ServerToClient.Warden, ct)
+                    Await walker.NextAsync(Protocol.Packets.ServerToClient.Warden)
                     Logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem)
                 Catch ex As TaskCanceledException
                     'ignore cancellation
@@ -507,7 +587,7 @@ Namespace Bnet
             Call Async Sub()
                      Do
                          Try
-                             Dim wardenData = Await AwaitReceivePresync(Protocol.Packets.ServerToClient.Warden, ct)
+                             Dim wardenData = Await walker.NextAsync(Protocol.Packets.ServerToClient.Warden)
                              If ct.IsCancellationRequested Then Return
                              bnlsSocket.QueueSendWardenData(wardenData).ConsiderExceptionsHandled()
                          Catch ex As TaskCanceledException
@@ -539,9 +619,10 @@ Namespace Bnet
             ChangeStatePresync(ClientState.AuthenticatingUser)
             TrySendPacketSynq(Protocol.MakeAccountLogOnBegin(credentials))
             Logger.Log("Initiating logon with username {0}.".Frmt(credentials.Value.UserName), LogMessageType.Typical)
+            Dim walker = StartWalk(ct)
 
             'Begin authentication
-            Dim authBeginVals = Await AwaitReceivePresync(Protocol.Packets.ServerToClient.UserAuthenticationBegin, ct)
+            Dim authBeginVals = Await walker.NextAsync(Protocol.Packets.ServerToClient.UserAuthenticationBegin)
             If ct.IsCancellationRequested Then Throw New TaskCanceledException()
             Dim authBeginResult = authBeginVals.ItemAs(Of Protocol.UserAuthenticationBeginResult)("result")
             Dim accountPasswordSalt = authBeginVals.ItemAs(Of IRist(Of Byte))("account password salt")
@@ -555,7 +636,7 @@ Namespace Bnet
             TrySendPacketSynq(Protocol.MakeAccountLogOnFinish(clientProof))
 
             'Finish authentication
-            Dim authFinishVals = Await AwaitReceivePresync(Protocol.Packets.ServerToClient.UserAuthenticationFinish, ct)
+            Dim authFinishVals = Await walker.NextAsync(Protocol.Packets.ServerToClient.UserAuthenticationFinish)
             If ct.IsCancellationRequested Then Throw New TaskCanceledException()
             Dim result = authFinishVals.ItemAs(Of Protocol.UserAuthenticationFinishResult)("result")
             Dim serverProof = authFinishVals.ItemAs(Of IRist(Of Byte))("server password proof")
@@ -583,7 +664,7 @@ Namespace Bnet
 
             'Enter chat
             TrySendPacketSynq(Protocol.MakeEnterChat())
-            Await AwaitReceivePresync(Protocol.Packets.ServerToClient.EnterChat, ct)
+            Await walker.NextAsync(Protocol.Packets.ServerToClient.EnterChat)
             If ct.IsCancellationRequested Then Throw New TaskCanceledException()
             Logger.Log("Entered chat", LogMessageType.Typical)
 
@@ -615,7 +696,7 @@ Namespace Bnet
             If Not _allowRetryConnect Then Return False
             _allowRetryConnect = False
             If _reconnecter Is Nothing Then Return False
-            Await _Clock.Delay(5.Seconds)
+            Await _clock.Delay(5.Seconds)
             Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
             Try
                 Dim socket = Await _reconnecter.ConnectAsync(Logger)
@@ -653,6 +734,7 @@ Namespace Bnet
             _gameCanceller.Cancel()
             _gameCanceller = New CancellationTokenSource()
             Dim ct = _gameCanceller.Token
+            Dim walker = StartWalk(ct)
             _curAdvertisement = _advertisementList.First()
 
             'Create game
@@ -660,7 +742,7 @@ Namespace Bnet
             SetReportedListenPortPresync(_curAdvertisement.BaseGameDescription.Port)
             Do
                 TrySendPacketSynq(Protocol.MakeCreateGame3(_curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge()))
-                Dim createSucceeded = 0 = Await AwaitReceivePresync(Protocol.Packets.ServerToClient.CreateGame3, ct)
+                Dim createSucceeded = 0 = Await walker.NextAsync(Protocol.Packets.ServerToClient.CreateGame3)
                 If ct.IsCancellationRequested Then Return
                 If createSucceeded Then Exit Do
 
@@ -674,11 +756,11 @@ Namespace Bnet
             ChangeStatePresync(ClientState.AdvertisingGame)
             If _curAdvertisement.IsPrivate Then Return
             Do
-                Await _Clock.Delay(RefreshPeriod)
+                Await _clock.Delay(RefreshPeriod)
                 If ct.IsCancellationRequested Then Exit Do
 
                 TrySendPacketSynq(Protocol.MakeCreateGame3(_curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge()))
-                Dim refreshSucceeded = 0 = Await AwaitReceivePresync(Protocol.Packets.ServerToClient.CreateGame3, ct)
+                Dim refreshSucceeded = 0 = Await walker.NextAsync(Protocol.Packets.ServerToClient.CreateGame3)
                 If ct.IsCancellationRequested Then Exit Do
 
                 If Not refreshSucceeded Then

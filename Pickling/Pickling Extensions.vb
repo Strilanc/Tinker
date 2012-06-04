@@ -9,6 +9,10 @@
         End Function
 
         <Extension()> <Pure()>
+        Public Function Weaken(Of T)(this As ParsedValue(Of T)) As ParsedValue(Of Object)
+            Return New ParsedValue(Of Object)(this.Value, this.UsedDataCount)
+        End Function
+        <Extension()> <Pure()>
         Public Function Weaken(Of T)(jar As IJar(Of T)) As IJar(Of Object)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IJar(Of Object))() IsNot Nothing)
