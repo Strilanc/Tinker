@@ -30,7 +30,7 @@ Namespace Bnet
         Private ReadOnly _logger As Logger
         Private ReadOnly _manualPacketHandler As New PacketPusher(Of Protocol.PacketId)()
         Private _socket As PacketSocket
-        Private _connectCanceller As New CancellationTokenSource()
+        Private _connectionToken As New CancellationTokenSource()
 
         'game
         Private Class AdvertisementEntry
@@ -239,7 +239,7 @@ Namespace Bnet
 
             Using walker = _manualPacketHandler.CreateWalker()
                 While Not ct.IsCancellationRequested
-                    Dim walkToken = {ct, _connectCanceller.Token}.AnyCancelledToken()
+                    Dim walkToken = {ct, _connectionToken.Token}.AnyCancelledToken()
                     Try
                         While Not walkToken.IsCancellationRequested
                             Dim pickle = Await walker.WalkAsync(packetDefinition.Id, packetDefinition.Jar, walkToken)
@@ -359,25 +359,28 @@ Namespace Bnet
             _reconnecter = reconnector
 
             Try
+                _connectionToken.Cancel()
+                _connectionToken = New CancellationTokenSource()
+
                 Me._socket = socket
-                AddHandler _socket.Disconnected, AddressOf OnSocketDisconnected
+                Dim onSocketDisconnected = Async Sub(sender As PacketSocket, expected As Boolean, reason As String)
+                                               Await DisconnectSynq(expected, reason)
+                                           End Sub
+                AddHandler _socket.Disconnected, onSocketDisconnected
+                _connectionToken.Token.Register(Sub() RemoveHandler _socket.Disconnected, onSocketDisconnected)
                 Me._socket.Name = "BNET"
                 ChangeStatePresync(ClientState.AuthenticatingProgram)
 
                 'Reset the class future for the connection outcome
-                _connectCanceller.Cancel()
-                _connectCanceller = New CancellationTokenSource()
-                Dim ct = _connectCanceller.Token
                 Using walker = _manualPacketHandler.CreateWalker()
                     'Introductions
                     socket.Value.SubStream.Write({1}, 0, 1) 'protocol version
 
                     BeginHandlingPacketsPresync()
 
-                    Dim authBeginVals = Await SendReceivePacketAsync(
+                    Dim authBeginVals = Await TradePacketsAsync(
                         Protocol.MakeAuthenticationBegin(_productInfoProvider.MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))),
-                        Protocol.Packets.ServerToClient.ProgramAuthenticationBegin,
-                        ct)
+                        Protocol.Packets.ServerToClient.ProgramAuthenticationBegin)
                     If authBeginVals.ItemAs(Of Protocol.ProgramAuthenticationBeginLogOnType)("logon type") <> Protocol.ProgramAuthenticationBeginLogOnType.Warcraft3 Then
                         Throw New IO.InvalidDataException("Unrecognized logon type from server.")
                     End If
@@ -386,8 +389,8 @@ Namespace Bnet
                     Dim revisionCheckInstructions = authBeginVals.ItemAs(Of String)("revision check challenge")
 
                     Dim keys = Await _productAuthenticator.AsyncAuthenticate(clientCDKeySalt.Bytes, serverCdKeySalt.Bytes)
-                    If ct.IsCancellationRequested Then Throw New TaskCanceledException()
-                    BeginConnectToBNLSServerPresync(walker.Split(), keys, ct)
+                    If _connectionToken.Token.IsCancellationRequested Then Throw New TaskCanceledException()
+                    BeginConnectToBNLSServerPresync(walker.Split(), keys, _connectionToken.Token)
 
                     'revision check
                     If revisionCheckInstructions = "" Then
@@ -395,7 +398,7 @@ Namespace Bnet
                     End If
                     Dim revisionCheckResponse = _productInfoProvider.GenerateRevisionCheck(My.Settings.war3path, revisionCheckSeed, revisionCheckInstructions)
 
-                    Dim authFinishVals = Await SendReceivePacketAsync(
+                    Dim authFinishVals = Await TradePacketsAsync(
                         Protocol.MakeAuthenticationFinish(
                             _productInfoProvider.ExeVersion,
                             revisionCheckResponse,
@@ -403,8 +406,7 @@ Namespace Bnet
                             My.Settings.cdKeyOwner,
                             _productInfoProvider.ExeInfo,
                             keys),
-                        Protocol.Packets.ServerToClient.ProgramAuthenticationFinish,
-                        ct)
+                        Protocol.Packets.ServerToClient.ProgramAuthenticationFinish)
                     Dim result = authFinishVals.ItemAs(Of Protocol.ProgramAuthenticationFinishResult)("result")
                     If result <> Protocol.ProgramAuthenticationFinishResult.Passed Then
                         Throw New IO.InvalidDataException("Program authentication failed with error: {0} {1}.".Frmt(result, authFinishVals.ItemAs(Of String)("info")))
@@ -416,9 +418,6 @@ Namespace Bnet
                 Throw
             End Try
         End Function
-        Private Sub OnSocketDisconnected(sender As PacketSocket, expected As Boolean, reason As String)
-            DisconnectSynq(expected, reason)
-        End Sub
         Private Async Sub BeginConnectToBNLSServerPresync(walker As PacketWalker(Of Protocol.PacketId), keys As NonNull(Of ProductCredentialPair), ct As CancellationToken)
             If ct.IsCancellationRequested Then Return
 
@@ -488,18 +487,13 @@ Namespace Bnet
                 Throw New InvalidOperationException("Incorrect state for login.")
             End If
 
-            _connectCanceller.Cancel()
-            _connectCanceller = New CancellationTokenSource()
-            Dim ct = _connectCanceller.Token
-
             Me._userCredentials = credentials
             ChangeStatePresync(ClientState.AuthenticatingUser)
             Logger.Log("Initiating logon with username {0}.".Frmt(credentials.Value.UserName), LogMessageType.Typical)
             'Begin authentication
-            Dim authBeginVals = Await SendReceivePacketAsync(
+            Dim authBeginVals = Await TradePacketsAsync(
                 Protocol.MakeUserAuthenticationBegin(credentials),
-                Protocol.Packets.ServerToClient.UserAuthenticationBegin,
-                ct)
+                Protocol.Packets.ServerToClient.UserAuthenticationBegin)
             Dim authBeginResult = authBeginVals.ItemAs(Of Protocol.UserAuthenticationBeginResult)("result")
             Dim accountPasswordSalt = authBeginVals.ItemAs(Of IRist(Of Byte))("account password salt")
             Dim serverPublicKey = authBeginVals.ItemAs(Of IRist(Of Byte))("server public key")
@@ -510,10 +504,9 @@ Namespace Bnet
             Dim expectedServerProof = Me._userCredentials.ServerPasswordProof(accountPasswordSalt, serverPublicKey)
 
             'Finish authentication
-            Dim authFinishVals = Await SendReceivePacketAsync(
+            Dim authFinishVals = Await TradePacketsAsync(
                 Protocol.MakeUserAuthenticationFinish(clientProof),
-                Protocol.Packets.ServerToClient.UserAuthenticationFinish,
-                ct)
+                Protocol.Packets.ServerToClient.UserAuthenticationFinish)
             Dim result = authFinishVals.ItemAs(Of Protocol.UserAuthenticationFinishResult)("result")
             Dim serverProof = authFinishVals.ItemAs(Of IRist(Of Byte))("server password proof")
 
@@ -539,10 +532,9 @@ Namespace Bnet
             SetReportedListenPortPresync(WC3_DEFAULT_LISTEN_PORT)
 
             'Enter chat
-            Await SendReceivePacketAsync(
+            Await TradePacketsAsync(
                 Protocol.MakeEnterChat(),
-                Protocol.Packets.ServerToClient.EnterChat,
-                ct)
+                Protocol.Packets.ServerToClient.EnterChat)
             Logger.Log("Entered chat", LogMessageType.Typical)
 
             EnterChannelPresync(Profile.initialChannel)
@@ -553,13 +545,12 @@ Namespace Bnet
 
             If _socket IsNot Nothing Then
                 _socket.QueueDisconnect(expected, reason)
-                RemoveHandler _socket.Disconnected, AddressOf OnSocketDisconnected
                 _socket = Nothing
             ElseIf _state = ClientState.Disconnected Then
                 Return
             End If
 
-            _connectCanceller.Cancel()
+            _connectionToken.Cancel()
             _gameCanceller.Cancel()
             _curAdvertisement = Nothing
             _reportedListenPort = Nothing
@@ -617,7 +608,7 @@ Namespace Bnet
             ChangeStatePresync(ClientState.CreatingGame)
             SetReportedListenPortPresync(_curAdvertisement.BaseGameDescription.Port)
             Do
-                Dim createResult = Await SendReceivePacketAsync(
+                Dim createResult = Await TradePacketsAsync(
                     Protocol.MakeCreateGame3(_curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge()),
                     Protocol.Packets.ServerToClient.CreateGame3)
                 If ct.IsCancellationRequested Then Return
@@ -637,7 +628,7 @@ Namespace Bnet
                 Await _clock.Delay(RefreshPeriod)
                 If ct.IsCancellationRequested Then Exit Do
 
-                Dim refreshResult = Await SendReceivePacketAsync(
+                Dim refreshResult = Await TradePacketsAsync(
                     Protocol.MakeCreateGame3(_curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge()),
                     Protocol.Packets.ServerToClient.CreateGame3)
                 If ct.IsCancellationRequested Then Return
@@ -686,12 +677,11 @@ Namespace Bnet
             CheckStopAdvertisingPresync()
         End Function
 
-        Public Async Function SendReceivePacketAsync(Of T)(packet As Protocol.Packet,
-                                                           expectedPacket As Protocol.Packets.Definition(Of T),
-                                                           Optional ct As CancellationToken? = Nothing) As Task(Of T)
+        Public Async Function TradePacketsAsync(Of T)(packet As Protocol.Packet,
+                                                      expectedPacket As Protocol.Packets.Definition(Of T)) As Task(Of T)
             Using walker = _manualPacketHandler.CreateWalker()
                 Await TrySendPacketSynq(packet)
-                Return Await walker.WalkValueAsync(expectedPacket, If(ct, _connectCanceller.Token))
+                Return Await walker.WalkValueAsync(expectedPacket, _connectionToken.Token)
             End Using
         End Function
         Public Async Function TrySendPacketSynq(packet As NonNull(Of Protocol.Packet)) As Task(Of Boolean)
