@@ -69,7 +69,7 @@ Namespace WC3
             Dim listener = Me._listener
             Try
                 Do
-                    Dim tcpClient = Await listener.AsyncAcceptConnection()
+                    Dim tcpClient = Await listener.AcceptTcpClientAsync()
                     Dim socket = New WC3.W3Socket(New PacketSocket(
                                                       stream:=tcpClient.GetStream,
                                                       localendpoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),

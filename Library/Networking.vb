@@ -8,9 +8,9 @@ Imports Tinker.Pickling
 Public Module NetworkingCommon
     Private cachedExternalIP As Byte()
     Private cachedInternalIP As Byte()
-    Public Async Sub CacheIPAddresses()
+    Public Async Function CacheIPAddresses() As Task
         'Internal IP
-        cachedInternalIP = GetInternalIPAddress.GetAddressBytes
+        cachedInternalIP = GetInternalIPAddress.GetAddressBytes()
 
         'External IP
         Try
@@ -27,7 +27,7 @@ Public Module NetworkingCommon
         Catch ex As WebException
             'no action
         End Try
-    End Sub
+    End Function
 
     Private Function GetInternalIPAddress() As Net.IPAddress
         Contract.Ensures(Contract.Result(Of Net.IPAddress)() IsNot Nothing)
@@ -50,7 +50,7 @@ Public Module NetworkingCommon
     End Function
     Public Function GetCachedIPAddressBytes(external As Boolean) As Byte()
         Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-        If cachedInternalIP Is Nothing Then Return GetInternalIPAddress().GetAddressBytes
+        If cachedInternalIP Is Nothing Then Return GetInternalIPAddress().GetAddressBytes()
 
         If external AndAlso cachedExternalIP IsNot Nothing Then
             Return cachedExternalIP
@@ -61,71 +61,35 @@ Public Module NetworkingCommon
 
     '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
     <Pure()>
-    Public Function AsyncTcpConnect(host As String,
-                                    port As UShort) As Task(Of TcpClient)
+    Public Async Function AsyncTcpConnect(host As String, port As UShort) As Task(Of TcpClient)
         Contract.Requires(host IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
-        Dim result = New TaskCompletionSource(Of TcpClient)
-        Dim client = New TcpClient
-        result.DependentCall(Sub() client.BeginConnect(host:=host, port:=port, state:=Nothing,
-            requestCallback:=Sub(ar) result.SetByEvaluating(
-                Function()
-                    client.EndConnect(ar)
-                    Return client
-                End Function)))
-        Return result.Task.AssumeNotNull
+        Dim client = New TcpClient()
+        Await client.ConnectAsync(host, port)
+        Return client
     End Function
 
     '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
     <Pure()>
-    Public Function AsyncTcpConnect(address As Net.IPAddress,
-                                    port As UShort) As Task(Of TcpClient)
+    Public Async Function AsyncTcpConnect(address As Net.IPAddress, port As UShort) As Task(Of TcpClient)
         Contract.Requires(address IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
-        Dim result = New TaskCompletionSource(Of TcpClient)
-        Dim client = New TcpClient
-        result.DependentCall(Sub() client.BeginConnect(address:=address, port:=port, state:=Nothing,
-            requestCallback:=Sub(ar) result.SetByEvaluating(
-                Function()
-                    client.EndConnect(ar)
-                    Return client
-                End Function)))
-        Return result.Task.AssumeNotNull
+        Dim client = New TcpClient()
+        Await client.ConnectAsync(address, port)
+        Return client
     End Function
 
-    '''<summary>Asynchronously accepts an incoming connection attempt.</summary>
-    <Extension()>
-    Public Function AsyncAcceptConnection(listener As TcpListener) As Task(Of TcpClient)
-        Contract.Requires(listener IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
-        Dim result = New TaskCompletionSource(Of TcpClient)
-        result.DependentCall(Sub() listener.BeginAcceptTcpClient(state:=Nothing,
-            callback:=Sub(ar) result.SetByEvaluating(Function() listener.EndAcceptTcpClient(ar))))
-        Return result.Task.AssumeNotNull
-    End Function
-
-    Public Function AsyncDnsLookup(remoteHost As String) As Task(Of Net.IPHostEntry)
-        Contract.Requires(remoteHost IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task(Of Net.IPHostEntry))() IsNot Nothing)
-        Dim result = New TaskCompletionSource(Of Net.IPHostEntry)()
-        result.DependentCall(Sub() Net.Dns.BeginGetHostEntry(hostNameOrAddress:=remoteHost, stateObject:=Nothing,
-            requestCallback:=Sub(ar) result.SetByEvaluating(Function() Net.Dns.EndGetHostEntry(ar))))
-        Return result.Task.AssumeNotNull
-    End Function
-
-    Public Async Function DNSLookupAddressAsync(remoteHost As String,
-                                                addressSelector As Random) As Task(Of Net.IPAddress)
+    <Pure()>
+    Public Async Function DNSLookupAddressAsync(remoteHost As String, addressSelector As Random) As Task(Of Net.IPAddress)
         Contract.Assume(remoteHost IsNot Nothing)
         Contract.Assume(addressSelector IsNot Nothing)
         'Contract.Ensures(Contract.Result(Of Task(Of Net.IPAddress))() IsNot Nothing)
-        Dim hostEntry = Await AsyncDnsLookup(remoteHost)
+        Dim hostEntry = Await Net.Dns.GetHostEntryAsync(remoteHost)
         Return hostEntry.AddressList(addressSelector.Next(hostEntry.AddressList.Count))
     End Function
 
     <Pure()>
-    Public Async Function TCPConnectAsync(remoteHost As String,
-                                          addressSelector As Random,
-                                          port As UShort) As Task(Of TcpClient)
+    Public Async Function TCPConnectAsync(remoteHost As String, addressSelector As Random, port As UShort) As Task(Of TcpClient)
         Contract.Assume(remoteHost IsNot Nothing)
         Contract.Assume(addressSelector IsNot Nothing)
         'Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)

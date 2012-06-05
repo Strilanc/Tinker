@@ -31,7 +31,7 @@ Public NotInheritable Class ConnectionAccepter
         'Async accept clients
         Try
             Do
-                Dim client = Await listener.AsyncAcceptConnection()
+                Dim client = Await listener.AcceptTcpClientAsync()
                 RaiseEvent AcceptedConnection(Me, client)
                 SyncLock lock
                     If Not listeners.Contains(listener) Then Exit Do
