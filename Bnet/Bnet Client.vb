@@ -351,14 +351,20 @@ Namespace Bnet
                     Dim id = DirectCast(data(1), Bnet.Protocol.PacketId)
                     Dim t = New TaskCompletionSource(Of String)()
                     Dim body = data.SkipExact(4)
-                    Dim description = Async Function() As Task(Of Func(Of String))
-                                          Dim parsed = Await _manualPacketHandler.Push(id, body)
-                                          If parsed Is Nothing Then Throw New IO.IOException("Unhandled packet: {0}".Frmt(id))
-                                          If parsed.Data.Count < body.Count Then Logger.Log("Data left over after parsing.", LogMessageType.Problem)
-                                          Return Function() "Received {0} from {1}: {2}".Frmt(id, "bnet", parsed.Description())
-                                      End Function()
+                    Dim description = New TaskCompletionSource(Of Func(Of String))()
                     Logger.Log(Function() "Received {0} from {1}".Frmt(id, "bnet"), LogMessageType.DataEvent)
-                    Logger.FutureLog(Function() "Received {0} from {1}: Parsing...".Frmt(id, "bnet"), description, LogMessageType.DataParsed)
+                    Logger.FutureLog(Function() "Received {0} from {1}: Parsing...".Frmt(id, "bnet"), description.Task, LogMessageType.DataParsed)
+                    Call Async Sub()
+                             Try
+                                 Dim parsed = Await _manualPacketHandler.Push(id, body)
+                                 If parsed Is Nothing Then Throw New IO.IOException("Unhandled packet: {0}".Frmt(id))
+                                 If parsed.Data.Count < body.Count Then Logger.Log("Data left over after parsing.", LogMessageType.Problem)
+                                 Dim r = Function() "Received {0} from {1}: {2}".Frmt(id, "bnet", parsed.Description())
+                                 description.SetResult(r)
+                             Catch ex As Exception
+                                 description.SetException(ex)
+                             End Try
+                         End Sub()
                 End Sub,
                 Sub()
                 End Sub,
