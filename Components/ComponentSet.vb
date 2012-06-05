@@ -179,7 +179,7 @@ Namespace Components
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(
                 Sub()
-                    For Each component In _components
+                    For Each component In _components.ToArray()
                         component.Dispose()
                     Next component
                 End Sub)
