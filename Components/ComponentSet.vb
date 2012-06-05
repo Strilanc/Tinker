@@ -36,7 +36,7 @@ Namespace Components
         ''' Throws an InvalidOperationException if the component is already included.
         ''' Throws an InvalidOperationException if a component with the same name and type identifiers is already included.
         ''' </summary>
-        Private Async Sub AddComponent(component As IBotComponent)
+        Private Sub AddComponent(component As IBotComponent)
             Contract.Assume(component IsNot Nothing)
             If _components.Contains(component) Then
                 Throw New InvalidOperationException("Component already added.")
@@ -44,8 +44,10 @@ Namespace Components
                 Throw New InvalidOperationException("There is already a {0} named {1}.".Frmt(component.Type, component.Name))
             End If
             _components.Add(component)
-            Await component.DisposalTask
-            _components.Remove(component)
+            Call Async Sub()
+                     Await component.DisposalTask
+                     _components.Remove(component)
+                 End Sub()
         End Sub
         ''' <summary>
         ''' Asynchronously adds a component to the set.
