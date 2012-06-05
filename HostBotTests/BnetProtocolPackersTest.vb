@@ -12,7 +12,7 @@ Public Class BnetProtocolPackersTest
     <TestMethod()>
     Public Sub MakeAccountLogOnBeginTest()
         Using rng = New Security.Cryptography.RNGCryptoServiceProvider()
-            MakeAccountLogOnBegin(ClientCredentials.GeneratedFrom("test", "password", rng))
+            MakeUserAuthenticationBegin(ClientCredentials.GeneratedFrom("test", "password", rng))
         End Using
     End Sub
     <TestMethod()>

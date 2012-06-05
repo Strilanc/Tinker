@@ -1,59 +1,4 @@
-Public Interface IReacter(Of T, R)
-    Function OnNext(value As T) As Task(Of R)
-    Function OnCompleted() As Task(Of R)
-    Function OnError(ex As Exception) As Task(Of R)
-End Interface
-Public Interface IReactable(Of T, R)
-    Function Subscribe(reacter As IReacter(Of T, R)) As IDisposable
-End Interface
-
-Public Class Reacter(Of T, R)
-    Implements IReacter(Of T, R)
-    Private ReadOnly _onCompleted As Func(Of Task(Of R))
-    Private ReadOnly _onError As Func(Of Exception, Task(Of R))
-    Private ReadOnly _onNext As Func(Of T, Task(Of R))
-    Public Sub New(onNext As Func(Of T, Task(Of R)), onCompleted As Func(Of Task(Of R)), onError As Func(Of Exception, Task(Of R)))
-        Me._onCompleted = onCompleted
-        Me._onError = onError
-        Me._onNext = onNext
-    End Sub
-    Public Function OnCompleted() As Task(Of R) Implements IReacter(Of T, R).OnCompleted
-        Return _onCompleted()
-    End Function
-    Public Function OnError(ex As Exception) As Task(Of R) Implements IReacter(Of T, R).OnError
-        Return _onError(ex)
-    End Function
-    Public Function OnNext(value As T) As Task(Of R) Implements IReacter(Of T, R).OnNext
-        Return _onNext(value)
-    End Function
-End Class
-Public Class Reactable(Of T, R)
-    Implements IReactable(Of T, R)
-    Private ReadOnly _subscribe As Func(Of IReacter(Of T, R), IDisposable)
-    Public Sub New(subscribe As Func(Of IReacter(Of T, R), IDisposable))
-        Me._subscribe = subscribe
-    End Sub
-    Public Function Subscribe(reacter As IReacter(Of T, R)) As IDisposable Implements IReactable(Of T, R).Subscribe
-        Return _subscribe(reacter)
-    End Function
-End Class
-Public Class ManualReactable(Of T, R)
-    Implements IReactable(Of T, R)
-    Private ReadOnly _reacters As New List(Of IReacter(Of T, R))()
-    Public Function Subscribe(reacter As IReacter(Of T, R)) As IDisposable Implements IReactable(Of T, R).Subscribe
-        _reacters.Add(reacter)
-        Return New DelegatedDisposable(Sub() _reacters.Remove(reacter))
-    End Function
-    Public Function PushNext(value As T) As Task(Of R())
-        Return Task.WhenAll(_reacters.Select(Function(e) e.OnNext(value)))
-    End Function
-    Public Function PushCompleted() As Task(Of R())
-        Return Task.WhenAll(_reacters.Select(Function(e) e.OnCompleted()))
-    End Function
-    Public Function PushError(ex As Exception) As Task(Of R())
-        Return Task.WhenAll(_reacters.Select(Function(e) e.OnError(ex)))
-    End Function
-End Class
+Imports Tinker.Pickling
 
 Public Class Observer(Of T)
     Implements IObserver(Of T)
@@ -109,59 +54,8 @@ Public Class ManualObservable(Of T)
         Next
     End Sub
 End Class
-Public Class ObservableWalker(Of T)
-    Implements IObserver(Of T)
-
-    Private ReadOnly _ready As New Queue(Of Task(Of Renullable(Of T)))
-    Private ReadOnly _lock As New Object()
-    Private _next As TaskCompletionSource(Of Renullable(Of T))
-
-    Public Function TryNext() As Task(Of Renullable(Of T))
-        SyncLock _lock
-            If _ready.Count > 0 Then
-                Dim r = _ready.Peek()
-                If r.Status = TaskStatus.RanToCompletion AndAlso r.Result IsNot Nothing Then
-                    _ready.Dequeue()
-                End If
-                Return r
-            End If
-
-            If _next IsNot Nothing Then Throw New InvalidOperationException("Overlapping TryNext calls.")
-            _next = New TaskCompletionSource(Of Renullable(Of T))
-            Return _next.Task
-        End SyncLock
-    End Function
-
-    Private Sub OnCompleted() Implements IObserver(Of T).OnCompleted
-        SyncLock _lock
-            _next = If(_next, New TaskCompletionSource(Of Renullable(Of T)))
-            _next.SetResult(Nothing)
-            _ready.Enqueue(_next.Task)
-        End SyncLock
-    End Sub
-    Private Sub OnError([error] As Exception) Implements IObserver(Of T).OnError
-        SyncLock _lock
-            _next = If(_next, New TaskCompletionSource(Of Renullable(Of T)))
-            _next.SetException([error])
-            _ready.Enqueue(_next.Task)
-        End SyncLock
-    End Sub
-    Private Sub OnNext(value As T) Implements IObserver(Of T).OnNext
-        SyncLock _lock
-            If _next IsNot Nothing Then
-                _next.SetResult(value)
-            Else
-                _ready.Enqueue(Task.FromResult(New Renullable(Of T)(value)))
-            End If
-        End SyncLock
-    End Sub
-End Class
 
 Public Module ReactiveUtil
-    <Extension> <Pure>
-    Public Function ReactTo(Of T, R)(reactable As IReactable(Of T, R), onNext As Func(Of T, Task(Of R)), onCompleted As Func(Of Task(Of R)), onError As Func(Of Exception, Task(Of R))) As IDisposable
-        Return reactable.Subscribe(New Reacter(Of T, R)(onNext, onCompleted, onError))
-    End Function
     <Extension> <Pure>
     Public Function Observe(Of T)(observable As IObservable(Of T), onNext As Action(Of T), onCompleted As Action, onError As Action(Of Exception)) As IDisposable
         Return observable.Subscribe(New Observer(Of T)(onNext, onCompleted, onError))
@@ -213,37 +107,6 @@ Public Module ReactiveUtil
             AddressOf observer.OnError))
     End Function
     <Extension> <Pure>
-    Public Function [Select](Of T, R, T2)(reactable As IReactable(Of T, R), proj As Func(Of T, T2)) As IReactable(Of T2, R)
-        Return New Reactable(Of T2, R)(Function(reacter) reactable.ReactTo(
-            Function(value)
-                Dim v As T2
-                Try
-                    v = proj(value)
-                Catch ex As Exception
-                    Return reacter.OnError(ex)
-                End Try
-                Return reacter.OnNext(v)
-            End Function,
-            AddressOf reacter.OnCompleted,
-            AddressOf reacter.OnError))
-    End Function
-    <Extension> <Pure>
-    Public Function Where(Of T, R)(reactable As IReactable(Of T, R), filter As Func(Of T, Boolean), Optional [default] As R = Nothing) As IReactable(Of T, R)
-        Return New Reactable(Of T, R)(Function(reacter) reactable.ReactTo(
-            Function(value)
-                Dim keep As Boolean
-                Try
-                    keep = filter(value)
-                Catch ex As Exception
-                    Return reacter.OnError(ex)
-                End Try
-                If Not keep Then Return Task.FromResult([default])
-                Return reacter.OnNext(value)
-            End Function,
-            AddressOf reacter.OnCompleted,
-            AddressOf reacter.OnError))
-    End Function
-    <Extension> <Pure>
     Public Function InCurrentSyncContext(Of T)(observable As IObservable(Of T)) As IObservable(Of T)
         Dim context = SynchronizationContext.Current
         Dim post = If(context Is Nothing,
@@ -254,19 +117,188 @@ Public Module ReactiveUtil
             Sub() post(AddressOf observer.OnCompleted),
             Sub(err) post(Sub() observer.OnError(err))))
     End Function
-    <Extension> <Pure>
-    Public Function InCurrentSyncContext(Of T, R)(reactable As IReactable(Of T, R)) As IReactable(Of T, R)
-        Dim context = SynchronizationContext.Current
-        Dim post = If(context Is Nothing,
-                      Function(e As Func(Of Task(Of R))) e(),
-                      Function(e As Func(Of Task(Of R)))
-                          Dim tr = New TaskCompletionSource(Of Task(Of R))
-                          context.Post(Sub() tr.SetResult(e()), Nothing)
-                          Return tr.Task.Unwrap()
-                      End Function)
-        Return New Reactable(Of T, R)(Function(observer) reactable.ReactTo(
-            Function(value) post(Function() observer.OnNext(value)),
-            Function() post(AddressOf observer.OnCompleted),
-            Function(err) post(Function() observer.OnError(err))))
+End Module
+
+Public Interface IValuePusher(Of T, R)
+    Function Push(value As T) As Task(Of R)
+    Function CreateWalker() As IValueWalker(Of T, R)
+End Interface
+Public Interface IValueWalker(Of T, R)
+    Inherits IDisposable
+    Function Split() As IValueWalker(Of T, R)
+    Function WalkAsync(filter As Func(Of T, Boolean), parser As Func(Of T, R)) As Task(Of R)
+End Interface
+
+Public Class ValuePusher(Of T, R)
+    Implements IValuePusher(Of T, R)
+    Private ReadOnly _createWalker As Func(Of IValueWalker(Of T, R))
+    Private ReadOnly _push As Func(Of T, Task(Of R))
+    Public Sub New(createWalker As Func(Of IValueWalker(Of T, R)), push As Func(Of T, Task(Of R)))
+        Me._createWalker = createWalker
+        Me._push = push
+    End Sub
+    Public Function CreateWalker() As IValueWalker(Of T, R) Implements IValuePusher(Of T, R).CreateWalker
+        Return _createWalker()
+    End Function
+    Public Function Push(value As T) As Task(Of R) Implements IValuePusher(Of T, R).Push
+        Return _push(value)
+    End Function
+End Class
+Public Class PacketPusher(Of K)
+    Private ReadOnly _pusher As IValuePusher(Of IKeyValue(Of K, IRist(Of Byte)), IPickle(Of Object))
+    Public Sub New(Optional pusher As IValuePusher(Of IKeyValue(Of K, IRist(Of Byte)), IPickle(Of Object)) = Nothing)
+        Contract.Requires(pusher IsNot Nothing)
+        Me._pusher = If(pusher, New ManualValuePusher(Of IKeyValue(Of K, IRist(Of Byte)), IPickle(Of Object))())
+    End Sub
+    Public Function Push(id As K, data As IRist(Of Byte)) As Task(Of IPickle(Of Object))
+        Return _pusher.Push(id.KeyValue(data))
+    End Function
+    Public Function CreateWalker() As PacketWalker(Of K)
+        Return New PacketWalker(Of K)(_pusher.CreateWalker())
+    End Function
+End Class
+Public Class PacketWalker(Of K)
+    Implements IDisposable
+    Private ReadOnly _walker As IValueWalker(Of IKeyValue(Of K, IRist(Of Byte)), IPickle(Of Object))
+    Public Sub New(walker As IValueWalker(Of IKeyValue(Of K, IRist(Of Byte)), IPickle(Of Object)))
+        Contract.Requires(walker IsNot Nothing)
+        Me._walker = walker
+    End Sub
+    Public Async Function WalkAsync(Of R)(id As K, jar As IJar(Of R)) As Task(Of IPickle(Of R))
+        Dim pickle = Await _walker.WalkAsync(Function(e) Object.Equals(e.Key, id), Function(e) jar.ParsePickle(e.Value).Weaken())
+        Return New Pickle(Of R)(pickle.Jar, DirectCast(pickle.Value, R), pickle.Data)
+    End Function
+    Public Async Function WalkValueAsync(Of R)(id As K, jar As IJar(Of R)) As Task(Of R)
+        Dim pickle = Await _walker.WalkAsync(Function(e) Object.Equals(e.Key, id), Function(e) jar.ParsePickle(e.Value).Weaken())
+        Return DirectCast(pickle.Value, R)
+    End Function
+    Public Function Split() As PacketWalker(Of K)
+        Return New PacketWalker(Of K)(_walker.Split())
+    End Function
+    Public Sub Dispose() Implements IDisposable.Dispose
+        _walker.Dispose()
+    End Sub
+End Class
+Public Module WalkerEx
+    <Extension>
+    Public Function WalkValueAsync(Of T)(this As PacketWalker(Of Bnet.Protocol.PacketId), definition As Bnet.Protocol.Packets.Definition(Of T)) As Task(Of T)
+        Return this.WalkValueAsync(definition.Id, definition.Jar)
     End Function
 End Module
+
+Public Class ManualValuePusher(Of T, R)
+    Implements IValuePusher(Of T, R)
+    Private _tail As New Node(Nothing, 0)
+    Public Function Push(value As T) As Task(Of R) Implements IValuePusher(Of T, R).Push
+        _tail = _tail.Push(value)
+        Return _tail.ParsedAsync
+    End Function
+    Public Function CreateWalker() As IValueWalker(Of T, R) Implements IValuePusher(Of T, R).CreateWalker
+        Return New Walker(_tail)
+    End Function
+
+    Private Class Node
+        Private ReadOnly _next As New TaskCompletionSource(Of Node)
+        Private ReadOnly _data As T
+        Private ReadOnly _parsed As New TaskCompletionSource(Of R)
+        Private _headRefCount As Int32
+        Private _restRefCount As Int32
+
+        Public ReadOnly Property Data As T
+            Get
+                Return _data
+            End Get
+        End Property
+        Public ReadOnly Property NextAsync As Task(Of Node)
+            Get
+                Return _next.Task
+            End Get
+        End Property
+        Public ReadOnly Property ParsedAsync As Task(Of R)
+            Get
+                Return _parsed.Task
+            End Get
+        End Property
+
+        Public Sub New(data As T, refCount As Integer)
+            Me._data = data
+            Me._headRefCount = refCount
+            Me._restRefCount = refCount
+            If refCount = 0 Then _parsed.SetResult(Nothing)
+        End Sub
+
+        Public Function Push(data As T) As Node
+            Dim n = New Node(data, _restRefCount)
+            _next.SetResult(n)
+            Return n
+        End Function
+        Public Sub PassAndHandle(value As R)
+            _parsed.TrySetResult(value)
+            Interlocked.Decrement(_headRefCount)
+        End Sub
+        Public Sub PassWithoutHandling()
+            If Interlocked.Decrement(_headRefCount) = 1 Then
+                _parsed.TrySetResult(Nothing)
+            End If
+        End Sub
+        Public Sub AddRefToRest()
+            Interlocked.Increment(_restRefCount)
+            If _next.Task.Status = TaskStatus.RanToCompletion Then
+                _next.Task.Result.AddRefToRest()
+            End If
+        End Sub
+        Public Sub RemoveRefToRest()
+            Interlocked.Decrement(_restRefCount)
+            If _next.Task.Status = TaskStatus.RanToCompletion Then
+                _next.Task.Result.RemoveRefToRest()
+            End If
+        End Sub
+    End Class
+
+    Private Class Walker
+        Implements IValueWalker(Of T, R)
+        Private _head As Node
+        Private ReadOnly _lock As New Object()
+        Public Sub New(head As Node)
+            Me._head = head
+            head.AddRefToRest()
+        End Sub
+        Protected Overrides Sub Finalize()
+            Dispose()
+        End Sub
+
+        Public Function Split() As IValueWalker(Of T, R) Implements IValueWalker(Of T, R).Split
+            Return New Walker(_head)
+        End Function
+
+        Public Async Function WalkAsync(filter As Func(Of T, Boolean), parser As Func(Of T, R)) As Task(Of R) Implements IValueWalker(Of T, R).WalkAsync
+            Do
+                Dim n = _head
+                If n Is Nothing Then Throw New ObjectDisposedException("Walker")
+                n = Await n.NextAsync
+                SyncLock _lock
+                    If _head Is Nothing Then Throw New ObjectDisposedException("Walker")
+                    If n IsNot _head Then Throw New InvalidOperationException("Overlapping WalkAsync calls")
+                    If filter(n.Data) Then
+                        Dim r = parser(n.Data)
+                        _head = n
+                        _head.PassAndHandle(r)
+                        Return r
+                    Else
+                        _head = n
+                        _head.PassWithoutHandling()
+                    End If
+                End SyncLock
+            Loop
+        End Function
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            GC.SuppressFinalize(Me)
+            SyncLock _lock
+                If _head Is Nothing Then Return
+                _head.RemoveRefToRest()
+                _head = Nothing
+            End SyncLock
+        End Sub
+    End Class
+End Class
