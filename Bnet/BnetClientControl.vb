@@ -17,7 +17,11 @@ Namespace Bnet
             Contract.Invariant(_hooks IsNot Nothing)
         End Sub
 
-        Public Sub New(component As Bnet.ClientComponent)
+        Public Shared Async Function FromComponentAsync(component As Bnet.ClientComponent) As Task(Of BnetClientControl)
+            Await component.Bot.UIContext.AwaitableEntrance()
+            Return New BnetClientControl(component)
+        End Function
+        Private Sub New(component As Bnet.ClientComponent)
             Contract.Assert(component IsNot Nothing)
             InitializeComponent()
 

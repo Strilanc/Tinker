@@ -15,7 +15,7 @@ Namespace Bnet
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _name As InvariantString
         Private ReadOnly _client As Bnet.Client
-        Private ReadOnly _control As Control
+        Private _control As Control
         Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
         Private ReadOnly _userGameSetMap As New Dictionary(Of BotUser, WC3.GameSet)
 
@@ -29,29 +29,35 @@ Namespace Bnet
             Contract.Invariant(_commands IsNot Nothing)
         End Sub
 
-        Public Sub New(name As InvariantString,
-                       bot As Bot.MainBot,
-                       client As Bnet.Client)
+        Public Shared Async Function FromAsync(name As InvariantString,
+                                               bot As Bot.MainBot,
+                                               client As Bnet.Client) As Task(Of ClientComponent)
+            Dim component = New ClientComponent(name, bot, client)
+            component._control = Await BnetClientControl.FromComponentAsync(component)
+
+            Dim ct = New CancellationTokenSource()
+            component._hooks.Add(DirectCast(New DelegatedDisposable(Sub() ct.Cancel()), IDisposable).AsTask())
+            client.IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.ChatEvent,
+                                            Function(pickle) component.OnReceivedChatEvent(pickle.Value),
+                                            ct.Token)
+
+            client.ChainEventualDisposalTo(component)
+            Return component
+        End Function
+        Private Sub New(name As InvariantString,
+                        bot As Bot.MainBot,
+                        client As Bnet.Client)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
 
             Me._bot = bot
             Me._name = name
             Me._client = client
-            Me._control = New BnetClientControl(Me)
-
-            Dim ct = New CancellationTokenSource()
-            Me._hooks.Add(DirectCast(New DelegatedDisposable(Sub() ct.Cancel()), IDisposable).AsTask())
-            client.IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.ChatEvent,
-                                            Function(pickle) OnReceivedChatEvent(pickle.Value),
-                                            ct.Token)
-
-            client.ChainEventualDisposalTo(Me)
         End Sub
-        Public Shared Function FromProfile(clientName As InvariantString,
-                                           profileName As InvariantString,
-                                           clock As IClock,
-                                           bot As Bot.MainBot) As ClientComponent
+        Public Shared Function FromProfileAsync(clientName As InvariantString,
+                                                profileName As InvariantString,
+                                                clock As IClock,
+                                                bot As Bot.MainBot) As Task(Of ClientComponent)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientComponent)() IsNot Nothing)
@@ -63,7 +69,7 @@ Namespace Bnet
             Dim authenticator = Bnet.Client.MakeProductAuthenticator(profile, clock, logger)
             Dim client = New Bnet.Client(profile, New CachedWC3InfoProvider, authenticator, clock, logger)
             client.Init()
-            Return New Bnet.ClientComponent(clientName, bot, client)
+            Return FromAsync(clientName, bot, client)
         End Function
 
         Public ReadOnly Property Client As Bnet.Client

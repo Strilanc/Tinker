@@ -36,7 +36,7 @@ Public Class ClientForm
         Contract.Requires(_bot Is Nothing)
         Contract.Ensures(_bot IsNot Nothing)
 
-        _bot = New Bot.MainBot()
+        _bot = New Bot.MainBot(SynchronizationContext.Current)
         _bot.Components.QueueAddComponent(New Bot.MainBotManager(_bot))
         Bot.IncludeBasicBotCommands(_bot, clock)
         Bot.IncludeBasicBnetClientCommands(_bot)

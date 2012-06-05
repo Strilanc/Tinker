@@ -26,6 +26,7 @@ Namespace Bot
         Private ReadOnly _portPool As New PortPool()
         Private ReadOnly _logger As Logger
         Private ReadOnly _components As New ComponentSet()
+        Private ReadOnly _uiContext As SynchronizationContext
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_settings IsNot Nothing)
@@ -34,10 +35,17 @@ Namespace Bot
             Contract.Invariant(_components IsNot Nothing)
         End Sub
 
-        Public Sub New(Optional logger As Logger = Nothing)
+        Public Sub New(uiContext As SynchronizationContext,
+                       Optional logger As Logger = Nothing)
             Me._logger = If(logger, New Logger)
+            Me._uiContext = uiContext
         End Sub
 
+        Public ReadOnly Property UIContext As SynchronizationContext
+            Get
+                Return _uiContext
+            End Get
+        End Property
         Public ReadOnly Property PortPool As PortPool
             Get
                 Contract.Ensures(Contract.Result(Of PortPool)() IsNot Nothing)
