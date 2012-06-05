@@ -372,50 +372,6 @@ Namespace Bnet
                     Await DisconnectSynq(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
                 End Sub)
         End Sub
-        Public Class ActionAfterCallbacksAwaiter(Of T)
-            Implements INotifyCompletion
-            Private ReadOnly _task As Task(Of T)
-            Private ReadOnly _completionAction As action
-            Private ReadOnly _performedLock As New OnetimeLock()
-            Private _actionCount As Int32
-            <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(_completionAction IsNot Nothing)
-                Contract.Invariant(_task IsNot Nothing)
-            End Sub
-            Public Sub New(task As Task(Of T), comp As Action)
-                Contract.Requires(comp IsNot Nothing)
-                Contract.Requires(task IsNot Nothing)
-                Me._completionAction = comp
-                Me._task = task
-            End Sub
-            Public Function GetAwaiter() As ActionAfterCallbacksAwaiter(Of T)
-                Return Me
-            End Function
-            Public ReadOnly Property IsCompleted As Boolean
-                Get
-                    Return _performedLock.State = OnetimeLockState.Acquired
-                End Get
-            End Property
-            Public Sub OnCompleted(action As Action) Implements INotifyCompletion.OnCompleted
-                Interlocked.Increment(_actionCount)
-                _task.GetAwaiter().OnCompleted(Sub()
-                                                   Try
-                                                       action()
-                                                   Finally
-                                                       If Interlocked.Decrement(_actionCount) = 0 AndAlso _performedLock.TryAcquire() Then
-                                                           _completionAction()
-                                                       End If
-                                                   End Try
-                                               End Sub)
-            End Sub
-            Public Function GetResult() As T
-                Try
-                    Return _task.Result
-                Catch ex As AggregateException
-                    Throw ex.InnerExceptions.First()
-                End Try
-            End Function
-        End Class
 
         Public Async Function ConnectAsync(socket As NonNull(Of PacketSocket), clientCDKeySalt As UInt32, Optional reconnector As IConnecter = Nothing) As Task
             Await inQueue.AwaitableEntrance()
