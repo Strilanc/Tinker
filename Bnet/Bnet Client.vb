@@ -168,21 +168,21 @@ Namespace Bnet
         Public Sub Init()
             Dim ct As CancellationToken = Nothing
             'Handled packets
-            IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.Ping,
-                                     Function(value) TrySendPacketSynq(Protocol.MakePing(salt:=value.Value)),
+            IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.Ping,
+                                     Function(value) TrySendPacketAsync(Protocol.MakePing(salt:=value.Value)),
                                      ct)
-            IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.ChatEvent,
+            IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.ChatEvent,
                                      Async Function(value)
                                          Dim vals = value.Value
                                          Dim eventId = vals.ItemAs(Of Protocol.ChatEventId)("event id")
                                          Dim text = vals.ItemAs(Of String)("text")
                                          If eventId = Protocol.ChatEventId.Channel Then
-                                             Await inQueue.AwaitableEntrance()
+                                             Await inQueue
                                              _lastChannel = text
                                          End If
                                      End Function,
                                      ct)
-            IncludePacketHandlerSynq(Protocol.Packets.ServerToClient.MessageBox,
+            IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.MessageBox,
                                      Function(value)
                                          Dim vals = value.Value
                                          Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
@@ -225,17 +225,17 @@ Namespace Bnet
                 Return Me._userCredentials.UserName
             End Get
         End Property
-        Public Async Function GetStateSynq() As Task(Of ClientState)
-            Await inQueue.AwaitableEntrance(forceReentry:=False)
+        Public Async Function GetStateAsync() As Task(Of ClientState)
+            await inQueue
             Return _state
         End Function
 
-        Public Async Sub IncludePacketHandlerSynq(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
-                                                        handler As Func(Of IPickle(Of T), Task),
-                                                        ct As CancellationToken)
+        Public Async Sub IncludePacketHandlerAsync(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
+                                                         handler As Func(Of IPickle(Of T), Task),
+                                                         ct As CancellationToken)
             Contract.Assume(packetDefinition IsNot Nothing)
             Contract.Assume(handler IsNot Nothing)
-            Await inQueue.AwaitableEntrance(forceReentry:=False)
+            await inQueue
 
             Using walker = _manualPacketHandler.CreateWalker()
                 While Not ct.IsCancellationRequested
@@ -252,10 +252,12 @@ Namespace Bnet
             End Using
         End Sub
         Private Sub IncludeLogger(Of T)(packetDefinition As Protocol.Packets.Definition(Of T), ct As CancellationToken)
-            IncludePacketHandlerSynq(packetDefinition, Function() CompletedTask(), ct)
+            IncludePacketHandlerAsync(packetDefinition, Function() CompletedTask(), ct)
         End Sub
 
-        Public Async Function SendTextSynq(text As NonNull(Of String)) As Task
+        Public Async Function SendTextAsync(text As NonNull(Of String)) As Task
+            await inQueue
+
             Contract.Assume(text.Value.Length > 0)
             Dim isBnetCommand = text.Value.StartsWith("/", StringComparison.Ordinal)
 
@@ -273,20 +275,19 @@ Namespace Bnet
                 Throw New InvalidOperationException("Can't send multi-line commands or commands larger than {0} characters.".Frmt(Protocol.Packets.ClientToServer.MaxChatCommandTextLength))
             End If
 
-            Await inQueue.AwaitableEntrance(forceReentry:=False)
             Contract.Assume(_state >= ClientState.Channel)
             For Each line In lines
                 Contract.Assume(line IsNot Nothing)
                 If line.Length = 0 Then Continue For
-                TrySendPacketSynq(Protocol.MakeChatCommand(line))
+                TrySendPacketAsync(Protocol.MakeChatCommand(line))
             Next line
         End Function
 
-        Public Async Function SendWhisperSync(userName As InvariantString, text As NonNull(Of String)) As Task
+        Public Async Function SendWhisperAsync(userName As InvariantString, text As NonNull(Of String)) As Task
             Contract.Assume(userName.Length > 0)
             Contract.Assume(text.Value.Length > 0)
 
-            Await inQueue.AwaitableEntrance(forceReentry:=False)
+            await inQueue
             Contract.Assume(_state >= ClientState.Channel)
 
             Dim prefix = "/w {0} ".Frmt(userName)
@@ -297,20 +298,20 @@ Namespace Bnet
 
             For Each line In SplitText(text, maxLineLength:=Protocol.Packets.ClientToServer.MaxChatCommandTextLength - prefix.Length)
                 Contract.Assume(line IsNot Nothing)
-                TrySendPacketSynq(Protocol.MakeChatCommand(prefix + line))
+                TrySendPacketAsync(Protocol.MakeChatCommand(prefix + line))
             Next line
         End Function
 
         Private Sub SetReportedListenPortPresync(port As UShort)
             If port = Me._reportedListenPort Then Return
             Me._reportedListenPort = port
-            TrySendPacketSynq(Protocol.MakeNetGamePort(Me._reportedListenPort.Value))
+            TrySendPacketAsync(Protocol.MakeNetGamePort(Me._reportedListenPort.Value))
         End Sub
 
         Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             _manualPacketHandler.Dispose()
-            Return DisconnectSynq(expected:=True, reason:="Disposed")
+            Return DisconnectAsync(expected:=True, reason:="Disposed")
         End Function
         Private Sub ChangeStatePresync(newState As ClientState)
             Contract.Requires(SynchronizationContext.Current Is inQueue)
@@ -320,14 +321,16 @@ Namespace Bnet
             outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, oldState, newState))
         End Sub
 
-        Private Sub BeginHandlingPacketsPresync()
-            Contract.Assume(Me._state > ClientState.Disconnected)
-            Contract.Assume(SynchronizationContext.Current Is inQueue)
-            _socket.ObservePackets().InCurrentSyncContext().Observe(
-                Sub(data)
-                    Dim id = DirectCast(data(1), Bnet.Protocol.PacketId)
-                    Dim t = New TaskCompletionSource(Of String)()
-                    Dim body = data.SkipExact(4)
+        Private Async Sub BeginHandlingPacketsAsync(ct As CancellationToken)
+            Await inQueue
+            If Me._state <= ClientState.Disconnected Then Return
+
+            Try
+                Do
+                    Dim rawPacket = Await _socket.AsyncReadPacket()
+                    If ct.IsCancellationRequested Then Return
+                    Dim id = DirectCast(rawPacket(1), Bnet.Protocol.PacketId)
+                    Dim body = rawPacket.SkipExact(4)
                     Dim description = New TaskCompletionSource(Of Func(Of String))()
                     Logger.Log(Function() "Received {0} from {1}".Frmt(id, "bnet"), LogMessageType.DataEvent)
                     Logger.FutureLog(Function() "Received {0} from {1}: Parsing...".Frmt(id, "bnet"), description.Task, LogMessageType.DataParsed)
@@ -342,16 +345,14 @@ Namespace Bnet
                                  description.SetException(ex)
                              End Try
                          End Sub()
-                End Sub,
-                Sub()
-                End Sub,
-                Async Sub(ex)
-                    Await DisconnectSynq(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
-                End Sub)
+                Loop
+            Catch ex As Exception
+                DisconnectAsync(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
+            End Try
         End Sub
 
         Public Async Function ConnectAsync(socket As NonNull(Of PacketSocket), clientCDKeySalt As UInt32, Optional reconnector As IConnecter = Nothing) As Task
-            Await inQueue.AwaitableEntrance()
+            Await inQueue
 
             If Me._state <> ClientState.Disconnected Then
                 Throw New InvalidOperationException("Must disconnect before connecting again.")
@@ -364,7 +365,7 @@ Namespace Bnet
 
                 Me._socket = socket
                 Dim onSocketDisconnected = Async Sub(sender As PacketSocket, expected As Boolean, reason As String)
-                                               Await DisconnectSynq(expected, reason)
+                                               Await DisconnectAsync(expected, reason)
                                            End Sub
                 AddHandler _socket.Disconnected, onSocketDisconnected
                 _connectionToken.Token.Register(Sub() RemoveHandler _socket.Disconnected, onSocketDisconnected)
@@ -376,7 +377,7 @@ Namespace Bnet
                     'Introductions
                     socket.Value.SubStream.Write({1}, 0, 1) 'protocol version
 
-                    BeginHandlingPacketsPresync()
+                    BeginHandlingPacketsAsync(_connectionToken.Token)
 
                     Dim authBeginVals = Await TradePacketsAsync(
                         Protocol.MakeAuthenticationBegin(_productInfoProvider.MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))),
@@ -414,7 +415,7 @@ Namespace Bnet
                     ChangeStatePresync(ClientState.EnterUserCredentials)
                 End Using
             Catch ex As Exception
-                DisconnectSynq(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
+                DisconnectAsync(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
                 Throw
             End Try
         End Function
@@ -474,15 +475,15 @@ Namespace Bnet
 
             'Forward bnls to bnet warden
             Try
-                Await bnlsSocket.QueueRunAsync(ct, Sub(data) TrySendPacketSynq(Protocol.MakeWarden(data)))
+                Await bnlsSocket.QueueRunAsync(ct, Sub(data) TrySendPacketAsync(Protocol.MakeWarden(data)))
             Catch ex As Exception
                 ex.RaiseAsUnexpected("Warden/BNLS Error")
-                DisconnectSynq(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(ex.Summarize))
+                DisconnectAsync(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(ex.Summarize))
             End Try
         End Sub
 
         Public Async Function LogOnAsync(credentials As NonNull(Of ClientCredentials)) As Task
-            Await inQueue.AwaitableEntrance()
+            await inQueue
             If _state <> ClientState.EnterUserCredentials Then
                 Throw New InvalidOperationException("Incorrect state for login.")
             End If
@@ -540,8 +541,8 @@ Namespace Bnet
             EnterChannelPresync(Profile.initialChannel)
         End Function
 
-        Public Async Function DisconnectSynq(expected As Boolean, reason As NonNull(Of String)) As Task
-            Await inQueue.AwaitableEntrance()
+        Public Async Function DisconnectAsync(expected As Boolean, reason As NonNull(Of String)) As Task
+            await inQueue
 
             If _socket IsNot Nothing Then
                 _socket.QueueDisconnect(expected, reason)
@@ -581,7 +582,7 @@ Namespace Bnet
         End Function
 
         Private Sub EnterChannelPresync(channel As InvariantString)
-            TrySendPacketSynq(Protocol.MakeJoinChannel(Protocol.JoinChannelType.ForcedJoin, channel))
+            TrySendPacketAsync(Protocol.MakeJoinChannel(Protocol.JoinChannelType.ForcedJoin, channel))
             ChangeStatePresync(ClientState.Channel)
             TryStartAdvertisingPresync()
         End Sub
@@ -590,7 +591,7 @@ Namespace Bnet
             If _curAdvertisement Is Nothing Then Return
             If _advertisementList.Contains(_curAdvertisement) Then Return
 
-            TrySendPacketSynq(Protocol.MakeCloseGame3())
+            TrySendPacketAsync(Protocol.MakeCloseGame3())
             _curAdvertisement = Nothing
             _gameCanceller.Cancel()
             EnterChannelPresync(_lastChannel)
@@ -645,9 +646,9 @@ Namespace Bnet
             Loop
         End Sub
 
-        Public Async Function IncludeAdvertisableGameSynq(gameDescription As NonNull(Of WC3.LocalGameDescription),
-                                                          isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
-            Await inQueue.AwaitableEntrance(forceReentry:=False)
+        Public Async Function IncludeAdvertisableGameAsync(gameDescription As NonNull(Of WC3.LocalGameDescription),
+                                                           isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
+            await inQueue
             Dim entry = (From e In _advertisementList
                          Where e.BaseGameDescription.Equals(gameDescription.Value)
                          ).SingleOrDefault
@@ -659,8 +660,8 @@ Namespace Bnet
             Return Await entry.EventualAdvertisedDescription
         End Function
 
-        Public Async Function ExcludeAdvertisableGameSynq(gameDescription As NonNull(Of WC3.LocalGameDescription)) As Task(Of Boolean)
-            Await inQueue.AwaitableEntrance(forceReentry:=False)
+        Public Async Function ExcludeAdvertisableGameAsync(gameDescription As NonNull(Of WC3.LocalGameDescription)) As Task(Of Boolean)
+            await inQueue
             Dim entry = (From e In _advertisementList.ToList
                          Where e.BaseGameDescription.Equals(gameDescription.Value)
                          ).SingleOrDefault
@@ -671,8 +672,8 @@ Namespace Bnet
             Return True
         End Function
 
-        Public Async Function ClearAdvertisableGamesSync() As Task
-            Await inQueue.AwaitableEntrance(forceReentry:=False)
+        Public Async Function ClearAdvertisableGamesAsync() As Task
+            await inQueue
             _advertisementList.Clear()
             CheckStopAdvertisingPresync()
         End Function
@@ -680,12 +681,12 @@ Namespace Bnet
         Public Async Function TradePacketsAsync(Of T)(packet As Protocol.Packet,
                                                       expectedPacket As Protocol.Packets.Definition(Of T)) As Task(Of T)
             Using walker = _manualPacketHandler.CreateWalker()
-                Await TrySendPacketSynq(packet)
+                If Not Await TrySendPacketAsync(packet) Then Throw New TaskCanceledException("Failed to send packet.")
                 Return Await walker.WalkValueAsync(expectedPacket, _connectionToken.Token)
             End Using
         End Function
-        Public Async Function TrySendPacketSynq(packet As NonNull(Of Protocol.Packet)) As Task(Of Boolean)
-            Await inQueue.AwaitableEntrance(forceReentry:=False)
+        Public Async Function TrySendPacketAsync(packet As NonNull(Of Protocol.Packet)) As Task(Of Boolean)
+            await inQueue
 
             Dim id = packet.Value.Id
             Dim payload = packet.Value.Payload
@@ -699,7 +700,7 @@ Namespace Bnet
                 _socket.WritePacket({Protocol.Packets.PacketPrefixValue, id}, payload.Data)
                 Return True
             Catch ex As Exception
-                DisconnectSynq(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(id, _socket.Name, ex.Summarize))
+                DisconnectAsync(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(id, _socket.Name, ex.Summarize))
                 ex.RaiseAsUnexpected("Error sending {0} to {1}".Frmt(id, _socket.Name))
                 Return False
             End Try

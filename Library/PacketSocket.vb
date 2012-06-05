@@ -151,25 +151,6 @@ Public NotInheritable Class PacketSocket
         Disconnect(expected:=False, reason:="Connection went idle.")
     End Sub
 
-    Public Function ObservePackets(Optional ct As CancellationToken = Nothing) As IObservable(Of IRist(Of Byte))
-        Dim r = New ManualObservable(Of IRist(Of Byte))
-        Call Async Sub()
-                 Do
-                     Try
-                         Dim packet = Await AsyncReadPacket()
-                         If ct.IsCancellationRequested Then Return
-                         r.PushNext(packet)
-                     Catch ex As Exception
-                         If _isConnected Then
-                             r.PushError(ex)
-                         Else
-                             r.PushCompleted()
-                         End If
-                     End Try
-                 Loop
-             End Sub()
-        Return r
-    End Function
     Public Async Function AsyncReadPacket() As Task(Of IRist(Of Byte))
         'Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Byte)))() IsNot Nothing)
         Try

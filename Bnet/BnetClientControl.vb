@@ -31,15 +31,15 @@ Namespace Bnet
 
             Dim ct = New CancellationTokenSource()
             Me._hooks.Add(DirectCast(New DelegatedDisposable(Sub() ct.Cancel()), IDisposable).AsTask())
-            Me._client.IncludePacketHandlerSynq(Packets.ServerToClient.ChatEvent,
+            Me._client.IncludePacketHandlerAsync(Packets.ServerToClient.ChatEvent,
                                                 Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedChatEvent(Me._client, pickle.Value)),
                                                 ct.Token)
-            Me._client.IncludePacketHandlerSynq(Packets.ServerToClient.QueryGamesList(Me._client.Clock),
+            Me._client.IncludePacketHandlerAsync(Packets.ServerToClient.QueryGamesList(Me._client.Clock),
                                                 Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value)),
                                                 ct.Token)
 
             inQueue.QueueAction(Async Sub()
-                                    Dim state = Await Me._client.GetStateSynq
+                                    Dim state = Await Me._client.GetStateAsync
                                     OnClientStateChanged(Me._client, state, state)
                                 End Sub)
             Dim stateChangedHandler As Client.StateChangedEventHandler = Sub(sender, oldState, newState) inQueue.QueueAction(
@@ -136,7 +136,7 @@ Namespace Bnet
             Dim msg = txtTalk.Text
             txtTalk.Text = ""
             Try
-                Await _client.SendTextSynq(txtTalk.Text)
+                Await _client.SendTextAsync(txtTalk.Text)
                 logClient.LogMessage("{0}: {1}".Frmt(_client.UserName, msg), Color.DarkBlue)
             Catch ex As Exception
                 logClient.LogMessage("Error sending text: {0}".Frmt(ex.Summarize), Color.Red)

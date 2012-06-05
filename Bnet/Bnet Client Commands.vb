@@ -25,7 +25,7 @@ Namespace Bnet.Commands
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Await target.DisconnectSynq(expected:=True, reason:="Disconnect Command")
+            Await target.DisconnectAsync(expected:=True, reason:="Disconnect Command")
             Return "Disconnected"
         End Function
     End Class
@@ -234,12 +234,12 @@ Namespace Bnet.Commands
                 onStarted = Sub(sender, active)
                                 If active Then Return
                                 RemoveHandler gameSet.StateChanged, onStarted
-                                target.Client.ExcludeAdvertisableGameSynq(gameSet.GameSettings.GameDescription)
+                                target.Client.ExcludeAdvertisableGameAsync(gameSet.GameSettings.GameDescription)
                             End Sub
                 AddHandler gameSet.StateChanged, onStarted
 
                 'Start advertising game
-                Dim gameDescription = Await target.Client.IncludeAdvertisableGameSynq(gameDescription:=gameSet.GameSettings.GameDescription,
+                Dim gameDescription = Await target.Client.IncludeAdvertisableGameAsync(gameDescription:=gameSet.GameSettings.GameDescription,
                                                                                    isPrivate:=gameSet.GameSettings.IsPrivate)
                 Return "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(gameDescription.Name,
                                                                                gameDescription.GameStats.AdvertisedPath,
@@ -288,7 +288,7 @@ Namespace Bnet.Commands
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Await target.TrySendPacketSynq(Protocol.MakeQueryGamesList())
+            Await target.TrySendPacketAsync(Protocol.MakeQueryGamesList())
             Return "Sent request."
         End Function
     End Class
@@ -344,7 +344,7 @@ Namespace Bnet.Commands
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
             Dim text = argument.RawValue(0)
             If text.Length = 0 Then Throw New ArgumentException("Must say something.")
-            Await target.SendTextSynq(text)
+            Await target.SendTextAsync(text)
             Return "Said {0}".Frmt(text)
         End Function
     End Class
@@ -359,7 +359,7 @@ Namespace Bnet.Commands
         End Sub
         <SuppressMessage("Microsoft.Contracts", "Ensures-40-81")>
         Protected Overrides Async Function PerformInvoke(target As Bnet.Client, user As BotUser, argument As CommandArgument) As Task(Of String)
-            Await target.ClearAdvertisableGamesSync()
+            Await target.ClearAdvertisableGamesAsync()
             Return "Cancelled advertising of all games."
         End Function
     End Class
