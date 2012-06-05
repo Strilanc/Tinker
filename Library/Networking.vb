@@ -8,14 +8,18 @@ Imports Tinker.Pickling
 Public Module NetworkingCommon
     Private cachedExternalIP As Byte()
     Private cachedInternalIP As Byte()
-    Public Async Function CacheIPAddresses() As Task
+    Public Async Sub CacheIPAddresses()
         'Internal IP
         cachedInternalIP = GetInternalIPAddress.GetAddressBytes()
 
         'External IP
         Try
             Using webClient = New WebClient()
-                Dim data = Await webClient.DownloadDataTaskAsync("http://whatismyip.com/automation/n09230945.asp")
+                'workaround large sync delay from webClient.DownloadDataTaskAsync
+                '(a bug on Microsoft's end, may be fixed in the future)
+                Await Task.Yield()
+
+                Dim data = Await webClient.DownloadDataTaskAsync("http://automation.whatismyip.com/n09230945.asp")
                 Dim externalIp = New UTF8Encoding().GetString(data)
                 If externalIp.Length < "#.#.#.#".Length Then Return
                 If externalIp.Length > "###.###.###.###".Length Then Return
@@ -27,7 +31,7 @@ Public Module NetworkingCommon
         Catch ex As WebException
             'no action
         End Try
-    End Function
+    End Sub
 
     Private Function GetInternalIPAddress() As Net.IPAddress
         Contract.Ensures(Contract.Result(Of Net.IPAddress)() IsNot Nothing)
