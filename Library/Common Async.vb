@@ -11,13 +11,6 @@
         Return result
     End Function
 
-    <Extension()> <Pure()>
-    Public Function ImmediateResult(Of T)(task As Task(Of T)) As T
-        Contract.Requires(task IsNot Nothing)
-        If Not task.Status = TaskStatus.RanToCompletion Then Throw New InvalidStateException("Task did not complete.")
-        Return task.Result
-    End Function
-
     <Extension()>
     Public Async Function ReadBestEffortAsync(stream As IO.Stream, maxSize As Integer) As Task(Of Byte())
         Contract.Assume(stream IsNot Nothing)
@@ -33,72 +26,6 @@
         End While
         If totalRead <> maxSize Then ReDim Preserve result(0 To totalRead - 1)
         Return result
-    End Function
-
-    <Extension()>
-    Public Function CancelledAsFalse(task As Task) As Task(Of Boolean)
-        Contract.Requires(task IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task(Of Boolean))() IsNot Nothing)
-        Dim r = New TaskCompletionSource(Of Boolean)()
-        task.ContinueWith(Sub()
-                              If task.IsCanceled Then
-                                  r.TrySetResult(False)
-                              ElseIf task.IsFaulted Then
-                                  If task.Exception.InnerExceptions.All(Function(e) TypeOf e Is TaskCanceledException) Then
-                                      r.TrySetResult(False)
-                                  Else
-                                      r.TrySetException(task.Exception.InnerExceptions)
-                                  End If
-                              ElseIf task.IsCompleted Then
-                                  r.TrySetResult(True)
-                              Else
-                                  Throw New UnreachableException()
-                              End If
-                          End Sub)
-        Contract.Assume(r.Task IsNot Nothing)
-        Return r.Task
-    End Function
-    <Extension()>
-    Public Function MaybeCancelled(Of T)(task As Task(Of T)) As Task(Of Renullable(Of T))
-        Contract.Requires(task IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Task(Of Renullable(Of T)))() IsNot Nothing)
-        Dim r = New TaskCompletionSource(Of Renullable(Of T))()
-        task.ContinueWith(Sub()
-                              If task.IsCanceled Then
-                                  r.TrySetResult(Nothing)
-                              ElseIf task.IsFaulted Then
-                                  If task.Exception.InnerExceptions.All(Function(e) TypeOf e Is TaskCanceledException) Then
-                                      r.TrySetCanceled()
-                                  Else
-                                      r.TrySetException(task.Exception.InnerExceptions)
-                                  End If
-                              ElseIf task.IsCompleted Then
-                                  r.TrySetResult(task.Result)
-                              Else
-                                  Throw New UnreachableException()
-                              End If
-                          End Sub)
-        Contract.Assume(r.Task IsNot Nothing)
-        Return r.Task
-    End Function
-
-    <Extension()>
-    Public Async Function WithCancellation(Of T)(task As Task(Of T), ct As CancellationToken) As Task(Of T)
-        Dim r = New TaskCompletionSource(Of T)()
-        Using d1 = ct.Register(Sub() r.TrySetCanceled()),
-              d2 = task.ContinueWith(Sub()
-                                         If task.IsCanceled Then
-                                             r.TrySetCanceled()
-                                         ElseIf task.IsFaulted Then
-                                             r.TrySetException(task.Exception.InnerExceptions)
-                                         ElseIf task.IsCompleted Then
-                                             r.TrySetResult(task.Result)
-                                         Else
-                                             Throw New UnreachableException()
-                                         End If
-                                     End Sub)
-            Return Await r.Task
-        End Using
     End Function
 
     ''' <summary>
