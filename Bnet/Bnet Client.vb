@@ -349,14 +349,16 @@ Namespace Bnet
             _socket.ObservePackets().InCurrentSyncContext().Observe(
                 Sub(data)
                     Dim id = DirectCast(data(1), Bnet.Protocol.PacketId)
-                    Logger.Log(Function() "Received {0} from {1}".Frmt(id, "bnet"), LogMessageType.DataEvent)
+                    Dim t = New TaskCompletionSource(Of String)()
                     Dim body = data.SkipExact(4)
-                    Call Async Sub()
-                             Dim parsed = Await _manualPacketHandler.Push(id, body)
-                             If parsed Is Nothing Then Throw New IO.IOException("Unhandled packet: {0}".Frmt(id))
-                             If parsed.Data.Count < data.Count Then Logger.Log("Data left over after parsing.", LogMessageType.Problem)
-                             Logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, "bnet", parsed.Description()), LogMessageType.DataParsed)
-                         End Sub()
+                    Dim description = Async Function() As Task(Of Func(Of String))
+                                          Dim parsed = Await _manualPacketHandler.Push(id, body)
+                                          If parsed Is Nothing Then Throw New IO.IOException("Unhandled packet: {0}".Frmt(id))
+                                          If parsed.Data.Count < body.Count Then Logger.Log("Data left over after parsing.", LogMessageType.Problem)
+                                          Return Function() "Received {0} from {1}: {2}".Frmt(id, "bnet", parsed.Description())
+                                      End Function()
+                    Logger.Log(Function() "Received {0} from {1}".Frmt(id, "bnet"), LogMessageType.DataEvent)
+                    Logger.FutureLog(Function() "Received {0} from {1}: Parsing...".Frmt(id, "bnet"), description, LogMessageType.DataParsed)
                 End Sub,
                 Sub()
                 End Sub,
@@ -433,8 +435,9 @@ Namespace Bnet
 
                     BeginHandlingPacketsPresync()
 
-                    TrySendPacketSynq(Protocol.MakeAuthenticationBegin(_productInfoProvider.MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
-                    Dim authBeginVals = Await walker.WalkValueAsync(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin)
+                    Dim authBeginVals = Await SendReceivePacketAsync(
+                        Protocol.MakeAuthenticationBegin(_productInfoProvider.MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))),
+                        Protocol.Packets.ServerToClient.ProgramAuthenticationBegin)
                     If ct.IsCancellationRequested Then Throw New TaskCanceledException()
                     If authBeginVals.ItemAs(Of Protocol.ProgramAuthenticationBeginLogOnType)("logon type") <> Protocol.ProgramAuthenticationBeginLogOnType.Warcraft3 Then
                         Throw New IO.InvalidDataException("Unrecognized logon type from server.")
@@ -570,10 +573,9 @@ Namespace Bnet
             Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
             Dim expectedServerProof = Me._userCredentials.ServerPasswordProof(accountPasswordSalt, serverPublicKey)
 
-
             'Finish authentication
             Dim authFinishVals = Await SendReceivePacketAsync(
-                Protocol.MakeAccountLogOnFinish(clientProof),
+                Protocol.MakeUserAuthenticationFinish(clientProof),
                 Protocol.Packets.ServerToClient.UserAuthenticationFinish)
             If ct.IsCancellationRequested Then Throw New TaskCanceledException()
             Dim result = authFinishVals.ItemAs(Of Protocol.UserAuthenticationFinishResult)("result")

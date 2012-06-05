@@ -271,43 +271,48 @@ Public Class LoggerControl
             e.RaiseAsUnexpected("Exception rose post LoggerControl.emptyQueue")
         End Try
     End Sub
-    Private Sub LogFutureMessage(placeholder As String, futureMessage As Task(Of String))
+    Private Async Sub LogFutureMessage(type As LogMessageType, placeholder As Func(Of String), futureMessage As Task(Of Func(Of String)))
         Contract.Requires(placeholder IsNot Nothing)
         Contract.Requires(futureMessage IsNot Nothing)
 
-        Dim m = New QueuedMessage(placeholder, Color.DarkGoldenrod)
-        LogMessage(m)
-        futureMessage.ContinueWith(
-            Sub(task)
-                SyncLock lock
-                    Dim message = If(task.Status = TaskStatus.Faulted,
-                                     task.Exception.Summarize,
-                                     task.Result)
-                    Dim color = callbackColorMap(If(task.Status = TaskStatus.RanToCompletion AndAlso Not message Like "Failed: *",
-                                                    LogMessageType.Positive,
-                                                    LogMessageType.Problem))
-                    LogMessage(New QueuedMessage(message, color, m))
-                End SyncLock
-            End Sub
-        )
+        Dim fileOnly As Boolean
+        SyncLock lock
+            If callbackModeMap(type) = CallbackMode.Off Then Return
+            fileOnly = callbackModeMap(type) = CallbackMode.File
+        End SyncLock
+
+        Dim m = New QueuedMessage(placeholder(), Color.DarkGoldenrod)
+        LogMessage(m, fileOnly)
+
+        Try
+            Dim f = Await futureMessage
+            Dim message = f()
+            Dim color = callbackColorMap(type)
+            If message.StartsWith("Failed:") Then color = callbackColorMap(LogMessageType.Problem)
+            LogMessage(New QueuedMessage(message, color, m), fileOnly)
+        Catch ex As Exception
+            SyncLock lock
+                LogMessage(New QueuedMessage(ex.Summarize, callbackColorMap(LogMessageType.Problem), m))
+            End SyncLock
+        End Try
     End Sub
 #End Region
 
 #Region "Log Events"
     Private Sub OnLoggedMessage(type As LogMessageType,
                                 message As Lazy(Of String)) Handles _logger.LoggedMessage
-        Dim color As Color
         Dim fileOnly As Boolean
         SyncLock lock
             If callbackModeMap(type) = CallbackMode.Off Then Return
-            color = callbackColorMap(type)
             fileOnly = callbackModeMap(type) = CallbackMode.File
         End SyncLock
+        Dim color = callbackColorMap(type)
         LogMessage(message, color, fileOnly)
     End Sub
-    Private Sub OnLoggedFutureMessage(placeholder As String,
-                                      out As Task(Of String)) Handles _logger.LoggedFutureMessage
-        uiRef.QueueAction(Sub() LogFutureMessage(placeholder, out))
+    Private Sub OnLoggedFutureMessage(type As LogMessageType,
+                                      placeholder As Func(Of String),
+                                      out As Task(Of Func(Of String))) Handles _logger.LoggedFutureMessage
+        uiRef.QueueAction(Sub() LogFutureMessage(type, placeholder, out))
     End Sub
 #End Region
 

@@ -83,7 +83,7 @@ Namespace Bnet.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeAccountLogOnFinish(clientPasswordProof As IRist(Of Byte)) As Packet
+        Public Function MakeUserAuthenticationFinish(clientPasswordProof As IRist(Of Byte)) As Packet
             Contract.Requires(clientPasswordProof IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.UserAuthenticationFinish, clientPasswordProof)

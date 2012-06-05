@@ -237,7 +237,7 @@ Public Class ManualValuePusher(Of T, R)
             Interlocked.Decrement(_headRefCount)
         End Sub
         Public Sub PassWithoutHandling()
-            If Interlocked.Decrement(_headRefCount) = 1 Then
+            If Interlocked.Decrement(_headRefCount) = 0 Then
                 _parsed.TrySetResult(Nothing)
             End If
         End Sub
@@ -273,12 +273,12 @@ Public Class ManualValuePusher(Of T, R)
 
         Public Async Function WalkAsync(filter As Func(Of T, Boolean), parser As Func(Of T, R)) As Task(Of R) Implements IValueWalker(Of T, R).WalkAsync
             Do
-                Dim n = _head
-                If n Is Nothing Then Throw New ObjectDisposedException("Walker")
-                n = Await n.NextAsync
+                Dim p = _head
+                If p Is Nothing Then Throw New ObjectDisposedException("Walker")
+                Dim n = Await p.NextAsync
                 SyncLock _lock
                     If _head Is Nothing Then Throw New ObjectDisposedException("Walker")
-                    If n IsNot _head Then Throw New InvalidOperationException("Overlapping WalkAsync calls")
+                    If p IsNot _head Then Throw New InvalidOperationException("Overlapping WalkAsync calls")
                     If filter(n.Data) Then
                         Dim r = parser(n.Data)
                         _head = n
