@@ -44,6 +44,12 @@ Public Module WC3InfoProviderExtensions
         Contract.Requires(provider IsNot Nothing)
         Return provider.ExeVersion(2)
     End Function
+    <Extension> <Pure>
+    Public Function ExeInfo(provider As IProductInfoProvider) As String
+        Return "war3.exe {0} {1}".Frmt(
+            provider.LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
+            provider.FileSize)
+    End Function
 End Module
 
 Public Class CachedWC3InfoProvider

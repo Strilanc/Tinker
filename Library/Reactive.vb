@@ -120,31 +120,18 @@ Public Module ReactiveUtil
 End Module
 
 Public Interface IValuePusher(Of T, R)
+    Inherits IDisposable
     Function Push(value As T) As Task(Of R)
     Function CreateWalker() As IValueWalker(Of T, R)
 End Interface
 Public Interface IValueWalker(Of T, R)
     Inherits IDisposable
     Function Split() As IValueWalker(Of T, R)
-    Function WalkAsync(filter As Func(Of T, Boolean), parser As Func(Of T, R)) As Task(Of R)
+    Function WalkAsync(filter As Func(Of T, Boolean), parser As Func(Of T, R), ct As CancellationToken) As Task(Of R)
 End Interface
 
-Public Class ValuePusher(Of T, R)
-    Implements IValuePusher(Of T, R)
-    Private ReadOnly _createWalker As Func(Of IValueWalker(Of T, R))
-    Private ReadOnly _push As Func(Of T, Task(Of R))
-    Public Sub New(createWalker As Func(Of IValueWalker(Of T, R)), push As Func(Of T, Task(Of R)))
-        Me._createWalker = createWalker
-        Me._push = push
-    End Sub
-    Public Function CreateWalker() As IValueWalker(Of T, R) Implements IValuePusher(Of T, R).CreateWalker
-        Return _createWalker()
-    End Function
-    Public Function Push(value As T) As Task(Of R) Implements IValuePusher(Of T, R).Push
-        Return _push(value)
-    End Function
-End Class
 Public Class PacketPusher(Of K)
+    Implements IDisposable
     Private ReadOnly _pusher As IValuePusher(Of IKeyValue(Of K, IRist(Of Byte)), IPickle(Of Object))
     Public Sub New(Optional pusher As IValuePusher(Of IKeyValue(Of K, IRist(Of Byte)), IPickle(Of Object)) = Nothing)
         Contract.Requires(pusher IsNot Nothing)
@@ -156,6 +143,9 @@ Public Class PacketPusher(Of K)
     Public Function CreateWalker() As PacketWalker(Of K)
         Return New PacketWalker(Of K)(_pusher.CreateWalker())
     End Function
+    Public Sub Dispose() Implements IDisposable.Dispose
+        _pusher.Dispose()
+    End Sub
 End Class
 Public Class PacketWalker(Of K)
     Implements IDisposable
@@ -164,12 +154,12 @@ Public Class PacketWalker(Of K)
         Contract.Requires(walker IsNot Nothing)
         Me._walker = walker
     End Sub
-    Public Async Function WalkAsync(Of R)(id As K, jar As IJar(Of R)) As Task(Of IPickle(Of R))
-        Dim pickle = Await _walker.WalkAsync(Function(e) Object.Equals(e.Key, id), Function(e) jar.ParsePickle(e.Value).Weaken())
+    Public Async Function WalkAsync(Of R)(id As K, jar As IJar(Of R), ct As CancellationToken) As Task(Of IPickle(Of R))
+        Dim pickle = Await _walker.WalkAsync(Function(e) Object.Equals(e.Key, id), Function(e) jar.ParsePickle(e.Value).Weaken(), ct)
         Return New Pickle(Of R)(pickle.Jar, DirectCast(pickle.Value, R), pickle.Data)
     End Function
-    Public Async Function WalkValueAsync(Of R)(id As K, jar As IJar(Of R)) As Task(Of R)
-        Dim pickle = Await _walker.WalkAsync(Function(e) Object.Equals(e.Key, id), Function(e) jar.ParsePickle(e.Value).Weaken())
+    Public Async Function WalkValueAsync(Of R)(id As K, jar As IJar(Of R), ct As CancellationToken) As Task(Of R)
+        Dim pickle = Await _walker.WalkAsync(Function(e) Object.Equals(e.Key, id), Function(e) jar.ParsePickle(e.Value).Weaken(), ct)
         Return DirectCast(pickle.Value, R)
     End Function
     Public Function Split() As PacketWalker(Of K)
@@ -181,8 +171,10 @@ Public Class PacketWalker(Of K)
 End Class
 Public Module WalkerEx
     <Extension>
-    Public Function WalkValueAsync(Of T)(this As PacketWalker(Of Bnet.Protocol.PacketId), definition As Bnet.Protocol.Packets.Definition(Of T)) As Task(Of T)
-        Return this.WalkValueAsync(definition.Id, definition.Jar)
+    Public Function WalkValueAsync(Of T)(this As PacketWalker(Of Bnet.Protocol.PacketId),
+                                         definition As Bnet.Protocol.Packets.Definition(Of T),
+                                         ct As CancellationToken) As Task(Of T)
+        Return this.WalkValueAsync(definition.Id, definition.Jar, ct)
     End Function
 End Module
 
@@ -196,6 +188,11 @@ Public Class ManualValuePusher(Of T, R)
     Public Function CreateWalker() As IValueWalker(Of T, R) Implements IValuePusher(Of T, R).CreateWalker
         Return New Walker(_tail)
     End Function
+    Public Sub Dispose() Implements IDisposable.Dispose
+        If _tail Is Nothing Then Return
+        _tail.PushDone()
+        _tail = Nothing
+    End Sub
 
     Private Class Node
         Private ReadOnly _next As New TaskCompletionSource(Of Node)
@@ -227,6 +224,9 @@ Public Class ManualValuePusher(Of T, R)
             If refCount = 0 Then _parsed.SetResult(Nothing)
         End Sub
 
+        Public Sub PushDone()
+            _next.SetResult(Nothing)
+        End Sub
         Public Function Push(data As T) As Node
             Dim n = New Node(data, _restRefCount)
             _next.SetResult(n)
@@ -271,14 +271,18 @@ Public Class ManualValuePusher(Of T, R)
             Return New Walker(_head)
         End Function
 
-        Public Async Function WalkAsync(filter As Func(Of T, Boolean), parser As Func(Of T, R)) As Task(Of R) Implements IValueWalker(Of T, R).WalkAsync
+        Public Async Function WalkAsync(filter As Func(Of T, Boolean),
+                                        parser As Func(Of T, R),
+                                        ct As CancellationToken) As Task(Of R) Implements IValueWalker(Of T, R).WalkAsync
             Do
+                If ct.IsCancellationRequested Then Throw New TaskCanceledException()
                 Dim p = _head
                 If p Is Nothing Then Throw New ObjectDisposedException("Walker")
                 Dim n = Await p.NextAsync
                 SyncLock _lock
                     If _head Is Nothing Then Throw New ObjectDisposedException("Walker")
                     If p IsNot _head Then Throw New InvalidOperationException("Overlapping WalkAsync calls")
+                    If n Is Nothing Then Throw New TaskCanceledException()
                     If filter(n.Data) Then
                         Dim r = parser(n.Data)
                         _head = n

@@ -17,6 +17,15 @@ Public Module PoorlyCategorizedFunctions
         End Using
     End Function
 
+    <Extension> <Pure>
+    Public Function AnyCancelledToken(tokens As IEnumerable(Of CancellationToken)) As CancellationToken
+        Dim ct = New CancellationTokenSource()
+        For Each token In tokens
+            token.Register(Sub() ct.Cancel())
+        Next
+        Return ct.Token
+    End Function
+
     <Extension()> <Pure()>
     Public Function NullableValue(Of T)(value As T) As NullableValue(Of T)
         Return value
