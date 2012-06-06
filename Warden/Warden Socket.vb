@@ -31,7 +31,7 @@ Namespace Warden
         End Sub
 
         Public Async Function QueueRunAsync(ct As CancellationToken, callback As Action(Of IRist(Of Byte))) As Task
-            Await inQueue.AwaitableEntrance()
+            Await inQueue
             If ct.IsCancellationRequested Then Return
             WritePacket(ClientPacket.MakeFullServiceConnect(_cookie, _seed))
             Do
@@ -96,7 +96,7 @@ Namespace Warden
 
         Protected Overrides Async Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return
-            Await inQueue.AwaitableEntrance()
+            Await inQueue
             Call Async Sub() Await _socket.QueueDisconnect(expected:=True, reason:="Disposed")
         End Function
 

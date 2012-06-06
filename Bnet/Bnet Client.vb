@@ -169,11 +169,10 @@ Namespace Bnet
             Dim ct As CancellationToken = Nothing
             'Handled packets
             IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.Ping,
-                                     Function(value) TrySendPacketAsync(Protocol.MakePing(salt:=value.Value)),
+                                     Function(salt) TrySendPacketAsync(Protocol.MakePing(salt)),
                                      ct)
             IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.ChatEvent,
-                                     Async Function(value)
-                                         Dim vals = value.Value
+                                     Async Function(vals)
                                          Dim eventId = vals.ItemAs(Of Protocol.ChatEventId)("event id")
                                          Dim text = vals.ItemAs(Of String)("text")
                                          If eventId = Protocol.ChatEventId.Channel Then
@@ -183,8 +182,7 @@ Namespace Bnet
                                      End Function,
                                      ct)
             IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.MessageBox,
-                                     Function(value)
-                                         Dim vals = value.Value
+                                     Function(vals)
                                          Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
                                          Logger.Log(msg, LogMessageType.Problem)
                                          Return CompletedTask()
@@ -230,12 +228,12 @@ Namespace Bnet
             Return _state
         End Function
 
-        Public Async Sub IncludePacketHandlerAsync(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
+        Public Async Sub IncludePacketPickleHandlerAsync(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
                                                          handler As Func(Of IPickle(Of T), Task),
                                                          ct As CancellationToken)
             Contract.Assume(packetDefinition IsNot Nothing)
             Contract.Assume(handler IsNot Nothing)
-            await inQueue
+            Await inQueue
 
             Using walker = _manualPacketHandler.CreateWalker()
                 While Not ct.IsCancellationRequested
@@ -250,6 +248,11 @@ Namespace Bnet
                     End Try
                 End While
             End Using
+        End Sub
+        Public Sub IncludePacketHandlerAsync(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
+                                                   handler As Func(Of T, Task),
+                                                   ct As CancellationToken)
+            IncludePacketPickleHandlerAsync(packetDefinition, Function(e As IPickle(Of T)) handler(e.Value), ct)
         End Sub
         Private Sub IncludeLogger(Of T)(packetDefinition As Protocol.Packets.Definition(Of T), ct As CancellationToken)
             IncludePacketHandlerAsync(packetDefinition, Function() CompletedTask(), ct)

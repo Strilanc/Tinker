@@ -7,14 +7,14 @@ Namespace Bnet
         Private ReadOnly inQueue As CallQueue = MakeControlCallQueue(Me)
         Private ReadOnly _component As Bnet.ClientComponent
         Private ReadOnly _client As Bnet.Client
-        Private ReadOnly _hooks As New List(Of IDisposable)
+        Private ReadOnly _life As New CancellationTokenSource()
         Private numPrimaryStates As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_component IsNot Nothing)
             Contract.Invariant(_client IsNot Nothing)
-            Contract.Invariant(_hooks IsNot Nothing)
+            Contract.Invariant(_life IsNot Nothing)
         End Sub
 
         Public Shared Async Function FromComponentAsync(component As Bnet.ClientComponent) As Task(Of BnetClientControl)
@@ -27,42 +27,32 @@ Namespace Bnet
 
             Me._client = component.Client
             Me._component = component
+
+            Init()
+        End Sub
+
+        Private Sub Init()
             logClient.SetLogger(Me._client.Logger, "Client")
 
-            Dim ct = New CancellationTokenSource()
-            Me._hooks.Add(DirectCast(New DelegatedDisposable(Sub() ct.Cancel()), IDisposable).AsTask())
-            Me._client.IncludePacketHandlerAsync(Packets.ServerToClient.ChatEvent,
-                                                Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedChatEvent(Me._client, pickle.Value)),
-                                                ct.Token)
-            Me._client.IncludePacketHandlerAsync(Packets.ServerToClient.QueryGamesList(Me._client.Clock),
-                                                Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value)),
-                                                ct.Token)
+            _client.IncludePacketHandlerAsync(Packets.ServerToClient.ChatEvent, AddressOf OnClientReceivedChatEventAsync, _life.Token)
+            _client.IncludePacketHandlerAsync(Packets.ServerToClient.QueryGamesList(_client.Clock), AddressOf OnClientReceivedQueryGamesListAsync, _life.Token)
 
-            inQueue.QueueAction(Async Sub()
-                                    Dim state = Await Me._client.GetStateAsync
-                                    OnClientStateChanged(Me._client, state, state)
-                                End Sub)
-            Dim stateChangedHandler As Client.StateChangedEventHandler = Sub(sender, oldState, newState) inQueue.QueueAction(
-                    Sub() OnClientStateChanged(sender, oldState, newState))
-            Dim advertisedHandler As Client.AdvertisedGameEventHandler = Sub(sender, gameDescription, [private], refreshed) inQueue.QueueAction(
-                    Sub() OnClientAdvertisedGame(sender, gameDescription, [private], refreshed))
-            AddHandler Me._client.StateChanged, stateChangedHandler
-            AddHandler Me._client.AdvertisedGame, advertisedHandler
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.StateChanged, stateChangedHandler))
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.AdvertisedGame, advertisedHandler))
+            Call Async Sub()
+                     Dim state = Await _client.GetStateAsync()
+                     OnClientStateChangedAsync(_client, state, state)
+                 End Sub
+            AddHandler Me._client.StateChanged, AddressOf OnClientStateChangedAsync
+            AddHandler Me._client.AdvertisedGame, AddressOf OnClientAdvertisedGameAsync
+            _life.Token.Register(Sub() RemoveHandler Me._client.StateChanged, AddressOf OnClientStateChangedAsync)
+            _life.Token.Register(Sub() RemoveHandler Me._client.AdvertisedGame, AddressOf OnClientAdvertisedGameAsync)
         End Sub
 
-        Public Function QueueDispose() As Task
-            Return inQueue.QueueAction(Sub() Me.Dispose())
-        End Function
-        Private Sub BnetClientControl_Disposed(sender As Object, e As System.EventArgs) Handles Me.Disposed
-            For Each hook In _hooks
-                hook.Dispose()
-            Next hook
+        Private Sub BnetClientControl_Disposed() Handles Me.Disposed
+            _life.Cancel()
         End Sub
 
-        Private Sub OnClientReceivedQueryGamesList(sender As Bnet.Client, value As QueryGamesListResponse)
-            If sender IsNot _client Then Return
+        Private Async Function OnClientReceivedQueryGamesListAsync(value As QueryGamesListResponse) As Task
+            Await inQueue
             While lstState.Items.Count > numPrimaryStates
                 lstState.Items.RemoveAt(lstState.Items.Count - 1)
             End While
@@ -75,10 +65,10 @@ Namespace Bnet
                 lstState.Items.Add(game.GameStats.HostName)
                 lstState.Items.Add(game.GameStats.AdvertisedPath.ToString.Split("\"c).Last)
             Next game
-        End Sub
-        Private Sub OnClientReceivedChatEvent(sender As Bnet.Client, vals As NamedValueMap)
+        End Function
+        Private Async Function OnClientReceivedChatEventAsync(vals As NamedValueMap) As Task
+            Await inQueue
             If IsDisposed Then Return
-            If sender IsNot Me._client Then Return
             Dim id = vals.ItemAs(Of ChatEventId)("event id")
             Dim user = vals.ItemAs(Of String)("username")
             Dim text = vals.ItemAs(Of String)("text")
@@ -124,7 +114,7 @@ Namespace Bnet
                 Case ChatEventId.Emote
                     logClient.LogMessage("{0} {1}".Frmt(user, text), Color.DarkGray)
             End Select
-        End Sub
+        End Function
 
         Private Async Sub txtTalk_KeyDown(sender As Object, e As System.Windows.Forms.KeyEventArgs) Handles txtTalk.KeyDown
             If e.KeyCode <> Keys.Enter Then Return
@@ -144,10 +134,11 @@ Namespace Bnet
             End Try
         End Sub
 
-        Private Sub OnClientStateChanged(sender As Bnet.Client,
-                                         oldState As Bnet.ClientState,
-                                         newState As Bnet.ClientState)
+        Private Async Sub OnClientStateChangedAsync(sender As Bnet.Client,
+                                                    oldState As Bnet.ClientState,
+                                                    newState As Bnet.ClientState)
             Contract.Requires(sender IsNot Nothing)
+            Await inQueue
 
             If IsDisposed Then Return
             If sender IsNot _client Then Return
@@ -166,12 +157,13 @@ Namespace Bnet
                     lstState.BackColor = SystemColors.ButtonFace
             End Select
         End Sub
-        Private Sub OnClientAdvertisedGame(sender As Bnet.Client,
-                                           gameDescription As WC3.LocalGameDescription,
-                                           [private] As Boolean,
-                                           refreshed As Boolean)
+        Private Async Sub OnClientAdvertisedGameAsync(sender As Bnet.Client,
+                                                      gameDescription As WC3.LocalGameDescription,
+                                                      [private] As Boolean,
+                                                      refreshed As Boolean)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
+            Await inQueue
 
             If IsDisposed Then Return
             If sender IsNot _client Then Return
@@ -189,7 +181,7 @@ Namespace Bnet
             numPrimaryStates = lstState.Items.Count
         End Sub
 
-        Private Sub comClient_IssuedCommand(sender As CommandControl, argument As String) Handles comClient.IssuedCommand
+        Private Sub OnIssuedCommand(sender As CommandControl, argument As String) Handles comClient.IssuedCommand
             Contract.Requires(argument IsNot Nothing)
             Tinker.Components.UIInvokeCommand(_component, argument)
         End Sub

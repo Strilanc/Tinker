@@ -38,7 +38,7 @@ Namespace Bnet
             Dim ct = New CancellationTokenSource()
             component._hooks.Add(DirectCast(New DelegatedDisposable(Sub() ct.Cancel()), IDisposable).AsTask())
             client.IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.ChatEvent,
-                                             Function(pickle) component.OnReceivedChatEvent(pickle.Value),
+                                             Function(vals) component.OnReceivedChatEvent(vals),
                                              ct.Token)
 
             client.ChainEventualDisposalTo(component)
