@@ -165,8 +165,8 @@ Namespace WC3
                      _gameSets.Remove(id)
                      _viewGameSets.Remove(gameSet)
                      _viewActiveGameSets.Remove(gameSet)
-                     gameLink.DisposeAsync()
-                     playerLink.DisposeAsync()
+                     Call Async Sub() Await gameLink.DisposeAsync()
+                     Call Async Sub() Await playerLink.DisposeAsync()
                      RemoveHandler gameSet.StateChanged, activeAdder
                  End Sub
 

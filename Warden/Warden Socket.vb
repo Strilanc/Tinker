@@ -50,7 +50,7 @@ Namespace Warden
                         _connected = True
                     Case WardenPacketId.FullServiceHandleWardenPacket
                         If Not _connected Then Throw New IO.InvalidDataException("Unexpected {0} from {1}.".Frmt(packet.Id, _socket.Name))
-                        outQueue.QueueAction(Sub() callback(packet.ResponseData))
+                        Call Async Sub() Await outQueue.QueueAction(Sub() callback(packet.ResponseData))
                     Case Else
                         Throw New IO.InvalidDataException("Unrecognized packet type received from {0}: {1}.".Frmt(_socket.Name, packet.Id))
                 End Select
@@ -97,7 +97,7 @@ Namespace Warden
         Protected Overrides Async Function PerformDispose(finalizing As Boolean) As Task
             If finalizing Then Return
             Await inQueue.AwaitableEntrance()
-            _socket.QueueDisconnect(expected:=True, reason:="Disposed")
+            Call Async Sub() Await _socket.QueueDisconnect(expected:=True, reason:="Disposed")
         End Function
 
         Public Shared Async Function ConnectToAsync(remoteHost As InvariantString,

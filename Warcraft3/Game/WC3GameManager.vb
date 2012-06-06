@@ -41,7 +41,7 @@ Namespace WC3
 
             Dim commandPrefix = My.Settings.commandPrefix.AssumeNotNull
             If text = Tinker.Bot.MainBot.TriggerCommandText Then '?Trigger command
-                _game.QueueSendMessageTo("Command prefix: {0}".Frmt(My.Settings.commandPrefix), player)
+                Call Async Sub() Await _game.QueueSendMessageTo("Command prefix: {0}".Frmt(My.Settings.commandPrefix), player)
                 Return
             ElseIf Not text.StartsWith(commandPrefix, StringComparison.OrdinalIgnoreCase) Then 'not a command
                 Return
@@ -53,14 +53,14 @@ Namespace WC3
             Call Async Sub()
                      Await _game.Clock.Delay(2.Seconds)
                      If commandResult.Status <> TaskStatus.RanToCompletion AndAlso commandResult.Status <> TaskStatus.Faulted Then
-                         _game.QueueSendMessageTo("Command '{0}' is running... You will be informed when it finishes.".Frmt(text), player)
+                         Call Async Sub() Await _game.QueueSendMessageTo("Command '{0}' is running... You will be informed when it finishes.".Frmt(text), player)
                      End If
                  End Sub
 
             'Finish command
             Try
                 Dim message = Await commandResult
-                _game.QueueSendMessageTo(If(message, "Command Succeeded"), player)
+                Call Async Sub() Await _game.QueueSendMessageTo(If(message, "Command Succeeded"), player)
             Catch ex As Exception
                 _game.QueueSendMessageTo("Failed: {0}".Frmt(ex.Summarize), player)
             End Try
@@ -114,7 +114,7 @@ Namespace WC3
 
         Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             _game.Dispose()
-            _control.DisposeControlAsync()
+            Call Async Sub() Await _control.DisposeControlAsync()
             Return _hooks.DisposeAllAsync()
         End Function
 

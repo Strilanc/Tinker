@@ -165,7 +165,7 @@ Namespace WC3
 
             Dim prefix = My.Settings.commandPrefix.AssumeNotNull
             If text = Tinker.Bot.MainBot.TriggerCommandText Then '?trigger command
-                game.QueueSendMessageTo("Command prefix is '{0}'".Frmt(prefix), player)
+                Call Async Sub() Await game.QueueSendMessageTo("Command prefix is '{0}'".Frmt(prefix), player)
                 Return
             ElseIf Not text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) Then 'not a command
                 Return
@@ -177,7 +177,7 @@ Namespace WC3
             Try
                 Dim result = Await game.QueueCommandProcessText(game.HackManager, player, commandText)
                 If String.IsNullOrEmpty(result) Then result = "Command Succeeded"
-                game.QueueSendMessageTo(result, player)
+                Call Async Sub() Await game.QueueSendMessageTo(result, player)
             Catch ex As Exception
                 game.QueueSendMessageTo("Failed: {0}".Frmt(ex.Summarize), player)
             End Try

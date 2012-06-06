@@ -225,7 +225,7 @@ Namespace Bnet.Commands
             Try
                 'Link user to gameSet
                 If user IsNot Nothing Then
-                    target.QueueSetUserGameSet(user, gameSet)
+                    Call Async Sub() Await target.QueueSetUserGameSet(user, gameSet)
                     gameSet.ChainEventualDisposalTo(Sub() target.QueueResetUserGameSet(user, gameSet))
                 End If
 
@@ -234,7 +234,7 @@ Namespace Bnet.Commands
                 onStarted = Sub(sender, active)
                                 If active Then Return
                                 RemoveHandler gameSet.StateChanged, onStarted
-                                target.Client.ExcludeAdvertisableGameAsync(gameSet.GameSettings.GameDescription)
+                                Call Async Sub() Await target.Client.ExcludeAdvertisableGameAsync(gameSet.GameSettings.GameDescription)
                             End Sub
                 AddHandler gameSet.StateChanged, onStarted
 

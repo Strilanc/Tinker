@@ -155,7 +155,7 @@ Public NotInheritable Class PacketSocket
         'Contract.Ensures(Contract.Result(Of Task(Of IRist(Of Byte)))() IsNot Nothing)
         Try
             Dim data = Await packetStreamer.AsyncReadPacket()
-            If deadManSwitch IsNot Nothing Then deadManSwitch.QueueReset()
+            If deadManSwitch IsNot Nothing Then Call Async Sub() Await deadManSwitch.QueueReset()
             Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
             Return data
         Catch ex As Exception

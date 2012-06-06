@@ -247,8 +247,8 @@ Public Class DownloadManagerTest
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler.ID}))
-        uler.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
+        Call Async Sub() Await dler.InjectReceivedPacket(MakePeerConnectionInfo({uler.ID}))
+        Call Async Sub() Await uler.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
         uler.ExpectNoPacket()
         dler.ExpectNoPacket()
         clock.Advance(Download.Manager.UpdatePeriod)
@@ -280,8 +280,8 @@ Public Class DownloadManagerTest
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler.InjectClientMapInfo(MapTransferState.Idle, 0)
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler.ID}))
-        uler.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
+        Call Async Sub() Await dler.InjectReceivedPacket(MakePeerConnectionInfo({uler.ID}))
+        Call Async Sub() Await uler.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
         clock.Advance(Download.Manager.UpdatePeriod)
 
         uler.ExpectNoPacket()
@@ -325,7 +325,7 @@ Public Class DownloadManagerTest
         WaitUntilTaskSucceeds(game.AddPlayer(uler1))
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler1.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID}))
+        Call Async Sub() Await dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID}))
         WaitUntilTaskSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID})))
         uler1.ExpectNoPacket()
         dler.ExpectNoPacket()
@@ -340,7 +340,7 @@ Public Class DownloadManagerTest
         'Cancel and start new transfer
         WaitUntilTaskSucceeds(game.AddPlayer(uler2))
         uler2.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
+        Call Async Sub() Await uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
         WaitUntilTaskSucceeds(dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID, uler2.ID})))
         clock.Advance(Download.Manager.FreezePeriod)
         dler.ExpectNoPacket()
@@ -385,7 +385,7 @@ Public Class DownloadManagerTest
         WaitUntilTaskSucceeds(game.AddPlayer(uler1))
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler1.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID}))
+        Call Async Sub() Await dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID}))
         WaitUntilTaskSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID})))
         uler1.ExpectNoPacket()
         dler.ExpectNoPacket()
@@ -400,8 +400,8 @@ Public Class DownloadManagerTest
         'Add second peer
         WaitUntilTaskSucceeds(game.AddPlayer(uler2))
         uler2.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID, uler2.ID}))
+        Call Async Sub() Await uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
+        Call Async Sub() Await dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID, uler2.ID}))
 
         'Go slowly
         Dim dt = Download.Manager.MinSwitchPeriod

@@ -279,7 +279,7 @@ Namespace Bnet
             For Each line In lines
                 Contract.Assume(line IsNot Nothing)
                 If line.Length = 0 Then Continue For
-                TrySendPacketAsync(Protocol.MakeChatCommand(line))
+                Call Async Sub() Await TrySendPacketAsync(Protocol.MakeChatCommand(line))
             Next line
         End Function
 
@@ -298,14 +298,14 @@ Namespace Bnet
 
             For Each line In SplitText(text, maxLineLength:=Protocol.Packets.ClientToServer.MaxChatCommandTextLength - prefix.Length)
                 Contract.Assume(line IsNot Nothing)
-                TrySendPacketAsync(Protocol.MakeChatCommand(prefix + line))
+                Call Async Sub() Await TrySendPacketAsync(Protocol.MakeChatCommand(prefix + line))
             Next line
         End Function
 
         Private Sub SetReportedListenPortPresync(port As UShort)
             If port = Me._reportedListenPort Then Return
             Me._reportedListenPort = port
-            TrySendPacketAsync(Protocol.MakeNetGamePort(Me._reportedListenPort.Value))
+            Call Async Sub() Await TrySendPacketAsync(Protocol.MakeNetGamePort(Me._reportedListenPort.Value))
         End Sub
 
         Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
@@ -347,7 +347,7 @@ Namespace Bnet
                          End Sub()
                 Loop
             Catch ex As Exception
-                DisconnectAsync(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
+                Call Async Sub() Await DisconnectAsync(expected:=False, reason:="Error receiving packet: {0}".Frmt(ex.Summarize))
             End Try
         End Sub
 
@@ -415,7 +415,7 @@ Namespace Bnet
                     ChangeStatePresync(ClientState.EnterUserCredentials)
                 End Using
             Catch ex As Exception
-                DisconnectAsync(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
+                Call Async Sub() Await DisconnectAsync(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(ex.Summarize))
                 Throw
             End Try
         End Function
@@ -475,10 +475,10 @@ Namespace Bnet
 
             'Forward bnls to bnet warden
             Try
-                Await bnlsSocket.QueueRunAsync(ct, Sub(data) TrySendPacketAsync(Protocol.MakeWarden(data)))
+                Await bnlsSocket.QueueRunAsync(ct, Async Sub(data) Await TrySendPacketAsync(Protocol.MakeWarden(data)))
             Catch ex As Exception
                 ex.RaiseAsUnexpected("Warden/BNLS Error")
-                DisconnectAsync(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(ex.Summarize))
+                Call Async Sub() Await DisconnectAsync(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(ex.Summarize))
             End Try
         End Sub
 
@@ -545,7 +545,7 @@ Namespace Bnet
             await inQueue
 
             If _socket IsNot Nothing Then
-                _socket.QueueDisconnect(expected, reason)
+                Call Async Sub() Await _socket.QueueDisconnect(expected, reason)
                 _socket = Nothing
             ElseIf _state = ClientState.Disconnected Then
                 Return
@@ -558,7 +558,7 @@ Namespace Bnet
 
             ChangeStatePresync(ClientState.Disconnected)
             Logger.Log("Disconnected ({0})".Frmt(reason), LogMessageType.Negative)
-            If Not expected Then TryReconnectPresync()
+            If Not expected Then Call Async Sub() Await TryReconnectPresync()
         End Function
         Private Async Function TryReconnectPresync() As Task(Of Boolean)
             If _state <> ClientState.Disconnected Then Return False
@@ -582,7 +582,7 @@ Namespace Bnet
         End Function
 
         Private Sub EnterChannelPresync(channel As InvariantString)
-            TrySendPacketAsync(Protocol.MakeJoinChannel(Protocol.JoinChannelType.ForcedJoin, channel))
+            Call Async Sub() Await TrySendPacketAsync(Protocol.MakeJoinChannel(Protocol.JoinChannelType.ForcedJoin, channel))
             ChangeStatePresync(ClientState.Channel)
             TryStartAdvertisingPresync()
         End Sub
@@ -591,7 +591,7 @@ Namespace Bnet
             If _curAdvertisement Is Nothing Then Return
             If _advertisementList.Contains(_curAdvertisement) Then Return
 
-            TrySendPacketAsync(Protocol.MakeCloseGame3())
+            Call Async Sub() Await TrySendPacketAsync(Protocol.MakeCloseGame3())
             _curAdvertisement = Nothing
             _gameCanceller.Cancel()
             EnterChannelPresync(_lastChannel)
@@ -620,7 +620,7 @@ Namespace Bnet
                 _curAdvertisement.IncreaseNameFailCount()
             Loop
             _curAdvertisement.TryMarkAsSucceeded()
-            outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge(), _curAdvertisement.IsPrivate, refreshed:=False))
+            Call Async Sub() Await outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge(), _curAdvertisement.IsPrivate, refreshed:=False))
 
             'Refresh game periodically
             ChangeStatePresync(ClientState.AdvertisingGame)
@@ -642,7 +642,7 @@ Namespace Bnet
                     EnterChannelPresync(_lastChannel)
                     Exit Do
                 End If
-                outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge(), _curAdvertisement.IsPrivate, refreshed:=True))
+                Call Async Sub() Await outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.GetCurrentCandidateGameDescriptionWithFixedAge(), _curAdvertisement.IsPrivate, refreshed:=True))
             Loop
         End Sub
 
@@ -700,7 +700,7 @@ Namespace Bnet
                 _socket.WritePacket({Protocol.Packets.PacketPrefixValue, id}, payload.Data)
                 Return True
             Catch ex As Exception
-                DisconnectAsync(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(id, _socket.Name, ex.Summarize))
+                Call Async Sub() Await DisconnectAsync(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(id, _socket.Name, ex.Summarize))
                 ex.RaiseAsUnexpected("Error sending {0} to {1}".Frmt(id, _socket.Name))
                 Return False
             End Try

@@ -43,7 +43,7 @@ Namespace CKL
                 Dim packet = Await socket.AsyncReadPacket
                 Dim result = ParseResponse(packet)
 
-                socket.QueueDisconnect(expected:=True, reason:="Finished")
+                Call Async Sub() Await socket.QueueDisconnect(expected:=True, reason:="Finished")
                 _logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
                 Return result
             Catch ex As Exception

@@ -51,12 +51,11 @@ Namespace WC3
             Contract.Assume(sender IsNot Nothing)
             Contract.Assume(slots IsNot Nothing)
             Dim descriptions = Await Task.WhenAll(From slot In slots Select slot.AsyncGenerateDescription)
-            inQueue.QueueAction(Sub()
-                                    If IsDisposed Then Return
-                                    For Each i In descriptions.Length.Range
-                                        lstSlots.Items(i) = descriptions(i)
-                                    Next i
-                                End Sub)
+            Await inQueue
+            If IsDisposed Then Return
+            For Each i In descriptions.Length.Range
+                lstSlots.Items(i) = descriptions(i)
+            Next i
         End Sub
     End Class
 End Namespace

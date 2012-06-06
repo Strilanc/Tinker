@@ -63,7 +63,7 @@ Namespace Bot
         End Function
         Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             _bot.Dispose()
-            _control.DisposeControlAsync()
+            Call Async Sub() Await _control.DisposeControlAsync()
             Return Nothing
         End Function
 

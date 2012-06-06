@@ -46,7 +46,7 @@ Namespace Bot.Commands
 
             Dim clientComponent = Await Bnet.ClientComponent.FromProfileAsync(profileName, profileName, _clock, parent)
             Try
-                clientComponent.QueueSetAutomatic(True)
+                Call Async Sub() Await clientComponent.QueueSetAutomatic(True)
                 Await parent.Components.QueueAddComponent(clientComponent)
                 Dim client = clientComponent.Client
                 Dim profile = client.Profile
@@ -147,7 +147,7 @@ Namespace Bot.Commands
             Dim clientComponent = Await Bnet.ClientComponent.FromProfileAsync(clientName, profileName, _clock, target)
             Try
                 Await target.Components.QueueAddComponent(clientComponent)
-                If argument.HasOptionalSwitch("auto") Then clientComponent.QueueSetAutomatic(True)
+                If argument.HasOptionalSwitch("auto") Then Call Async Sub() Await clientComponent.QueueSetAutomatic(True)
                 Return "Created Client"
             Catch ex As Exception
                 clientComponent.Dispose()
@@ -179,7 +179,7 @@ Namespace Bot.Commands
             Dim advertiser = New Lan.UDPAdvertiser(New CachedWC3InfoProvider(), _clock, remoteHost)
             Dim advertiserComponent = New Lan.UDPAdvertiserComponent(name, target, advertiser)
             Try
-                If auto Then advertiserComponent.QueueSetAutomatic(auto)
+                If auto Then Call Async Sub() Await advertiserComponent.QueueSetAutomatic(auto)
                 Await target.Components.QueueAddComponent(advertiserComponent)
                 Return "Created lan advertiser."
             Catch ex As Exception

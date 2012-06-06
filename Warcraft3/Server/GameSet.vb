@@ -111,7 +111,7 @@
             Call Async Sub()
                      Await game.DisposalTask
                      _games.Remove(game)
-                     playerLink.DisposeAsync()
+                     Call Async Sub() Await playerLink.DisposeAsync()
                      If _gameSettings.UsePermanent Then AddInstance()
                      If _games.Count = 0 AndAlso Not _gameSettings.UseInstanceOnDemand Then
                          Me.Dispose()
