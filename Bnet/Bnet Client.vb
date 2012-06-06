@@ -145,58 +145,34 @@ Namespace Bnet
             Me.inQueue = MakeTaskedCallQueue()
             Me.outQueue = MakeTaskedCallQueue()
         End Sub
-        <Pure()>
-        Public Shared Function MakeProductAuthenticator(profile As Bot.ClientProfile,
-                                                        clock As IClock,
-                                                        logger As Logger) As IProductAuthenticator
-            Contract.Requires(profile IsNot Nothing)
-            Contract.Requires(clock IsNot Nothing)
-            Contract.Requires(logger IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IProductAuthenticator)() IsNot Nothing)
-
-            If profile.CKLServerAddress <> "" Then
-                Dim data = profile.CKLServerAddress.Split(":"c)
-                If data.Length <> 2 Then Throw New InvalidOperationException("Invalid CKL server address in profile.")
-                Dim remoteHost = data(0)
-                Dim port = UShort.Parse(data(1).AssumeNotNull, CultureInfo.InvariantCulture)
-                Return New CKL.Client(remoteHost, port, clock, logger)
-            End If
-
-            Return New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
-        End Function
 
         Public Sub Init()
-            Dim ct As CancellationToken = Nothing
-            'Handled packets
             IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.Ping,
-                                     Function(salt) TrySendPacketAsync(Protocol.MakePing(salt)),
-                                     ct)
+                                      Function(salt) TrySendPacketAsync(Protocol.MakePing(salt)))
             IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.ChatEvent,
-                                     Async Function(vals)
-                                         Dim eventId = vals.ItemAs(Of Protocol.ChatEventId)("event id")
-                                         Dim text = vals.ItemAs(Of String)("text")
-                                         If eventId = Protocol.ChatEventId.Channel Then
-                                             Await inQueue
-                                             _lastChannel = text
-                                         End If
-                                     End Function,
-                                     ct)
+                                      Async Function(vals)
+                                          Dim eventId = vals.ItemAs(Of Protocol.ChatEventId)("event id")
+                                          Dim text = vals.ItemAs(Of String)("text")
+                                          If eventId = Protocol.ChatEventId.Channel Then
+                                              Await inQueue
+                                              _lastChannel = text
+                                          End If
+                                      End Function)
             IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.MessageBox,
-                                     Function(vals)
-                                         Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
-                                         Logger.Log(msg, LogMessageType.Problem)
-                                         Return CompletedTask()
-                                     End Function,
-                                     ct)
+                                      Function(vals)
+                                          Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
+                                          Logger.Log(msg, LogMessageType.Problem)
+                                          Return CompletedTask()
+                                      End Function)
 
             'Packets which may be safely ignored should be logged instead of killing the client
-            IncludeLogger(Protocol.Packets.ServerToClient.Null, ct)
-            IncludeLogger(Protocol.Packets.ServerToClient.GetFileTime, ct)
-            IncludeLogger(Protocol.Packets.ServerToClient.GetIconData, ct)
-            IncludeLogger(Protocol.Packets.ServerToClient.QueryGamesList(_clock), ct)
-            IncludeLogger(Protocol.Packets.ServerToClient.EnterChat, ct)
-            IncludeLogger(Protocol.Packets.ServerToClient.FriendsUpdate, ct)
-            IncludeLogger(Protocol.Packets.ServerToClient.RequiredWork, ct)
+            IncludeLogger(Protocol.Packets.ServerToClient.Null)
+            IncludeLogger(Protocol.Packets.ServerToClient.GetFileTime)
+            IncludeLogger(Protocol.Packets.ServerToClient.GetIconData)
+            IncludeLogger(Protocol.Packets.ServerToClient.QueryGamesList(_clock))
+            IncludeLogger(Protocol.Packets.ServerToClient.EnterChat)
+            IncludeLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
+            IncludeLogger(Protocol.Packets.ServerToClient.RequiredWork)
         End Sub
 
         Public ReadOnly Property Clock As IClock
@@ -229,8 +205,8 @@ Namespace Bnet
         End Function
 
         Public Async Sub IncludePacketPickleHandlerAsync(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
-                                                         handler As Func(Of IPickle(Of T), Task),
-                                                         ct As CancellationToken)
+                                                               handler As Func(Of IPickle(Of T), Task),
+                                                               Optional ct As CancellationToken = Nothing)
             Contract.Assume(packetDefinition IsNot Nothing)
             Contract.Assume(handler IsNot Nothing)
             Await inQueue
@@ -251,10 +227,10 @@ Namespace Bnet
         End Sub
         Public Sub IncludePacketHandlerAsync(Of T)(packetDefinition As Protocol.Packets.Definition(Of T),
                                                    handler As Func(Of T, Task),
-                                                   ct As CancellationToken)
+                                                   Optional ct As CancellationToken = Nothing)
             IncludePacketPickleHandlerAsync(packetDefinition, Function(e As IPickle(Of T)) handler(e.Value), ct)
         End Sub
-        Private Sub IncludeLogger(Of T)(packetDefinition As Protocol.Packets.Definition(Of T), ct As CancellationToken)
+        Private Sub IncludeLogger(Of T)(packetDefinition As Protocol.Packets.Definition(Of T), Optional ct As CancellationToken = Nothing)
             IncludePacketHandlerAsync(packetDefinition, Function() CompletedTask(), ct)
         End Sub
 
@@ -365,13 +341,14 @@ Namespace Bnet
             Try
                 _connectionToken.Cancel()
                 _connectionToken = New CancellationTokenSource()
+                Dim ct = _connectionToken.Token
 
                 Me._socket = socket
                 Dim onSocketDisconnected = Async Sub(sender As PacketSocket, expected As Boolean, reason As String)
                                                Await DisconnectAsync(expected, reason)
                                            End Sub
                 AddHandler _socket.Disconnected, onSocketDisconnected
-                _connectionToken.Token.Register(Sub() RemoveHandler _socket.Disconnected, onSocketDisconnected)
+                ct.Register(Sub() RemoveHandler _socket.Disconnected, onSocketDisconnected)
                 Me._socket.Name = "BNET"
                 ChangeStatePresync(ClientState.AuthenticatingProgram)
 
@@ -380,7 +357,7 @@ Namespace Bnet
                     'Introductions
                     socket.Value.SubStream.Write({1}, 0, 1) 'protocol version
 
-                    BeginHandlingPacketsAsync(_connectionToken.Token)
+                    BeginHandlingPacketsAsync(ct)
 
                     Dim authBeginVals = Await TradePacketsAsync(
                         Protocol.MakeAuthenticationBegin(_productInfoProvider.MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))),
@@ -393,8 +370,8 @@ Namespace Bnet
                     Dim revisionCheckInstructions = authBeginVals.ItemAs(Of String)("revision check challenge")
 
                     Dim keys = Await _productAuthenticator.AsyncAuthenticate(clientCDKeySalt.Bytes, serverCdKeySalt.Bytes)
-                    If _connectionToken.Token.IsCancellationRequested Then Throw New TaskCanceledException()
-                    BeginConnectToBNLSServerPresync(walker.Split(), keys, _connectionToken.Token)
+                    If ct.IsCancellationRequested Then Throw New TaskCanceledException()
+                    BeginConnectToBNLSServerPresync(walker.Split(), keys, ct)
 
                     'revision check
                     If revisionCheckInstructions = "" Then
@@ -652,9 +629,7 @@ Namespace Bnet
         Public Async Function IncludeAdvertisableGameAsync(gameDescription As NonNull(Of WC3.LocalGameDescription),
                                                            isPrivate As Boolean) As Task(Of WC3.LocalGameDescription)
             await inQueue
-            Dim entry = (From e In _advertisementList
-                         Where e.BaseGameDescription.Equals(gameDescription.Value)
-                         ).SingleOrDefault
+            Dim entry = _advertisementList.SingleOrDefault(Function(e) e.BaseGameDescription.Equals(gameDescription.Value))
             If entry Is Nothing Then
                 entry = New AdvertisementEntry(gameDescription, isPrivate)
                 _advertisementList.Add(entry)
@@ -665,9 +640,7 @@ Namespace Bnet
 
         Public Async Function ExcludeAdvertisableGameAsync(gameDescription As NonNull(Of WC3.LocalGameDescription)) As Task(Of Boolean)
             await inQueue
-            Dim entry = (From e In _advertisementList.ToList
-                         Where e.BaseGameDescription.Equals(gameDescription.Value)
-                         ).SingleOrDefault
+            Dim entry = _advertisementList.SingleOrDefault(Function(e) e.BaseGameDescription.Equals(gameDescription.Value))
             If entry Is Nothing Then Return False
             entry.TryMarkAsFailed()
             _advertisementList.Remove(entry)

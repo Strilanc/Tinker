@@ -54,6 +54,25 @@ Namespace Bnet
             Me._name = name
             Me._client = client
         End Sub
+        <Pure()>
+        Public Shared Function MakeProductAuthenticator(profile As Bot.ClientProfile,
+                                                        clock As IClock,
+                                                        logger As Logger) As IProductAuthenticator
+            Contract.Requires(profile IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IProductAuthenticator)() IsNot Nothing)
+
+            If profile.CKLServerAddress <> "" Then
+                Dim data = profile.CKLServerAddress.Split(":"c)
+                If data.Length <> 2 Then Throw New InvalidOperationException("Invalid CKL server address in profile.")
+                Dim remoteHost = data(0)
+                Dim port = UShort.Parse(data(1).AssumeNotNull, CultureInfo.InvariantCulture)
+                Return New CKL.Client(remoteHost, port, clock, logger)
+            End If
+
+            Return New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
+        End Function
         Public Shared Function FromProfileAsync(clientName As InvariantString,
                                                 profileName As InvariantString,
                                                 clock As IClock,
@@ -66,7 +85,7 @@ Namespace Bnet
             If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
 
             Dim logger = New Logger
-            Dim authenticator = Bnet.Client.MakeProductAuthenticator(profile, clock, logger)
+            Dim authenticator = MakeProductAuthenticator(profile, clock, logger)
             Dim client = New Bnet.Client(profile, New CachedWC3InfoProvider, authenticator, clock, logger)
             client.Init()
             Return FromAsync(clientName, bot, client)
