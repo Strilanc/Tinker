@@ -16,7 +16,7 @@ Namespace Bnet
         Private ReadOnly _name As InvariantString
         Private ReadOnly _client As Bnet.Client
         Private _control As Control
-        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
+        Private ReadOnly _life As New CancellationTokenSource()
         Private ReadOnly _userGameSetMap As New Dictionary(Of BotUser, WC3.GameSet)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -24,7 +24,7 @@ Namespace Bnet
             Contract.Invariant(_userGameSetMap IsNot Nothing)
             Contract.Invariant(_bot IsNot Nothing)
             Contract.Invariant(_client IsNot Nothing)
-            Contract.Invariant(_hooks IsNot Nothing)
+            Contract.Invariant(_life IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
             Contract.Invariant(_commands IsNot Nothing)
         End Sub
@@ -36,7 +36,7 @@ Namespace Bnet
             component._control = Await BnetClientControl.FromComponentAsync(component)
 
             Dim ct = New CancellationTokenSource()
-            component._hooks.Add(DirectCast(New DelegatedDisposable(Sub() ct.Cancel()), IDisposable).AsTask())
+            component._life.Token.Register(Sub() ct.Cancel())
             client.IncludePacketHandlerAsync(Protocol.Packets.ServerToClient.ChatEvent,
                                              Function(vals) component.OnReceivedChatEvent(vals),
                                              ct.Token)
@@ -230,8 +230,8 @@ Namespace Bnet
 
         Protected Overrides Function PerformDispose(finalizing As Boolean) As Task
             _client.Dispose()
-            Call Async Sub() Await _control.DisposeControlAsync()
-            Return _hooks.DisposeAllAsync()
+            _life.Cancel()
+            Return _control.DisposeControlAsync()
         End Function
     End Class
 End Namespace

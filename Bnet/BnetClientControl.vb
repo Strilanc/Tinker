@@ -41,10 +41,10 @@ Namespace Bnet
                      Dim state = Await _client.GetStateAsync()
                      OnClientStateChangedAsync(_client, state, state)
                  End Sub
-            AddHandler Me._client.StateChanged, AddressOf OnClientStateChangedAsync
-            AddHandler Me._client.AdvertisedGame, AddressOf OnClientAdvertisedGameAsync
-            _life.Token.Register(Sub() RemoveHandler Me._client.StateChanged, AddressOf OnClientStateChangedAsync)
-            _life.Token.Register(Sub() RemoveHandler Me._client.AdvertisedGame, AddressOf OnClientAdvertisedGameAsync)
+            AddHandler _client.StateChanged, AddressOf OnClientStateChangedAsync
+            AddHandler _client.AdvertisedGame, AddressOf OnClientAdvertisedGameAsync
+            _life.Token.Register(Sub() RemoveHandler _client.StateChanged, AddressOf OnClientStateChangedAsync)
+            _life.Token.Register(Sub() RemoveHandler _client.AdvertisedGame, AddressOf OnClientAdvertisedGameAsync)
         End Sub
 
         Private Sub BnetClientControl_Disposed() Handles Me.Disposed

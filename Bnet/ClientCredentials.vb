@@ -37,8 +37,7 @@ Namespace Bnet
                 Contract.Assume(N >= 0)
                 Dim hash1 = G.ToUnsignedBytes.SHA1
                 Dim hash2 = N.ToUnsignedBytes.SHA1
-                Return From pair In hash1.Zip(hash2)
-                       Select pair.Item1 Xor pair.Item2
+                Return hash1.Zip(hash2, Function(e1, e2) e1 xor e2)
             End Get
         End Property
 

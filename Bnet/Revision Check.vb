@@ -22,7 +22,6 @@ Namespace Bnet
     ''' The operations and initial state of the hash are specified in the challenge.
     ''' </summary>
     Public Module RevisionCheck
-#Region "Data"
         Private Const SeedVar As Char = "A"c
         Private Const ResultVar As Char = "C"c
         Private Const InputVar As Char = "S"c
@@ -44,7 +43,6 @@ Namespace Bnet
                 &H7927D27EUI,
                 &H2FEC8733UI
             }
-#End Region
 
         '''<summary>Selects a seed based on the index string.</summary>
         <Pure()>
